@@ -1,0 +1,38 @@
+description: AEO Reference case.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/curtis
+  ecm_files: [
+    "(R) ESTAR GSHP (NG Furnace)",
+    "(R) ESTAR HP FS (NG Furnace)",
+    "(R) ESTAR HP FS (NG Heat, No Cool)",
+    "(R) Ref. Case NG Furnace & AC",
+    "(R) Ref. Case NG Heat, No Cooling"]
+  alt_regions: State
+  site_energy: true
+  rp_persist: true
+  no_scnd_lgt: true
+  adopt_scn_restrict: Max adoption potential
+  retrofits:
+    retrofit_type: null
+    retrofit_multiplier: null
+    retrofit_mult_year: null
+  elec_upgrade_costs: shares
+  no_lnkd_costs:
+    no_lnkd_stk_costs: false
+    no_lnkd_op_costs: false
+  sub_fed_policy:
+    low_volume_rate: null
+    state_appl_regs: null
+    bps: null
+    codes: null
+  incentives:
+    incentive_levels: aeo
+    incentive_restrictions: all
+  price_sensitivity: null
+  split_fuel: true 
+  detail_brkout: [regions, buildings, fuel types]
+
+run:
+  high_res_comp: true
+  report_stk: true
+  mkt_fracs: true
