@@ -189,7 +189,6 @@ class ECMPrepHelper:
     @staticmethod
     def prep_error(meas_name, handyvars, handyfiles):
         """Prepare and write out error messages for skipped measures/packages.
-
         Args:
             meas_name (str): Measure or package name.
             handyvars (object): Global variables of use across Measure methods.
@@ -4690,6 +4689,20 @@ class Measure(object):
                             opts, contrib_mseg_key, ctrb_ms_pkg_prep, hp_rate,
                             retro_rate_mseg, calc_sect_shapes, lkg_fmeth_base,
                             lkg_fmeth_meas, warn_list)
+
+                    # If needed, adjust market scaling fraction to account for GSHP lot size
+                    # requirements; handle switched to GSHPs and like-for-like replacements
+                    if self.handyvars.gshp_lot_shares and ((
+                            mskeys_swtch_tech and mskeys_swtch_tech == "GSHP") or (
+                            not mskeys_swtch_tech and mskeys[-2] == "GSHP")):
+                        # Pull adjustment fraction
+                        try:
+                            gshp_adj_fact = self.handyvars.gshp_lot_shares[mskeys[1]]
+                        except KeyError:
+                            gshp_adj_fact = self.handyvars.gshp_lot_shares["USA_minus_states_above"]
+                        # Apply adjustment fraction
+                        mkt_scale_frac_fin = {yr: mkt_scale_frac_fin[yr] * gshp_adj_fact for
+                                              yr in self.handyvars.aeo_years}
 
                     # Combine stock/energy/carbon/cost/lifetime updating info.
                     # into a dict. Note that baseline lighting lifetimes are

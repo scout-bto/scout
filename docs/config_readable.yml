@@ -97,6 +97,8 @@ ecm_prep:
       `grid_assessment_timing` is also provided. Allowed values
       are {100by2035, 95by2050, DECARB-high, DECARB-mid, null}.
       Default null
+  gshp_lot_restrict: (boolean) If true, account for lot size restrictions
+    on residential ground-source heat pumps. Default False
   health_costs: (boolean) If true, enable health costs. Requires
     alt_regions to be set to `EMM`. Default False
   incentives:

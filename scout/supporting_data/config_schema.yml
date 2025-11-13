@@ -228,6 +228,11 @@ properties:
         default: shares
         description: Determine how to assign (or not) electrical infastructure upgrade costs.
 
+      gshp_lot_restrict:
+        type: boolean
+        default: false
+        description: If true, account for lot size restrictions on residential ground-source heat pumps.
+
       sub_fed_policy:
         type: object
         properties:
