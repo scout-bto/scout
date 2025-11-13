@@ -1,11 +1,11 @@
 {
-  "name": "(R) Ref. Case NG Heat, No Cooling",
-  "_description": "Ref. case natural gas heating equipment without any paired cooling",
+  "name": "(R) Ref. Case ASHP FS (NG Boiler)",
+  "_description": "ENERGY STAR air source heat pump fully replacing original gas boiler equipment",
   "measure_type": "full service",
   "market_entry_year": 2020,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
-  "ref_case_flag": "yes",
+  "ref_case_flag": null,
   "climate_zone": "all",
   "bldg_type": "all residential",
   "structure_type": "all",
@@ -17,62 +17,38 @@
     "natural gas",
     "electricity"
   ],
-  "fuel_switch_to": null,
+  "fuel_switch_to": "electricity",
   "backup_fuel_fraction": null,
   "technology": [
     "boiler (NG)",
-    "furnace (NG)",
     "central AC",
     "room AC"
   ],
-  "htcl_tech_link": "ng heat+no cool",
-  "tech_switch_to": null,
+  "htcl_tech_link": "ng boiler+cac&rac",
+  "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "boiler (NG)": 0.95,
-    "furnace (NG)": 0.9,
-    "central AC": 4.28,
-    "room AC": 3.52
+    "heating": 2.58,
+    "cooling": 4.4
   },
-  "energy_efficiency_units": {
-    "boiler (NG)": "AFUE",
-    "furnace (NG)": "AFUE",
-    "central AC": "COP",
-    "room AC": "COP"
-  },
+  "energy_efficiency_units": "COP",
   "energy_efficiency_source": {
     "notes": "Typical value for performance, converted to Scout units where necessary.",
     "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "installed_cost": {
-    "boiler (NG)": {
-      "new": 8112.0,
-      "existing": 8339.0
-    },
-    "furnace (NG)": {
-      "new": 3669.0,
-      "existing": 3861.0
-    },
-    "central AC": {
-      "new": 5599.0,
-      "existing": 5927.0
-    },
-    "room AC": {
-      "new": 650.0,
-      "existing": 803.0
-    }
+    "new": 13163.0,
+    "existing": 13355.0
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
     "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
-    "source_data": null
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
-  "add_elec_infr_cost": null,
-  "product_lifetime": {
-    "furnace (NG)": 21.0,
-    "boiler (NG)": 25.0,
-    "central AC": 18.0,
-    "room AC": 10.0
+  "add_elec_infr_cost": {
+    "panel": true,
+    "240V circuit": true
   },
+  "product_lifetime": 15.0,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
     "notes": "Average of the typical range",
@@ -80,51 +56,46 @@
       "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
       "author": "U.S. Energy Information Admnistration",
       "year": 2023,
-      "pages": [
-        10,
-        17,
-        27,
-        31
-      ],
+      "pages": 39,
       "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
     }
   },
   "market_scaling_fractions": {
     "BA_Hot-Humid": {
-      "heating": 0.03,
-      "cooling": 0.0
+      "heating": 0.97,
+      "cooling": 0.05
     },
     "BA_Mixed-Humid": {
-      "heating": 0.04,
-      "cooling": 0.0
+      "heating": 0.96,
+      "cooling": 0.05
     },
     "BA_Very Cold": {
-      "heating": 0.55,
-      "cooling": 0.0
+      "heating": 0.45,
+      "cooling": 0.05
     },
     "BA_Subarctic": {
-      "heating": 0.8,
-      "cooling": 0.0
+      "heating": 0.2,
+      "cooling": 0.05
     },
     "BA_Cold": {
-      "heating": 0.09,
-      "cooling": 0.0
+      "heating": 0.91,
+      "cooling": 0.05
     },
     "BA_Hot-Dry": {
-      "heating": 0.09,
-      "cooling": 0.0
+      "heating": 0.91,
+      "cooling": 0.05
     },
     "BA_Mixed-Dry": {
-      "heating": 0.08,
-      "cooling": 0.0
+      "heating": 0.92,
+      "cooling": 0.05
     },
     "BA_Marine": {
-      "heating": 0.4,
-      "cooling": 0.0
+      "heating": 0.6,
+      "cooling": 0.05
     }
   },
   "market_scaling_fractions_source": {
-    "notes": "Heating multiples determined as proportion of total homes with gas heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "notes": "Heating multiples were determined as proportion of total homes with gas heating that have both cooling and heating systems in each BA climate zone. Cooling multiple of 5% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via natural gas steam/hot water (779 homes).",
     "source_data": {
       "title": "RECS 2020 Microdata",
       "author": "U.S. Energy Information Administration",

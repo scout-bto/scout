@@ -1,6 +1,6 @@
 {
-  "name": "(R) Ref. Case NG Heat, No Cooling",
-  "_description": "Ref. case natural gas heating equipment without any paired cooling",
+  "name": "(R) Ref. Case Other Fossil Heat, No Cooling",
+  "_description": "Ref. case other fossil equipment without any paired cooling",
   "measure_type": "full service",
   "market_entry_year": 2020,
   "market_exit_year": null,
@@ -14,28 +14,35 @@
     "cooling"
   ],
   "fuel_type": [
-    "natural gas",
+    "distillate",
+    "other fuel",
     "electricity"
   ],
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
   "technology": [
-    "boiler (NG)",
-    "furnace (NG)",
+    "boiler (distillate)",
+    "furnace (distillate)",
+    "furnace (kerosene)",
+    "furnace (LPG)",
     "central AC",
     "room AC"
   ],
-  "htcl_tech_link": "ng heat+no cool",
+  "htcl_tech_link": "other fossil heat+no cool",
   "tech_switch_to": null,
   "energy_efficiency": {
-    "boiler (NG)": 0.95,
-    "furnace (NG)": 0.9,
+    "boiler (distillate)": 0.86,
+    "furnace (distillate)": 0.85,
+    "furnace (kerosene)": 0.85,
+    "furnace (LPG)": 0.9,
     "central AC": 4.28,
     "room AC": 3.52
   },
   "energy_efficiency_units": {
-    "boiler (NG)": "AFUE",
-    "furnace (NG)": "AFUE",
+    "boiler (distillate)": "AFUE",
+    "furnace (distillate)": "AFUE",
+    "furnace (kerosene)": "AFUE",
+    "furnace (LPG)": "AFUE",
     "central AC": "COP",
     "room AC": "COP"
   },
@@ -44,13 +51,21 @@
     "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "installed_cost": {
-    "boiler (NG)": {
-      "new": 8112.0,
-      "existing": 8339.0
+    "boiler (distillate)": {
+      "new": 7422.0,
+      "existing": 8023.0
     },
-    "furnace (NG)": {
-      "new": 3669.0,
-      "existing": 3861.0
+    "furnace (distillate)": {
+      "new": 5158.0,
+      "existing": 5350.0
+    },
+    "furnace (kerosene)": {
+      "new": 5158.0,
+      "existing": 5350.0
+    },
+    "furnace (LPG)": {
+      "new": 5158.0,
+      "existing": 5350.0
     },
     "central AC": {
       "new": 5599.0,
@@ -68,8 +83,10 @@
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
-    "furnace (NG)": 21.0,
-    "boiler (NG)": 25.0,
+    "furnace (distillate)": 27.0,
+    "furnace (kerosene)": 27.0,
+    "furnace (LPG)": 27.0,
+    "boiler (distillate)": 23.0,
     "central AC": 18.0,
     "room AC": 10.0
   },
@@ -81,8 +98,8 @@
       "author": "U.S. Energy Information Admnistration",
       "year": 2023,
       "pages": [
-        10,
-        17,
+        14,
+        20,
         27,
         31
       ],
@@ -91,40 +108,40 @@
   },
   "market_scaling_fractions": {
     "BA_Hot-Humid": {
-      "heating": 0.03,
+      "heating": 0.02,
       "cooling": 0.0
     },
     "BA_Mixed-Humid": {
-      "heating": 0.04,
+      "heating": 0.05,
       "cooling": 0.0
     },
     "BA_Very Cold": {
-      "heating": 0.55,
+      "heating": 0.47,
       "cooling": 0.0
     },
     "BA_Subarctic": {
-      "heating": 0.8,
+      "heating": 0.89,
       "cooling": 0.0
     },
     "BA_Cold": {
-      "heating": 0.09,
+      "heating": 0.17,
       "cooling": 0.0
     },
     "BA_Hot-Dry": {
-      "heating": 0.09,
+      "heating": 0.07,
       "cooling": 0.0
     },
     "BA_Mixed-Dry": {
-      "heating": 0.08,
+      "heating": 0.18,
       "cooling": 0.0
     },
     "BA_Marine": {
-      "heating": 0.4,
+      "heating": 0.42,
       "cooling": 0.0
     }
   },
   "market_scaling_fractions_source": {
-    "notes": "Heating multiples determined as proportion of total homes with gas heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "notes": "Heating multiples determined as proportions of total homes with non-NG fossil-based heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
     "source_data": {
       "title": "RECS 2020 Microdata",
       "author": "U.S. Energy Information Administration",

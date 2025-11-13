@@ -1,6 +1,6 @@
 {
-  "name": "(R) Ref. Case NG Heat, No Cooling",
-  "_description": "Ref. case natural gas heating equipment without any paired cooling",
+  "name": "(R) Ref. Case Resist. Heat & AC",
+  "_description": "Ref. case resistance heating w/ central or window AC",
   "measure_type": "full service",
   "market_entry_year": 2020,
   "market_exit_year": null,
@@ -13,29 +13,23 @@
     "heating",
     "cooling"
   ],
-  "fuel_type": [
-    "natural gas",
-    "electricity"
-  ],
+  "fuel_type": "electricity",
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
   "technology": [
-    "boiler (NG)",
-    "furnace (NG)",
+    "resistance heat",
     "central AC",
     "room AC"
   ],
-  "htcl_tech_link": "ng heat+no cool",
+  "htcl_tech_link": "resistance heat+cac&rac",
   "tech_switch_to": null,
   "energy_efficiency": {
-    "boiler (NG)": 0.95,
-    "furnace (NG)": 0.9,
+    "resistance heat": 1.0,
     "central AC": 4.28,
     "room AC": 3.52
   },
   "energy_efficiency_units": {
-    "boiler (NG)": "AFUE",
-    "furnace (NG)": "AFUE",
+    "resistance heat": "COP",
     "central AC": "COP",
     "room AC": "COP"
   },
@@ -44,13 +38,9 @@
     "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "installed_cost": {
-    "boiler (NG)": {
-      "new": 8112.0,
-      "existing": 8339.0
-    },
-    "furnace (NG)": {
-      "new": 3669.0,
-      "existing": 3861.0
+    "resistance heat": {
+      "new": 3006.0,
+      "existing": 3198.0
     },
     "central AC": {
       "new": 5599.0,
@@ -64,12 +54,11 @@
   "cost_units": "2023$/unit",
   "installed_cost_source": {
     "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
-    "source_data": null
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
-    "furnace (NG)": 21.0,
-    "boiler (NG)": 25.0,
+    "resistance heat": 23.0,
     "central AC": 18.0,
     "room AC": 10.0
   },
@@ -81,8 +70,7 @@
       "author": "U.S. Energy Information Admnistration",
       "year": 2023,
       "pages": [
-        10,
-        17,
+        23,
         27,
         31
       ],
@@ -91,40 +79,40 @@
   },
   "market_scaling_fractions": {
     "BA_Hot-Humid": {
-      "heating": 0.03,
-      "cooling": 0.0
+      "heating": 0.94,
+      "cooling": 0.31
     },
     "BA_Mixed-Humid": {
-      "heating": 0.04,
-      "cooling": 0.0
+      "heating": 0.93,
+      "cooling": 0.31
     },
     "BA_Very Cold": {
-      "heating": 0.55,
-      "cooling": 0.0
+      "heating": 0.62,
+      "cooling": 0.31
     },
     "BA_Subarctic": {
-      "heating": 0.8,
-      "cooling": 0.0
+      "heating": 0.2,
+      "cooling": 0.31
     },
     "BA_Cold": {
-      "heating": 0.09,
-      "cooling": 0.0
+      "heating": 0.87,
+      "cooling": 0.31
     },
     "BA_Hot-Dry": {
-      "heating": 0.09,
-      "cooling": 0.0
+      "heating": 0.9,
+      "cooling": 0.31
     },
     "BA_Mixed-Dry": {
-      "heating": 0.08,
-      "cooling": 0.0
+      "heating": 0.94,
+      "cooling": 0.31
     },
     "BA_Marine": {
-      "heating": 0.4,
-      "cooling": 0.0
+      "heating": 0.55,
+      "cooling": 0.31
     }
   },
   "market_scaling_fractions_source": {
-    "notes": "Heating multiples determined as proportion of total homes with gas heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "notes": "Heating multiples were determined as proportion of total homes with electric non-HP heating that have both cooling and heating systems in each BA climate zone. Cooling multiple of 31% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via electricity (heating = 1 AND main space heating fuel =5) 5,046 homes.",
     "source_data": {
       "title": "RECS 2020 Microdata",
       "author": "U.S. Energy Information Administration",

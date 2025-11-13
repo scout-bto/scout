@@ -1,6 +1,6 @@
 {
-  "name": "(R) Ref. Case NG Furnace & AC",
-  "_description": "Ref. case gas furnace heating w/ central or window AC",
+  "name": "(R) Ref. Case Other Fossil Furnace & AC",
+  "_description": "Ref. case fuel oil/propane furnace heating w/ central or window AC",
   "measure_type": "full service",
   "market_entry_year": 2020,
   "market_exit_year": null,
@@ -15,39 +15,64 @@
     "secondary heating"
   ],
   "fuel_type": [
-    "natural gas",
+    "distillate",
+    "other fuel",
     "electricity"
   ],
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
   "technology": [
-    "furnace (NG)",
+    "furnace (distillate)",
+    "furnace (kerosene)",
+    "furnace (LPG)",
     "central AC",
     "room AC",
-    "secondary heater"
+    "secondary heater (coal)",
+    "secondary heater (kerosene)",
+    "secondary heater (LPG)"
   ],
-  "htcl_tech_link": "ng furnace+cac&rac",
+  "htcl_tech_link": "other fossil furnace+cac&rac",
   "tech_switch_to": null,
   "energy_efficiency": {
-    "furnace (NG)": 0.9,
+    "furnace (distillate)": 0.85,
+    "furnace (kerosene)": 0.85,
+    "furnace (LPG)": 0.85,
     "central AC": 4.28,
     "room AC": 3.52,
-    "secondary heater": 0.0
+    "secondary heater": 0.0,
+    "secondary heater (wood)": 0.0,
+    "secondary heater (coal)": 0.0,
+    "secondary heater (kerosene)": 0.0,
+    "secondary heater (LPG)": 0.0
   },
   "energy_efficiency_units": {
-    "furnace (NG)": "AFUE",
+    "furnace (distillate)": "AFUE",
+    "furnace (kerosene)": "AFUE",
+    "furnace (LPG)": "AFUE",
     "central AC": "COP",
     "room AC": "COP",
-    "secondary heater": "relative savings (constant)"
+    "secondary heater": "relative savings (constant)",
+    "secondary heater (wood)": "relative savings (constant)",
+    "secondary heater (coal)": "relative savings (constant)",
+    "secondary heater (kerosene)": "relative savings (constant)",
+    "secondary heater (LPG)": "relative savings (constant)"
   },
   "energy_efficiency_source": {
     "notes": "Typical value for performance, converted to Scout units where necessary.",
     "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "installed_cost": {
-    "furnace (NG)": {
-      "new": 3669.0,
-      "existing": 3861.0
+    "furnace (distillate)": {
+      "new": 5158.0,
+      "existing": 5350.0
+    },
+    "furnace (kerosene)": {
+      "new": 5158.0,
+      "existing": 5350.0
+    },
+    "furnace (LPG)": {
+      "new": 5158.0,
+      "existing": 5350.0
     },
     "central AC": {
       "new": 5599.0,
@@ -60,6 +85,22 @@
     "secondary heater": {
       "new": 100.0,
       "existing": 100.0
+    },
+    "secondary heater (wood)": {
+      "new": 100.0,
+      "existing": 100.0
+    },
+    "secondary heater (coal)": {
+      "new": 100.0,
+      "existing": 100.0
+    },
+    "secondary heater (kerosene)": {
+      "new": 100.0,
+      "existing": 100.0
+    },
+    "secondary heater (LPG)": {
+      "new": 100.0,
+      "existing": 100.0
     }
   },
   "cost_units": "2023$/unit",
@@ -69,10 +110,16 @@
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
-    "furnace (NG)": 21.0,
+    "furnace (distillate)": 27.0,
+    "furnace (kerosene)": 27.0,
+    "furnace (LPG)": 27.0,
     "central AC": 18.0,
     "room AC": 10.0,
-    "secondary heater": 10.0
+    "secondary heater": 10.0,
+    "secondary heater (wood)": 10.0,
+    "secondary heater (coal)": 10.0,
+    "secondary heater (kerosene)": 10.0,
+    "secondary heater (LPG)": 10.0
   },
   "product_lifetime_units": "years",
   "product_lifetime_source": {
@@ -82,7 +129,7 @@
       "author": "U.S. Energy Information Admnistration",
       "year": 2023,
       "pages": [
-        10,
+        14,
         27,
         31
       ],
@@ -91,48 +138,48 @@
   },
   "market_scaling_fractions": {
     "BA_Hot-Humid": {
-      "heating": 0.97,
-      "cooling": 0.49,
+      "heating": 0.98,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Mixed-Humid": {
-      "heating": 0.96,
-      "cooling": 0.49,
+      "heating": 0.95,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Very Cold": {
-      "heating": 0.45,
-      "cooling": 0.49,
+      "heating": 0.53,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Subarctic": {
-      "heating": 0.2,
-      "cooling": 0.49,
+      "heating": 0.11,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Cold": {
-      "heating": 0.91,
-      "cooling": 0.49,
+      "heating": 0.83,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Hot-Dry": {
-      "heating": 0.91,
-      "cooling": 0.49,
+      "heating": 0.93,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Mixed-Dry": {
-      "heating": 0.92,
-      "cooling": 0.49,
+      "heating": 0.82,
+      "cooling": 0.08,
       "secondary heating": 1.0
     },
     "BA_Marine": {
-      "heating": 0.6,
-      "cooling": 0.49,
+      "heating": 0.58,
+      "cooling": 0.08,
       "secondary heating": 1.0
     }
   },
   "market_scaling_fractions_source": {
-    "notes": "Heating multiples were determined as proportion of total homes that have both cooling and heating systems in each BA climate zone. Cooling multiple of 49% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via natural gas other than steam/hot water (7,845 homes).",
+    "notes": "Heating multiples were determined as proportion of total homes with non-NG fossil-based heating that have both cooling and heating systems in each BA climate zone. Cooling multiple of 8% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via a heating energy source other than natural gas, electricity, or biomass AND heating is done via non:steam/hot water system (1,338 homes).",
     "source_data": {
       "title": "RECS 2020 Microdata",
       "author": "U.S. Energy Information Administration",

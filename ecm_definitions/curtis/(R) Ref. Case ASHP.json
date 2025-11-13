@@ -1,0 +1,64 @@
+{
+  "name": "(R) Ref. Case ASHP",
+  "_description": "Ref. case air source heat pump heating and cooling",
+  "measure_type": "full service",
+  "market_entry_year": 2020,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "ASHP",
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "heating": 2.58,
+    "cooling": 4.4
+  },
+  "energy_efficiency_units": "COP",
+  "energy_efficiency_source": {
+    "notes": "Typical value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "new": 13163.0,
+    "existing": 13355.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the typical range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": 39,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

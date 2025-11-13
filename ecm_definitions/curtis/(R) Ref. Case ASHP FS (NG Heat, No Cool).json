@@ -1,8 +1,8 @@
 {
-  "name": "(R) ESTAR HP FS (NG Heat, No Cool)",
+  "name": "(R) Ref. Case ASHP FS (NG Heat, No Cool)",
   "_description": "ENERGY STAR air source heat pump (w/ cold climates specs as applicable) fully replacing original gas furnace, no existing cooling",
   "measure_type": "full service",
-  "market_entry_year": 2025,
+  "market_entry_year": 2020,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": null,
@@ -27,53 +27,26 @@
   "htcl_tech_link": "ng heat+no cool",
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "cold climates": {
-      "heating": 2.79,
-      "cooling": 4.69
-    },
-    "warm climates": {
-      "heating": 2.69,
-      "cooling": 4.69
-    }
+    "heating": 2.58,
+    "cooling": 4.4
   },
   "energy_efficiency_units": "COP",
   "energy_efficiency_source": {
-    "notes": [
-      "Split system ducted (see Tables 2 (warm climates) and 3 (cold climates) in EPA source)",
-      "conversion from original standard: COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
-      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)"
-    ],
-    "source_data": [
-      {
-        "title": "ENERGY STAR Program Requirements Product Specification for Central Air Conditioner and Heat Pump Equipment Version 6.1",
-        "author": "U.S. Environmental Protection Agency",
-        "year": 2022,
-        "pages": 4,
-        "url": "https://www.energystar.gov/sites/default/files/asset/document/ENERGY%20STAR%20Version%206.1%20Central%20Air%20Conditioner%20and%20Heat%20Pump%20Final%20Specification%20%28Rev.%20January%20%202022%29.pdf"
-      },
-      {
-        "title": "Draft PDS:01, MINHERS Addendum 71, SEER2/HSPF2 Conversions",
-        "author": "RESNET",
-        "year": 2022,
-        "pages": 2,
-        "url": "https://www.resnet.us/about/standards/minhers/draft:pds:01:minhers:addendum:71:seer2:hspf2:conversions/"
-      },
-      {
-        "title": "Residential Demand Module of the National Energy Modeling System: Model Documentation 2014",
-        "author": "U.S. Energy Information Administration",
-        "year": 2014,
-        "pages": 17,
-        "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
-      }
-    ]
+    "notes": "Typical value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "installed_cost": {
-    "new": 14055.0,
-    "existing": 14247.0
+    "new": 13163.0,
+    "existing": 13355.0
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Retail (new) and total installed (existing) cost for ENERGY STAR ASHPs in 2023.",
+    "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Retail (new) and total installed (existing) cost for ASHPs with these cooling performance characteristics in 2023.",
     "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "add_elec_infr_cost": {
@@ -83,10 +56,10 @@
   "product_lifetime": 15.0,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average of the ENERGY STAR range",
+    "notes": "Average of the typical range",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
       "year": 2023,
       "pages": 39,
       "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
