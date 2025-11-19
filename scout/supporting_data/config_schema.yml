@@ -233,6 +233,11 @@ properties:
         default: false
         description: If true, account for lot size restrictions on residential ground-source heat pumps.
 
+      actual_res_heat_cop:
+        type: boolean
+        default: false
+        description: If true, account for simulated actual (vs. nameplate) residential heat pump heating COP.
+
       sub_fed_policy:
         type: object
         properties:

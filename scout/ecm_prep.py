@@ -3541,6 +3541,21 @@ class Measure(object):
                 else:
                     sf_to_house_key = None
 
+                # Apply adjustment to reflect actual performance of residential heat pump
+                # COP performance by state, if applicable (e.g., ratio: simulated/nameplate COP)
+                if self.handyvars.res_hp_perf_ratios and ("heating" in mskeys and (
+                        "ASHP" in mskeys[-2] or (
+                            mskeys_swtch_tech and mskeys_swtch_tech == "ASHP"))):
+                    # Pull COP ratio
+                    cop_mult = self.handyvars.res_hp_perf_ratios[mskeys[1]]
+                    # Baseline mseg performance adjustment (baseline mseg is ASHP)
+                    if mskeys[-2] == "ASHP" and perf_base_units == "COP":
+                        perf_base = {
+                            yr: perf_base[yr] * cop_mult for yr in self.handyvars.aeo_years}
+                    # Measure mseg performance adjustment (like-for-like or switch to ASHP)
+                    if perf_units == "COP":
+                        perf_meas *= cop_mult
+
                 # HVAC equipment measure case where measure contributes to
                 # an HVAC/envelope package and is flagged as counterfactual
                 # that is used to isolate the envelope portion of the package

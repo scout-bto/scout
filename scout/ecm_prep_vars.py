@@ -135,6 +135,8 @@ class UsefulVars(object):
             would require a panel upgrade if switching to min. efficiency electric equipment.
         gshp_lot_shares (dict): Share of homes by state (or nationally) that have sufficient lot
             size to support GSHP installation.
+        res_hp_perf_ratios (tuple): State-level ratios of actual vs. nameplate heating COP
+            performance, referenced to ENERGY STAR HP level of performance.
         elec_infr_costs (dict): Electrical infrastructure costs to add when fuel switching equipment
             to electricity.
         alt_panel_names (list): Panel upgrade requirement info. to append to tech. names.
@@ -1638,6 +1640,21 @@ class UsefulVars(object):
         else:
             self.gshp_lot_shares = None
 
+        # When states are used and actual/nameplate HP COP ratios not suppressed, import COP ratios
+        if opts.alt_regions == "State" and opts.actual_res_heat_cop:
+            try:
+                res_hp_perf_ratios_csv = pd.read_csv(handyfiles.res_hp_perf_ratios)
+            except ValueError:
+                raise ValueError("Error reading in '" + handyfiles.res_hp_perf_ratios)
+            # Initialize final dict of HP COP ratios, using df values to set keys
+            self.res_hp_perf_ratios = {
+                reg: None for reg in res_hp_perf_ratios_csv["state"].unique()}
+            # Key in HP ratios by state
+            for index, row in res_hp_perf_ratios_csv.iterrows():
+                self.res_hp_perf_ratios[row["state"]] = row["act_v_name_heat_cop"]
+        else:
+            self.res_hp_perf_ratios = None
+
         self.elec_infr_costs = {
             "panel replacement": 1492,  # BTB "typical" value for Electric Panel 200-225 A
             "panel management": 475,  # BENEFIT panels cost data, averaged across regions
@@ -2207,6 +2224,7 @@ class UsefulInputFiles(object):
         self.local_cost_adj = fp.CONVERT_DATA / "loc_cost_adj.csv"
         self.panel_shares = fp.INPUTS / 'panel_shares.csv'
         self.gshp_lot_shares = fp.INPUTS / 'gshp_lot_shares.csv'
+        self.res_hp_perf_ratios = fp.INPUTS / 'heat_cop_ratios.csv'
 
     def set_decarb_grid_vars(self, opts: argparse.NameSpace):  # noqa: F821
         """Assign instance variables related to grid decarbonization which are dependent on the
