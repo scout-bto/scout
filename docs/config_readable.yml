@@ -1,6 +1,9 @@
 description: (string) A description of the scenario configuration.
   Default null
 ecm_prep:
+  actual_res_heat_cop: (boolean) If true, account for simulated
+    actual (vs. nameplate) residential heat pump heating COP.
+    Default False
   add_typ_eff: (boolean) If true, enable automatic addition of
     ECMs with typical (business-as-usual) efficiency to compete
     with user-defined ECMs. Default False
@@ -114,6 +117,9 @@ ecm_prep:
       electric, no federal, no federal electric, no federal fossil,
       no fossil, no ira, no sub-fed fossil, no sub-federal, no
       sub-federal electric, null}. Default null
+  low_income_rent_subseg: (boolean) If true, sub-segment by income
+    and rent vs. own status (low income, rent; low income, own;
+    not low income, rent; not low income, own). Default False
   no_eff_capt: (boolean) If true, suppress reporting of ECM-captured
     efficient energy use. Default False
   no_lnkd_costs:

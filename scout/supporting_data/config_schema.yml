@@ -238,6 +238,11 @@ properties:
         default: false
         description: If true, account for simulated actual (vs. nameplate) residential heat pump heating COP.
 
+      low_income_rent_subseg:
+        type: boolean
+        default: false
+        description: If true, sub-segment by income and rent vs. own status (low income, rent; low income, own; not low income, rent; not low income, own).
+
       sub_fed_policy:
         type: object
         properties:

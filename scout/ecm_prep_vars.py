@@ -137,6 +137,8 @@ class UsefulVars(object):
             size to support GSHP installation.
         res_hp_perf_ratios (tuple): State-level ratios of actual vs. nameplate heating COP
             performance, referenced to ENERGY STAR HP level of performance.
+        lmi_rent_shares (tuple): State-level shares of low-income and renters.
+        lmi_rent_names (list): Low-income/renter info. to append to tech. names.
         elec_infr_costs (dict): Electrical infrastructure costs to add when fuel switching equipment
             to electricity.
         alt_panel_names (list): Panel upgrade requirement info. to append to tech. names.
@@ -1655,6 +1657,25 @@ class UsefulVars(object):
         else:
             self.res_hp_perf_ratios = None
 
+        # When states are used and low-income/rental sub-segments are not suppressed, import shares
+        # of low-income/rental households (4 segments: low-rent, low-own, non low-rent, non low-own)
+        if opts.alt_regions == "State" and opts.low_income_rent_subseg:
+            try:
+                lmi_rent_shares_csv = pd.read_csv(handyfiles.lmi_rent_shares)
+            except ValueError:
+                raise ValueError("Error reading in '" + handyfiles.lmi_rent_shares)
+            # Initialize final dict of low-income/rental shares, using df values to set keys
+            self.lmi_rent_shares = {
+                reg: None for reg in lmi_rent_shares_csv["state"].unique()}
+            # Key in low-income/rental sub-segment shares by state
+            for index, row in lmi_rent_shares_csv.iterrows():
+                self.lmi_rent_shares[row["state"]] = {
+                    "low-rent": row["low_rent"], "low-own": row["low_own"],
+                    "non-low-rent": row["reg_rent"], "non-low-own": row["reg_own"]}
+        else:
+            self.lmi_rent_shares = None
+        self.lmi_rent_names = ["-lowrent", "-lowown", "-nonlowrent"]
+
         self.elec_infr_costs = {
             "panel replacement": 1492,  # BTB "typical" value for Electric Panel 200-225 A
             "panel management": 475,  # BENEFIT panels cost data, averaged across regions
@@ -2225,6 +2246,7 @@ class UsefulInputFiles(object):
         self.panel_shares = fp.INPUTS / 'panel_shares.csv'
         self.gshp_lot_shares = fp.INPUTS / 'gshp_lot_shares.csv'
         self.res_hp_perf_ratios = fp.INPUTS / 'heat_cop_ratios.csv'
+        self.lmi_rent_shares = fp.INPUTS / 'lmi_rent_shares.csv'
 
     def set_decarb_grid_vars(self, opts: argparse.NameSpace):  # noqa: F821
         """Assign instance variables related to grid decarbonization which are dependent on the

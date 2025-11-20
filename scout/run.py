@@ -3449,9 +3449,14 @@ class Engine(object):
             if "-" in key_list[-2]:
                 try:
                     # Check for panel upgrade info. on the tech. name
-                    panel_info = [x for x in ["-manage", "-no panel"] if x in key_list[-2]][0]
+                    panel_info = [x for x in ["-manage", "-no panel"] if x in key_list[-2]]
+                    # Check for income/rent vs. own info. on the tech. name
+                    inc_rent_info = [x for x in [
+                        "-lowrent", "-lowown", "-nonlowrent"] if x in key_list[-2]]
+                    panel_inc_rent_list = panel_info + inc_rent_info
+                    panel_inc_rent_info = "-".join(panel_inc_rent_list)
                     # Add panel info. to other appended tech. info. (after the dash)
-                    tch_apnd = (panel_info + "-" + key_list[-2].split("-")[-1])
+                    tch_apnd = (panel_inc_rent_info + "-" + key_list[-2].split("-")[-1])
                 except IndexError:
                     # Find appended tech. info. (after the dash)
                     tch_apnd = ("-" + key_list[-2].split("-")[-1])
