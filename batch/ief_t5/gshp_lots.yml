@@ -1,9 +1,6 @@
 description: AEO Reference case.
 ecm_prep:
-  ecm_directory: ../../ecm_definitions/curtis
-  ecm_files: [
-    "(R) Ref. Case GSHP FS (NG Furnace)"
-    ]
+  ecm_directory: ../../ecm_definitions/ief_t5
   alt_regions: State
   site_energy: true
   rp_persist: true

@@ -10,7 +10,7 @@ ecm_prep:
     retrofit_type: null
     retrofit_multiplier: null
     retrofit_mult_year: null
-  elec_upgrade_costs: shares
+  elec_upgrade_costs: ignore
   no_lnkd_costs:
     no_lnkd_stk_costs: null
     no_lnkd_op_costs: false

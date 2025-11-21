@@ -7,7 +7,7 @@ ecm_prep:
   no_scnd_lgt: true
   adopt_scn_restrict: Max adoption potential
   retrofits:
-    retrofit_type: null
+    retrofit_type: constant
     retrofit_multiplier: null
     retrofit_mult_year: null
   elec_upgrade_costs: shares

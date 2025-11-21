@@ -25,6 +25,7 @@ ecm_prep:
   price_sensitivity: null
   split_fuel: true 
   detail_brkout: [regions, buildings, fuel types]
+  low_income_rent_subseg: true
 
 run:
   high_res_comp: true

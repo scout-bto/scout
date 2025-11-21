@@ -25,6 +25,9 @@ ecm_prep:
   price_sensitivity: null
   split_fuel: true 
   detail_brkout: [regions, buildings, fuel types]
+  no_lnkd_costs:
+    no_lnkd_stk_costs: in_adopt_and_report
+    no_lnkd_op_costs: true
 
 run:
   high_res_comp: true
