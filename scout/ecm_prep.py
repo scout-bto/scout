@@ -4211,29 +4211,33 @@ class Measure(object):
 
                 # If applicable, pull in information needed to sub-segment by income and renter/
                 # owner status
-                if self.handyvars.lmi_rent_shares is not None and any([y in mskeys for y in [
+                if self.handyvars.lmi_rent_shares and any([y in mskeys for y in [
                         "single family home", "multi family home", "mobile home"]]):
-                    # Identify income and renter/owner sub-segment category
-                    if self.handyvars.lmi_rent_names[0] \
-                            in mskeys[-2]:  # Sub-segment for low income renters
-                        # Adjustment fractions (out of 1) to apply to original mseg stock and
-                        # energy data to represent low income renter segment
-                        adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
-                            mskeys[1]]["low-rent"] for x in ["stock", "energy"]]
-                    elif self.handyvars.lmi_rent_names[1] \
-                            in mskeys[-2]:  # Sub-segment for low income owners
-                        adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
-                            mskeys[1]]["low-own"] for x in ["stock", "energy"]]
-                    elif self.handyvars.lmi_rent_names[2] \
-                            in mskeys[-2]:  # Sub-segment for non low income renters
-                        adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
-                            mskeys[1]]["non-low-rent"] for x in ["stock", "energy"]]
-                    else:  # Sub-segment for non low income owners
-                        adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
-                            mskeys[1]]["non-low-own"] for x in ["stock", "energy"]]
-                    # Store the income/renter vs owner fractions for stock/energy in a dict
-                    inc_rent_adj = {x: y for x, y in zip(
-                        ["stock", "energy"], [adj_stk_inc_rent, adj_energy_inc_rent])}
+                    # Handle lack of data for DC for inputs shares
+                    try:
+                        # Identify income and renter/owner sub-segment category
+                        if self.handyvars.lmi_rent_names[0] \
+                                in mskeys[-2]:  # Sub-segment for low income renters
+                            # Adjustment fractions (out of 1) to apply to original mseg stock and
+                            # energy data to represent low income renter segment
+                            adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
+                                mskeys[1]]["low-rent"] for x in ["stock", "energy"]]
+                        elif self.handyvars.lmi_rent_names[1] \
+                                in mskeys[-2]:  # Sub-segment for low income owners
+                            adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
+                                mskeys[1]]["low-own"] for x in ["stock", "energy"]]
+                        elif self.handyvars.lmi_rent_names[2] \
+                                in mskeys[-2]:  # Sub-segment for non low income renters
+                            adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
+                                mskeys[1]]["non-low-rent"] for x in ["stock", "energy"]]
+                        else:  # Sub-segment for non low income owners
+                            adj_stk_inc_rent, adj_energy_inc_rent = [self.handyvars.lmi_rent_shares[
+                                mskeys[1]]["non-low-own"] for x in ["stock", "energy"]]
+                        # Store the income/renter vs owner fractions for stock/energy in a dict
+                        inc_rent_adj = {x: y for x, y in zip(
+                            ["stock", "energy"], [adj_stk_inc_rent, adj_energy_inc_rent])}
+                    except KeyError:
+                        inc_rent_adj = {"stock": 1, "energy": 1}
                 else:
                     # When there is no sub-segmentation required, adjustment fractions are 1
                     inc_rent_adj = {"stock": 1, "energy": 1}

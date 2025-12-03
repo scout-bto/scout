@@ -11,8 +11,7 @@
   "structure_type": "all",
   "end_use": [
     "heating",
-    "cooling",
-    "secondary heating"
+    "cooling"
   ],
   "fuel_type": [
     "distillate",
@@ -26,10 +25,7 @@
     "furnace (kerosene)",
     "furnace (LPG)",
     "central AC",
-    "room AC",
-    "secondary heater (coal)",
-    "secondary heater (kerosene)",
-    "secondary heater (LPG)"
+    "room AC"
   ],
   "htcl_tech_link": "other fossil furnace+cac&rac",
   "tech_switch_to": null,
@@ -38,24 +34,14 @@
     "furnace (kerosene)": 0.85,
     "furnace (LPG)": 0.85,
     "central AC": 4.28,
-    "room AC": 3.52,
-    "secondary heater": 0.0,
-    "secondary heater (wood)": 0.0,
-    "secondary heater (coal)": 0.0,
-    "secondary heater (kerosene)": 0.0,
-    "secondary heater (LPG)": 0.0
+    "room AC": 3.52
   },
   "energy_efficiency_units": {
     "furnace (distillate)": "AFUE",
     "furnace (kerosene)": "AFUE",
     "furnace (LPG)": "AFUE",
     "central AC": "COP",
-    "room AC": "COP",
-    "secondary heater": "relative savings (constant)",
-    "secondary heater (wood)": "relative savings (constant)",
-    "secondary heater (coal)": "relative savings (constant)",
-    "secondary heater (kerosene)": "relative savings (constant)",
-    "secondary heater (LPG)": "relative savings (constant)"
+    "room AC": "COP"
   },
   "energy_efficiency_source": {
     "notes": "Typical value for performance, converted to Scout units where necessary.",
@@ -81,26 +67,6 @@
     "room AC": {
       "new": 650.0,
       "existing": 803.0
-    },
-    "secondary heater": {
-      "new": 100.0,
-      "existing": 100.0
-    },
-    "secondary heater (wood)": {
-      "new": 100.0,
-      "existing": 100.0
-    },
-    "secondary heater (coal)": {
-      "new": 100.0,
-      "existing": 100.0
-    },
-    "secondary heater (kerosene)": {
-      "new": 100.0,
-      "existing": 100.0
-    },
-    "secondary heater (LPG)": {
-      "new": 100.0,
-      "existing": 100.0
     }
   },
   "cost_units": "2023$/unit",
@@ -114,12 +80,7 @@
     "furnace (kerosene)": 27.0,
     "furnace (LPG)": 27.0,
     "central AC": 18.0,
-    "room AC": 10.0,
-    "secondary heater": 10.0,
-    "secondary heater (wood)": 10.0,
-    "secondary heater (coal)": 10.0,
-    "secondary heater (kerosene)": 10.0,
-    "secondary heater (LPG)": 10.0
+    "room AC": 10.0
   },
   "product_lifetime_units": "years",
   "product_lifetime_source": {
@@ -139,43 +100,35 @@
   "market_scaling_fractions": {
     "BA_Hot-Humid": {
       "heating": 0.98,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Mixed-Humid": {
       "heating": 0.95,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Very Cold": {
       "heating": 0.53,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Subarctic": {
       "heating": 0.11,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Cold": {
       "heating": 0.83,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Hot-Dry": {
       "heating": 0.93,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Mixed-Dry": {
       "heating": 0.82,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     },
     "BA_Marine": {
       "heating": 0.58,
-      "cooling": 0.08,
-      "secondary heating": 1.0
+      "cooling": 0.08
     }
   },
   "market_scaling_fractions_source": {
