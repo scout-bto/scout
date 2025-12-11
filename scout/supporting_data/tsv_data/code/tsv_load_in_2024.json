@@ -1,0 +1,99 @@
+{
+	"start day": "Sunday",
+	"DST": "DST in simulations collapsed to standard time for reporting",
+	"leap year": "no",
+	"weather basis": "2018 AMY",
+	"residential": {},
+	"commercial": {
+		"heating": {
+			"MediumOfficeDetailed": {
+				"represented building types": "all",
+				"load shape": {}
+			}
+		},
+		"cooling": {
+			"LargeHotel": {
+				"represented building types": ["LargeHotel", "Hospital"],
+				"load shape": {}},
+			"LargeOfficeDetailed": {
+				"represented building types": ["LargeOfficeDetailed", "OutpatientHealthcare", "SmallHotel"],
+				"load shape": {}},
+			"MediumOfficeDetailed": {
+				"represented building types": ["MediumOfficeDetailed", "PrimarySchool", "SecondarySchool", "MidriseApartment"],
+				"load shape": {}},
+			"RetailStandalone": {
+				"represented building types": [
+					"RetailStandalone", "RetailStripmall", "QuickServiceRestaurant",
+					"FullServiceRestaurant", "Supermarket", "SmallOffice"],
+				"load shape": {}},
+			"Warehouse": {
+				"represented building types": ["Warehouse"],
+				"load shape": {}
+			}
+		},
+		"ventilation": {
+			"LargeHotel": {
+				"represented building types": ["LargeHotel", "Hospital"],
+				"load shape": {}},
+			"LargeOfficeDetailed": {
+				"represented building types": ["LargeOfficeDetailed", "OutpatientHealthcare", "SmallHotel"],
+				"load shape": {}},
+			"MediumOfficeDetailed": {
+				"represented building types": ["MediumOfficeDetailed", "PrimarySchool", "SecondarySchool", "MidriseApartment"],
+				"load shape": {}},
+			"RetailStandalone": {
+				"represented building types": [
+					"RetailStandalone", "RetailStripmall", "QuickServiceRestaurant",
+					"FullServiceRestaurant", "Supermarket", "SmallOffice"],
+				"load shape": {}},
+			"Warehouse": {
+				"represented building types": ["Warehouse"],
+				"load shape": {}
+			}
+		},
+		"pumps": {
+			"LargeHotel": {
+				"represented building types": ["LargeHotel", "Hospital"],
+				"load shape": {}},
+			"LargeOfficeDetailed": {
+				"represented building types": ["LargeOfficeDetailed", "OutpatientHealthcare", "SmallHotel"],
+				"load shape": {}},
+			"MediumOfficeDetailed": {
+				"represented building types": ["MediumOfficeDetailed", "PrimarySchool", "SecondarySchool", "MidriseApartment"],
+				"load shape": {}},
+			"RetailStandalone": {
+				"represented building types": [
+					"RetailStandalone", "RetailStripmall", "QuickServiceRestaurant",
+					"FullServiceRestaurant", "Supermarket", "SmallOffice"],
+				"load shape": {}},
+			"Warehouse": {
+				"represented building types": ["Warehouse"],
+				"load shape": {}
+			}
+		},	
+		"lighting": {
+			"MediumOfficeDetailed": {
+				"represented building types": "all",
+				"load shape": {}
+			}
+		},
+		"water heating": {
+			"MediumOfficeDetailed": {
+				"represented building types": "all",
+				"load shape": {}
+			}
+		},		
+		"refrigeration": {
+			"LargeHotel": {
+				"represented building types": "all",
+				"load shape": {}
+			}
+		},
+		"plug loads": {
+			"MediumOfficeDetailed": {
+				"represented building types": "all",
+				"load shape": {}
+			}
+		}
+	}
+}
