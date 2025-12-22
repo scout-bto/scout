@@ -96,7 +96,7 @@ class UserOptions(object):
                  pkg_env_sep, alt_ref_carb, detail_brkout, fugitive_emissions,
                  warnings, no_eff_capt, no_lnkd_stk, no_lnkd_op, elec_upgrade_costs,
                  low_volume_rate, state_appl_regs, bps, codes, incentive_levels,
-                 incentive_restrictions):
+                 incentive_restrictions, comstock_gap):
         # Options include site energy outputs, captured energy site-source
         # calculation method, alternate regions, time sensitive output metrics,
         # sector-level load shapes, and verbose mode that prints all warnings
@@ -131,6 +131,7 @@ class UserOptions(object):
         self.codes = codes
         self.incentive_levels = incentive_levels
         self.incentive_restrictions = incentive_restrictions
+        self.comstock_gap = comstock_gap
 
 
 class NullOpts(object):

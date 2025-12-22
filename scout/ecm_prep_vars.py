@@ -136,6 +136,7 @@ class UsefulVars(object):
         elec_infr_costs (dict): Electrical infrastructure costs to add when fuel switching equipment
             to electricity.
         alt_panel_names (list): Panel upgrade requirement info. to append to tech. names.
+        comstock_gap (dict): Uncovered ComStock fractions of energy use by com. bldg. and fuel.
     """
 
     def __init__(self, base_dir, handyfiles, opts):
@@ -1629,6 +1630,27 @@ class UsefulVars(object):
             "240V circuit": 1384  # BTB "typical" dif., central ASHP w/ and w/o new circuit
         }
         self.alt_panel_names = ["-no panel", "-manage"]
+        # If user wants to further segment data/reporting in a way that isolates the slice of
+        # commercial energy use that is uncovered by ComStock for subsequent mapping purposes,
+        # read in the data containing the fractions of that uncovered energy use by Scout/AEO
+        # building type; otherwise set variable to None
+        if opts.comstock_gap:
+            try:
+                comstock_gap = pd.read_csv(handyfiles.comstock_gap)
+            except ValueError:
+                raise ValueError(
+                    "Error reading in '" + handyfiles.comstock_gap)
+            # Read in the building types (expects Scout/AEO building types) and fuel types (expects
+            # Scout/AEO fuel types) that are covered in the gap fractions
+            bldg_types = comstock_gap[comstock_gap.columns[0]].unique()
+            fuel_types = comstock_gap.columns[-2:]
+            # Initialize final dict of gap model data, using df values to set keys
+            self.comstock_gap = {bldg: {fuel: {} for fuel in fuel_types} for bldg in bldg_types}
+            for index, row in comstock_gap.iterrows():
+                for fuel in fuel_types:
+                    self.comstock_gap[row["building type"]][fuel] = row[fuel]
+        else:
+            self.comstock_gap = None
 
     def import_state_data(self, handyfiles, state_vars, valid_regions, opts):
         """Import and further prepare sub-federal adoption driver data.
@@ -2191,6 +2213,7 @@ class UsefulInputFiles(object):
         self.low_volume_rate = fp.SUB_FED / "rates.csv"
         self.local_cost_adj = fp.CONVERT_DATA / "loc_cost_adj.csv"
         self.panel_shares = fp.INPUTS / 'panel_shares.csv'
+        self.comstock_gap = fp.CONVERT_DATA / "com_gap_fracs.csv"
 
     def set_decarb_grid_vars(self, opts: argparse.NameSpace):  # noqa: F821
         """Assign instance variables related to grid decarbonization which are dependent on the
