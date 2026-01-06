@@ -1,0 +1,149 @@
+{
+  "name": "(R) Best NG Furnace & AC",
+  "_description": "Highest performing gas furnace heating w/ central or window AC",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "secondary heating"
+  ],
+  "fuel_type": [
+    "natural gas",
+    "electricity"
+  ],
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "furnace (NG)",
+    "central AC",
+    "room AC",
+    "secondary heater"
+  ],
+  "htcl_tech_link": "ng furnace+cac&rac",
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "furnace (NG)": 0.99,
+    "central AC": 4.98,
+    "room AC": 4.6,
+    "secondary heater": 0.0
+  },
+  "energy_efficiency_units": {
+    "heating": "AFUE",
+    "cooling": "COP",
+    "secondary heating": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": "\"High\" value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "furnace (NG)": {
+      "new": 4087.0,
+      "existing": 4280.0
+    },
+    "central AC": {
+      "new": 7477.0,
+      "existing": 7804.0
+    },
+    "room AC": {
+      "new": 672.0,
+      "existing": 826.0
+    },
+    "secondary heater": {
+      "new": 100.0,
+      "existing": 100.0
+    }
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "High efficiency equipment for new (retail) and existing (total installed) contexts. Secondary heater costs based on rough assessment of online retail data.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": {
+    "furnace (NG)": 21.0,
+    "central AC": 18.0,
+    "room AC": 10.0,
+    "secondary heater": 10.0
+  },
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the typical range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": [
+        10,
+        27,
+        31
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "BA_Hot-Humid": {
+      "heating": 0.97,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Mixed-Humid": {
+      "heating": 0.96,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Very Cold": {
+      "heating": 0.45,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Subarctic": {
+      "heating": 0.2,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Cold": {
+      "heating": 0.91,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Hot-Dry": {
+      "heating": 0.91,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Mixed-Dry": {
+      "heating": 0.92,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    },
+    "BA_Marine": {
+      "heating": 0.6,
+      "cooling": 0.49,
+      "secondary heating": 1.0
+    }
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiples were determined as proportion of total homes that have both cooling and heating systems in each BA climate zone. Cooling multiple of 49% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via natural gas other than steam/hot water (7,845 homes).",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

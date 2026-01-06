@@ -1,0 +1,55 @@
+{
+  "name": "(R) Ref. Case Electric Other TS",
+  "_description": "Counterfactual residential other/unknown electricity use, no savings vs. reference case",
+  "measure_type": "add-on",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "other",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "electric other",
+  "htcl_tech_link": null,
+  "tech_switch_to": "same",
+  "energy_efficiency": 0.0,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": [
+      "Ref. case performance",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details"
+    ],
+    "source_data": null
+  },
+  "installed_cost": 0.0,
+  "cost_units": "2022$/ft^2 floor",
+  "installed_cost_source": {
+    "notes": [
+      "Ref. case cost (no additional cost)",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
+    ],
+    "source_data": null
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 10.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Generic 10 year lifetime used for unknown loads",
+    "source_data": null
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

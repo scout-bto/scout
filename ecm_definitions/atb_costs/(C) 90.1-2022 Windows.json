@@ -1,0 +1,131 @@
+{
+  "name": "(C) 90.1-2022 Windows",
+  "_description": "Commercial window assembly that meets the ASHRAE 90.1-2022 performance standard.",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": [
+    "assembly",
+    "education",
+    "food sales",
+    "food service",
+    "health care",
+    "lodging",
+    "large office",
+    "small office",
+    "mercantile/service",
+    "warehouse",
+    "other",
+    "unspecified"
+  ],
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": "all",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "windows conduction",
+    "windows solar"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "IECC_CZ1": {
+      "windows conduction": 2.0,
+      "windows solar": 0.23
+    },
+    "IECC_CZ2": {
+      "windows conduction": 2.2,
+      "windows solar": 0.25
+    },
+    "IECC_CZ3": {
+      "windows conduction": 2.4,
+      "windows solar": 0.25
+    },
+    "IECC_CZ4": {
+      "windows conduction": 2.8,
+      "windows solar": 0.36
+    },
+    "IECC_CZ5": {
+      "windows conduction": 2.8,
+      "windows solar": 0.38
+    },
+    "IECC_CZ6": {
+      "windows conduction": 2.9,
+      "windows solar": 0.38
+    },
+    "IECC_CZ7": {
+      "windows conduction": 3.4,
+      "windows solar": 0.4
+    },
+    "IECC_CZ8": {
+      "windows conduction": 3.8,
+      "windows solar": 0.4
+    }
+  },
+  "energy_efficiency_units": {
+    "windows conduction": "R value",
+    "windows solar": "SHGC"
+  },
+  "energy_efficiency_source": {
+    "notes": "Values for fixed vertical fenestration, based on assembly max. U",
+    "source_data": {
+      "title": "ANSI/ASHRAE/IES Standard 90.1-2022: Table 5.5:1 through Table 5.5:8 for fixed vertical fenestration",
+      "author": "ASHRAE",
+      "year": 2022,
+      "pages": [
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ],
+      "url": null
+    }
+  },
+  "installed_cost": 137.74,
+  "cost_units": "2022$/ft^2 glazing",
+  "installed_cost_source": {
+    "notes": "Assume baseline fenestration cost from Scout data",
+    "source_data": {
+      "title": "Scout Baseline Envelope Characteristics Database",
+      "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+      "year": 2023,
+      "pages": null,
+      "url": "https://github.com/trynthink/scout/blob/master/scout/supporting_data/convert_data/cpl_envelope_mels.json"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 25.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Assumes midpoint of lifetime for aluminum and wood window assemblies",
+    "source_data": {
+      "title": "Study of the Life Expectancy of Home Component",
+      "author": "National Association of Homebuilders",
+      "year": 2007,
+      "pages": 15,
+      "url": "http://stevesmallman.com/wp:content/uploads/2013/05/NAHB:Lifetimes.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "name": "(R) ESTAR HP Pt. FS (Other Fossil Furnace)",
+  "_description": "ENERGY STAR air source heat pump (w/ cold climates specs as applicable) w/ original fuel oil/propane furnace backup",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "secondary heating"
+  ],
+  "fuel_type": [
+    "distillate",
+    "other fuel",
+    "electricity"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": "furnace_other_fossil.csv",
+  "technology": [
+    "furnace (distillate)",
+    "furnace (kerosene)",
+    "furnace (LPG)",
+    "central AC",
+    "room AC",
+    "secondary heater (coal)",
+    "secondary heater (kerosene)",
+    "secondary heater (LPG)"
+  ],
+  "htcl_tech_link": "other fossil furnace+cac&rac",
+  "tech_switch_to": "ASHP",
+  "energy_efficiency": {
+    "cold climates": {
+      "heating": 2.79,
+      "cooling": 4.69,
+      "secondary heating": 0.0
+    },
+    "warm climates": {
+      "heating": 2.69,
+      "cooling": 4.69,
+      "secondary heating": 0.0
+    }
+  },
+  "energy_efficiency_units": {
+    "heating": "COP",
+    "cooling": "COP",
+    "secondary heating": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": [
+      "Split system ducted (see Tables 2 (warm climates) and 3 (cold climates) in EPA source)",
+      "conversion from original standard: COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
+      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)"
+    ],
+    "source_data": [
+      {
+        "title": "ENERGY STAR Program Requirements Product Specification for Central Air Conditioner and Heat Pump Equipment Version 6.1",
+        "author": "U.S. Environmental Protection Agency",
+        "year": 2022,
+        "pages": 4,
+        "url": "https://www.energystar.gov/sites/default/files/asset/document/ENERGY%20STAR%20Version%206.1%20Central%20Air%20Conditioner%20and%20Heat%20Pump%20Final%20Specification%20%28Rev.%20January%20%202022%29.pdf"
+      },
+      {
+        "title": "Draft PDS:01, MINHERS Addendum 71, SEER2/HSPF2 Conversions",
+        "author": "RESNET",
+        "year": 2022,
+        "pages": 2,
+        "url": "https://www.resnet.us/about/standards/minhers/draft:pds:01:minhers:addendum:71:seer2:hspf2:conversions/"
+      },
+      {
+        "title": "Residential Demand Module of the National Energy Modeling System: Model Documentation 2014",
+        "author": "U.S. Energy Information Administration",
+        "year": 2014,
+        "pages": 17,
+        "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      }
+    ]
+  },
+  "installed_cost": {
+    "new": 19213.0,
+    "existing": 15277.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": [
+      "Retail (new) and total installed (existing) cost for ENERGY STAR ASHPs in 2023",
+      "For new buildings, also add retail cost of typical oil furnace. For existing buildings, additional tank removal costs of 800 2014$ (1030 2023$) are applied for distillate and propane based on the 2015 EIA report, updating the cost from April 2014 to April 2022."
+    ],
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": true
+  },
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the ENERGY STAR range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 39,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "BA_Hot-Humid": {
+      "heating": 0.98,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Mixed-Humid": {
+      "heating": 0.95,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Very Cold": {
+      "heating": 0.53,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Subarctic": {
+      "heating": 0.11,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Cold": {
+      "heating": 0.83,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Hot-Dry": {
+      "heating": 0.93,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Mixed-Dry": {
+      "heating": 0.82,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    },
+    "BA_Marine": {
+      "heating": 0.58,
+      "cooling": 0.08,
+      "secondary heating": 1.0
+    }
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiples were determined as proportion of total homes with non-NG fossil-based heating that have both cooling and heating systems in each BA climate zone. Cooling multiple of 8% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via a heating energy source other than natural gas, electricity, or biomass AND heating is done via non:steam/hot water system (1,338 homes).",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

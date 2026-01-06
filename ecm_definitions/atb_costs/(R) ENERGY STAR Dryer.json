@@ -1,0 +1,70 @@
+{
+  "name": "(R) ENERGY STAR Dryer",
+  "_description": "ENERGY STAR dryer in 2024",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "drying",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": 3.93,
+  "energy_efficiency_units": "CEF",
+  "energy_efficiency_source": {
+    "notes": "ESTAR (2022) using D2 testing method.",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiency",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 97,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 580.0,
+    "existing": 710.0
+  },
+  "cost_units": "2022$/unit",
+  "installed_cost_source": {
+    "notes": "Retail (new) and total installed (existing) cost for ESTAR dryer in 2022.",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A: Clothes Dryer (Gas)",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 97,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 13.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Median of high average lifetime",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A: Clothes Dryer (Gas)",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 98,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Chioke Harris",
+    "organization": "NREL",
+    "email": "chioke.harris@nrel.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

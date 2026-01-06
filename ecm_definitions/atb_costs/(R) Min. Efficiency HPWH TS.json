@@ -1,0 +1,67 @@
+{
+  "name": "(R) Min. Efficiency HPWH TS",
+  "_description": "Minimum efficiency 240V electric storage heat pump water heater, switch from resistance",
+  "measure_type": "full service",
+  "market_entry_year": 2029,
+  "market_exit_year": null,
+  "min_eff_elec_flag": "yes",
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "water heating",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": "HPWH",
+  "energy_efficiency": 2.3,
+  "energy_efficiency_units": "UEF",
+  "energy_efficiency_source": {
+    "notes": "Based on electric storage water heater category requirements for 2029, assuming EIA typical capacity of 36 gallons",
+    "source_data": {
+      "title": "430.32 Energy and water conservation standards and their compliance dates",
+      "author": "U.S. Department of Energy",
+      "year": 2024,
+      "pages": null,
+      "url": "https://www.ecfr.gov/current/title-10/chapter-II/subchapter-D/part-430/subpart-C/section-430.32"
+    }
+  },
+  "installed_cost": {
+    "new": 2143.0,
+    "existing": 2643.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Buildings Technology Baseline using Min. performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": false
+  },
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetime for typical unit in 2022, rounded down from 15.1 years",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 65,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-08-28 12:21:12"
+  }
+}
