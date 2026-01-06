@@ -1,0 +1,144 @@
+{
+  "name": "(C) Ref. Case, Resist. Heat",
+  "_description": "Ref. case resistance-based heating integrated in packaged rooftop unit or electric boiler plus ventilation",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "ventilation"
+  ],
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "elec_boiler",
+    "electric_res-heat",
+    "elec_res-heater",
+    "pkg_terminal_AC-cool",
+    "rooftop_AC",
+    "scroll_chiller",
+    "reciprocating_chiller",
+    "centrifugal_chiller",
+    "screw_chiller",
+    "CAV_Vent",
+    "VAV_Vent"
+  ],
+  "htcl_tech_link": "resistance heat+rtac or chiller",
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "elec_boiler": 0.98,
+    "electric_res-heat": 1.0,
+    "elec_res-heater": 1.0,
+    "pkg_terminal_AC-cool": 4.3,
+    "rooftop_AC": 4.3,
+    "scroll_chiller": 4.6,
+    "reciprocating_chiller": 4.1,
+    "centrifugal_chiller": 11.3,
+    "screw_chiller": 4.4,
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0
+  },
+  "energy_efficiency_units": {
+    "heating": "BTU out/BTU in",
+    "cooling": "BTU out/BTU in",
+    "ventilation": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": "Typical value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "elec_boiler": {
+      "new": 22.0,
+      "existing": 22.6
+    },
+    "electric_res-heat": {
+      "new": 64.0,
+      "existing": 64.0
+    },
+    "scroll_chiller": {
+      "new": 74.34,
+      "existing": 81.28
+    },
+    "reciprocating_chiller": {
+      "new": 69.9,
+      "existing": 72.76
+    },
+    "centrifugal_chiller": {
+      "new": 52.68,
+      "existing": 53.36
+    },
+    "screw_chiller": {
+      "new": 76.5,
+      "existing": 78.65
+    },
+    "rooftop_AC": {
+      "new": 112.0,
+      "existing": 113.0
+    },
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0,
+    "pkg_terminal_AC-cool": {
+      "new": 112.0,
+      "existing": 113.0
+    },
+    "elec_res-heater": {
+      "new": 64.0,
+      "existing": 64.0
+    }
+  },
+  "cost_units": "2023$/kBtu/h heating",
+  "installed_cost_source": {
+    "notes": "Typical efficiency costs in 2023, normalized by capacity",
+    "source_data": null
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 18.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of typical commercial resistance heating lifetime",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": 115,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "elec_boiler": 1.0,
+    "electric_res-heat": 1.0,
+    "rooftop_AC": 0.3,
+    "scroll_chiller": 0.24,
+    "reciprocating_chiller": 0.24,
+    "centrifugal_chiller": 0.24,
+    "screw_chiller": 0.24,
+    "CAV_Vent": 0.25,
+    "VAV_Vent": 0.3,
+    "elec_res-heater": 1.0,
+    "pkg_terminal_AC-cool": 1.0
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Includes all resistance-based heating in commercial buildings. Cooling equipment multiples determined by square feet in which given cooling system (e.g., RTAC, chiller) is pared with given heating system for the measure. Ventilation multiples determined by square feet in which given ventilation system (VAV or CAV) is paired with given heating system for the measure.",
+    "source_data": {
+      "title": "CBECS 2018 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/commercial/data/2018/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

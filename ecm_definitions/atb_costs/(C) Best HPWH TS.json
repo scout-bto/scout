@@ -1,0 +1,70 @@
+{
+  "name": "(C) Best HPWH TS",
+  "_description": "Highest efficiency commercial heat pump water heater in 2022 ('Typical' in EIA data)",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": "water heating",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": "HPWH",
+  "energy_efficiency": 3.9,
+  "energy_efficiency_units": "BTU out/BTU in",
+  "energy_efficiency_source": {
+    "notes": "Typical (2022), 50 kW commercial HPWH",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 154,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 324.0,
+    "existing": 351.0
+  },
+  "cost_units": "2022$/kBtu/h water heating",
+  "installed_cost_source": {
+    "notes": "Retail (new) and total installed (existing) cost for High HPWH in 2022.",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 154,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average life of Typical 2022 commercial HPWH",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 154,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Aven Satre:Meloy",
+    "organization": "LBNL",
+    "email": "asatremeloy@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

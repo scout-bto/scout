@@ -1,0 +1,201 @@
+description: AEO Reference case with additional drivers to raise demand for fossil fuels and early retrofitting.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/atb_costs
+  ecm_files: [
+    "(R) Ref. Case Other Fossil Furnace & AC",
+    "(R) Ref. Case Other Fossil Boiler & AC",
+    "(R) Ref. Case NG Furnace & AC",
+    "(R) Ref. Case NG Boiler & AC",
+    "(R) Ref. Case Resist. Heat & AC",
+    "(R) Ref. Case Bio or No Heat & AC",
+    "(R) Ref. Case ASHP",
+    "(R) Ref. Case NGHP",
+    "(R) Ref. Case GSHP",
+    "(R) Best NG Furnace & AC",
+    "(R) Ref. Case Other Fossil Heat, No Cooling",
+    "(R) Ref. Case NG Heat, No Cooling",
+    "(R) Best NG Heat, No Cooling",
+    "(R) Ref. Case Resist. Heat, No Cooling",
+    "(R) Min. Efficiency ASHP FS (Other Fossil Furnace)",
+    "(R) Ref. Case Elec. Boiler FS (Other Fossil Boiler)",
+    "(R) Min. Efficiency ASHP FS (NG Furnace)",
+    "(R) Ref. Case Elec. Boiler FS (NG Boiler)",
+    "(R) Min. Efficiency ASHP FS (Other Fossil Heat, No Cool)",
+    "(R) Min. Efficiency ASHP FS, (NG Heat, No Cool)",
+    "(R) ESTAR HP Pt. FS (Other Fossil Furnace)",
+    "(R) ESTAR HP Pt. FS (Other Fossil Heat, No Cool)",
+    "(R) ESTAR HP Pt. FS (NG Furnace)",
+    "(R) ESTAR HP Pt. FS (NG Heat, No Cool)",
+    "(R) ESTAR HP FS (Other Fossil Furnace)",
+    "(R) ESTAR HP FS (Other Fossil Heat, No Cool)",
+    "(R) ESTAR HP FS (NG Furnace)",
+    "(R) ESTAR HP FS (NG Heat, No Cool)",
+    "(R) ESTAR GSHP (Other Fossil Furnace)",
+    "(R) ESTAR GSHP (NG Furnace)",
+    "(R) ESTAR HP TS (Resist.)",
+    "(R) ESTAR HP TS (Resist. Heat, No Cool)",
+    "(R) Best HP Pt. FS (Other Fossil Furnace)",
+    "(R) Best HP Pt. FS (Other Fossil Boiler)",
+    "(R) Best HP Pt. FS (Other Fossil Heat, No Cool)",
+    "(R) Best HP Pt. FS (NG Furnace)",
+    "(R) Best HP Pt. FS (NG Boiler)",
+    "(R) Best HP Pt. FS (NG Heat, No Cool)",
+    "(R) Best HP FS (Other Fossil Furnace)",
+    "(R) Best HP FS (Other Fossil Boiler)",
+    "(R) Best HP FS (Other Fossil Heat, No Cool)",
+    "(R) Best HP FS (NG Furnace)",
+    "(R) Best HP FS (NG Boiler)",
+    "(R) Best HP FS (NG Heat, No Cool)",
+    "(R) Best HP TS (Resist.)",
+    "(R) Best HP TS (Resist. Heat, No Cool)",
+    "(C) Ref. Case Other Fossil Furnace & AC",
+    "(C) Ref. Case NG Furnace & AC",
+    "(C) Ref. Case RTU, Other Fossil Heat",
+    "(C) Ref. Case RTU, NG Heat",
+    "(C) Ref. Case, Resist. Heat",
+    "(C) Ref. Case Other Fossil Boiler & Chiller",
+    "(C) Ref. Case NG Boiler & Chiller",
+    "(C) Best NG Boiler & Chiller",
+    "(C) Ref. Case ASHP (RTU)",
+    "(C) Ref. Case GSHP",
+    "(C) Min. Efficiency HP FS (Other Fossil Furnace)",
+    "(C) Min. Efficiency HP FS (NG Furnace)",
+    "(C) Min. Efficiency HP FS (RTU, Other Fossil Heat)",
+    "(C) Min. Efficiency HP FS (RTU, NG Heat)",
+    "(C) ESTAR HP Pt. FS (Other Fossil Furnace)",
+    "(C) ESTAR HP Pt. FS (NG Furnace)",
+    "(C) ESTAR HP FS (Other Fossil Furnace)",
+    "(C) ESTAR HP FS (NG Furnace)",
+    "(C) ESTAR HP Pt. FS (RTU, Other Fossil Heat)",
+    "(C) ESTAR HP Pt. FS (RTU, NG Heat)",
+    "(C) ESTAR HP FS (RTU, Other Fossil Heat)",
+    "(C) ESTAR HP FS (RTU, NG Heat)",
+    "(C) ESTAR HP TS (Resist. Heat)",
+    "(C) Best HP Pt. FS (Other Fossil Furnace & AC)",
+    "(C) Best HP Pt. FS (NG Furnace & AC)",
+    "(C) Best HP FS (Other Fossil Furnace & AC)",
+    "(C) Best HP FS (NG Furnace & AC)",
+    "(C) Best HP Pt. FS (RTU, Other Fossil Heat)",
+    "(C) Best HP Pt. FS (RTU, NG Heat)",
+    "(C) Best HP FS (RTU, Other Fossil Heat)",
+    "(C) Best HP FS (RTU, NG Heat)",
+    "(C) Best HP Pt. FS (Other Fossil Boiler)",
+    "(C) Best HP Pt. FS (NG Boiler)",
+    "(C) Best HP FS (Other Fossil Boiler)",
+    "(C) Best HP FS (NG Boiler)",
+    "(R) Ref. Case Gas WH",
+    "(R) Best Gas WH",
+    "(R) Ref. Case Resist. WH",
+    "(R) Ref. Case Resist. WH FS",
+    "(R) Min. Efficiency HPWH FS",
+    "(R) Min. Efficiency HPWH TS",
+    "(R) ESTAR 120V HPWH FS",
+    "(R) ESTAR 240V HPWH FS",
+    "(R) ESTAR HPWH TS",
+    "(R) Best HPWH FS",
+    "(R) Best HPWH TS",
+    "(R) Ref. Case Gas Range",
+    "(R) Ref. Case Electric Range",
+    "(R) Induction Range FS",
+    "(R) Ref. Case Gas Dryer",
+    "(R) Ref. Case Electric Dryer",
+    "(R) Ref. Case Electric Dryer FS",
+    "(R) ENERGY STAR Dryer",
+    "(R) Best 120V HP Dryer FS",
+    "(R) Best 120V HP Dryer TS",
+    "(R) Ref. Case Clothes Washer",
+    "(R) ENERGY STAR Clothes Washer",
+    "(R) Best Clothes Washer",
+    "(R) Ref. Case Dishwasher",
+    "(R) ENERGY STAR Dishwasher",
+    "(R) Best Dishwasher",
+    "(R) Ref. Case Refrigerator",
+    "(R) ENERGY STAR Refrigerator",
+    "(R) Best Refrigerator",
+    "(R) Ref. Case Electronics",
+    "(R) ENERGY STAR Electronics",
+    "(R) Best Electronics",
+    "(R) Ref. Case Fans and Pumps",
+    "(R) Ref. Case Pool Pumps",
+    "(R) ENERGY STAR Pool Pumps",
+    "(R) Ref. Case Misc. Electric Appliances",
+    "(R) Ref. Case Electric Other",
+    "(R) Ref. Case Fossil Other",
+    "(R) Ref. Case Lighting",
+    "(R) Best Residential LED Lighting",
+    "(C) Ref. Case Gas WH",
+    "(C) Ref. Case Resist. WH",
+    "(C) Ref. Case Resist. WH FS",
+    "(C) ESTAR HPWH FS",
+    "(C) ESTAR HPWH TS",
+    "(C) Best HPWH FS",
+    "(C) Best HPWH TS",
+    "(C) Ref. Case Gas Range",
+    "(C) Ref. Case Electric Range",
+    "(C) Ref. Case Electric Range FS",
+    "(C) Induction Range FS",
+    "(C) Ref. Case Lighting",
+    "(C) 90.1 Lighting",
+    "(C) Ref. Case Plug Loads",
+    "(C) 90.1 Plug Loads",
+    "(C) Ref. Case Refrigeration",
+    "(C) Best Refrigeration",
+    "(C) Ref. Case Misc. Electric Appliances",
+    "(C) Ref. Case Electric Other",
+    "(C) Ref. Case Fossil Other",
+    "(R) IECC 2021 Walls & Air Sealing",
+    "(R) IECC 2021 Roofs",
+    "(R) ENERGY STAR Windows",
+    "(C) 90.1-2022 Walls & Air Sealing",
+    "(C) 90.1-2022 Windows"
+  ]
+  ecm_packages: [
+    "(R) Ref. NG Furnace & AC & Env.",
+    "(R) ES HP Pt. FS (Oth. Fs. Frn.) & Env.",
+    "(R) ES HP Pt. FS (NG Frn.) & Env.",
+    "(R) ES HP FS (Oth. Fs. Frn.) & Env.",
+    "(R) ES HP FS (NG Frn.) & Env.",
+    "(R) ES GSHP (Oth. Fs. Frn.) & Env.",
+    "(R) ES GSHP (NG Frn.) & Env.",
+    "(R) ES HP TS (Resist.) & Env.",
+    "(C) ES HP FS (RTU, NG Ht.) & Env.",
+    "(R) Ref. NG Furnace & AC & Env.+",
+    "(R) Bst. HP Pt. FS (Oth. Fs. Frn.) & Env.+",
+    "(R) Bst. HP Pt. FS (NG Frn.) & Env.+",
+    "(R) Bst. HP FS (Oth. Fs. Frn.) & Env.+",
+    "(R) Bst. HP FS (NG Frn.) & Env.+",
+    "(R) Bst. HP FS (NG Boiler) & Env.+",
+    "(R) Bst. HP TS (Resist.) & Env.+",
+    "(C) Bst. HP FS (RTU, NG Ht.) & Env.+",
+    "(C) Bst. HP FS (NG Boiler) & Env.+"]
+  alt_regions: State
+  site_energy: true
+  rp_persist: true
+  no_scnd_lgt: true
+  pkg_env_costs: include HVAC
+  adopt_scn_restrict: Max adoption potential
+  retrofits:
+    retrofit_type: null
+    retrofit_multiplier: null
+    retrofit_mult_year: null
+  elec_upgrade_costs: all
+  no_lnkd_costs:
+    no_lnkd_stk_costs: in_adopt_only
+    no_lnkd_op_costs: true
+  sub_fed_policy:
+    low_volume_rate: null
+    state_appl_regs: null
+    bps: null
+    codes: null
+  incentives:
+    incentive_levels: reference
+    incentive_restrictions: no federal electric
+  price_sensitivity: highelec_lowfossil
+  split_fuel: true 
+  detail_brkout: [regions, fuel types]
+  comstock_gap: true
+
+run:
+  high_res_comp: true
+  report_stk: true
+  trim_results: every_other_yr

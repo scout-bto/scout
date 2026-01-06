@@ -1,0 +1,79 @@
+{
+  "name": "(R) Induction Range FS",
+  "_description": "Natural gas residential cooking technology to be switched to electricity",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "cooking",
+  "fuel_type": "natural gas",
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": "induction",
+  "energy_efficiency": 0.86,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": "Compare overall IAEC (kBtu/y) in 2022 of typical natural gas vs. high electric cooking",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencie",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        90,
+        95
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 900.0,
+    "existing": 1050.0
+  },
+  "cost_units": "2022$/unit",
+  "installed_cost_source": {
+    "notes": [
+      "Based on cost of high electric ranges",
+      "range pricing is used (instead of cooktop) because 89% of households have a range (see second EIA source)."
+    ],
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 95,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": true
+  },
+  "product_lifetime": 17.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetime for electric ranges in 2022",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 94,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

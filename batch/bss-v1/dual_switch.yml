@@ -1,0 +1,117 @@
+description: AEO Reference case plus a high degree of switching to dual fuel heating equipment and minimum efficiency electric equipment for other end uses.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/atb_costs
+  ecm_files: [
+    "(R) Ref. Case Other Fossil Furnace & AC",
+    "(R) Ref. Case Other Fossil Boiler & AC",
+    "(R) Ref. Case NG Furnace & AC",
+    "(R) Ref. Case NG Boiler & AC",
+    "(R) Ref. Case Resist. Heat & AC",
+    "(R) Ref. Case Bio or No Heat & AC",
+    "(R) Ref. Case ASHP",
+    "(R) Ref. Case NGHP",
+    "(R) Ref. Case GSHP",
+    "(R) Ref. Case Other Fossil Heat, No Cooling",
+    "(R) Ref. Case NG Heat, No Cooling",
+    "(R) Ref. Case Resist. Heat, No Cooling",
+    "(R) Ref. Case Resist. Heat & AC (TS)",
+    "(R) Ref. Case Resist. Heat, No Cooling (TS)",
+    "(R) ESTAR HP Pt. FS (Other Fossil Furnace)",
+    "(R) ESTAR HP Pt. FS (Other Fossil Heat, No Cool)",
+    "(R) ESTAR HP Pt. FS (NG Furnace)",
+    "(R) ESTAR HP Pt. FS (NG Heat, No Cool)",
+    "(R) Best HP Pt. FS (Other Fossil Furnace)",
+    "(R) Best HP Pt. FS (Other Fossil Boiler)",
+    "(R) Best HP Pt. FS (Other Fossil Heat, No Cool)",
+    "(R) Best HP Pt. FS (NG Furnace)",
+    "(R) Best HP Pt. FS (NG Boiler)",
+    "(R) Best HP Pt. FS (NG Heat, No Cool)",
+    "(C) Ref. Case Other Fossil Furnace & AC",
+    "(C) Ref. Case NG Furnace & AC",
+    "(C) Ref. Case RTU, Other Fossil Heat",
+    "(C) Ref. Case RTU, NG Heat",
+    "(C) Ref. Case, Resist. Heat",
+    "(C) Ref. Case Other Fossil Boiler & Chiller",
+    "(C) Ref. Case NG Boiler & Chiller",
+    "(C) Ref. Case ASHP (RTU)",
+    "(C) Ref. Case GSHP",
+    "(C) Ref. Case, Resist. Heat TS",
+    "(C) ESTAR HP Pt. FS (Other Fossil Furnace)",
+    "(C) ESTAR HP Pt. FS (NG Furnace)",
+    "(C) ESTAR HP Pt. FS (RTU, Other Fossil Heat)",
+    "(C) ESTAR HP Pt. FS (RTU, NG Heat)",
+    "(C) Best HP Pt. FS (Other Fossil Furnace & AC)",
+    "(C) Best HP Pt. FS (NG Furnace & AC)",
+    "(C) Best HP Pt. FS (RTU, Other Fossil Heat)",
+    "(C) Best HP Pt. FS (RTU, NG Heat)",
+    "(C) Best HP Pt. FS (Other Fossil Boiler)",
+    "(C) Best HP Pt. FS (NG Boiler)",
+    "(R) Ref. Case Gas WH",
+    "(R) Ref. Case Resist. WH",
+    "(R) Min. Efficiency HPWH FS",
+    "(R) Ref. Case Resist. WH TS",
+    "(R) Ref. Case Gas Range",
+    "(R) Ref. Case Electric Range",
+    "(R) Ref. Case Electric Range FS",
+    "(R) Ref. Case Electric Range TS",
+    "(R) Ref. Case Gas Dryer",
+    "(R) Ref. Case Electric Dryer",
+    "(R) Ref. Case Electric Dryer FS",
+    "(R) Ref. Case Electric Dryer TS",
+    "(R) Ref. Case Clothes Washer",
+    "(R) Ref. Case Dishwasher",
+    "(R) Ref. Case Refrigerator",
+    "(R) Ref. Case Electronics",
+    "(R) Ref. Case Fans and Pumps",
+    "(R) Ref. Case Pool Pumps",
+    "(R) Ref. Case Misc. Electric Appliances",
+    "(R) Ref. Case Electric Other",
+    "(R) Ref. Case Fossil Other",
+    "(R) Ref. Case Lighting",
+    "(C) Ref. Case Gas WH",
+    "(C) Ref. Case Resist. WH",
+    "(C) Ref. Case Resist. WH FS",
+    "(C) Ref. Case Resist. WH TS",
+    "(C) Ref. Case Gas Range",
+    "(C) Ref. Case Electric Range",
+    "(C) Ref. Case Electric Range FS",
+    "(C) Ref. Case Electric Range TS",
+    "(C) Ref. Case Lighting",
+    "(C) Ref. Case Plug Loads",
+    "(C) Ref. Case Refrigeration",
+    "(C) Ref. Case Misc. Electric Appliances",
+    "(C) Ref. Case Electric Other",
+    "(C) Ref. Case Fossil Other",
+    "(R) Ref. Case Fossil Other FS",
+    "(C) Ref. Case Fossil Other FS",
+    "(C) Ref. Case Electric Other TS",
+    "(R) Ref. Case Electric Other TS"
+    ]
+  alt_regions: State
+  site_energy: true
+  rp_persist: true
+  no_scnd_lgt: true
+  adopt_scn_restrict: Max adoption potential
+  retrofits:
+    retrofit_type: null
+    retrofit_multiplier: null
+    retrofit_mult_year: null
+  elec_upgrade_costs: shares
+  sub_fed_policy:
+    low_volume_rate: null
+    state_appl_regs: null
+    bps: null
+    codes: null
+  incentives:
+    incentive_levels: aeo
+    incentive_restrictions: null
+  price_sensitivity: null
+  split_fuel: true 
+  detail_brkout: [regions, fuel types]
+  exog_hp_rate_scenario: bss-brk
+  comstock_gap: true
+
+run:
+  high_res_comp: true
+  report_stk: true
+  trim_results: every_other_yr

@@ -1,0 +1,130 @@
+{
+  "name": "(R) ENERGY STAR Electronics",
+  "_description": "ENERGY STAR TVs, desktop and laptop PCs, monitors",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "TVs",
+    "computers"
+  ],
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "TV",
+    "desktop PC",
+    "laptop PC",
+    "monitors"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "TV": 124.0,
+    "desktop PC": 56.0,
+    "laptop PC": 21.0,
+    "monitors": 44.0
+  },
+  "energy_efficiency_units": "kWh/yr",
+  "energy_efficiency_source": {
+    "notes": [
+      "Combination of FEMP and ENERGY STAR product finder sources",
+      "FEMP sources use ENERGY STAR column in performance and model assumptions for table",
+      "ENERGY STAR product finder data chosen for least efficient certified product in search (set top boxes w/single:room configuration)"
+    ],
+    "source_data": [
+      {
+        "title": "Purchasing Energy:Efficient Televisions",
+        "author": "U.S. Federal Energy Management Program",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.energy.gov/eere/femp/purchasing:energy:efficient:televisions"
+      },
+      {
+        "title": "Purchasing Energy:Efficient Computers",
+        "author": "U.S. Federal Energy Management Program",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.energy.gov/eere/femp/purchasing:energy:efficient:computers"
+      },
+      {
+        "title": "Purchasing Energy:Efficient Displays and Monitors",
+        "author": "U.S. Federal Energy Management Program",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.energy.gov/eere/femp/purchasing:energy:efficient:displays:and:monitors"
+      }
+    ]
+  },
+  "installed_cost": {
+    "TV": 600.0,
+    "desktop PC": 516.0,
+    "laptop PC": 399.0,
+    "monitors": 150.0
+  },
+  "cost_units": "2022$/unit",
+  "installed_cost_source": {
+    "notes": [
+      "TVs/PCs based on Amazon searches of lowest:cost ENERGY STAR products (with at least 8 GB RAM for PCs",
+      "42:inch screen for TVs)",
+      "monitors based on Scout baseline data 2023 cost"
+    ],
+    "source_data": [
+      {
+        "title": "Amazon",
+        "author": "Amazon",
+        "year": 2023,
+        "pages": null,
+        "url": "https://www.amazon.com/s?i=electronics&bbn=172659&rh=n%3A172659%2Cp_n_special_merchandising_browse:bin%3A544495011%2Cp_n_size_browse:bin%3A3578042011&s=price:asc:rank&dc&qid=1684886443&rnid=1232878011&ref=sr_nr_p_n_size_browse:bin_3&ds=v1%3AgU0wBqf6hTFHBl5Od12qiEgaWz7fvegpPDvFeJMJM74"
+      },
+      {
+        "title": "Amazon",
+        "author": "Amazon",
+        "year": 2023,
+        "pages": null,
+        "url": "https://www.amazon.com/s?i=computers&bbn=565098&rh=n%3A565098%2Cp_n_operating_system_browse:bin%3A23724790011%7C23724797011%2Cp_n_feature_twenty:three_browse:bin%3A13580790011%7C7817224011%2Cp_n_special_merchandising_browse:bin%3A544495011%2Cp_6%3AATVPDKIKX0DER&s=price:asc:rank&dc&qid=1684885873&rnid=303116011&ref=sr_st_price:asc:rank&ds=v1%3Ag0SQI%2FVNj8h2aM6%2B2R6av1JlB3%2BGvys1s5Z8wiRj0i0"
+      },
+      {
+        "title": "Amazon",
+        "author": "Amazon",
+        "year": 2023,
+        "pages": null,
+        "url": "https://www.amazon.com/s?i=computers&bbn=565108&rh=n%3A565108%2Cp_n_operating_system_browse:bin%3A23724790011%7C23724796011%7C23724797011%2Cp_n_special_merchandising_browse:bin%3A544495011%2Cp_6%3AATVPDKIKX0DER%2Cp_n_feature_thirty:three_browse:bin%3A23720418011%7C23720419011&s=price:asc:rank&dc&qid=1684885777&rnid=23720416011&ref=sr_nr_p_n_feature_thirty:three_browse:bin_2&ds=v1%3Anu71b1CyLW%2B%2BxUQPYmVED0hnb59fwU8WklHXALbhuRw"
+      }
+    ]
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": {
+    "TV": 8.0,
+    "desktop PC": 5.0,
+    "laptop PC": 6.0,
+    "monitors": 7.0
+  },
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Assume same lifetime as typical products in Scout cost, performance, and lifetime database",
+    "source_data": {
+      "title": "Scout baseline cost, performance, and lifetime data",
+      "author": "U.S. Department of Energy Building Technologies Office (BTO)",
+      "year": 2024,
+      "pages": null,
+      "url": "https://github.com/trynthink/scout/blob/master/scout/supporting_data/stock_energy_tech_data/cpl_res_com_cz.gz"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Xinwei Zhuang",
+    "organization": "LBNL",
+    "email": "xinweizhuang@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}
