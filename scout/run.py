@@ -991,7 +991,7 @@ class Engine(object):
                                      x in fuel_out_break_conv_map.keys()]:
                             fuel_conv = fuel_out_break_conv_map[fuel]
                             # Loop years and add to the denominator in the conversion data
-                            for yr in brkout[reg][bldg][eu][fuel].keys():                  
+                            for yr in brkout[reg][bldg][eu][fuel].keys():
                                 conv_fracs["total"][reg][bldg_conv][fuel_conv][eu_conv][
                                     vint_conv][yr]["all"] += brkout[reg][bldg][eu][fuel][yr]
         return conv_fracs
