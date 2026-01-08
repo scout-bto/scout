@@ -5296,7 +5296,11 @@ class Measure(object):
         return key_out
 
     def finalize_gap_wts(self):
-        """Finalize fractions of measure msegs not covered by ComStock load shapes."""
+        """Finalize fractions of measure msegs not covered by ComStock load shapes.
+
+        Returns:
+            Normalized gap weights (fraction of total energy that is uncovered, by building type).
+        """
         # Initialize final fraction dict
         gap_wts_fin = {}
         # Loop through all building types in the data
