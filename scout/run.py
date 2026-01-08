@@ -927,6 +927,23 @@ class Engine(object):
                 del orig_dict[k]
         return orig_dict
 
+    def finalize_gap_wts(self, gap_wts_orig):
+        """Finalize fractions of code/BPS measure msegs not covered by ComStock load shapes."""
+        # Initialize final fraction dict
+        gap_wts_fin = {}
+        # Loop through all building types in the data
+        for bd in gap_wts_orig.keys():
+            # If values are all zero (indicating measure doesn't apply) move to next
+            if all([x == 0 for x in gap_wts_orig[bd]["total"].values()]):
+                continue
+            # Divide gap portion of mseg by total mseg energy
+            else:
+                gap_wts_fin[bd] = {
+                    yr: gap_wts_orig[bd]["gap"][yr] / gap_wts_orig[bd]["total"][yr]
+                    if gap_wts_orig[bd]["total"][yr] != 0 else 0
+                    for yr in self.handyvars.aeo_years}
+
+        return gap_wts_fin
     def finalize_conv_fracs(self, conv_fracs):
         for (k, i) in conv_fracs.items():
             # Check that terminal nodes (broken out by year) have been reached, if not go further
