@@ -944,7 +944,68 @@ class Engine(object):
                     for yr in self.handyvars.aeo_years}
 
         return gap_wts_fin
+
+    def finalize_conv_denoms(self, adopt_scheme, conv_fracs):
+        """Find totals of all energy that could be converted to new electric tech by segment.
+
+        Args:
+            adopt_scheme (string): Assumed consumer adoption scenario.
+            conv_fracs (dict): Converted units information that excludes total potential number
+                of units that could be converted.
+
+        Returns:
+            Converted units dict completed with information about total potential number of
+            units that could be converted, in addition to the number that was converted, which
+            was updated within the previous functions.
+        """
+        # Map between measure output breakouts and the breakouts used in conversions
+        # End uses: in conversions names are lower case; 'heating' drops '(Equip.)' from breakouts
+        eu_out_break_conv_map = {x: x.lower() if x != "Heating (Equip.)" else "heating"
+                                 for x in self.handyvars.out_break_enduses}
+        # Buildings: map into higher-level residential and commercial
+        res_bldg_types = ["Single Family", "Multi Family", "Manufactured", "Residential"]
+        bldg_out_break_conv_map = {
+            x: ("residential" if any([y in x for y in res_bldg_types]) else "commercial") for
+            x in self.handyvars.out_break_bldgtypes}
+        # Fuels: take as-is but lower case
+        fuel_out_break_conv_map = {x: x.lower() for x in self.handyvars.out_break_fuels}
+
+        # Loop across all measures and sum all possible energy that could be converted to another
+        # technology, by region, bulding type, fuel type, end use and building vintage
+        for m in self.measures:
+            # Pull fully broken out baseline energy data (post-competition) for each measure
+            brkout = m.markets[adopt_scheme]["competed"]["mseg_out_break"]["stock"]["baseline"]
+            # Loop regions
+            for reg in brkout.keys():
+                # Loop building types and determine vintage from building type name (always includes
+                # '(New)' or '(Existing)')
+                for bldg in brkout[reg].keys():
+                    bldg_conv = bldg_out_break_conv_map[bldg]
+                    vint_conv = ["new" if "New" in bldg else "existing"][0]
+                    # Loop end uses
+                    for eu in [x[0] for x in eu_out_break_conv_map.items() if
+                               x[1] in self.handyvars.conversion_eus]:
+                        eu_conv = eu_out_break_conv_map[eu]
+                        # Loop fuels
+                        for fuel in [x for x in brkout[reg][bldg][eu].keys() if
+                                     x in fuel_out_break_conv_map.keys()]:
+                            fuel_conv = fuel_out_break_conv_map[fuel]
+                            # Loop years and add to the denominator in the conversion data
+                            for yr in brkout[reg][bldg][eu][fuel].keys():                  
+                                conv_fracs["total"][reg][bldg_conv][fuel_conv][eu_conv][
+                                    vint_conv][yr]["all"] += brkout[reg][bldg][eu][fuel][yr]
+        return conv_fracs
+
     def finalize_conv_fracs(self, conv_fracs):
+        """Finalize fractions of all energy that was converted to new electric tech by segment.
+
+        Args:
+            conv_fracs: Unnormalized data on number of actual and potential conversions of base
+                tech to new electric tech by segment.
+
+        Returns:
+            Fractions of base tech converted to new electric tech by segment.
+        """
         for (k, i) in conv_fracs.items():
             # Check that terminal nodes (broken out by year) have been reached, if not go further
             if isinstance(i, dict) and k not in self.handyvars.aeo_years:
@@ -4808,8 +4869,10 @@ class Engine(object):
         if self.opts.write_elec_conv_fracs and adopt_scheme == "Max adoption potential" and any([
                 x in mseg_key for x in self.handyvars.conversion_eus]):
             # Determine whether current measure converts baseline equipment fuel to electricity
-            # and/or otherwise changes tech type (e.g., electric resistance to HPs)
-            conversion = (measure.fuel_switch_to == "electricity" or (
+            # and/or otherwise changes tech type (e.g., electric resistance to HPs). Note:
+            # technically this would register switch away from electric fuel as well, were that
+            # specified
+            conversion = (measure.fuel_switch_to is not None or (
                 measure.tech_switch_to not in [None, "NA", "same"]))
             # Find and set region, fuel, end use, and vintage for current mseg
             key_list = list(literal_eval(mseg_key))
@@ -4829,13 +4892,14 @@ class Engine(object):
                     bldg_type = "commercial"
                 # Update conversion numbers for total and competed stock
                 for c_typ in ["total", "competed"]:
-                    # Add to the total conversion-eligible equipment numbers
-                    self.handyvars.conversion_fracs[c_typ][reg][bldg_type][base_fuel_out][eu][vint][
-                        yr]["all"] += adj["stock"][c_typ]["all"][yr]
                     # If applicable, add to the total converted equipment numbers
                     if conversion:
                         self.handyvars.conversion_fracs[c_typ][reg][bldg_type][base_fuel_out][eu][
                             vint][yr]["converted"] += adj["stock"][c_typ]["measure"][yr]
+                    # For competed, add to the total conversion-eligible equipment numbers
+                    if c_typ == "competed":
+                        self.handyvars.conversion_fracs[c_typ][reg][bldg_type][base_fuel_out][
+                            eu][vint][yr]["all"] += adj["stock"][c_typ]["all"][yr]
 
     def finalize_outputs(
             self, adopt_scheme, trim_out, trim_yrs, report_stk_units, report_stk_costs):
@@ -6593,7 +6657,7 @@ class Engine(object):
                             adopt_scheme == "Max adoption potential" and any([
                                 x in self.handyvars.out_break_enduses[eu]
                                 for x in self.handyvars.conversion_eus]):
-                            for yr in [a_y for a_y in apply_yrs if a_y in focus_yrs]:
+                            for yr in apply_yrs:
                                 # Set end use and fuel type
                                 eu_in = self.handyvars.out_break_enduses[eu]
                                 # Manage cases where multiple detailed end uses match the
@@ -6618,29 +6682,10 @@ class Engine(object):
                                     bldg_type = "residential"
                                 else:
                                     bldg_type = "commercial"
-                                # Add to reported conversion numbers
-                                for c_typ in ["total", "competed"]:
-                                    # Add to the numerator (converted equip. numbers)
-                                    self.handyvars.conversion_fracs[c_typ][reg_in][bldg_type][
-                                        ft_out][eu_in][vint_in][yr]["converted"] += \
-                                        convert_fossil[yr]
-                                    # If totals are zero (indicating the segment has not yet
-                                    # already been assessed), add to denominator as appropriate
-                                    if self.handyvars.conversion_fracs[c_typ][reg_in][
-                                            bldg_type][ft_out][eu_in][vint_in][yr]["all"] == 0:
-                                        # When calculating portion of total stock that converted,
-                                        # use the total stock in the baseline as denominator
-                                        if c_typ == "total":
-                                            self.handyvars.conversion_fracs[c_typ][reg_in][
-                                                bldg_type][ft_out][eu_in][vint_in][yr]["all"] += \
-                                                brk_dat_base[reg][bldg][eu][fossil_fuel][yr]
-                                        # When calculating portion of competed stock that converted,
-                                        # use the stock that was eligible for conversion in a given
-                                        # year as denominator
-                                        else:
-                                            self.handyvars.conversion_fracs[c_typ][reg_in][
-                                                bldg_type][ft_out][eu_in][vint_in][yr]["all"] += \
-                                                elig_convert[yr]
+                                # Add to reported total conversion numbers
+                                self.handyvars.conversion_fracs["total"][reg_in][bldg_type][
+                                    ft_out][eu_in][vint_in][yr]["converted"] += convert_fossil[yr]
+
                         # Record conversions across measure variables. Only record stock conversions
                         # for the heating end use, which is considered a default "anchor" use to
                         # avoid issues interpreting stock totals for these measures when they apply
@@ -7814,6 +7859,9 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                   end="", flush=True)
             a_run.compete_measures(adopt_scheme, htcl_totals, opts)
             print("Competition complete")
+        # Finalize potential converted energy of all measures in analysis
+        if a_run.handyvars.conversion_fracs and adopt_scheme == "Max adoption potential":
+            a_run.finalize_conv_denoms(adopt_scheme, a_run.handyvars.conversion_fracs)
         # Calculate each measure's competed measure savings and metrics
         # using updated competed markets, and print progress update to user
         print("Calculating competed '" + adopt_scheme +
