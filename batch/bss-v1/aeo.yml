@@ -1,4 +1,4 @@
-description: AEO Reference case.
+description: AEO 2025 Reference case.
 ecm_prep:
   ecm_directory: ../../ecm_definitions/atb_costs
   ecm_files: [
@@ -75,4 +75,4 @@ ecm_prep:
 run:
   high_res_comp: true
   report_stk: true
-  trim_results: every_other_yr
+  trim_vars: true

@@ -1,4 +1,4 @@
-description: Accelerated adoption of energy efficiency and fuel switching.
+description: AEO Reference case plus aggressive state-level measures to drive efficiency and fuel switching.
 ecm_prep:
   ecm_directory: ../../ecm_definitions/atb_costs
   ecm_files: [
@@ -199,4 +199,8 @@ ecm_prep:
 run:
   high_res_comp: true
   report_stk: true
-  trim_results: every_other_yr
+  trim_vars: true
+  report_custom_yrs: [
+    2024, 2026, 2028, 2030,
+    2032, 2034, 2036, 2038, 2040,
+    2042, 2044, 2046, 2048, 2050]

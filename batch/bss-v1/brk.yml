@@ -227,5 +227,9 @@ ecm_prep:
 run:
   high_res_comp: true
   report_stk: true
-  trim_results: every_other_yr
-  write_hp_conv_fracs: true
+  trim_vars: true
+  report_custom_yrs: [
+    2024, 2026, 2028, 2030,
+    2032, 2034, 2036, 2038, 2040,
+    2042, 2044, 2046, 2048, 2050]
+  write_elec_conv_fracs: true
