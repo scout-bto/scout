@@ -10535,6 +10535,8 @@ class Measure(object):
                 breakouts.
             brk_stk_costs (list, NoneType): Stores all segment-specific stock cost data to be
                 assigned to breakouts; None when no stock costs are assessed.
+            gap_adj_frac (float): Fraction to apply to breakout data to represent
+                portions of msegs that are not covered by ComStock load shapes (if applicable)
         Returns:
             Updated measure market breakouts by region, building type, end use, and
             fuel type that reflect the influence of the current mseg being looped.
