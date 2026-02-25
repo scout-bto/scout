@@ -2027,12 +2027,12 @@ class CommonUnitTest(unittest.TestCase):
     # Define lists of strings for the cost and performance units of
     # each of the technologies in the data_to_select list; note that
     # the costs will be converted to a per square foot floor area basis
-    cost_units = ['2017$/kBTU out/hr',
-                  '2017$/kBTU out/hr',
-                  '2017$/1000 cfm',
-                  '2017$/1000 lm',
-                  '2017$/1000 lm',
-                  '2017$/kBTU out/hr']
+    cost_units = ['2022$/kBTU out/hr',
+                  '2022$/kBTU out/hr',
+                  '2022$/1000 cfm',
+                  '2022$/1000 lm',
+                  '2022$/1000 lm',
+                  '2022$/kBTU out/hr']
     perf_units = ['BTU out/BTU in',
                   'BTU out/BTU in',
                   'cfm-hr/BTU in',
@@ -3188,7 +3188,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2017': 571.88, '2018': 571.88,
                          '2019': 571.88, '2020': 571.88},
                      'source': 'EIA AEO',
-                     'units': '2017$/kBtu/h heating'},
+                     'units': '2022$/kBtu/h heating'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[3.4, 267.1], [3.5, 283.55], [3.6, 283.55],
@@ -3256,7 +3256,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 21.13, '2016': 21.13, '2017': 21.13,
                          '2018': 21.13, '2019': 21.13, '2020': 21.13},
                      'source': 'EIA AEO',
-                     'units': '2017$/kBtu/h heating'},
+                     'units': '2022$/kBtu/h heating'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[0.94, 0]],
@@ -3312,7 +3312,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 102.78, '2016': 102.78, '2017': 102.78,
                          '2018': 102.78, '2019': 102.78, '2020': 102.78},
                      'source': 'EIA AEO',
-                     'units': '2017$/kBtu/h heating'},
+                     'units': '2022$/kBtu/h heating'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[3.1, 0], [3.25, 0], [3.3, 181], [3.35, 181], [3.4, 267.1]],
@@ -3397,7 +3397,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 5509.18, '2016': 5509.18, '2017': 5509.18,
                          '2018': 5509.18, '2019': 5509.18, '2020': 5509.18},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 CFM'},
+                     'units': '2022$/1000 CFM'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[0.38, 0]],
@@ -3454,7 +3454,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 6886.47, '2016': 6886.47, '2017': 6886.47,
                          '2018': 6886.47, '2019': 6886.47, '2020': 6886.47},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 CFM'},
+                     'units': '2022$/1000 CFM'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[1.26, 0]],
@@ -3538,7 +3538,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 84.67, '2016': 84.67, '2017': 84.67,
                          '2018': 84.67, '2019': 84.67, '2020': 84.67},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [],
@@ -3594,7 +3594,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 73.56, '2016': 73.56, '2017': 86.3,
                          '2018': 86.3, '2019': 86.3, '2020': 86.3},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[16.7, 0]],
@@ -3654,7 +3654,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2017': 81.89, '2018': 81.89,
                          '2019': 81.89, '2020': 81.89},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[13.5, 0]],
@@ -3710,7 +3710,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 26.52, '2016': 26.52, '2017': 26.52,
                          '2018': 26.52, '2019': 26.52, '2020': 26.52},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[178.7, 0.94]],
@@ -3766,7 +3766,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 24.68, '2016': 24.68, '2017': 24.68,
                          '2018': 24.68, '2019': 24.68, '2020': 24.68},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[151.1, 0.78]],
@@ -3822,7 +3822,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 0.0, '2016': 0.0, '2017': 0.0,
                          '2018': 0.0, '2019': 0.0, '2020': 0.0},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [],
@@ -3878,7 +3878,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 509.77, '2016': 509.77, '2017': 509.77,
                          '2018': 509.77, '2019': 509.77, '2020': 509.77},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[15.1, 0], [51.0, 0]],
@@ -3934,7 +3934,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 31.11, '2016': 31.11, '2017': 31.11,
                          '2018': 31.11, '2019': 31.11, '2020': 31.11},
                      'source': 'EIA AEO',
-                     'units': '2017$/1000 lm'},
+                     'units': '2022$/1000 lm'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[59.0, 0]],
@@ -4017,7 +4017,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 52.56, '2016': 52.56, '2017': 52.56,
                          '2018': 52.56, '2019': 52.56, '2020': 52.56},
                      'source': 'EIA AEO',
-                     'units': '2017$/kBtu/h cooking'},
+                     'units': '2022$/kBtu/h cooking'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[0.70, 0]],
@@ -4073,7 +4073,7 @@ class CommonUnitTest(unittest.TestCase):
                          '2015': 61.46, '2016': 61.46, '2017': 61.46,
                          '2018': 61.46, '2019': 61.46, '2020': 61.46},
                      'source': 'EIA AEO',
-                     'units': '2017$/kBtu/h cooking'},
+                     'units': '2022$/kBtu/h cooking'},
                  'incentives':
                     {'by performance tier':
                         {'2009': [[0.80, 0]],

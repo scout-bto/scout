@@ -466,6 +466,9 @@ class Measure(object):
             and cooling technologies/segments (initialized as None and updated
             in 'fill_mkts' function.)
         technology_type (string): Flag for supply- or demand-side technology.
+        min_eff_elec_flag (boolean): Flag for whether measure performance is min. level.
+        ref_case_flag (boolean): Flag for whether measure is representative of ref. case tech.
+        target (boolean): Flag for whether measure has prospective cost/performance targets.
         yrs_on_mkt (list): List of years that the measure is active on market.
         markets (dict): Data grouped by adoption scheme on:
             a) 'master_mseg': a measure's master market microsegments (stock,
@@ -618,6 +621,12 @@ class Measure(object):
                 self.market_exit_year) > (int(
                     self.handyvars.aeo_years[-1]) + 1)):
             self.market_exit_year = int(self.handyvars.aeo_years[-1]) + 1
+        # Flag for target measure using name; further escalation of cost/performance characteristics
+        # based on AEO trends (user option 'rp_persist') are precluded for such measures, which
+        # tend to already be at cost/performance limits
+        self.target = any([x in self.name for x in [
+            "Prosp", "Emerging", "Target", "Brk", "Break", "RDO"]])
+
         # Check for flag that measure is of a minimum efficiency level. Such measures will be
         # removed from market under user-specified increased in global minimum performance floor
         try:
@@ -1031,12 +1040,18 @@ class Measure(object):
                 "baseline": copy.deepcopy(self.handyvars.out_break_in),
                 "efficient": copy.deepcopy(self.handyvars.out_break_in),
                 "savings": copy.deepcopy(self.handyvars.out_break_in)} for
-                key in ["energy", "carbon", "cost"]}
+                key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
                     key: copy.deepcopy(self.handyvars.out_break_in) for key in
                     ["baseline", "efficient"]}
+            # Add stock cost (capital investment) breakouts
+            if self.usr_opts["cap_invest"]:
+                self.markets[adopt_scheme][
+                    "mseg_out_break"]["capital cost"] = {
+                        key: copy.deepcopy(self.handyvars.out_break_in) for key in
+                        ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this variable
             if self.usr_opts["no_eff_capt"] is not True:
@@ -1581,11 +1596,18 @@ class Measure(object):
             # Flag to remove minor HVAC tech stock costs from calculations when the measure applies
             # to major HVAC techs (e.g., unit costs in competition should be based on major heating/
             # cooling tech. unit costs, not room ACs or secondary heaters)
-            rmv_minor_hvac_stkcosts = (
+            rmv_scnd_hvac_stkcosts = (
                 # Multiple techs. including minor HVAC tech.
                 any([mskeys[-2] is not None and
-                    x in mskeys[-2] for x in self.handyvars.minor_hvac_tech]) and not
-                all([x in self.handyvars.minor_hvac_tech for x in self.technology["primary"]]))
+                    x in mskeys[-2] for x in self.handyvars.secondary_hvac_tech]) and not
+                all([x in self.handyvars.secondary_hvac_tech for x in self.technology["primary"]]))
+            # Flag for removal of linked costs for any heating/cooling technologies not designated
+            # as the one that should be used to assess linked heating/cooling costs
+            rmv_lnkd_tech_costs = (
+                self.linked_htcl_tover and self.linked_htcl_tover_anchor_eu not in mskeys and (
+                    mskeys[-2] is None or (
+                        self.linked_htcl_tover_linked_tech not in mskeys[-2]
+                        and self.linked_htcl_tover_linked_tech != "all")))
 
             # Check whether early retrofit rates are specified at the
             # component (microsegment) level; if so, restrict early retrofit
@@ -3726,17 +3748,15 @@ class Measure(object):
                     # relative performance value for all years to that
                     # calculated for its market entry year. NOTE: do not
                     # perform calculations on typical/BAU efficiency measures,
-                    # as their performance and cost already tracks baseline
-                    if opts.rp_persist is True and (
+                    # as their performance and cost already tracks baseline; also
+                    # preclude target measures, which tend already to be at very
+                    # high cost effectiveness/performance levels
+                    if opts.rp_persist is True and not self.target and (
                             opts.add_typ_eff is not True or not agen_ref):
-                        # Preclude consistent performance improvements for
-                        # prospective measures, which tend to already be at
-                        # performance limits
-                        if all([x not in self.name for x in [
-                                "Prospective", "Emerging", "Target"]]):
-                            rel_perf = {
-                                yr: rel_perf[str(self.market_entry_year)] for
-                                yr in self.handyvars.aeo_years}
+                        # Escalate relative performance
+                        rel_perf = {
+                            yr: rel_perf[str(self.market_entry_year)] for
+                            yr in self.handyvars.aeo_years}
                         # If performance is escalated at the baseline rate,
                         # also increase/decrease measure cost at the baseline
                         # rate, anchored on the measure market entry year
@@ -3749,7 +3769,7 @@ class Measure(object):
                                 cost_base[str(self.market_entry_year)]) and
                                 cost_base[str(self.market_entry_year)] != 0)
                             else 1 for yr in self.handyvars.aeo_years}
-                        # Multiple measure cost by rate of change in baseline
+                        # Multiply measure cost by rate of change in baseline
                         # cost for each year in the AEO horizon; handle case
                         # where measure cost has not yet been broken out by
                         # AEO year
@@ -3761,7 +3781,7 @@ class Measure(object):
                                 self.market_entry_year)] * cost_chg[yr] for
                                 yr in self.handyvars.aeo_years}
                     else:
-                        # If measure performance is not escalated at the
+                        # If measure performance and cost are not escalated at the
                         # baseline rate, assume no mapping between changes in
                         # baseline cost and measure cost and set measure cost
                         # to the same value across all AEO years
@@ -4647,13 +4667,14 @@ class Measure(object):
                      add_energy_cost_compete, add_carb_cost_compete,
                      add_stock_cost_compete_meas, add_energy_cost_compete_eff,
                      add_carb_cost_compete_eff, add_fs_stk_eff_remain,
+                     add_fs_stk_cost_eff_remain,
                      add_fs_energy_eff_remain_base,
                      add_fs_carb_eff_remain_base,
                      add_fs_energy_cost_eff_remain_base,
                      add_fs_energy_eff_remain_switch,
                      add_fs_carb_eff_remain_switch,
                      add_fs_energy_cost_eff_remain_switch,
-                     mkt_scale_frac_fin, stk_cap_fact, warn_list] = \
+                     mkt_scale_frac_fin, stk_cap_fact, lnkd_stk_cost_adj_fact, warn_list] = \
                         self.partition_microsegment(
                             adopt_scheme, diffuse_params, mskeys, mskeys_swtch, bldg_sect,
                             sqft_subst, mkt_scale_frac, new_constr, add_stock,
@@ -4723,7 +4744,12 @@ class Measure(object):
                     # any costs from the primary linked tech segments over to the anchor end use
                     # segments (by default this is the heating end use segments).
                     if adopt_scheme == "Technical potential" and (
-                            not opts.no_lnkd_stk_costs or not opts.no_lnkd_op_costs) and (
+                            # Linked unit stock cost assessment not suppressed for adoption calcs
+                            not opts.no_lnkd_stk_costs
+                            # Linked operational cost assessment not suppressed
+                            or not opts.no_lnkd_op_costs) and (
+                            # Mseg tech. is linked to that of an anchor mseg and designated as
+                            # the linked technology to assess linked costs for
                             (self.linked_htcl_tover and
                              self.linked_htcl_tover_anchor_eu not in mskeys and (
                             mskeys[-2] is not None and (
@@ -4778,25 +4804,29 @@ class Measure(object):
                                 # Add to cost data for baseline/efficient cases
                                 case: {
                                     # anchor mseg cost data plus unit costs for current
-                                    # linked mseg, multiplied by the number of anchor mseg units.
-                                    # Handle cases where linked mseg units are zero, or a heat pump
-                                    # case where stock costs will already have been counted in the
-                                    # anchor end use, or user has suppressed linked stock or
-                                    # operating cost calcs, or the current linked mseg represents a
-                                    # minor technology that shouldn't be counted towards stock costs
-                                    # (do not modify anchor mseg data further)
+                                    # linked mseg (normalizing aggregate costs to a per unit basis
+                                    # requires re-applying any aggregate stock-to-stock cost
+                                    # conversions made in partition_microsegment), multiplied by #
+                                    # of anchor mseg units. Handle cases where linked mseg units are
+                                    # zero, or a heat pump case where stock costs will have been
+                                    # counted in the anchor end use, or user has suppressed linked
+                                    # stock or operating cost calcs, or the current linked mseg
+                                    # represents a minor technology that shouldn't be counted
+                                    # towards stock costs (do not modify anchor mseg data further)
                                     yr: (add_to_dict["cost"][cost_key][output][
                                         case][yr] + ((add_dict["cost"][
                                             cost_key][output][case][yr] / (
-                                            add_dict["stock"][output][stk_var][yr] * stk_cap_fact))
+                                            add_dict["stock"][output][stk_var][yr] * stk_cap_fact *
+                                            lnkd_stk_cost_adj_fact[yr]))
                                             * (add_to_dict["stock"][output][stk_var][yr] *
                                                self.markets[adopt_scheme]["mseg_adjust"][
                                                 "capacity factor"][add_to_mseg])))
-                                    if (add_dict["stock"][output][stk_var][yr] != 0 and (
+                                    if ((add_dict["stock"][output][stk_var][yr] * stk_cap_fact *
+                                         lnkd_stk_cost_adj_fact[yr]) != 0 and (
                                         (cost_key == "stock" and not opts.no_lnkd_stk_costs
                                          and not dmd_meas
                                          and not rmv_hp
-                                         and not rmv_minor_hvac_stkcosts)
+                                         and not rmv_scnd_hvac_stkcosts)
                                         or cost_key != "stock" and not opts.no_lnkd_op_costs)) else
                                     add_to_dict["cost"][cost_key][output][case][yr]
                                     for yr in self.handyvars.aeo_years} for case, stk_var, rmv_hp in
@@ -4811,7 +4841,8 @@ class Measure(object):
                     # electric resistance, gas furnace, oil furnace, etc.). If heating is not
                     # covered, anchor on the cooling end use technologies. This adjustment covers
                     # all measures that apply across heating/cooling (and possibly other) end uses
-                    if sqft_subst != 1 and (rmv_minor_hvac_stkcosts or (len(ms_lists[3]) > 1 and ((
+                    if sqft_subst != 1 and (rmv_lnkd_tech_costs or rmv_scnd_hvac_stkcosts or (
+                            len(ms_lists[3]) > 1 and ((
                             "heating" in ms_lists[3] and "heating" not in mskeys) or (
                             "heating" not in ms_lists[3] and "cooling" in ms_lists[3] and
                             "cooling" not in mskeys)))):
@@ -4826,8 +4857,9 @@ class Measure(object):
                         # in the case of HPs where the full stock cost for HPs is already counted in
                         # the anchor end use, or in the case of minor HVAC techs that should be
                         # excluded from the cost calculations
-                        if (opts.no_lnkd_stk_costs and "report" in opts.no_lnkd_stk_costs) or \
-                                rmv_minor_hvac_stkcosts or rmv_hp_dblct_base_stkcosts:
+                        if (opts.no_lnkd_stk_costs and "report" in opts.no_lnkd_stk_costs) or (
+                                rmv_lnkd_tech_costs or rmv_scnd_hvac_stkcosts or
+                                rmv_hp_dblct_base_stkcosts):
                             add_dict["cost"]["stock"]["total"]["baseline"], \
                                 add_dict["cost"]["stock"]["competed"]["baseline"] = ({
                                     yr: 0 for yr in self.handyvars.aeo_years} for n in range(2))
@@ -4835,8 +4867,9 @@ class Measure(object):
                         # in the case of HPs where the full stock cost for HPs is already counted in
                         # the anchor end use, or in the case of minor HVAC techs that should be
                         # excluded from the cost calculations
-                        if (opts.no_lnkd_stk_costs and "report" in opts.no_lnkd_stk_costs) or \
-                                rmv_minor_hvac_stkcosts or rmv_hp_dblct_meas_stkcosts:
+                        if (opts.no_lnkd_stk_costs and "report" in opts.no_lnkd_stk_costs) or (
+                                rmv_lnkd_tech_costs or rmv_scnd_hvac_stkcosts or
+                                rmv_hp_dblct_meas_stkcosts):
                             add_dict["cost"]["stock"]["total"]["efficient"], \
                                 add_dict["cost"]["stock"]["competed"]["efficient"] = ({
                                     yr: 0 for yr in self.handyvars.aeo_years} for n in range(2))
@@ -4900,12 +4933,22 @@ class Measure(object):
                         add_fs_energy_cost_eff_remain_switch,
                         add_fs_carb_eff_remain_switch]
 
+                    # If user desires breakouts of stock costs, compile all related vars in list
+                    # Initialize vars as False
+                    brk_stk_costs = [False for n in range(3)]
+                    # Update vars based on user selection
+                    if opts.cap_invest:
+                        # Baseline and efficient stock costs
+                        brk_stk_costs[0:2] = [add_dict["cost"]["stock"]["total"][x] for x in [
+                            "baseline", "efficient"]]
+                        # Stock costs that remain with baseline fuel under fuel switching (is zero)
+                        brk_stk_costs[2] = add_fs_stk_cost_eff_remain
                     # Check for whether detailed market breakouts are needed
                     # for current adoption scenario, and if so, prepare data
                     if self.handyvars.full_dat_out[adopt_scheme]:
                         # Populate detailed breakout information for measure
-                        self.breakout_mseg(
-                            mskeys, contrib_mseg_key, adopt_scheme, opts, brk_in_dat)
+                        self.breakout_mseg(mskeys, contrib_mseg_key, adopt_scheme, opts, brk_in_dat,
+                                           brk_stk_costs)
 
                     # Record contributing microsegment data needed for ECM
                     # competition in the analysis engine
@@ -7191,6 +7234,11 @@ class Measure(object):
             new_cool_units, uec_eff_yr, ci_eff_yr, uecst_eff_yr, \
             uec_eff_yr_tot, ci_eff_yr_tot, uecst_eff_yr_tot = (
                 None for n in range(10))
+        # Initialize flag for a potential adjustment to capital cost calculations that is required
+        # to produce an apples-to-apples comparison of measures that encompass both heating and
+        # cooling equipment; also initiate adjustment fractions as all ones
+        lnkd_stk_cost_adj, lnkd_stk_cost_adj_fact = (
+            False, {yr: 1 for yr in self.handyvars.aeo_years})
 
         # Initialize flag for whether measure is on the market in a given year
         # as false
@@ -7202,11 +7250,11 @@ class Measure(object):
         # baseline fuel still served by baseline technology and baseline fuel
         # associated with switched to technology (relevant to situations where
         # base fuel provides backup to switched to tech.)
-        fs_stk_eff_remain, fs_energy_eff_remain_base, \
+        fs_stk_eff_remain, fs_stk_cost_eff_remain, fs_energy_eff_remain_base, \
             fs_carb_eff_remain_base, fs_energy_cost_eff_remain_base, \
             fs_energy_eff_remain_switch, fs_carb_eff_remain_switch, \
             fs_energy_cost_eff_remain_switch = ({
-                yr: 0 for yr in self.handyvars.aeo_years} for n in range(7))
+                yr: 0 for yr in self.handyvars.aeo_years} for n in range(8))
 
         # For measures that retain baseline fuel as backup, pull in the
         # remaining fuel fraction for the current mseg's region; if not, set
@@ -7306,17 +7354,14 @@ class Measure(object):
             # Determine whether currently looped through mseg tech. serves as anchor tech for
             # linked turnover/switching calcs. across measure. Account for cases where info. about
             # need to upgrade electrical panel is appended to the technology information
+            linked_htcl_tover_anchor_tech = (
+                mskeys[-2] is not None and self.linked_htcl_tover_anchor_tech in mskeys[-2])
             if mskeys[-2] and any([x in mskeys[-2] for x in self.handyvars.alt_panel_names]):
                 # Pull out appended tech information to indicate alternate panel upgrade outcome
                 append_tech = mskeys[-2].split("-")[-1]
-                # Make determination of whether current mseg tech is the anchor tech
-                linked_htcl_tover_anchor_tech = (
-                    (self.linked_htcl_tover_anchor_tech + "-" + append_tech) == mskeys[-2])
             else:
                 # No appended tech information is applicable
                 append_tech = None
-                # Make determination of whether current mseg tech is the anchor tech
-                linked_htcl_tover_anchor_tech = (self.linked_htcl_tover_anchor_tech == mskeys[-2])
             # Determine the region, building type, and structure type that is
             # shared by the linked heating and cooling microsegments; when additional tech. info.
             # is appended to indicate alternate panel upgrade outcomes, add this info.
@@ -7380,12 +7425,45 @@ class Measure(object):
                 else:
                     null_val = 1
                 if not initiate_linked_dat:
+                    # In the case of linked heating and cooling costs for major/central equipment
+                    # types, produce a stock adjustment factor to ensure that the aggregate stock
+                    # costs calculated for linked msegs are based on the number of stock units for
+                    # the anchor mseg. For example, the stock costs of a CAC mseg for a measure that
+                    # links CACs and gas furnaces are calculated by multiplying the per unit cost of
+                    # the CAC unit by the number of total gas furnace units (heating msegs are the
+                    # default anchor in such cases). This ensures an apples-to-apples comparison
+                    # between the aggregate stock costs of measures that apply to separate heating
+                    # and cooling technologies (e.g., gas + AC) and those of heat pumps, for which
+                    # heating and cooling stock costs are always based on the number of units in the
+                    # anchor mseg. It also ensures that any attempts later to normalize aggregate
+                    # stock costs by number of stock units (which are only reported for the anchor
+                    # end use) will produce the correct per unit cost result
+                    lnkd_stk_cost_adj_fact = {
+                        yr: (total_htcl_lnk[htcl_lnk_adjkey][yr] /
+                             (stock_total_init[yr] * mkt_scale_frac)) if (
+                             (stock_total_init[yr] * mkt_scale_frac) != 0 and (
+                                # Only adjust for heating and cooling cases
+                                mskeys[4] in ["heating", "cooling"] and
+                                # Do not adjust if no linked stock costs are assumed for heat/cool;
+                                # not necessary b/c linked stock costs are zeroed out subsequently
+                                not (opts.no_lnkd_stk_costs and "report" in opts.no_lnkd_stk_costs)
+                                # Ensure that current linked tech. is designated as the linked tech.
+                                # to use for stock cost reporting purposes
+                                and (self.linked_htcl_tover_linked_tech == "all" or
+                                     self.linked_htcl_tover_linked_tech in mskeys[-2])
+                                # Only adjust for central heat/cool tech (e.g., does not apply to
+                                # room ACs or space heaters, we don't report aggregate costs for)
+                                and not any([mskeys[-2] is not None and x in mskeys[-2]
+                                             for x in self.handyvars.secondary_hvac_tech])))
+                        else 1 for yr in self.handyvars.aeo_years}
+                    # Reset flag for capital cost adjustment
+                    lnkd_stk_cost_adj = True
                     # Update stock turnover fractions for current mseg based
                     # on turnover data calculated for linked anchor
                     # heating/cooling mseg
                     diffuse_frac_linked = {
-                        yr: total_htcl_lnk_adj[htcl_lnk_adjkey][yr] /
-                        total_htcl_lnk[htcl_lnk_adjkey][yr] if
+                        yr: (total_htcl_lnk_adj[htcl_lnk_adjkey][yr] /
+                             total_htcl_lnk[htcl_lnk_adjkey][yr]) if
                         total_htcl_lnk[htcl_lnk_adjkey][yr] != 0 else
                         null_val for yr in self.handyvars.aeo_years}
                     # When stock for anchor segment after adjustment for
@@ -7490,10 +7568,14 @@ class Measure(object):
                 mskeys[4] not in self.handyvars.com_eqp_eus_nostk):
             # Use try/except to handle missing capacity factor data
             try:
+                # Determine whether to key in capacity factor by current mseg's
+                # end use or by anchor end use if the current mseg is linked
+                # to that anchor end use
+                eu_key = (mskeys[4] if not lnkd_stk_cost_adj else self.linked_htcl_tover_anchor_eu)
                 # Set appropriate capacity factor (TBtu delivered service
                 # for hours of actual operation / TBtu service running at
                 # full capacity for all hours of the year)
-                cap_fact_mseg = self.handyvars.cap_facts["data"][mskeys[2]][mskeys[4]]
+                cap_fact_mseg = self.handyvars.cap_facts["data"][mskeys[2]][eu_key]
                 # Conversion: (1) divides stock (service delivered) by
                 # the capacity factor (service delivered per year /
                 # service per year @ full capacity) to get to service per
@@ -8961,10 +9043,10 @@ class Measure(object):
             # Baseline cost of the competed and total stock; anchor this on
             # the stock captured by the measure to allow direct comparison
             # with measure stock costs
-            stock_compete_cost[yr] = \
-                (stock_compete_meas[yr] * stk_serv_cap_cnv) * cost_base[yr]
-            stock_total_cost[yr] = \
-                (stock_total_meas[yr] * stk_serv_cap_cnv) * cost_base[yr]
+            stock_compete_cost[yr] = (stock_compete_meas[yr] * stk_serv_cap_cnv *
+                                      lnkd_stk_cost_adj_fact[yr]) * cost_base[yr]
+            stock_total_cost[yr] = (stock_total_meas[yr] * stk_serv_cap_cnv *
+                                    lnkd_stk_cost_adj_fact[yr]) * cost_base[yr]
             # Total and competed-efficient stock cost for add-on and
             # full service measures. * Note: the baseline technology installed
             # cost must be added to the measure installed cost in the case of
@@ -8972,19 +9054,19 @@ class Measure(object):
             if self.measure_type == "add-on":
                 # Competed-efficient stock cost (add-on measure)
                 stock_compete_cost_eff[yr] = \
-                    (stock_compete_meas[yr] * stk_serv_cap_cnv) * (
+                    (stock_compete_meas[yr] * stk_serv_cap_cnv * lnkd_stk_cost_adj_fact[yr]) * (
                     cost_meas[yr] + cost_base[yr])
                 # Total-efficient stock cost (add-on measure)
                 stock_total_cost_eff[yr] = \
-                    (stock_total_meas[yr] * stk_serv_cap_cnv) * (
+                    (stock_total_meas[yr] * stk_serv_cap_cnv * lnkd_stk_cost_adj_fact[yr]) * (
                     cost_meas[yr] + cost_base[yr])
             else:
                 # Competed-efficient stock cost (full service measure)
-                stock_compete_cost_eff[yr] = \
-                    (stock_compete_meas[yr] * stk_serv_cap_cnv) * cost_meas[yr]
+                stock_compete_cost_eff[yr] = (stock_compete_meas[yr] * stk_serv_cap_cnv *
+                                              lnkd_stk_cost_adj_fact[yr]) * cost_meas[yr]
                 # Total-efficient stock cost (full service measure)
-                stock_total_cost_eff[yr] = \
-                    (stock_total_meas[yr] * stk_serv_cap_cnv) * cost_meas[yr]
+                stock_total_cost_eff[yr] = (stock_total_meas[yr] * stk_serv_cap_cnv *
+                                            lnkd_stk_cost_adj_fact[yr]) * cost_meas[yr]
 
             # Competed baseline energy cost
             energy_compete_cost[yr] = energy_total_sbmkt[yr] * \
@@ -9228,9 +9310,9 @@ class Measure(object):
             if self.fuel_switch_to is not None:
                 # Since the convention is to report "efficient" stock as only the measure-captured
                 # portion of the stock, and the primary heating equipment is switching away from
-                # the base fuel, by definition no measure stock will remain w/ base fuel under a
-                # fuel switching case
-                fs_stk_eff_remain[yr] = 0
+                # the base fuel, by definition no measure stock or stock costs will remain w/ base
+                # fuel under a fuel switching case
+                fs_stk_eff_remain[yr], fs_stk_cost_eff_remain[yr] = (0 for n in range(2))
                 # For fuel switching measures with exogenous HP conversion
                 # rates specified, the only baseline energy/carbon/cost
                 # that can remain with the baseline fuel is that from duel
@@ -9271,11 +9353,11 @@ class Measure(object):
                 carb_total_eff_cost, stock_compete_cost, energy_compete_cost,
                 carb_compete_cost, stock_compete_cost_eff,
                 energy_compete_cost_eff, carb_compete_cost_eff,
-                fs_stk_eff_remain, fs_energy_eff_remain_base,
+                fs_stk_eff_remain, fs_stk_cost_eff_remain, fs_energy_eff_remain_base,
                 fs_carb_eff_remain_base, fs_energy_cost_eff_remain_base,
                 fs_energy_eff_remain_switch, fs_carb_eff_remain_switch,
                 fs_energy_cost_eff_remain_switch, mkt_scale_frac_fin,
-                stk_serv_cap_cnv, warn_list]
+                stk_serv_cap_cnv, lnkd_stk_cost_adj_fact, warn_list]
 
     def check_meas_inputs(self):
         """Check for valid inputs for key measure characteristics.
@@ -10334,7 +10416,8 @@ class Measure(object):
 
         return rand_list
 
-    def breakout_mseg(self, mskeys, contrib_mseg_key, adopt_scheme, opts, input_data):
+    def breakout_mseg(self, mskeys, contrib_mseg_key, adopt_scheme, opts, brk_in_dat,
+                      brk_stk_costs):
         """Record mseg contributions to breakouts by region/bldg/end use/fuel.
 
         Args:
@@ -10343,10 +10426,10 @@ class Measure(object):
                 fuel->end use->technology type->structure type).
             adopt_scheme (string): Assumed consumer adoption scenario.
             opts (object): Stores user-specified execution options.
-            input_data (list): Stores all segment-specific data that need to be assigned to
+            brk_in_dat (list): Stores all segment-specific data that need to be assigned to
                 breakouts.
-            gap_adj_frac (float): Fraction to apply to breakout data to represent
-                portions of msegs that are not covered by ComStock load shapes (if applicable)
+            brk_stk_costs (list, NoneType): Stores all segment-specific stock cost data to be
+                assigned to breakouts; None when no stock costs are assessed.
         Returns:
             Updated measure market breakouts by region, building type, end use, and
             fuel type that reflect the influence of the current mseg being looped.
@@ -10359,123 +10442,25 @@ class Measure(object):
             brk_fs_energy_cost_eff_remain_base, brk_fs_carb_eff_remain_base, \
             brk_fs_energy_eff_remain_switch, brk_fs_energy_cost_eff_remain_switch, \
             brk_fs_carb_eff_remain_switch = [
-                {yr: x[yr] for yr in self.handyvars.aeo_years} if x else None for x in input_data]
+                {yr: x[yr] for yr in self.handyvars.aeo_years} if x else None for x in brk_in_dat]
 
-        # Using the key chain for the current microsegment, determine the output
-        # climate zone, building type, and end use breakout categories to which the
-        # current microsegment applies
+        # Pull out stock cost reporting variables to use in developing breakout values
+        brk_stock_cost_total, brk_stock_cost_total_meas, brk_fs_stk_cost_eff_remain = \
+            brk_stk_costs
 
-        # Establish applicable climate zone breakout
-        for cz in self.handyvars.out_break_czones.items():
-            if mskeys[1] in cz[1]:
-                out_cz = cz[0]
-        # Establish applicable building type breakout
-        for bldg in self.handyvars.out_break_bldgtypes.items():
-            if all([x in bldg[1] for x in [
-                    mskeys[2], mskeys[-1]]]):
-                out_bldg = bldg[0]
-        # Establish applicable end use breakout
-        for eu in self.handyvars.out_break_enduses.items():
-            # * Note: The 'other' microsegment end use may map to either the
-            # 'Refrigeration' output breakout or the 'Other' output breakout,
-            # depending on the technology type specified in the measure
-            # definition. Also note that 'supply' side heating/cooling
-            # microsegments map to the 'Heating (Equip.)'/'Cooling (Equip.)' end
-            # uses, while 'demand' side heating/cooling microsegments map to the
-            # 'Heating (Env.)'/'Cooling (Env.) end use, with the exception of
-            # 'demand' side heating/cooling microsegments that represent waste heat
-            # from lights - these are categorized as part of 'Lighting' end use
-            if mskeys[4] == "other":
-                if mskeys[5] == "freezers":
-                    out_eu = "Refrigeration"
-                else:
-                    out_eu = "Other"
-            elif mskeys[4] in eu[1]:
-                if (eu[0] in ["Heating (Equip.)", "Cooling (Equip.)"] and
-                    mskeys[5] == "supply") or (
-                        eu[0] in ["Heating (Env.)", "Cooling (Env.)"] and
-                    mskeys[5] == "demand") or (
-                    eu[0] not in ["Heating (Equip.)", "Cooling (Equip.)",
-                                  "Heating (Env.)", "Cooling (Env.)"]):
-                    out_eu = eu[0]
-            elif "lighting gain" in mskeys:
-                out_eu = "Lighting"
+        # Create null dicts for efficient stock/stock cost that remains with the baseline fuel
+        # under fuel switching. All stock/stock cost converts to new equipment by definition; only
+        # energy/energy costs/carbon may remain with baseline fuel under dual fuel switching.
 
-        # If applicable, establish fuel type breakout (electric vs. non-electric);
-        # note – only applicable to end uses that are at least in part fossil-fired
-        if (len(self.handyvars.out_break_fuels.keys()) != 0) and (
-                out_eu in self.handyvars.out_break_eus_w_fsplits):
-            # Flag for detailed fuel type breakout
-            detail = len(self.handyvars.out_break_fuels.keys()) > 2
-            # Establish breakout of fuel type that is being reduced (e.g., through
-            # efficiency or fuel switching away from the fuel)
-            for f in self.handyvars.out_break_fuels.items():
-                if mskeys[3] in f[1]:
-                    # Special handling for other fuel tech., under detailed fuel
-                    # type breakouts; this tech. may fit into multiple fuel
-                    # categories
-                    if detail and mskeys[3] == "other fuel":
-                        # Assign coal/kerosene tech.
-                        if f[0] == "Distillate/Other" and (
-                            mskeys[-2] is not None and any(
-                                [x in mskeys[-2] for x in ["coal", "kerosene"]])):
-                            out_fuel_save = f[0]
-                        # Assign commercial other fuel to Distillate/Other
-                        elif f[0] == "Distillate/Other" and (
-                            mskeys[2] in self.handyvars.in_all_map['bldg_type'][
-                                'commercial']):
-                            out_fuel_save = f[0]
-                        # Assign wood tech.
-                        elif f[0] == "Biomass" and (
-                                mskeys[-2] is not None and "wood" in mskeys[-2]):
-                            out_fuel_save = f[0]
-                        # All other tech. goes to propane
-                        elif f[0] == "Propane":
-                            out_fuel_save = f[0]
-                    else:
-                        out_fuel_save = f[0]
-            # Establish breakout of fuel type that is being added to via fuel
-            # switching, if applicable
-            if self.fuel_switch_to == "electricity" and \
-                    out_fuel_save != "Electric":
-                out_fuel_gain = "Electric"
-            elif self.fuel_switch_to not in [None, "electricity"] \
-                    and out_fuel_save == "Electric":
-                # Check for detailed fuel types
-                if detail:
-                    for f in self.handyvars.out_break_fuels.items():
-                        # Special handling for other fuel tech., under detailed
-                        # fuel type breakouts; this tech. may fit into multiple
-                        # fuel cats.
-                        if self.fuel_switch_to in f[1] and \
-                                mskeys[3] == "other fuel":
-                            # Assign coal/kerosene tech.
-                            if f[0] == "Distillate/Other" and (
-                                mskeys[-2] is not None and any([
-                                    x in mskeys[-2] for x in [
-                                    "coal", "kerosene"]])):
-                                out_fuel_gain = f[0]
-                            # Assign commercial other fuel to Distillate/Other
-                            elif f[0] == "Distillate/Other" and (
-                                mskeys[2] in self.handyvars.in_all_map[
-                                    'bldg_type']['commercial']):
-                                out_fuel_gain = f[0]
-                            # Assign wood tech.
-                            elif f[0] == "Biomass" and (
-                                mskeys[-2] is not None and "wood"
-                                    in mskeys[-2]):
-                                out_fuel_gain = f[0]
-                            # All other tech. goes to propane
-                            elif f[0] == "Propane":
-                                out_fuel_gain = f[0]
-                        elif self.fuel_switch_to in f[1]:
-                            out_fuel_gain = f[0]
-                else:
-                    out_fuel_gain = "Non-Electric"
-            else:
-                out_fuel_gain = ""
-        else:
-            out_fuel_save, out_fuel_gain = ("" for n in range(2))
+        # Null dict for efficient stock remaining w/ baseline fuel
+        brk_fs_stk_eff_remain_switch = {yr: 0 for yr in self.handyvars.aeo_years}
+        # Condition null dict for stock cost on whether or not the user is reporting this variable
+        brk_fs_stk_cost_eff_remain_switch = (
+            {yr: 0 for yr in self.handyvars.aeo_years} if brk_fs_stk_cost_eff_remain else False)
+
+        # Find the reporting categories to use for output breakouts
+        out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain = self.set_out_brk_cats(
+            mskeys, self.fuel_switch_to)
 
         # Given the contributing microsegment's applicable climate zone, building
         # type, and end use categories, add the microsegment's stock/energy/ecost/
@@ -10490,14 +10475,25 @@ class Measure(object):
         # the measure applies to. Note that savings breakouts are not provided for
         # stock data as "savings" is not meaningful in this context.
         try:
-            # Set breakout variables
-            breakout_vars = ["stock", "energy", "cost", "carbon"]
+            # Note: the indices of the breakout variable names below must align with those in the
+            # base_data and eff_data variables that follow
+
+            # Set core breakout variables (always there)
+            breakout_vars = ["stock", "energy", "energy cost", "carbon"]
+            # Append stock cost breakout variables if user has selected them; use the presence or
+            # absence of stock cost breakout data as indicator of selection
+            if all([x for x in [brk_stock_cost_total, brk_stock_total_meas]]):
+                breakout_vars.append("capital cost")
+
             # Create a shorthand for baseline and efficient stock/energy/carbon/
             # cost data to add to the breakout dict
-            base_data = [brk_stock_total, brk_energy_total,
-                         brk_energy_cost, brk_carb_total]
-            eff_data = [brk_stock_total_meas, brk_energy_total_eff,
-                        brk_energy_cost_eff, brk_carb_total_eff]
+
+            # Note: add if statements to account for potential that user has not chosen
+            # to report stock and/or stock costs
+            base_data = [x for x in [brk_stock_total, brk_energy_total, brk_energy_cost,
+                                     brk_carb_total, brk_stock_cost_total] if x]
+            eff_data = [x for x in [brk_stock_total_meas, brk_energy_total_eff, brk_energy_cost_eff,
+                                    brk_carb_total_eff, brk_stock_cost_total_meas] if x]
 
             # Create a shorthand for efficient captured energy data to add to the
             # breakout dict
@@ -10514,16 +10510,22 @@ class Measure(object):
             # be split by fuel, create shorthands for any efficient-case
             # stock/energy/carbon/cost that remains with the baseline fuel
             if self.fuel_switch_to is not None and out_fuel_save:
-                eff_data_fs_base = [brk_fs_stk_eff_remain,
-                                    brk_fs_energy_eff_remain_base,
-                                    brk_fs_energy_cost_eff_remain_base,
-                                    brk_fs_carb_eff_remain_base]
-                eff_data_fs_switch = [brk_fs_energy_eff_remain_switch,
-                                      brk_fs_energy_cost_eff_remain_switch,
-                                      brk_fs_carb_eff_remain_switch]
+                # Note: add if statement to account for potential that user has not chosen
+                # to report stock costs
+                eff_data_fs_base = [x for x in [brk_fs_stk_eff_remain,
+                                                brk_fs_energy_eff_remain_base,
+                                                brk_fs_energy_cost_eff_remain_base,
+                                                brk_fs_carb_eff_remain_base,
+                                                brk_fs_stk_cost_eff_remain] if x]
+                eff_data_fs_switch = [x for x in [brk_fs_stk_eff_remain_switch,
+                                                  brk_fs_energy_eff_remain_switch,
+                                                  brk_fs_energy_cost_eff_remain_switch,
+                                                  brk_fs_carb_eff_remain_switch,
+                                                  brk_fs_stk_cost_eff_remain_switch] if x]
                 # Record the efficient energy that has not yet fuel switched and
                 # total efficient energy for the current mseg for later use in
-                # packaging and/or competing measures
+                # packaging and/or competing measures. Note that no measure stock remains
+                # with baseline fuel, thus stock splits are not reported here
                 self.eff_fs_splt[adopt_scheme][
                     str(contrib_mseg_key)] = {
                         "energy": [
@@ -10532,7 +10534,7 @@ class Measure(object):
                             brk_energy_total_eff,
                             brk_energy_total_eff_capt,
                             swtch_tech_base_fuel],
-                        "cost": [
+                        "energy cost": [
                             brk_fs_energy_cost_eff_remain_base,
                             brk_fs_energy_cost_eff_remain_switch,
                             brk_energy_cost_eff],
@@ -10576,7 +10578,7 @@ class Measure(object):
                                     "efficient"][out_cz][out_bldg][out_eu][
                                     out_fuel_save][yr] += \
                                     (eff_data_fs_base[ind][yr] +
-                                     eff_data_fs_switch[(ind-1)][yr])
+                                     eff_data_fs_switch[ind][yr])
                                 # Note that no baseline fuel, baseline technology
                                 # consumption (e.g., not in backup service to
                                 # measure) remains for captured stock by
@@ -10586,14 +10588,14 @@ class Measure(object):
                                     self.markets[adopt_scheme]["mseg_out_break"][
                                         key]["efficient-captured"][out_cz][
                                         out_bldg][out_eu][out_fuel_save][yr] += \
-                                        eff_data_fs_switch[(ind-1)][yr]
+                                        eff_data_fs_switch[ind][yr]
                                 if key != "stock":  # no stk save
                                     self.markets[adopt_scheme]["mseg_out_break"][
                                         key]["savings"][out_cz][out_bldg][out_eu][
                                         out_fuel_save][yr] += (
                                             base_data[ind][yr] -
                                             (eff_data_fs_base[ind][yr] +
-                                             eff_data_fs_switch[(ind-1)][yr]))
+                                             eff_data_fs_switch[ind][yr]))
                 except KeyError:
                     for ind, key in enumerate(breakout_vars):
                         # Baseline; add in baseline data as-is
@@ -10629,7 +10631,7 @@ class Measure(object):
                                 "efficient"][out_cz][out_bldg][out_eu][
                                 out_fuel_save] = {
                                     yr: (eff_data_fs_base[ind][yr] +
-                                         eff_data_fs_switch[(ind-1)][yr]) for
+                                         eff_data_fs_switch[ind][yr]) for
                                     yr in self.handyvars.aeo_years}
                             # Note that no baseline fuel, baseline technology
                             # consumption (e.g., not in backup service to
@@ -10640,7 +10642,7 @@ class Measure(object):
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient-captured"][out_cz][out_bldg][
                                     out_eu][out_fuel_save] = {
-                                    yr: eff_data_fs_switch[(ind-1)][yr] for
+                                    yr: eff_data_fs_switch[ind][yr] for
                                     yr in self.handyvars.aeo_years}
                             if key != "stock":  # no stk save
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
@@ -10648,7 +10650,7 @@ class Measure(object):
                                     out_fuel_save] = {yr: (
                                         base_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                            eff_data_fs_switch[ind][yr]))
                                         for yr in self.handyvars.aeo_years}
                 # In a fuel switching case, update results for the fuel being
                 # switched/added to
@@ -10672,7 +10674,7 @@ class Measure(object):
                                         out_eu][out_fuel_gain][yr] += \
                                         (eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                            eff_data_fs_switch[ind][yr]))
                                     # All captured efficient energy goes to
                                     # switched to fuel, except in the case where
                                     # the switched to measure has dual fuel
@@ -10684,13 +10686,13 @@ class Measure(object):
                                             out_cz][out_bldg][out_eu][
                                             out_fuel_gain][yr] += (
                                             capt_e[yr] -
-                                            eff_data_fs_switch[(ind-1)][yr])
+                                            eff_data_fs_switch[ind][yr])
                                     self.markets[adopt_scheme]["mseg_out_break"][
                                         key]["savings"][out_cz][out_bldg][out_eu][
                                         out_fuel_gain][yr] -= (
                                             eff_data[ind][yr] - (
                                                 eff_data_fs_base[ind][yr] +
-                                                eff_data_fs_switch[(ind - 1)][yr]))
+                                                eff_data_fs_switch[ind][yr]))
                                 else:
                                     self.markets[adopt_scheme]["mseg_out_break"][
                                         key]["efficient"][out_cz][out_bldg][
@@ -10721,7 +10723,7 @@ class Measure(object):
                                         out_fuel_gain] = {
                                         yr: (eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                            eff_data_fs_switch[ind][yr]))
                                         for yr in self.handyvars.aeo_years}
                                 # All captured efficient energy
                                 # goes to switched to fuel, except in the case
@@ -10734,7 +10736,7 @@ class Measure(object):
                                         out_cz][out_bldg][out_eu][
                                             out_fuel_gain] = {
                                             yr: (capt_e[yr] -
-                                                 eff_data_fs_switch[(ind-1)][yr])
+                                                 eff_data_fs_switch[ind][yr])
                                             for yr in
                                             self.handyvars.aeo_years}
                                 self.markets[adopt_scheme][
@@ -10742,7 +10744,7 @@ class Measure(object):
                                         out_bldg][out_eu][out_fuel_gain] = {
                                         yr: -(eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                            eff_data_fs_switch[ind][yr]))
                                         for yr in self.handyvars.aeo_years}
                             else:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
@@ -10807,6 +10809,120 @@ class Measure(object):
                 f"Baseline market key chain: '{str(mskeys)}' for ECM '{self.name}' does not map to "
                 "output breakout categories, thus will not be reflected in output breakout data",
                 "warning")
+
+    def set_out_brk_cats(self, key_list, fuel_switch_to):
+        """Map current mseg characteristics to reporting categories for output breakouts.
+
+        Args:
+            key_list (tuple): Current mseg information.
+            fuel_switch_to (string, NoneType): Fuel switched to by measure (if applicable).
+
+        Returns:
+            Climate, building type, end use, and fuel type (switch to and from, where applicable)
+            categories to use in reporting output breakouts.
+        """
+        # Initialize all categories as NoneTypes
+        out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain = (None for n in range(5))
+        # Establish applicable climate zone breakout
+        for cz in self.handyvars.out_break_czones.items():
+            if key_list[1] in cz[1]:
+                out_cz = cz[0]
+        # Establish applicable building type breakout
+        for bldg in self.handyvars.out_break_bldgtypes.items():
+            if all([x in bldg[1] for x in [key_list[2], key_list[-1]]]):
+                out_bldg = bldg[0]
+        # Establish applicable end use breakout
+        for eu in self.handyvars.out_break_enduses.items():
+            # * Note: The 'other' microsegment end use may map to either the 'Refrigeration' output
+            # breakout or the 'Other' output breakout, depending on the technology type specified in
+            # the measure definition. Also note that 'supply' side heating/cooling microsegments map
+            # to the 'Heating (Equip.)'/'Cooling (Equip.)' end uses, while 'demand' side heating/
+            # cooling microsegments map to the 'Heating (Env.)'/'Cooling (Env.) end use, with the
+            # exception of 'demand' side heating/cooling microsegments that represent waste heat
+            # from lights - these are categorized as part of the 'Lighting' end use
+            if key_list[4] == "other":
+                if key_list[5] == "freezers":
+                    out_eu = "Refrigeration"
+                else:
+                    out_eu = "Other"
+            elif key_list[4] in eu[1]:
+                if (eu[0] in ["Heating (Equip.)", "Cooling (Equip.)"] and key_list[5] == "supply") \
+                    or (eu[0] in ["Heating (Env.)", "Cooling (Env.)"] and
+                        key_list[5] == "demand" and key_list[0] == "primary") or (
+                    eu[0] not in ["Heating (Equip.)", "Cooling (Equip.)",
+                                  "Heating (Env.)", "Cooling (Env.)"]):
+                    out_eu = eu[0]
+            elif "lighting gain" in key_list:
+                out_eu = "Lighting"
+
+        # If applicable, establish fuel type breakout (electric vs. non-electric); note – only
+        # applicable to end uses that are at least in part fossil-fired
+        if len(self.handyvars.out_break_fuels.keys()) != 0 and (
+                out_eu in self.handyvars.out_break_eus_w_fsplits):
+            # Flag for detailed fuel type breakout
+            detail = len(self.handyvars.out_break_fuels.keys()) > 2
+            # Establish breakout of fuel type that is being reduced (e.g., through efficiency or
+            # fuel switching away from the fuel)
+            for f in self.handyvars.out_break_fuels.items():
+                if key_list[3] in f[1]:
+                    # Special handling for other fuel tech., under detailed fuel type breakouts;
+                    # this tech. may fit into multiple fuel categories
+                    if detail and key_list[3] == "other fuel":
+                        # Assign coal/kerosene tech.
+                        if f[0] == "Distillate/Other" and (key_list[-2] is not None and any([
+                                x in key_list[-2] for x in ["coal", "kerosene"]])):
+                            out_fuel_save = f[0]
+                        # Assign commercial other fuel to
+                        # Distillate/Other
+                        elif f[0] == "Distillate/Other" and (
+                            key_list[2] in self.handyvars.in_all_map[
+                                'bldg_type']['commercial']):
+                            out_fuel_save = f[0]
+                        # Assign wood tech.
+                        elif f[0] == "Biomass" and (
+                                key_list[-2] is not None and "wood" in key_list[-2]):
+                            out_fuel_save = f[0]
+                        # Assign all other tech. to propane
+                        elif f[0] == "Propane":
+                            out_fuel_save = f[0]
+                    else:
+                        out_fuel_save = f[0]
+            # Establish breakout of fuel type that is being added to via fuel switch, if applicable
+            if fuel_switch_to == "electricity" and out_fuel_save != "Electric":
+                out_fuel_gain = "Electric"
+            elif fuel_switch_to not in [None, "electricity"] and out_fuel_save == "Electric":
+                # Check for detailed fuel types
+                if detail:
+                    for f in self.handyvars.out_break_fuels.items():
+                        # Special handling for other fuel tech., under detailed fuel type breakouts;
+                        # this tech. may fit into multiple fuel cats.
+                        if self.fuel_switch_to in f[1] and key_list[3] == "other fuel":
+                            # Assign coal/kerosene tech.
+                            if f[0] == "Distillate/Other" and (key_list[-2] is not None and any([
+                                    x in key_list[-2] for x in ["coal", "kerosene"]])):
+                                out_fuel_gain = f[0]
+                            # Assign commercial other fuel to Distillate/Other
+                            elif f[0] == "Distillate/Other" and (
+                                key_list[2] in self.handyvars.in_all_map[
+                                    'bldg_type']['commercial']):
+                                out_fuel_gain = f[0]
+                            # Assign wood tech.
+                            elif f[0] == "Biomass" and (
+                                    key_list[-2] is not None and "wood" in key_list[-2]):
+                                out_fuel_gain = f[0]
+                            # Assign all other tech. to propane
+                            elif f[0] == "Propane":
+                                out_fuel_gain = f[0]
+                        elif self.fuel_switch_to in f[1]:
+                            out_fuel_gain = f[0]
+                else:
+                    out_fuel_gain = "Non-Electric"
+            else:
+                out_fuel_gain = ""
+        else:
+            out_fuel_save, out_fuel_gain = ("" for n in range(2))
+
+        return out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain
 
 
 class MeasurePackage(Measure):
@@ -11099,12 +11215,18 @@ class MeasurePackage(Measure):
                 "baseline": copy.deepcopy(self.handyvars.out_break_in),
                 "efficient": copy.deepcopy(self.handyvars.out_break_in),
                 "savings": copy.deepcopy(self.handyvars.out_break_in)} for
-                key in ["energy", "carbon", "cost"]}
+                key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
                     key: copy.deepcopy(self.handyvars.out_break_in) for
                     key in ["baseline", "efficient"]}
+            # Add stock cost breakouts, contingent on user selecting these
+            if self.usr_opts["cap_invest"]:
+                self.markets[adopt_scheme][
+                    "mseg_out_break"]["capital cost"] = {
+                        key: copy.deepcopy(self.handyvars.out_break_in) for
+                        key in ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this additional
             # variable
@@ -11283,6 +11405,9 @@ class MeasurePackage(Measure):
                                 fs_eff_splt = None
                             # Convert mseg string to list for further calcs.
                             key_list = literal_eval(cm)
+                            # Find the reporting categories to use for output breakouts
+                            out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain = \
+                                self.set_out_brk_cats(key_list, m.fuel_switch_to)
                             # Add to initial annual electricity use that
                             # concerns the measure's sector shape, before
                             # package adjustments
@@ -11306,10 +11431,9 @@ class MeasurePackage(Measure):
                             # Merge directly overlapping measure mseg data
                             msegs_meas_init[k][cm], mseg_out_break_init = \
                                 self.merge_direct_overlaps(
-                                    msegs_meas_init[k][cm], cm, adopt_scheme,
-                                    mseg_out_break_init, m.name,
-                                    m.fuel_switch_to, m.measure_type,
-                                    fs_eff_splt, key_list)
+                                    msegs_meas_init[k][cm], cm, adopt_scheme, mseg_out_break_init,
+                                    m.name, m.fuel_switch_to, m.measure_type, fs_eff_splt, key_list,
+                                    out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain)
                     # Add all other contributing microsegment data for
                     # the measure
                     elif msegs_pkg_init and k in [
@@ -11385,14 +11509,17 @@ class MeasurePackage(Measure):
                         fs_eff_splt = None
                     # Convert mseg string to list for further calcs.
                     key_list = literal_eval(cm)
+                    # Find the reporting categories to use for output breakouts
+                    out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain = \
+                        self.set_out_brk_cats(key_list, m[adopt_scheme]["fuel_switch_to"])
                     # Further adjust equipment msegs to account for
                     # overlapping envelope performance improvements
                     msegs_meas_fin[cm], mseg_out_break_fin = \
                         self.merge_htcl_overlaps(
-                            msegs_meas_fin[cm], cm, adopt_scheme,
-                            mseg_out_break_fin, m[adopt_scheme]["name"],
-                            m[adopt_scheme]["fuel_switch_to"], fs_eff_splt,
-                            key_list, opts, common_stk)
+                            msegs_meas_fin[cm], cm, adopt_scheme, mseg_out_break_fin,
+                            m[adopt_scheme]["name"], m[adopt_scheme]["fuel_switch_to"], fs_eff_splt,
+                            key_list, opts, common_stk, out_cz, out_bldg, out_eu, out_fuel_save,
+                            out_fuel_gain)
                     # Apply any additional energy savings and/or installed cost
                     # benefits from packaging
                     msegs_meas_fin[cm] = self.apply_pkg_benefits(
@@ -11429,7 +11556,7 @@ class MeasurePackage(Measure):
                 # uses it applies to if full data reporting is required for the
                 # current adoption scenario
                 if mseg_out_break_fin:
-                    for v in ["stock", "energy", "carbon", "cost"]:
+                    for v in self.markets[adopt_scheme]["mseg_out_break"].keys():
                         for s in ["baseline", "efficient"]:
                             self.merge_out_break(self.markets[adopt_scheme][
                                 "mseg_out_break"][v][s],
@@ -11718,9 +11845,9 @@ class MeasurePackage(Measure):
                                     "stock costs": dmd_stk_cost,
                                     "stock": dmd_stk}
 
-    def merge_direct_overlaps(
-            self, msegs_meas, cm_key, adopt_scheme, mseg_out_break_adj,
-            name_meas, fuel_switch_to, meas_typ, fs_eff_splt, key_list):
+    def merge_direct_overlaps(self, msegs_meas, cm_key, adopt_scheme, mseg_out_break_adj, name_meas,
+                              fuel_switch_to, meas_typ, fs_eff_splt, key_list, out_cz, out_bldg,
+                              out_eu, out_fuel_save, out_fuel_gain):
         """Adjust measure mseg data to address direct overlaps in package.
 
         Args:
@@ -11744,6 +11871,11 @@ class MeasurePackage(Measure):
                 case measure energy/carb/cost (used to adj. output breakouts).
             key_list (list): List of keys with microsegment info. (primary/
                 secondary, region, bldg, fuel, end use, tech type, vintage)
+            out_cz (string): Climate zone output breakout category for current mseg.
+            out_bldg (string): Building type/vintage output breakout category for current mseg.
+            out_eu (string): End-use output breakout category for current mseg.
+            out_fuel_save (string): Fuel type (baseline) output breakout category for current mseg.
+            out_fuel_gain (string): Fuel type (switched to) output breakout cat. for current mseg.
 
         Returns:
             Updated contributing microsegment and out break info. for the
@@ -11783,11 +11915,10 @@ class MeasurePackage(Measure):
                 self.find_base_eff_adj_fracs(
                     msegs_meas_init, cm_key, adopt_scheme,
                     name_meas, htcl_key_match, overlap_meas)
-            # Adjust stock, energy, carbon, and energy/carbon cost data
-            # based on savings contribution of the measure and overlapping
-            # measure(s) in this contributing microsegment, as well as the
-            # relative performance of the overlapping measure(s)
-            for k in ["stock", "energy", "carbon"]:
+            # Adjust energy, carbon, and energy/carbon cost data based on savings contribution of
+            # the measure and overlapping measure(s) in this contributing microsegment, as well as
+            # the relative performance of the overlapping measure(s)
+            for k in ["energy", "carbon"]:
                 # Make adjustments to energy/carbon/cost microsegments
                 mseg_adj, mseg_cost_adj, tot_base_orig, tot_eff_orig, \
                     tot_eff_capt_orig, tot_save_orig, tot_base_orig_ecost, \
@@ -11795,17 +11926,28 @@ class MeasurePackage(Measure):
                     self.make_base_eff_adjs(
                         k, cm_key, msegs_meas, base_adj,
                         eff_adj, eff_adj_c, eff_capt_env_frac)
-                # Make adjustments to energy/carbon/cost output breakouts if
-                # full data reporting is required for the current adoption
-                # scenario
-                if mseg_out_break_adj:
+                # Make adjustments to energy/carbon/energy cost output breakouts if full data
+                # reporting is required for the current adoption scenario and variable
+                if mseg_out_break_adj and k in mseg_out_break_adj.keys():
                     mseg_out_break_adj = self.find_adj_out_break_cats(
                         k, cm_key, mseg_adj, mseg_cost_adj, mseg_out_break_adj,
                         tot_base_orig, tot_eff_orig, tot_eff_capt_orig,
                         tot_save_orig, tot_base_orig_ecost, tot_eff_orig_ecost,
                         tot_save_orig_ecost, key_list, fuel_switch_to,
-                        fs_eff_splt, eff_capt_env_frac)
-            # Special handling for cost merge when add-on measure is packaged
+                        fs_eff_splt, eff_capt_env_frac, out_cz, out_bldg, out_eu, out_fuel_save,
+                        out_fuel_gain)
+
+            # Adjust stock and stock cost data (the latter only if user is reporting it)
+
+            # Make adjustments to stock microsegments
+            mseg_adj, mseg_cost_adj, tot_base_orig, tot_eff_orig, tot_eff_capt_orig, \
+                tot_save_orig, tot_base_orig_scost, tot_eff_orig_scost, tot_save_orig_scost = \
+                self.make_base_eff_adjs("stock", cm_key, msegs_meas, base_adj, eff_adj, eff_adj_c,
+                                        eff_capt_env_frac)
+
+            # Stock costs for measures in the package are generally additive across contributing
+            # measures and do not require adjustment in this function, except when add-on measures
+            # are packaged
             if meas_typ == "add-on":
                 # Determine whether any of the measures overlapping with the
                 # packaged measure are full service measures
@@ -11832,6 +11974,17 @@ class MeasurePackage(Measure):
                         msegs_meas["cost"]["stock"]["competed"]["baseline"] = [
                             {yr: 0 for yr in self.handyvars.aeo_years}
                         for n in range(2)]
+
+            # Make adjustments to stock/stock cost output breakouts if full data reporting is
+            # required for the current adoption scenario and variable
+            if mseg_out_break_adj and "stock" in mseg_out_break_adj.keys():
+                mseg_out_break_adj = self.find_adj_out_break_cats(
+                    "stock", cm_key, mseg_adj, mseg_cost_adj, mseg_out_break_adj,
+                    tot_base_orig, tot_eff_orig, tot_eff_capt_orig,
+                    tot_save_orig, tot_base_orig_scost, tot_eff_orig_scost,
+                    tot_save_orig_scost, key_list, fuel_switch_to,
+                    fs_eff_splt, eff_capt_env_frac, out_cz, out_bldg, out_eu, out_fuel_save,
+                    out_fuel_gain)
 
             # If necessary, adjust fugitive emissions data
 
@@ -11918,10 +12071,9 @@ class MeasurePackage(Measure):
 
         return msegs_meas, mseg_out_break_adj
 
-    def merge_htcl_overlaps(
-            self, msegs_meas, cm_key, adopt_scheme,
-            mseg_out_break_adj, name_meas, fuel_switch_to, fs_eff_splt,
-            key_list, opts, common_stk):
+    def merge_htcl_overlaps(self, msegs_meas, cm_key, adopt_scheme, mseg_out_break_adj, name_meas,
+                            fuel_switch_to, fs_eff_splt, key_list, opts, common_stk, out_cz,
+                            out_bldg, out_eu, out_fuel_save, out_fuel_gain):
 
         """Adjust measure mseg data to address equip/env overlaps in package.
 
@@ -11946,6 +12098,11 @@ class MeasurePackage(Measure):
             opts (object): Stores user-specified execution options.
             common_stk (dict or NoneType): Common, pre-adjusted measure-
                 captured stock data for the current contributing microsegment.
+            out_cz (string): Climate zone output breakout category for current mseg.
+            out_bldg (string): Building type/vintage output breakout category for current mseg.
+            out_eu (string): End-use output breakout category for current mseg.
+            out_fuel_save (string): Fuel type (baseline) output breakout category for current mseg.
+            out_fuel_gain (string): Fuel type (switched to) output breakout cat. for current mseg.
 
         Returns:
             Updated contributing microsegment and out break info. for the
@@ -11989,11 +12146,11 @@ class MeasurePackage(Measure):
                 if mseg_out_break_adj:
                     # Make adjustments to energy/carbon/cost output breakouts
                     mseg_out_break_adj = self.find_adj_out_break_cats(
-                        k, cm_key, mseg_adj, mseg_cost_adj, mseg_out_break_adj,
-                        tot_base_orig, tot_eff_orig, tot_eff_capt_orig,
-                        tot_save_orig, tot_base_orig_ecost, tot_eff_orig_ecost,
-                        tot_save_orig_ecost, key_list, fuel_switch_to,
-                        fs_eff_splt, eff_capt_env_frac)
+                        k, cm_key, mseg_adj, mseg_cost_adj, mseg_out_break_adj, tot_base_orig,
+                        tot_eff_orig, tot_eff_capt_orig, tot_save_orig, tot_base_orig_ecost,
+                        tot_eff_orig_ecost, tot_save_orig_ecost, key_list, fuel_switch_to,
+                        fs_eff_splt, eff_capt_env_frac, out_cz, out_bldg, out_eu, out_fuel_save,
+                        out_fuel_gain)
 
             # If necessary, adjust fugitive emissions data
 
@@ -12611,20 +12768,22 @@ class MeasurePackage(Measure):
         """
 
         # Initialize variables used to track pre-adjusted mseg data
-        tot_base_orig, tot_eff_orig, tot_save_orig, tot_base_orig_ecost, \
-            tot_eff_orig_ecost, tot_save_orig_ecost = ('' for n in range(6))
+        tot_base_orig, tot_eff_orig, tot_save_orig, tot_base_orig_cost, \
+            tot_eff_orig_cost, tot_save_orig_cost = ('' for n in range(6))
         # Create shorthand for stock/energy/carbon/lifetime msegs data
         mseg_adj = msegs_meas[k]
         if k == "stock":
+            if self.usr_opts["cap_invest"] is not False:
+                # Create shorthand for stock cost data if user chooses to calculate it
+                mseg_cost_adj = msegs_meas["cost"][k]
+            else:
+                mseg_cost_adj = False
             # Total baseline stock
             tot_base_orig = copy.deepcopy(mseg_adj["total"]["all"])
             # Total efficient stock
             tot_eff_orig = copy.deepcopy(mseg_adj["total"]["measure"])
             # Total efficient-captured stock is not relevant
             tot_eff_capt_orig = ""
-            # Stock costs do not require adjustment b/c they are additive
-            # (not overlapping)
-            mseg_cost_adj = None
             # Efficient-captured data only relevant for energy
             tot_eff_capt_orig = ""
         else:
@@ -12645,16 +12804,16 @@ class MeasurePackage(Measure):
                 copy.deepcopy(mseg_adj["total"]["baseline"][yr]) -
                 copy.deepcopy(mseg_adj["total"]["efficient"][yr]))
                 for yr in self.handyvars.aeo_years}
-        # Record total energy cost data before adjustment
-        if k == "energy" and mseg_cost_adj:
-            # Total baseline energy cost
-            tot_base_orig_ecost = copy.deepcopy(
+        # Record total stock or energy cost data before adjustment
+        if k in ["stock",  "energy"] and mseg_cost_adj:
+            # Total baseline stock or energy cost
+            tot_base_orig_cost = copy.deepcopy(
                 mseg_cost_adj["total"]["baseline"])
-            # Total efficient energy cost
-            tot_eff_orig_ecost = copy.deepcopy(
+            # Total efficient stock or energy cost
+            tot_eff_orig_cost = copy.deepcopy(
                 mseg_cost_adj["total"]["efficient"])
-            # Total energy cost savings
-            tot_save_orig_ecost = {yr: (
+            # Total stock or energy cost savings
+            tot_save_orig_cost = {yr: (
                 copy.deepcopy(mseg_cost_adj["total"]["baseline"][yr]) -
                 copy.deepcopy(mseg_cost_adj["total"]["efficient"][yr]))
                 for yr in self.handyvars.aeo_years}
@@ -12667,11 +12826,12 @@ class MeasurePackage(Measure):
             self.adj_pkg_mseg_keyvals(
                 mseg_adj, base_adj, eff_adj, eff_adj_c, base_eff_flag=None,
                 comp_flag=None)
-        # If applicable, adjust energy/carbon cost msegs
-        if mseg_cost_adj:
-            self.adj_pkg_mseg_keyvals(
-                mseg_cost_adj, base_adj, eff_adj, eff_adj_c,
-                base_eff_flag=None, comp_flag=None)
+        # If applicable, adjust energy cost msegs (stock costs generally do not require
+        # adjustment b/c they are additive (not overlapping) with the exception of add-on measures,
+        # which are handled separately (see 'merge_direct_overlaps' function)
+        if mseg_cost_adj and k != "stock":
+            self.adj_pkg_mseg_keyvals(mseg_cost_adj, base_adj, eff_adj, eff_adj_c,
+                                      base_eff_flag=None, comp_flag=None)
         # If necessary, for energy, add further tracking to isolate
         # efficient-captured data where both envelope and HVAC measures are
         # having impacts within an HVAC/envelope pkg.; calculated as
@@ -12683,32 +12843,31 @@ class MeasurePackage(Measure):
                 yr: mseg_adj["total"]["efficient-captured"][yr] *
                 eff_capt_env_frac[yr] for yr in self.handyvars.aeo_years}
 
-        return mseg_adj, mseg_cost_adj, tot_base_orig, tot_eff_orig, \
-            tot_eff_capt_orig, tot_save_orig, tot_base_orig_ecost, \
-            tot_eff_orig_ecost, tot_save_orig_ecost
+        return mseg_adj, mseg_cost_adj, tot_base_orig, tot_eff_orig, tot_eff_capt_orig, \
+            tot_save_orig, tot_base_orig_cost, tot_eff_orig_cost, tot_save_orig_cost
 
     def find_adj_out_break_cats(
-            self, k, cm_key, msegs_ecarb, msegs_ecarb_cost, mseg_out_break_adj,
-            tot_base_orig, tot_eff_orig, tot_eff_capt_orig, tot_save_orig,
-            tot_base_orig_ecost, tot_eff_orig_ecost, tot_save_orig_ecost,
-            key_list, fuel_switch_to, fs_eff_splt, eff_capt_env_frac):
+            self, k, cm_key, msegs_st_en_crb, msegs_st_en_crb_cost, mseg_out_break_adj,
+            tot_base_orig, tot_eff_orig, tot_eff_capt_orig, tot_save_orig, tot_base_orig_cost,
+            tot_eff_orig_cost, tot_save_orig_cost, key_list, fuel_switch_to, fs_eff_splt,
+            eff_capt_env_frac, out_cz, out_bldg, out_eu, out_fuel_save, out_fuel_gain):
         """Adjust output breakouts after removing stock/energy/carbon data overlaps.
 
         Args:
             k (str): Data type indicator ("stock" or "energy" or "carbon")
             cm_key (tuple): Microsegment key describing the contributing
                 microsegment currently being added (e.g. reg->bldg, etc.)
-            msegs_ecarb (dict): Shorthand for stock/energy/carbon data.
-            msegs_ecarb_cost (dict): Shorthand for stock/energy/carbon cost data.
+            msegs_st_en_crb (dict): Shorthand for stock/energy/carbon data.
+            msegs_st_en_crb_cost (dict): Shorthand for stock/energy/carbon cost data.
             mseg_out_break_adj (dict): Initial output breakout data.
             tot_base_orig (dict): Unadjusted baseline stock/energy/carbon data.
             tot_eff_orig (dict): Unadjusted efficient stock/energy/carbon data.
             tot_eff_capt_orig (dict): Unadjusted efficient-captured energy
                 data.
             tot_save_orig (dict): Unadjusted stock/energy/carbon savings data.
-            tot_base_orig_ecost (dict): Unadjusted base energy cost data.
-            tot_eff_orig_ecost (dict): Unadjusted efficient energy cost data.
-            tot_save_orig_ecost (dict): Unadjusted energy cost savings data.
+            tot_base_orig_cost (dict): Unadjusted base energy or stock cost data.
+            tot_eff_orig_cost (dict): Unadjusted efficient energy or stock cost data.
+            tot_save_orig_cost (dict): Unadjusted energy or stock cost savings data.
             key_list (list): List of microsegment keys.
             fuel_switch_to (string): Indicator of which baseline fuel the
                 measure switches to (if applicable).
@@ -12723,153 +12882,40 @@ class MeasurePackage(Measure):
             measures in a package.
         """
 
+        # Handle the special case of energy and/or capital cost adjustments
+        if all([x for x in [tot_base_orig_cost, tot_eff_orig_cost,
+                            tot_save_orig_cost]]):
+            cost_brk_key = ("energy cost" if k == "energy" else "capital cost")
+        else:
+            cost_brk_key = False
+
         # Establish whether efficient captured energy data need adjustment
         if k == "energy" and self.usr_opts["no_eff_capt"] is not True:
             eff_capt = True
         else:
             eff_capt = False
 
-        # Establish applicable climate zone breakout
-        for cz in self.handyvars.out_break_czones.items():
-            if key_list[1] in cz[1]:
-                out_cz = cz[0]
-        # Establish applicable building type breakout
-        for bldg in self.handyvars.out_break_bldgtypes.items():
-            if all([x in bldg[1] for x in [
-                    key_list[2], key_list[-1]]]):
-                out_bldg = bldg[0]
-        # Establish applicable end use breakout
-        for eu in self.handyvars.out_break_enduses.items():
-            # * Note: The 'other' microsegment end
-            # use may map to either the 'Refrigeration' output
-            # breakout or the 'Other' output breakout, depending on
-            # the technology type specified in the measure
-            # definition. Also note that 'supply' side
-            # heating/cooling microsegments map to the
-            # 'Heating (Equip.)'/'Cooling (Equip.)' end uses, while
-            # 'demand' side heating/cooling microsegments map to
-            # the 'Heating (Env.)'/'Cooling (Env.) end use, with the
-            # exception of 'demand' side heating/cooling microsegments that
-            # represent waste heat from lights - these are
-            # categorized as part of the 'Lighting' end use
-            if key_list[4] == "other":
-                if key_list[5] == "freezers":
-                    out_eu = "Refrigeration"
-                else:
-                    out_eu = "Other"
-            elif key_list[4] in eu[1]:
-                if (eu[0] in ["Heating (Equip.)", "Cooling (Equip.)"] and
-                    key_list[5] == "supply") or (
-                    eu[0] in ["Heating (Env.)", "Cooling (Env.)"] and
-                    key_list[5] == "demand" and key_list[0] == "primary") or (
-                    eu[0] not in ["Heating (Equip.)", "Cooling (Equip.)",
-                                  "Heating (Env.)", "Cooling (Env.)"]):
-                    out_eu = eu[0]
-            elif "lighting gain" in key_list:
-                out_eu = "Lighting"
-        # If applicable, establish fuel type breakout (electric vs.
-        # non-electric); note – only applicable to end uses that
-        # are at least in part fossil-fired
-        if len(self.handyvars.out_break_fuels.keys()) != 0 and (
-                out_eu in self.handyvars.out_break_eus_w_fsplits):
-            # Flag for detailed fuel type breakout
-            detail = len(self.handyvars.out_break_fuels.keys()) > 2
-            # Establish breakout of fuel type that is being
-            # reduced (e.g., through efficiency or fuel switching
-            # away from the fuel)
-            for f in self.handyvars.out_break_fuels.items():
-                if key_list[3] in f[1]:
-                    # Special handling for other fuel tech.,
-                    # under detailed fuel type breakouts; this
-                    # tech. may fit into multiple fuel categories
-                    if detail and key_list[3] == "other fuel":
-                        # Assign coal/kerosene tech.
-                        if f[0] == "Distillate/Other" and (
-                            key_list[-2] is not None and any([
-                                x in key_list[-2] for x in [
-                                "coal", "kerosene"]])):
-                            out_fuel_save = f[0]
-                        # Assign commercial other fuel to
-                        # Distillate/Other
-                        elif f[0] == "Distillate/Other" and (
-                            key_list[2] in
-                                self.handyvars.in_all_map[
-                                'bldg_type']['commercial']):
-                            out_fuel_save = f[0]
-                        # Assign wood tech.
-                        elif f[0] == "Biomass" and (
-                            key_list[-2] is not None and "wood" in
-                                key_list[-2]):
-                            out_fuel_save = f[0]
-                        # Assign all other tech. to propane
-                        elif f[0] == "Propane":
-                            out_fuel_save = f[0]
-                    else:
-                        out_fuel_save = f[0]
-            # Establish breakout of fuel type that is being added
-            # to via fuel switching, if applicable
-            if fuel_switch_to == "electricity" and out_fuel_save != "Electric":
-                out_fuel_gain = "Electric"
-            elif fuel_switch_to not in [None, "electricity"] and \
-                    out_fuel_save == "Electric":
-                # Check for detailed fuel types
-                if detail:
-                    for f in self.handyvars.out_break_fuels.items():
-                        # Special handling for other fuel tech.,
-                        # under detailed fuel type breakouts; this
-                        # tech. may fit into multiple fuel cats.
-                        if self.fuel_switch_to in f[1] and \
-                                key_list[3] == "other fuel":
-                            # Assign coal/kerosene tech.
-                            if f[0] == "Distillate/Other" and (
-                                key_list[-2] is not None and any([
-                                    x in key_list[-2] for x in [
-                                    "coal", "kerosene"]])):
-                                out_fuel_gain = f[0]
-                            # Assign commercial other fuel to Distillate/Other
-                            elif f[0] == "Distillate/Other" and (
-                                key_list[2] in
-                                    self.handyvars.in_all_map[
-                                    'bldg_type']['commercial']):
-                                out_fuel_gain = f[0]
-                            # Assign wood tech.
-                            elif f[0] == "Biomass" and (
-                                key_list[-2] is not None and "wood" in
-                                    key_list[-2]):
-                                out_fuel_gain = f[0]
-                            # Assign all other tech. to propane
-                            elif f[0] == "Propane":
-                                out_fuel_gain = f[0]
-                        elif self.fuel_switch_to in f[1]:
-                            out_fuel_gain = f[0]
-                else:
-                    out_fuel_gain = "Non-Electric"
-            else:
-                out_fuel_gain = ""
-        else:
-            out_fuel_save, out_fuel_gain = ("" for n in range(2))
-
         # Shorthands for data used to adjust original output breakouts
         base_orig, eff_orig, save_orig = tot_base_orig, tot_eff_orig, tot_save_orig
         if k == "stock":
-            base_adj, eff_adj = msegs_ecarb["total"]["all"], msegs_ecarb["total"]["measure"]
+            base_adj, eff_adj = msegs_st_en_crb["total"]["all"], msegs_st_en_crb["total"]["measure"]
         else:
-            base_adj, eff_adj = msegs_ecarb["total"]["baseline"], msegs_ecarb["total"]["efficient"]
+            base_adj, eff_adj = msegs_st_en_crb["total"]["baseline"], \
+                msegs_st_en_crb["total"]["efficient"]
             # Shorthands for efficient-captured energy data if not suppressed
             # by user
             if eff_capt:
                 eff_capt_orig, eff_capt_adj = [
-                    tot_eff_capt_orig, msegs_ecarb["total"][
+                    tot_eff_capt_orig, msegs_st_en_crb["total"][
                         "efficient-captured"]]
         # If necessary, shorthands for data used to adjust original cost output
-        if all([x for x in [tot_base_orig_ecost, tot_eff_orig_ecost,
-                            tot_save_orig_ecost]]):
+        if cost_brk_key:
             # Shorthands for data used to adjust original output breakouts
             base_cost_orig, eff_cost_orig, save_cost_orig, base_cost_adj, \
-                eff_cost_adj = [tot_base_orig_ecost, tot_eff_orig_ecost,
-                                tot_save_orig_ecost,
-                                msegs_ecarb_cost["total"]["baseline"],
-                                msegs_ecarb_cost["total"]["efficient"]]
+                eff_cost_adj = [tot_base_orig_cost, tot_eff_orig_cost,
+                                tot_save_orig_cost,
+                                msegs_st_en_crb_cost["total"]["baseline"],
+                                msegs_st_en_crb_cost["total"]["efficient"]]
 
         # Fuel switching case
         if out_fuel_save and out_fuel_gain:
@@ -13000,62 +13046,67 @@ class MeasurePackage(Measure):
                             eff_orig[yr] - eff_adj[yr]) * (
                             1 - fs_eff_splt_var[yr]))
                     for yr in self.handyvars.aeo_years}
-            # Energy costs
-            if all([x for x in [tot_base_orig_ecost, tot_eff_orig_ecost,
-                                tot_save_orig_ecost]]):
-                # Pull the fraction of efficient-case energy cost that remains
-                # w/ the orig. fuel in each year for the contrib. measure/mseg
-                fs_eff_splt_cost = {
-                    yr: ((fs_eff_splt["cost"][0][yr] +
-                          fs_eff_splt["cost"][1][yr]) /
-                         fs_eff_splt["cost"][2][yr]) if
-                    fs_eff_splt["cost"][2][yr] != 0 else 1
-                    for yr in self.handyvars.aeo_years}
+            # Energy or stock costs
+            if cost_brk_key:
+                # Energy vs. stock cost breakouts; the latter by convention does not include
+                # any stock of the baseline fuel in efficient-case reporting, stock maps entirely
+                # the switched to fuel
+                if "energy" in cost_brk_key:
+                    # Pull the fraction of efficient-case energy cost that remains
+                    # w/ the orig. fuel in each year for the contrib. measure/mseg
+                    fs_eff_splt_cost = {
+                        yr: ((fs_eff_splt["energy cost"][0][yr] +
+                              fs_eff_splt["energy cost"][1][yr]) /
+                             fs_eff_splt["energy cost"][2][yr]) if
+                        fs_eff_splt["energy cost"][2][yr] != 0 else 1
+                        for yr in self.handyvars.aeo_years}
+                else:
+                    fs_eff_splt_cost = {yr: 0 for yr in self.handyvars.aeo_years}
 
                 # Energy cost; original fuel
-                mseg_out_break_adj["cost"]["baseline"][
+                mseg_out_break_adj[cost_brk_key]["baseline"][
                     out_cz][out_bldg][out_eu][out_fuel_save], \
-                    mseg_out_break_adj["cost"]["efficient"][
+                    mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_save], \
-                    mseg_out_break_adj["cost"]["savings"][
+                    mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_save] = [
                     # Remove adjusted baseline
-                    {yr: mseg_out_break_adj["cost"]["baseline"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["baseline"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             base_cost_orig[yr] - base_cost_adj[yr]) for
                      yr in self.handyvars.aeo_years},
                     # Remove adjusted efficient case that remains with base
                     # fuel
-                    {yr: mseg_out_break_adj["cost"]["efficient"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             eff_cost_orig[yr] - eff_cost_adj[yr]) *
                      fs_eff_splt_cost[yr] for yr in self.handyvars.aeo_years},
                     # Adjusted savings is difference between adjusted baseline
                     # and efficient and is subtracted from existing savings for
                     # baseline fuel (e.g., savings becomes less positive)
-                    {yr: mseg_out_break_adj["cost"]["savings"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             (base_cost_orig[yr] - base_cost_adj[yr]) -
                             (eff_cost_orig[yr] - eff_cost_adj[yr]) *
                      fs_eff_splt_cost[yr]) for yr in self.handyvars.aeo_years}]
                 # Switched to fuel
-                mseg_out_break_adj["cost"]["efficient"][
+                mseg_out_break_adj[cost_brk_key]["efficient"][
                     out_cz][out_bldg][out_eu][out_fuel_gain], \
-                    mseg_out_break_adj["cost"]["savings"][
+                    mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_gain] = [
                     # Note: Baseline case remains zero (no baseline before
                     # switch)
 
                     # Remove adjusted efficient case that switched from base
                     # fuel
-                    {yr: mseg_out_break_adj["cost"]["efficient"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_gain][yr] - ((
                             eff_cost_orig[yr] - eff_cost_adj[yr]) * (
                             1 - fs_eff_splt_cost[yr])) for
                      yr in self.handyvars.aeo_years},
                     # Adjusted efficient is added to the existing savings for
                     # baseline fuel (e.g., savings becomes less negative)
-                    {yr: mseg_out_break_adj["cost"]["savings"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_gain][yr] + ((
                             eff_cost_orig[yr] - eff_cost_adj[yr]) * (
                             1 - fs_eff_splt_cost[yr])) for
@@ -13106,28 +13157,27 @@ class MeasurePackage(Measure):
                             save_orig[yr] - (base_adj[yr] - eff_adj[yr])) for
                         yr in self.handyvars.aeo_years}
 
-            # Energy costs
-            if all([x for x in [tot_base_orig_ecost, tot_eff_orig_ecost,
-                                tot_save_orig_ecost]]):
-                mseg_out_break_adj["cost"]["baseline"][
+            # Energy or stock costs
+            if cost_brk_key:
+                mseg_out_break_adj[cost_brk_key]["baseline"][
                     out_cz][out_bldg][out_eu][out_fuel_save], \
-                    mseg_out_break_adj["cost"]["efficient"][
+                    mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_save], \
-                    mseg_out_break_adj["cost"]["savings"][
+                    mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_save] = [
                     # Remove adjusted baseline
-                    {yr: mseg_out_break_adj["cost"]["baseline"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["baseline"][
                             out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         base_cost_orig[yr] - base_cost_adj[yr]) for
                      yr in self.handyvars.aeo_years},
                     # Remove adjusted efficient
-                    {yr: mseg_out_break_adj["cost"]["efficient"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         eff_cost_orig[yr] - eff_cost_adj[yr]) for
                      yr in self.handyvars.aeo_years},
                     # Adjusted savings is difference between adjusted
                     # baseline/efficient
-                    {yr: mseg_out_break_adj["cost"]["savings"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         save_cost_orig[yr] - (
                             base_cost_adj[yr] - eff_cost_adj[yr])) for
@@ -13175,28 +13225,27 @@ class MeasurePackage(Measure):
                         save_orig[yr] - (base_adj[yr] - eff_adj[yr])) for
                     yr in self.handyvars.aeo_years}
 
-            # Energy costs
-            if all([x for x in [tot_base_orig_ecost, tot_eff_orig_ecost,
-                                tot_save_orig_ecost]]):
-                mseg_out_break_adj["cost"]["baseline"][
+            # Energy or stock costs
+            if cost_brk_key:
+                mseg_out_break_adj[cost_brk_key]["baseline"][
                     out_cz][out_bldg][out_eu], \
-                    mseg_out_break_adj["cost"]["efficient"][
+                    mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu], \
-                    mseg_out_break_adj["cost"]["savings"][
+                    mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu] = [
                     # Remove adjusted baseline
-                    {yr: mseg_out_break_adj["cost"]["baseline"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["baseline"][
                             out_cz][out_bldg][out_eu][yr] - (
                         base_cost_orig[yr] - base_cost_adj[yr]) for
                      yr in self.handyvars.aeo_years},
                     # Remove adjusted efficient
-                    {yr: mseg_out_break_adj["cost"]["efficient"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][yr] - (
                         eff_cost_orig[yr] - eff_cost_adj[yr]) for
                      yr in self.handyvars.aeo_years},
                     # Adjusted savings is difference between adjusted
                     # baseline/efficient
-                    {yr: mseg_out_break_adj["cost"]["savings"][
+                    {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][yr] - (
                         save_cost_orig[yr] - (
                             base_cost_adj[yr] - eff_cost_adj[yr])) for

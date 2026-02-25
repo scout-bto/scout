@@ -132,11 +132,11 @@ def units_id(sel, flag):
     # for cost or performance units
     if flag == 'cost':
         if enduse == 4:  # ventilation
-            theunits = '2017$/1000 cfm'
+            theunits = '2022$/1000 cfm'
         elif enduse == 6:  # lighting
-            theunits = '2017$/1000 lm'
+            theunits = '2022$/1000 lm'
         else:
-            theunits = '2017$/kBTU out/hr'
+            theunits = '2022$/kBTU out/hr'
     elif flag == 'performance':
         if enduse == 4:  # ventilation
             theunits = 'cfm-hr/BTU in'
@@ -843,7 +843,7 @@ def mseg_technology_handler(
             sorted(the_cost['best'].keys()),
             sorted(the_cost['best'].values())))
         # Set the year that should be assumed for EIA cost dollars
-        cost_yr = '2017'
+        cost_yr = '2022'
         # Find end use service of current microsegment
         eu = [x[0] for x in eu_map.items() if x[1] == sel[2]][0]
         # Set cost units appropriately for the end use service

@@ -101,8 +101,8 @@ class UsefulVars(object):
         self.com_nRTU_fs_tech (list): Flag heating tech. that pairs with
             larger commercial cooling equipment (not RTU).
         resist_ht_wh_tech (list): Flag for resistance-based heat/WH technology.
-        minor_hvac_tech (list): Minor/secondary HVAC tech. to remove stock/
-            stock/cost data for when major tech. is also in measure definition.
+        secondary_hvac_tech (list): Secondary HVAC tech. to remove stock/
+            stock/cost data for when primary tech. is also in measure definition.
         alt_attr_brk_map (dict): Mapping factors used to handle alternate
             regional breakouts in measure performance, cost, or mkt. scaling.
         months (str): Month sequence for accessing time-sensitive data.
@@ -538,13 +538,16 @@ class UsefulVars(object):
             self.hp_rates, self.com_RTU_fs_tech, self.com_nRTU_fs_tech = (
                 None for n in range(3))
         self.resist_ht_wh_tech = [
-                "elec_boiler", "electric_res-heat", "resistance heat",
+                "elec_boiler", "electric_res-heat", "elec_res-heater", "resistance heat",
                 "electric WH", "elec_booster_water_heater",
                 "elec_water_heater", "Solar water heater", "solar WH"]
-        self.minor_hvac_tech = [
+        # Note: conceptually this includes anything in an HVAC package that isn't the primary
+        # heating or cooling equipment
+        self.secondary_hvac_tech = [
                 "room AC", "wall-window_room_AC", "secondary heater",
                 "secondary heater (wood)", "secondary heater (coal)",
-                "secondary heater (kerosene)", "secondary heater (LPG)"]
+                "secondary heater (kerosene)", "secondary heater (LPG)",
+                "CAV_Vent", "VAV_Vent"]
 
         # Global information for anchoring linked heating/cooling stock
         # turnover and exogenous switching rate calculations

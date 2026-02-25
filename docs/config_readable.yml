@@ -143,6 +143,13 @@ ecm_prep:
     Will not be assessed if grid_decarb_level is non-null. Allowed
     values are {highelec_lowfossil, lowelec_highfossil, null}.
     Default null
+  report_stk:
+    cap_invest: (boolean) Report baseline and measure unit capital
+      costs, including summaries across segments and full breakouts.
+      Default False
+    num_units: (boolean) Report number of baseline and measure
+      units, including summaries across segments and full breakouts.
+      Default False
   retrofits:
     retrofit_mult_year: (integer) The year by which the retrofit
       multiplier is achieved (only for increasing retrofit_type).
@@ -234,8 +241,6 @@ run:
   report_custom_yrs: (array) Enter a custom list of years to use
     for reporting. When left blank, all years are reported. Default
     []
-  report_stk: (boolean) If true, report baseline/measure stock
-    data. Default False
   results_directory: (string) Directory in which to output results.
     The directory path can be absolute or relative to either the
     configuration file (.yml) or the command line path, depending

@@ -376,6 +376,7 @@ class TestMeasureInit(unittest.TestCase, Constants):
     def setUpClass(cls):
         """Define objects/variables for use across all class functions."""
         handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                   brk_vars=["stock", "energy", "carbon", "energy cost"],
                                    brkout="basic", regions="AIA",
                                    state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         cls.sample_measure = CommonTestMeasures().sample_measure
@@ -407,6 +408,7 @@ class OutputBreakoutDictWalkTest(unittest.TestCase, CommonMethods, Constants):
     def setUpClass(cls):
         """Define objects/variables for use across all class functions."""
         handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                   brk_vars=["stock", "energy", "carbon", "energy cost"],
                                    brkout="basic", regions="AIA",
                                    state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         cls.focus_yrs_test = handyvars.aeo_years
@@ -510,6 +512,7 @@ class PrioritizationMetricsTest(unittest.TestCase, CommonMethods, Constants):
         """Define objects/variables for use across all class functions."""
         cls.opts = NullOpts().opts
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, cls.opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         # Hard code time preference premiums
@@ -1506,6 +1509,7 @@ class MetricUpdateTest(unittest.TestCase, CommonMethods, Constants):
         """Define objects/variables for use across all class functions."""
         cls.opts = NullOpts().opts
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         # Hard code time preference premiums
@@ -1592,6 +1596,7 @@ class PaybackTest(unittest.TestCase, Constants):
     def setUpClass(cls):
         """Define objects/variables for use across all class functions."""
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         sample_measure = CommonTestMeasures().sample_measure
@@ -1678,6 +1683,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
         """Define objects/variables for use across all class functions."""
         cls.opts = NullOpts().opts
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, cls.opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         # Reset meta retro rate
@@ -12055,14 +12061,14 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                 "Technical potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Technical potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
             # Extend for max. adoption potential breakouts
             cls.measures_all[ind].markets[
                 "Max adoption potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Max adoption potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
         cls.measures_demand = cls.measures_all[0:2]
         cls.measures_supply = cls.measures_all[2:5]
@@ -12216,14 +12222,14 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                 "Technical potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Technical potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
             # Extend for max. adoption potential breakouts
             cls.measures_all_dist[ind].markets[
                 "Max adoption potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Max adoption potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
         cls.measures_demand_dist = cls.measures_all_dist[0:2]
         cls.measures_supply_dist = cls.measures_all_dist[2:5]
@@ -16395,7 +16401,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                             "2009": 50,
                                             "2010": 50
                                         }}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 "CA": {
                                     'Residential (Existing)': {
@@ -16664,7 +16670,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                             "2009": 50,
                                             "2010": 50
                                         }}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 "CA": {
                                     'Residential (Existing)': {
@@ -16862,7 +16868,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                             "2009": 50,
                                             "2010": 50
                                         }}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 "CA": {
                                     'Residential (Existing)': {
@@ -17072,7 +17078,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                             "2009": 50,
                                             "2010": 50
                                         }}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 "CA": {
                                     'Residential (Existing)': {
@@ -17257,6 +17263,7 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
 
         cls.opts = NullOpts().opts
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         # Reset meta retro rate
@@ -23557,14 +23564,14 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                 "Technical potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Technical potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
             # Extend for max. adoption potential breakouts
             cls.measures_all[ind].markets[
                 "Max adoption potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Max adoption potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
         cls.measures_secondary = [cls.measures_all[1]]
         # Instantiate engine object based on above measures
@@ -23723,14 +23730,14 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                 "Technical potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Technical potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
             # Extend for max. adoption potential breakouts
             cls.measures_all_dist[ind].markets[
                 "Max adoption potential"]["competed"]["mseg_out_break"] = {
                 key: copy.deepcopy(m.markets["Max adoption potential"][
                     "competed"]["mseg_out_break"])
-                for key in ["stock", "energy", "carbon", "cost"]
+                for key in ["stock", "energy", "carbon", "energy cost"]
             }
         cls.measures_secondary_dist = [cls.measures_all_dist[1]]
         cls.a_run_dist = run.Engine(
@@ -27769,6 +27776,7 @@ class NumpyConversionTest(unittest.TestCase, CommonMethods, Constants):
     def setUpClass(cls):
         """Define objects/variables for use across all class functions."""
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         cls.sample_measure = {
@@ -27826,6 +27834,7 @@ class AddedSubMktFractionsTest(unittest.TestCase, CommonMethods, Constants):
     def setUpClass(cls):
         """Define objects/variables for use across all class functions."""
         cls.handyvars = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                       brk_vars=["stock", "energy", "carbon", "energy cost"],
                                        brkout="basic", regions="AIA",
                                        state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         # Set standard adoption schemes
@@ -28050,9 +28059,10 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
     def setUpClass(cls):
         """Define objects/variables for use across all class functions."""
         cls.opts = NullOpts().opts
-        cls.hv_code_bps = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts, brkout="detail",
-                                         regions="State", state_appl_regs=None, codes="reference",
-                                         bps="reference", exog_rates=False)
+        cls.hv_code_bps = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                         brk_vars=["stock", "energy", "carbon", "energy cost"],
+                                         brkout="detail", regions="State", state_appl_regs=None,
+                                         codes="reference", bps="reference", exog_rates=False)
         # Adjust to test years
         cls.hv_code_bps.aeo_years = ["2009", "2010"]
         # Set cost conversions to 1
@@ -28293,7 +28303,7 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
                                     "2010": 0
                                 }
                             }}}}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     "CA": {
                         'Commercial (Existing)': {
@@ -28589,7 +28599,7 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
                                     "2010": 5
                                 }
                             }}}}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     "CA": {
                         'Commercial (Existing)': {
@@ -28953,7 +28963,7 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
         code_bps_meas_out = a_run_codes_bps.process_codes_bps(
             self.opts, self.test_adopt_scheme_code_bps, self.sample_msegs_sf_data, self.hv_code_bps,
             trim_yrs=False, code_comply_res=1, code_comply_com=1,
-            bps_comply_res=1, bps_comply_com=1)
+            bps_comply_res=1, bps_comply_com=1, report_stk_units=False, report_stk_costs=False)
 
         # Check the outputs of all measures
 

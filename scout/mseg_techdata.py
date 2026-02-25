@@ -855,7 +855,7 @@ def list_generator_techdata(eia_nlt_cp, eia_nlt_l, eia_lt,
         # Update cost information
         data_dict["installed cost"] = {
             "before incentives": {
-                "typical": cost_typ, "best": cost_best, "units": "2017$/unit",
+                "typical": cost_typ, "best": cost_best, "units": "2022$/unit",
                 "source": cost_source},
             "incentives": {
                 "by performance tier": incentives,

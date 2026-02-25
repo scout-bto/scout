@@ -149,10 +149,8 @@ class NullOpts(object):
         # for regions only
         test_ecms = Path(__file__).parent / "test_files" / "ecm_definitions"
         self.opts = ecm_args(["--ecm_directory", str(test_ecms),
-                              "--detail_brkout", "regions",
-                              "--alt_regions", "AIA",
-                              "--no_eff_capt",
-                              "--no_lnkd_stk_costs", "in_adopt_and_report",
+                              "--detail_brkout", "regions", "--alt_regions", "AIA",
+                              "--no_eff_capt", "--no_lnkd_stk_costs", "in_adopt_and_report",
                               "--elec_upgrade_costs", "ignore"])
         self.opts_dict = vars(self.opts)
 
@@ -9989,7 +9987,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                             'Heating (Env.)': {},
                             'Cooling (Env.)': {},
                             'Cooking': {}}}}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     'AIA CZ1': {
                         'Residential (New)': {
@@ -12533,7 +12531,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                             'Heating (Env.)': {},
                             'Cooling (Env.)': {},
                             'Cooking': {}}}}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     'AIA CZ1': {
                         'Residential (New)': {
@@ -15081,7 +15079,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                             'Heating (Env.)': {},
                             'Cooling (Env.)': {},
                             'Cooking': {}}}}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     'AIA CZ1': {
                         'Residential (New)': {
@@ -17459,7 +17457,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                                 'Electric': {'2009': 5.877e-08,
                                              '2010': 1.105744e-07},
                                 'Non-Electric': {}}}}}},
-            'cost': {
+            'energy cost': {
                 'baseline': {
                     'TRE': {
                         'Residential (Existing)': {
@@ -17578,7 +17576,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                                 'Electric': {'2009': 3.0038e-07,
                                              '2010': 5.362194e-07},
                                 'Non-Electric': {}}}}}},
-            'cost': {
+            'energy cost': {
                 'baseline': {
                     'TRE': {
                         'Residential (Existing)': {
@@ -65198,10 +65196,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                  {'2009': 0,
                                   '2010': 0,
                                   '2011': 0},
+                                 {'2009': 0,
+                                  '2010': 0,
+                                  '2011': 0},
                                  {'2009': 0.34772729873657227,
                                   '2010': 0.3636363744735718,
                                   '2011': 0.3795454502105713},
-                                 1],
+                                 1, {'2009': 1, '2010': 1, '2011': 1}],
                                 [{'2009': 34.77272987365723,
                                   '2010': 36.36363744735718,
                                   '2011': 37.95454502105713},
@@ -65299,10 +65300,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                  {'2009': 0,
                                   '2010': 0,
                                   '2011': 0},
+                                 {'2009': 0,
+                                  '2010': 0,
+                                  '2011': 0},
                                  {'2009': 0.34772729873657227,
                                   '2010': 0.3636363744735718,
                                   '2011': 0.3795454502105713},
-                                 1]],
+                                 1, {'2009': 1, '2010': 1, '2011': 1}]],
                                [[{'2009': 34.77272987365723,
                                   '2010': 36.36363744735718,
                                   '2011': 37.95454502105713},
@@ -65400,10 +65404,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                  {'2009': 0,
                                   '2010': 0,
                                   '2011': 0},
+                                 {'2009': 0,
+                                  '2010': 0,
+                                  '2011': 0},
                                  {'2009': 0.34772729873657227,
                                   '2010': 0.3636363744735718,
                                   '2011': 0.3795454502105713},
-                                 1],
+                                 1, {'2009': 1, '2010': 1, '2011': 1}],
                                 [{'2009': 34.77272987365723,
                                   '2010': 36.36363744735718,
                                   '2011': 37.95454502105713},
@@ -65501,10 +65508,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                  {'2009': 0,
                                   '2010': 0,
                                   '2011': 0},
+                                 {'2009': 0,
+                                  '2010': 0,
+                                  '2011': 0},
                                  {'2009': 0.34772729873657227,
                                   '2010': 0.3636363744735718,
                                   '2011': 0.3795454502105713},
-                                 1]]]
+                                 1, {'2009': 1, '2010': 1, '2011': 1}]]]
         cls.ok_out_bass = [[[{'2009': 0.0,
                               '2010': 0.37046322242013996,
                               '2011': 1.9299213234335353},
@@ -65602,10 +65612,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                              {'2009': 0,
                               '2010': 0,
                               '2011': 0},
+                             {'2009': 0,
+                              '2010': 0,
+                              '2011': 0},
                              {'2009': 0.0,
                               '2010': 0.0037046322242014,
                               '2011': 0.019299213234335352},
-                             1],
+                             1, {'2009': 1, '2010': 1, '2011': 1}],
                             [{'2009': 0.0,
                               '2010': 0.37046322242013996,
                               '2011': 1.9299213234335353},
@@ -65703,10 +65716,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                              {'2009': 0,
                               '2010': 0,
                               '2011': 0},
+                             {'2009': 0,
+                              '2010': 0,
+                              '2011': 0},
                              {'2009': 0.0,
                               '2010': 0.0037046322242014,
                               '2011': 0.019299213234335352},
-                             1]],
+                             1, {'2009': 1, '2010': 1, '2011': 1}]],
                            [[{'2009': 0.0,
                               '2010': 0.37046322242013996,
                               '2011': 1.9299213234335353},
@@ -65804,10 +65820,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                              {'2009': 0,
                               '2010': 0,
                               '2011': 0},
+                             {'2009': 0,
+                              '2010': 0,
+                              '2011': 0},
                              {'2009': 0.0,
                               '2010': 0.0037046322242014,
                               '2011': 0.019299213234335352},
-                             1],
+                             1, {'2009': 1, '2010': 1, '2011': 1}],
                             [{'2009': 0.0,
                               '2010': 0.37046322242013996,
                               '2011': 1.9299213234335353},
@@ -65905,10 +65924,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                              {'2009': 0,
                               '2010': 0,
                               '2011': 0},
+                             {'2009': 0,
+                              '2010': 0,
+                              '2011': 0},
                              {'2009': 0.0,
                               '2010': 0.0037046322242014,
                               '2011': 0.019299213234335352},
-                             1]]]
+                             1, {'2009': 1, '2010': 1, '2011': 1}]]]
         cls.ok_out_fraction_string = [[[{'2009': 30.000001192092896,
                                          '2010': 30.000001192092896,
                                          '2011': 30.000001192092896},
@@ -66006,10 +66028,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                         {'2009': 0,
                                          '2010': 0,
                                          '2011': 0},
+                                        {'2009': 0,
+                                         '2010': 0,
+                                         '2011': 0},
                                         {'2009': 0.30000001192092896,
                                          '2010': 0.30000001192092896,
                                          '2011': 0.30000001192092896},
-                                        1],
+                                        1, {'2009': 1, '2010': 1, '2011': 1}],
                                        [{'2009': 30.000001192092896,
                                          '2010': 30.000001192092896,
                                          '2011': 30.000001192092896},
@@ -66107,10 +66132,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                         {'2009': 0,
                                          '2010': 0,
                                          '2011': 0},
+                                        {'2009': 0,
+                                         '2010': 0,
+                                         '2011': 0},
                                         {'2009': 0.30000001192092896,
                                          '2010': 0.30000001192092896,
                                          '2011': 0.30000001192092896},
-                                        1]],
+                                        1, {'2009': 1, '2010': 1, '2011': 1}]],
                                       [[{'2009': 30.000001192092896,
                                          '2010': 30.000001192092896,
                                          '2011': 30.000001192092896},
@@ -66208,10 +66236,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                         {'2009': 0,
                                          '2010': 0,
                                          '2011': 0},
+                                        {'2009': 0,
+                                         '2010': 0,
+                                         '2011': 0},
                                         {'2009': 0.30000001192092896,
                                          '2010': 0.30000001192092896,
                                          '2011': 0.30000001192092896},
-                                        1],
+                                        1, {'2009': 1, '2010': 1, '2011': 1}],
                                        [{'2009': 30.000001192092896,
                                          '2010': 30.000001192092896,
                                          '2011': 30.000001192092896},
@@ -66309,10 +66340,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                         {'2009': 0,
                                          '2010': 0,
                                          '2011': 0},
+                                        {'2009': 0,
+                                         '2010': 0,
+                                         '2011': 0},
                                         {'2009': 0.30000001192092896,
                                          '2010': 0.30000001192092896,
                                          '2011': 0.30000001192092896},
-                                        1]]]
+                                        1, {'2009': 1, '2010': 1, '2011': 1}]]]
         cls.ok_out_bass_string = [[[{'2009': 0.0,
                                      '2010': 0.37046322242013996,
                                      '2011': 1.9299213234335353},
@@ -66410,10 +66444,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                     {'2009': 0,
                                      '2010': 0,
                                      '2011': 0},
+                                    {'2009': 0,
+                                     '2010': 0,
+                                     '2011': 0},
                                     {'2009': 0.0,
                                      '2010': 0.0037046322242014,
                                      '2011': 0.019299213234335352},
-                                    1],
+                                    1, {'2009': 1, '2010': 1, '2011': 1}],
                                    [{'2009': 0.0,
                                      '2010': 0.37046322242013996,
                                      '2011': 1.9299213234335353},
@@ -66511,10 +66548,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                     {'2009': 0,
                                      '2010': 0,
                                      '2011': 0},
+                                    {'2009': 0,
+                                     '2010': 0,
+                                     '2011': 0},
                                     {'2009': 0.0,
                                      '2010': 0.0037046322242014,
                                      '2011': 0.019299213234335352},
-                                    1]],
+                                    1, {'2009': 1, '2010': 1, '2011': 1}]],
                                   [[{'2009': 0.0,
                                      '2010': 0.37046322242013996,
                                      '2011': 1.9299213234335353},
@@ -66612,10 +66652,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                     {'2009': 0,
                                      '2010': 0,
                                      '2011': 0},
+                                    {'2009': 0,
+                                     '2010': 0,
+                                     '2011': 0},
                                     {'2009': 0.0,
                                      '2010': 0.0037046322242014,
                                      '2011': 0.019299213234335352},
-                                    1],
+                                    1, {'2009': 1, '2010': 1, '2011': 1}],
                                    [{'2009': 0.0,
                                      '2010': 0.37046322242013996,
                                      '2011': 1.9299213234335353},
@@ -66713,10 +66756,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                     {'2009': 0,
                                      '2010': 0,
                                      '2011': 0},
+                                    {'2009': 0,
+                                     '2010': 0,
+                                     '2011': 0},
                                     {'2009': 0.0,
                                      '2010': 0.0037046322242014,
                                      '2011': 0.019299213234335352},
-                                    1]]]
+                                    1, {'2009': 1, '2010': 1, '2011': 1}]]]
         cls.ok_out_bad_string = [[[{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -66814,10 +66860,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}],
                                   [{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -66915,10 +66964,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1]],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}]],
                                  [[{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -67016,10 +67068,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}],
                                   [{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -67117,10 +67172,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1]]]
+                                   1, {'2009': 1, '2010': 1, '2011': 1}]]]
         cls.ok_out_bad_values = [[[{'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
@@ -67218,10 +67276,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
-                                   1],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}],
                                   [{'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
@@ -67319,10 +67380,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
-                                   1]],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}]],
                                  [[{'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
@@ -67420,10 +67484,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
-                                   1],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}],
                                   [{'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
@@ -67521,10 +67588,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 0.0,
                                     '2010': 0.0,
                                     '2011': 0.0},
-                                   1]]]
+                                   1, {'2009': 1, '2010': 1, '2011': 1}]]]
         cls.ok_out_wrong_name = [[[{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -67622,10 +67692,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}],
                                   [{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -67723,10 +67796,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1]],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}]],
                                  [[{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -67824,10 +67900,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1],
+                                   1, {'2009': 1, '2010': 1, '2011': 1}],
                                   [{'2009': 100,
                                     '2010': 100,
                                     '2011': 100},
@@ -67925,10 +68004,13 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                                    {'2009': 0,
                                     '2010': 0,
                                     '2011': 0},
+                                   {'2009': 0,
+                                    '2010': 0,
+                                    '2011': 0},
                                    {'2009': 1,
                                     '2010': 1,
                                     '2011': 1},
-                                   1]]]
+                                   1, {'2009': 1, '2010': 1, '2011': 1}]]]
 
         cls.ok_out = [[[
                 {"2009": 100, "2010": 100, "2011": 100},
@@ -67967,7 +68049,7 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                 {"2009": 0, "2010": 0, "2011": 0},
                 {"2009": 0, "2010": 0, "2011": 0},
                 {"2009": 1, "2010": 1, "2011": 1},
-                1],
+                1, {'2009': 1, '2010': 1, '2011': 1}],
                 [
                 {"2009": 100, "2010": 100, "2011": 100},
                 {"2009": 10, "2010": 20, "2011": 30},
@@ -68005,7 +68087,7 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                 {"2009": 0, "2010": 0, "2011": 0},
                 {"2009": 0, "2010": 0, "2011": 0},
                 {"2009": 1, "2010": 1, "2011": 1},
-                1]],
+                1, {'2009': 1, '2010': 1, '2011': 1}]],
                 [[
                  {"2009": 100, "2010": 100, "2011": 100},
                  {"2009": 10, "2010": 20, "2011": 30},
@@ -68043,7 +68125,7 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                  {"2009": 0, "2010": 0, "2011": 0},
                  {"2009": 0, "2010": 0, "2011": 0},
                  {"2009": 1, "2010": 1, "2011": 1},
-                 1],
+                 1, {'2009': 1, '2010': 1, '2011': 1}],
                  [
                  {"2009": 100, "2010": 100, "2011": 100},
                  {"2009": 10, "2010": 20, "2011": 30},
@@ -68081,7 +68163,7 @@ class PartitionMicrosegmentTest(unittest.TestCase, CommonMethods):
                  {"2009": 0, "2010": 0, "2011": 0},
                  {"2009": 0, "2010": 0, "2011": 0},
                  {"2009": 1, "2010": 1, "2011": 1},
-                 1]]]
+                 1, {'2009': 1, '2010': 1, '2011': 1}]]]
 
     def test_ok(self):
         """Test the 'partition_microsegment' function given valid inputs.
@@ -69802,7 +69884,7 @@ class DivKeyValsFloatTest(unittest.TestCase, CommonMethods):
                 "total": {"2009": 500, "2010": 600},
                 "competed": {"2009": 700, "2010": 800},
                 "efficient": {"2009": 700, "2010": 800}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     "stock": {"2009": 900, "2010": 1000},
                     "energy": {"2009": 900, "2010": 1000},
@@ -69823,7 +69905,7 @@ class DivKeyValsFloatTest(unittest.TestCase, CommonMethods):
                 "total": {"2009": 125, "2010": 150},
                 "competed": {"2009": 175, "2010": 200},
                 "efficient": {"2009": 175, "2010": 200}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     "stock": {"2009": 225, "2010": 250},
                     "energy": {"2009": 225, "2010": 250},
@@ -69844,7 +69926,7 @@ class DivKeyValsFloatTest(unittest.TestCase, CommonMethods):
                 "total": {"2009": 500, "2010": 600},
                 "competed": {"2009": 700, "2010": 800},
                 "efficient": {"2009": 700, "2010": 800}},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     "stock": {"2009": 225, "2010": 250},
                     "energy": {"2009": 900, "2010": 1000},
@@ -126765,7 +126847,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2010": 10},
                                         'Heating (Equip.)': {},
                                         'Cooling (Equip.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'AIA CZ1': {
                                     'Residential (New)': {
@@ -127128,7 +127210,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2009": 5,
                                             "2010": 5},
                                         'Heating (Env.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'AIA CZ1': {
                                     'Residential (New)': {
@@ -127482,7 +127564,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2010": 5},
                                         'Cooling (Equip.)': {},
                                         'Heating (Env.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'AIA CZ1': {
                                     'Residential (New)': {
@@ -127831,7 +127913,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2010": 10},
                                         'Heating (Equip.)': {},
                                         'Cooling (Equip.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'AIA CZ1': {
                                     'Residential (New)': {
@@ -128184,7 +128266,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2010": 10},
                                         'Heating (Equip.)': {},
                                         'Cooling (Equip.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'TRE': {
                                     'Residential (New)': {
@@ -128553,7 +128635,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2009": 5,
                                             "2010": 5},
                                         'Heating (Env.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'TRE': {
                                     'Residential (New)': {
@@ -128913,7 +128995,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                                             "2010": 5},
                                         'Cooling (Equip.)': {},
                                         'Heating (Env.)': {}}}}},
-                        "cost": {
+                        "energy cost": {
                             "baseline": {
                                 'TRE': {
                                     'Residential (New)': {
@@ -129136,7 +129218,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                             },
                         },
                     }},
-            "cost": {
+            "energy cost": {
                 "baseline": {
                     'AIA CZ1': {
                         'Residential (New)': {
@@ -129928,13 +130010,13 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
              'end_use', 'technology_type', "htcl_tech_link",
              'yrs_on_mkt', 'measure_type', 'usr_opts', 'fuel_switch_to',
              'hp_convert_flag', 'add_cool_anchor_tech', 'min_eff_elec_flag',
-             'ref_case_flag', 'backup_fuel_fraction'],
+             'ref_case_flag', 'backup_fuel_fraction', 'target'],
             ["market_entry_year", "market_exit_year", "markets",
              "name", "remove", "retro_rate", 'tech_switch_to', 'technology',
              'end_use', 'technology_type', "htcl_tech_link",
              'yrs_on_mkt', 'measure_type', 'usr_opts', 'fuel_switch_to',
              'hp_convert_flag', 'add_cool_anchor_tech', 'min_eff_elec_flag',
-             'ref_case_flag', 'backup_fuel_fraction'],
+             'ref_case_flag', 'backup_fuel_fraction', 'target'],
             ['benefits', 'bldg_type', 'climate_zone', 'end_use', 'fuel_type',
              'tech_switch_to', "htcl_tech_link", "technology",
              "technology_type", "market_entry_year", "market_exit_year",

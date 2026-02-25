@@ -293,6 +293,19 @@ properties:
         default: null
         description: Key-value pairs to update fields across all ECM definitions. Any number of ECM fields can be updated with additional keys. Keys should correspond to ECM definition fields.
 
+      report_stk:
+        type: object
+        properties:
+          num_units:
+            type: boolean
+            default: false
+            description: Report number of baseline and measure units, including summaries across segments and full breakouts.
+          cap_invest:
+            type: boolean
+            default: false
+            description: Report baseline and measure unit capital costs, including summaries across segments and full breakouts.
+
+
   run:
     type: object
     required: []
@@ -319,10 +332,6 @@ properties:
         type: boolean
         default: false
         description: If true, a reduced set of only essential variables is reported.
-      report_stk:
-        type: boolean
-        default: false
-        description: If true, report baseline/measure stock data.
       report_cfs:
         type: boolean
         default: false

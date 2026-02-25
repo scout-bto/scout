@@ -477,7 +477,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 1300, "2010": 1300, "2011": 1400, "2012": 1500,
                         "2013": 1500}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": (
                     "EIA AEO (NOTE EIA convention of dividing HP costs "
                     "for existing buildings by 2 while putting all HP costs "
@@ -542,7 +542,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 483.33, "2010": 483.33, "2011": 483.33,
                         "2012": 483.33, "2013": 400}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
@@ -634,7 +634,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 300, "2010": 300, "2011": 300, "2012": 300,
                         "2013": 300}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
@@ -706,7 +706,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 200, "2010": 200, "2011": 200, "2012": 170,
                         "2013": 170}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
@@ -768,7 +768,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 2010, "2010": 2010, "2011": 2010, "2012": 1710,
                         "2013": 1710}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
@@ -832,7 +832,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 1500, "2010": 1500, "2011": 1500, "2012": 1500,
                         "2013": 1500}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
@@ -885,7 +885,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "2009": 65, "2010": 63.2, "2011": 63.2, "2012": 90.3,
                     "2013": 90.3},
                 "best": 0,
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
@@ -940,7 +940,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 550, "2010": 550, "2011": 575, "2012": 575,
                         "2013": 575}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source":  (
                     "EIA AEO (NOTE EIA convention of dividing HP costs "
                     "for existing buildings by 2 while putting all HP costs "
@@ -1005,7 +1005,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 550, "2010": 550, "2011": 575, "2012": 575,
                         "2013": 575}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": (
                     "EIA AEO (NOTE EIA convention of dividing HP costs "
                     "for existing buildings by 2 while putting all HP costs "
@@ -1070,7 +1070,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 550, "2010": 550, "2011": 575, "2012": 575,
                         "2013": 575}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": (
                     "EIA AEO (NOTE EIA convention of dividing HP costs "
                     "for existing buildings by 2 while putting all HP costs "
@@ -1135,7 +1135,7 @@ class ListGeneratorTest(unittest.TestCase, CommonMethods):
                     "existing": {
                         "2009": 550, "2010": 550, "2011": 575, "2012": 575,
                         "2013": 575}},
-                "units": "2017$/unit",
+                "units": "2022$/unit",
                 "source": "EIA AEO"},
             "incentives": {
                 "by performance tier": {
