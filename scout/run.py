@@ -5546,7 +5546,6 @@ class Engine(object):
                     m.markets[adopt_scheme]["competed"][
                         "mseg_out_break"]["capital cost"]["efficient"],
                     stk_eff_cost_avg, focus_yrs, divide=True)
-
             # Create shorthand variable for results by breakout category
             mkt_save_brk = self.output_ecms[m.name][
                 "Markets and Savings (by Category)"][adopt_scheme]
@@ -6431,13 +6430,14 @@ class Engine(object):
 
             # Set measure fuel type attribute for later use in tracking fuel switching
             meas_fuel, meas_eus = [m.fuel_type["primary"], m.end_use["primary"]]
+
             # Set shorthand for measure ComStock gap fraction attribute
             if hasattr(m, "gap_wts"):
                 meas_gap_fracs = m.gap_wts
             else:
                 meas_gap_fracs = None
-            # Loop through metrics that are broken out in measure data. (Note that costs
-            # denote energy costs only, and carbon costs are not broken out/won't be adjusted)
+            # Loop through metrics that are broken out in measure data. (Note that carbon costs are
+            # not broken out/won't be adjusted)
             for brk_var in self.handyvars.brk_vars:
                 # Map high-level cost variable to energy or capital cost vars in breakout data
                 if isinstance(self.handyvars.brk_mast_map[brk_var], list):
@@ -7381,13 +7381,13 @@ class Engine(object):
             codes_bps_dict_out["Markets and Savings (Overall)"], \
                 codes_bps_dict_out["Markets and Savings (by Category)"] = (
                     OrderedDict() for n in range(2))
+            # Finalize gap fractions data, if applicable
+            if len(cbps.gap_wts.keys()) != 0:
+                codes_bps_dict_out["ComStock Gap Weights"] = self.finalize_gap_wts(cbps.gap_wts)
         # Otherwise update the existing dict for the measure
         else:
             # Set shorthand for dict to update
             codes_bps_dict_out = self.output_ecms[cbps.name]
-        # Finalize gap fractions data, if applicable
-        if len(cbps.gap_wts.keys()) != 0:
-            codes_bps_dict_out["ComStock Gap Weights"] = self.finalize_gap_wts(cbps.gap_wts)
 
         # Finalize format of markets data
 
