@@ -12823,6 +12823,8 @@ class MeasurePackage(Measure):
             in a package.
         """
 
+        # Cache aeo_years locally to avoid repeated attribute lookups
+        aeo_years = self.handyvars.aeo_years
         # Initialize variables used to track pre-adjusted mseg data
         tot_base_orig, tot_eff_orig, tot_save_orig, tot_base_orig_cost, \
             tot_eff_orig_cost, tot_save_orig_cost = ('' for n in range(6))
@@ -12859,7 +12861,7 @@ class MeasurePackage(Measure):
             tot_save_orig = {yr: (
                 copy.deepcopy(mseg_adj["total"]["baseline"][yr]) -
                 copy.deepcopy(mseg_adj["total"]["efficient"][yr]))
-                for yr in self.handyvars.aeo_years}
+                for yr in aeo_years}
         # Record total stock or energy cost data before adjustment
         if k in ["stock",  "energy"] and mseg_cost_adj:
             # Total baseline stock or energy cost
@@ -12872,7 +12874,7 @@ class MeasurePackage(Measure):
             tot_save_orig_cost = {yr: (
                 copy.deepcopy(mseg_cost_adj["total"]["baseline"][yr]) -
                 copy.deepcopy(mseg_cost_adj["total"]["efficient"][yr]))
-                for yr in self.handyvars.aeo_years}
+                for yr in aeo_years}
         # Adjust msegs using base/efficient adjustment fractions
         if k == "stock":
             self.adj_pkg_mseg_keyvals(
@@ -12897,7 +12899,7 @@ class MeasurePackage(Measure):
         if k == "energy" and eff_capt_env_frac:
             mseg_adj["total"]["efficient-captured-envelope"] = {
                 yr: mseg_adj["total"]["efficient-captured"][yr] *
-                eff_capt_env_frac[yr] for yr in self.handyvars.aeo_years}
+                eff_capt_env_frac[yr] for yr in aeo_years}
 
         return mseg_adj, mseg_cost_adj, tot_base_orig, tot_eff_orig, tot_eff_capt_orig, \
             tot_save_orig, tot_base_orig_cost, tot_eff_orig_cost, tot_save_orig_cost
@@ -12951,6 +12953,9 @@ class MeasurePackage(Measure):
         else:
             eff_capt = False
 
+        # Cache aeo_years locally to avoid repeated attribute lookups
+        aeo_years = self.handyvars.aeo_years
+
         # Shorthands for data used to adjust original output breakouts
         base_orig, eff_orig, save_orig = tot_base_orig, tot_eff_orig, tot_save_orig
         if k == "stock":
@@ -12984,7 +12989,7 @@ class MeasurePackage(Measure):
                     yr: ((fs_eff_splt[k][0][yr] + fs_eff_splt[k][1][yr]) /
                          fs_eff_splt[k][2][yr]) if
                     fs_eff_splt[k][2][yr] != 0 else 1
-                    for yr in self.handyvars.aeo_years}
+                    for yr in aeo_years}
                 # Check for whether baseline fuel use is present in the
                 # efficient-captured stock (e.g., for dual fuel measure
                 # operations) – this is signified by a boolean flag in the
@@ -12995,14 +13000,14 @@ class MeasurePackage(Measure):
                     fs_eff_splt_var_capt = {
                         yr: fs_eff_splt[k][1][yr] / fs_eff_splt[k][3][yr] if
                         fs_eff_splt[k][3][yr] != 0 else 1
-                        for yr in self.handyvars.aeo_years}
+                        for yr in aeo_years}
                 elif eff_capt:
                     fs_eff_splt_var_capt = {
-                        yr: 0 for yr in self.handyvars.aeo_years}
+                        yr: 0 for yr in aeo_years}
                 else:
                     fs_eff_splt_var_capt = None
             else:
-                fs_eff_splt_var = {yr: 0 for yr in self.handyvars.aeo_years}
+                fs_eff_splt_var = {yr: 0 for yr in aeo_years}
                 fs_eff_splt_var_capt = None
             # Stock/energy/carbon; original fuel
             mseg_out_break_adj[k]["baseline"][
@@ -13013,12 +13018,12 @@ class MeasurePackage(Measure):
                 {yr: mseg_out_break_adj[k]["baseline"][
                     out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         base_orig[yr] - base_adj[yr]) for
-                 yr in self.handyvars.aeo_years},
+                 yr in aeo_years},
                 # Remove adjusted efficient case that remains with base fuel
                 {yr: mseg_out_break_adj[k]["efficient"][
                     out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         eff_orig[yr] - eff_adj[yr]) * fs_eff_splt_var[yr] for
-                 yr in self.handyvars.aeo_years}]
+                 yr in aeo_years}]
 
             # If measure-captured efficient energy is partially serviced by
             # baseline fuel, update results accordingly; otherwise, no
@@ -13032,7 +13037,7 @@ class MeasurePackage(Measure):
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             eff_capt_orig[yr] - eff_capt_adj[yr]) *
                         fs_eff_splt_var_capt[yr] for
-                    yr in self.handyvars.aeo_years}
+                    yr in aeo_years}
                 # Update efficient captured for envelope portion of pkg. if
                 # this is being tracked; calculated as the efficient-captured
                 # total for the HVAC/envelope pkg. multiplied by the efficient-
@@ -13044,7 +13049,7 @@ class MeasurePackage(Measure):
                             yr: mseg_out_break_adj[k]["efficient-captured"][
                                 out_cz][out_bldg][out_eu][out_fuel_save][yr] *
                             eff_capt_env_frac[yr] for yr in
-                            self.handyvars.aeo_years}
+                            aeo_years}
 
             # No savings breakouts for stock variable
             if k != "stock":
@@ -13057,7 +13062,7 @@ class MeasurePackage(Measure):
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         (base_orig[yr] - base_adj[yr]) -
                         (eff_orig[yr] - eff_adj[yr]) * fs_eff_splt_var[yr]) for
-                    yr in self.handyvars.aeo_years}
+                    yr in aeo_years}
             # Note: no measure-captured efficient energy in the base fuel
             # needs adjustment here given that by definition fuel switching
             # measures only operate via switched to fuel (no data to adjust)
@@ -13071,7 +13076,7 @@ class MeasurePackage(Measure):
                     out_cz][out_bldg][out_eu][out_fuel_gain][yr] - ((
                         eff_orig[yr] - eff_adj[yr]) * (
                         1 - fs_eff_splt_var[yr]))
-                for yr in self.handyvars.aeo_years}
+                for yr in aeo_years}
             # Measure-captured efficient energy for switched to fuel
             # (if reported)
             if eff_capt:
@@ -13081,7 +13086,7 @@ class MeasurePackage(Measure):
                         out_cz][out_bldg][out_eu][out_fuel_gain][yr] - (
                             eff_capt_orig[yr] - eff_capt_adj[yr]) * (
                             1 - fs_eff_splt_var_capt[yr])
-                    for yr in self.handyvars.aeo_years}
+                    for yr in aeo_years}
                 # Update efficient captured for envelope portion of pkg. if
                 # this is being tracked
                 if eff_capt_env_frac:
@@ -13090,7 +13095,7 @@ class MeasurePackage(Measure):
                             yr: mseg_out_break_adj[k]["efficient-captured"][
                                 out_cz][out_bldg][out_eu][out_fuel_gain][yr] *
                             eff_capt_env_frac[yr] for yr in
-                            self.handyvars.aeo_years}
+                            aeo_years}
             # No savings breakouts for stock variable
             if k != "stock":
                 # Adjusted efficient is added to the existing savings for
@@ -13101,7 +13106,7 @@ class MeasurePackage(Measure):
                         out_cz][out_bldg][out_eu][out_fuel_gain][yr] + ((
                             eff_orig[yr] - eff_adj[yr]) * (
                             1 - fs_eff_splt_var[yr]))
-                    for yr in self.handyvars.aeo_years}
+                    for yr in aeo_years}
             # Energy or stock costs
             if cost_brk_key:
                 # Energy vs. stock cost breakouts; the latter by convention does not include
@@ -13115,9 +13120,9 @@ class MeasurePackage(Measure):
                               fs_eff_splt["energy cost"][1][yr]) /
                              fs_eff_splt["energy cost"][2][yr]) if
                         fs_eff_splt["energy cost"][2][yr] != 0 else 1
-                        for yr in self.handyvars.aeo_years}
+                        for yr in aeo_years}
                 else:
-                    fs_eff_splt_cost = {yr: 0 for yr in self.handyvars.aeo_years}
+                    fs_eff_splt_cost = {yr: 0 for yr in aeo_years}
 
                 # Energy cost; original fuel
                 mseg_out_break_adj[cost_brk_key]["baseline"][
@@ -13130,13 +13135,13 @@ class MeasurePackage(Measure):
                     {yr: mseg_out_break_adj[cost_brk_key]["baseline"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             base_cost_orig[yr] - base_cost_adj[yr]) for
-                     yr in self.handyvars.aeo_years},
+                     yr in aeo_years},
                     # Remove adjusted efficient case that remains with base
                     # fuel
                     {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             eff_cost_orig[yr] - eff_cost_adj[yr]) *
-                     fs_eff_splt_cost[yr] for yr in self.handyvars.aeo_years},
+                     fs_eff_splt_cost[yr] for yr in aeo_years},
                     # Adjusted savings is difference between adjusted baseline
                     # and efficient and is subtracted from existing savings for
                     # baseline fuel (e.g., savings becomes less positive)
@@ -13144,7 +13149,7 @@ class MeasurePackage(Measure):
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             (base_cost_orig[yr] - base_cost_adj[yr]) -
                             (eff_cost_orig[yr] - eff_cost_adj[yr]) *
-                     fs_eff_splt_cost[yr]) for yr in self.handyvars.aeo_years}]
+                     fs_eff_splt_cost[yr]) for yr in aeo_years}]
                 # Switched to fuel
                 mseg_out_break_adj[cost_brk_key]["efficient"][
                     out_cz][out_bldg][out_eu][out_fuel_gain], \
@@ -13159,14 +13164,14 @@ class MeasurePackage(Measure):
                         out_cz][out_bldg][out_eu][out_fuel_gain][yr] - ((
                             eff_cost_orig[yr] - eff_cost_adj[yr]) * (
                             1 - fs_eff_splt_cost[yr])) for
-                     yr in self.handyvars.aeo_years},
+                     yr in aeo_years},
                     # Adjusted efficient is added to the existing savings for
                     # baseline fuel (e.g., savings becomes less negative)
                     {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_gain][yr] + ((
                             eff_cost_orig[yr] - eff_cost_adj[yr]) * (
                             1 - fs_eff_splt_cost[yr])) for
-                     yr in self.handyvars.aeo_years}]
+                     yr in aeo_years}]
         # Fuel splits without fuel switching
         elif out_fuel_save:
             # Stock/energy/carbon
@@ -13178,12 +13183,12 @@ class MeasurePackage(Measure):
                 {yr: mseg_out_break_adj[k]["baseline"][
                     out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         base_orig[yr] - base_adj[yr]) for
-                    yr in self.handyvars.aeo_years},
+                    yr in aeo_years},
                 # Remove adjusted efficient
                 {yr: mseg_out_break_adj[k]["efficient"][
                     out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         eff_orig[yr] - eff_adj[yr]) for
-                 yr in self.handyvars.aeo_years}]
+                 yr in aeo_years}]
             # Measure-captured efficient energy (if reported)
             if eff_capt:
                 # Remove adjusted efficient
@@ -13192,7 +13197,7 @@ class MeasurePackage(Measure):
                     yr: mseg_out_break_adj[k]["efficient-captured"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             eff_capt_orig[yr] - eff_capt_adj[yr]) for
-                    yr in self.handyvars.aeo_years}
+                    yr in aeo_years}
                 # Update efficient captured for envelope portion of pkg. if
                 # this is being tracked
                 if eff_capt_env_frac:
@@ -13201,7 +13206,7 @@ class MeasurePackage(Measure):
                             yr: mseg_out_break_adj[k]["efficient-captured"][
                                 out_cz][out_bldg][out_eu][out_fuel_save][yr] *
                             eff_capt_env_frac[yr] for yr in
-                            self.handyvars.aeo_years}
+                            aeo_years}
             # No savings breakouts for stock variable
             if k != "stock":
                 # Adjusted savings is difference between adjusted
@@ -13211,7 +13216,7 @@ class MeasurePackage(Measure):
                         yr: mseg_out_break_adj[k]["savings"][
                             out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                             save_orig[yr] - (base_adj[yr] - eff_adj[yr])) for
-                        yr in self.handyvars.aeo_years}
+                        yr in aeo_years}
 
             # Energy or stock costs
             if cost_brk_key:
@@ -13225,19 +13230,19 @@ class MeasurePackage(Measure):
                     {yr: mseg_out_break_adj[cost_brk_key]["baseline"][
                             out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         base_cost_orig[yr] - base_cost_adj[yr]) for
-                     yr in self.handyvars.aeo_years},
+                     yr in aeo_years},
                     # Remove adjusted efficient
                     {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         eff_cost_orig[yr] - eff_cost_adj[yr]) for
-                     yr in self.handyvars.aeo_years},
+                     yr in aeo_years},
                     # Adjusted savings is difference between adjusted
                     # baseline/efficient
                     {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][out_fuel_save][yr] - (
                         save_cost_orig[yr] - (
                             base_cost_adj[yr] - eff_cost_adj[yr])) for
-                     yr in self.handyvars.aeo_years}]
+                     yr in aeo_years}]
         # All other cases
         else:
             # Stock/energy/carbon
@@ -13248,12 +13253,12 @@ class MeasurePackage(Measure):
                 {yr: mseg_out_break_adj[k]["baseline"][
                     out_cz][out_bldg][out_eu][yr] - (
                         base_orig[yr] - base_adj[yr]) for
-                    yr in self.handyvars.aeo_years},
+                    yr in aeo_years},
                 # Remove adjusted efficient
                 {yr: mseg_out_break_adj[k]["efficient"][
                     out_cz][out_bldg][out_eu][yr] - (
                         eff_orig[yr] - eff_adj[yr]) for
-                 yr in self.handyvars.aeo_years}]
+                 yr in aeo_years}]
             # Measure-captured efficient energy (if reported)
             if eff_capt:
                 mseg_out_break_adj[k][
@@ -13261,7 +13266,7 @@ class MeasurePackage(Measure):
                         yr: mseg_out_break_adj[k]["efficient-captured"][
                             out_cz][out_bldg][out_eu][yr] - (
                                 eff_capt_orig[yr] - eff_capt_adj[yr]) for
-                        yr in self.handyvars.aeo_years}
+                        yr in aeo_years}
                 # Update efficient captured for envelope portion of pkg. if
                 # this is being tracked
                 if eff_capt_env_frac:
@@ -13270,7 +13275,7 @@ class MeasurePackage(Measure):
                             yr: mseg_out_break_adj[k]["efficient-captured"][
                                 out_cz][out_bldg][out_eu][yr] *
                             eff_capt_env_frac[yr] for yr in
-                            self.handyvars.aeo_years}
+                            aeo_years}
             # No savings breakouts for stock variable
             if k != "stock":
                 # Adjusted savings is difference between adjusted
@@ -13279,7 +13284,7 @@ class MeasurePackage(Measure):
                     yr: mseg_out_break_adj[k]["savings"][
                         out_cz][out_bldg][out_eu][yr] - (
                         save_orig[yr] - (base_adj[yr] - eff_adj[yr])) for
-                    yr in self.handyvars.aeo_years}
+                    yr in aeo_years}
 
             # Energy or stock costs
             if cost_brk_key:
@@ -13293,19 +13298,19 @@ class MeasurePackage(Measure):
                     {yr: mseg_out_break_adj[cost_brk_key]["baseline"][
                             out_cz][out_bldg][out_eu][yr] - (
                         base_cost_orig[yr] - base_cost_adj[yr]) for
-                     yr in self.handyvars.aeo_years},
+                     yr in aeo_years},
                     # Remove adjusted efficient
                     {yr: mseg_out_break_adj[cost_brk_key]["efficient"][
                         out_cz][out_bldg][out_eu][yr] - (
                         eff_cost_orig[yr] - eff_cost_adj[yr]) for
-                     yr in self.handyvars.aeo_years},
+                     yr in aeo_years},
                     # Adjusted savings is difference between adjusted
                     # baseline/efficient
                     {yr: mseg_out_break_adj[cost_brk_key]["savings"][
                         out_cz][out_bldg][out_eu][yr] - (
                         save_cost_orig[yr] - (
                             base_cost_adj[yr] - eff_cost_adj[yr])) for
-                     yr in self.handyvars.aeo_years}]
+                     yr in aeo_years}]
 
         return mseg_out_break_adj
 
@@ -13366,6 +13371,8 @@ class MeasurePackage(Measure):
         # for the current package being updated
         energy_ben = self.benefits["energy savings increase"]
         cost_ben = self.benefits["cost reduction"]
+        # Cache aeo_years locally to avoid repeated attribute lookups
+        aeo_years = self.handyvars.aeo_years
 
         # If additional energy savings benefits are not None and are non-zero,
         # apply them to the measure's energy, carbon, and energy/carbon costs
@@ -13380,7 +13387,7 @@ class MeasurePackage(Measure):
                     # below zero)
                     msegs_meas[x][cs]["efficient"] = {
                         key: eff[key] * (1 - energy_ben)
-                        for key in self.handyvars.aeo_years}
+                        for key in aeo_years}
                     # Set short variable names for baseline and efficient
                     # energy and carbon cost data
                     eff_c = msegs_meas["cost"][x][cs]["efficient"]
@@ -13389,7 +13396,7 @@ class MeasurePackage(Measure):
                     # below zero)
                     msegs_meas["cost"][x][cs]["efficient"] = {
                         key: eff_c[key] * (1 - energy_ben)
-                        for key in self.handyvars.aeo_years}
+                        for key in aeo_years}
 
         # If additional installed cost benefits are not None and are non-zero,
         # apply them to the measure's stock cost
@@ -13397,7 +13404,7 @@ class MeasurePackage(Measure):
             for cs in ["competed", "total"]:
                 msegs_meas["cost"]["stock"][cs]["efficient"] = {
                     key: msegs_meas["cost"]["stock"][cs]["efficient"][key] *
-                    (1 - cost_ben) for key in self.handyvars.aeo_years}
+                    (1 - cost_ben) for key in aeo_years}
 
         return msegs_meas
 
@@ -13427,10 +13434,12 @@ class MeasurePackage(Measure):
             Updated output breakout information for the packaged measure
             that incorporates the individual measure's breakout information.
         """
+        # Cache aeo_years locally to avoid repeated attribute lookups
+        aeo_years = self.handyvars.aeo_years
         for (k, i), (k2, i2) in zip(
                 sorted(pkg_brk.items()), sorted(meas_brk.items())):
             if isinstance(i2, dict) and (
-                    sorted(list(i2.keys())) != self.handyvars.aeo_years):
+                    sorted(list(i2.keys())) != aeo_years):
                 self.merge_out_break(i, i2)
             else:
                 if k == k2 and (isinstance(i, dict) == isinstance(i2, dict)):
@@ -13442,10 +13451,10 @@ class MeasurePackage(Measure):
                     # for the individual measure to that of the package
                     if len(i.keys()) == 0:
                         pkg_brk[k] = {yr: i2[yr] for
-                                      yr in self.handyvars.aeo_years}
+                                      yr in aeo_years}
                     else:
                         pkg_brk[k] = {yr: pkg_brk[k][yr] + i2[yr] for
-                                      yr in self.handyvars.aeo_years}
+                                      yr in aeo_years}
                 else:
                     raise KeyError(
                         "Output data dicts to merge for ECM '" + self.name +
