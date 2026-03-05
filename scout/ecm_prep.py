@@ -13436,9 +13436,10 @@ class MeasurePackage(Measure):
         """
         # Cache aeo_years locally to avoid repeated attribute lookups
         aeo_years = self.handyvars.aeo_years
+        aeo_years_set = self.handyvars.aeo_years_set
         for (k, i), (k2, i2) in zip(pkg_brk.items(), meas_brk.items()):
             if isinstance(i2, dict) and (
-                    sorted(list(i2.keys())) != aeo_years):
+                    i2.keys() != aeo_years_set):
                 self.merge_out_break(i, i2)
             else:
                 if k == k2 and (isinstance(i, dict) == isinstance(i2, dict)):
