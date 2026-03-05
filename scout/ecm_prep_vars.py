@@ -178,6 +178,7 @@ class UsefulVars(object):
         # Derive time horizon from min/max years
         self.aeo_years = [
             str(i) for i in range(aeo_min, aeo_max + 1)]
+        self.aeo_years_set = set(self.aeo_years)
         self.aeo_years_summary = ["2030", "2050"]
         # Set early retrofit rate assumptions
 
