@@ -1016,23 +1016,27 @@ class Measure(object):
                     init_refr = {yr: 0 for yr in self.handyvars.aeo_years}
                 else:
                     init_refr = None
-                # Organize methane and refrigerants dict under broader key
+                # Organize methane and refrigerants dict under broader key.
+                # init_meth/init_refr are flat {yr: 0} dicts or None; values
+                # are immutable ints so shallow copy is sufficient.
+                def _cp(d):
+                    return d.copy() if d is not None else None
                 self.markets[adopt_scheme]["master_mseg"][
                     "fugitive emissions"] = {
                         "methane": {
                             "total": {
-                                "baseline": copy.deepcopy(init_meth),
-                                "efficient": copy.deepcopy(init_meth)},
+                                "baseline": _cp(init_meth),
+                                "efficient": _cp(init_meth)},
                             "competed": {
-                                "baseline": copy.deepcopy(init_meth),
-                                "efficient": copy.deepcopy(init_meth)}},
+                                "baseline": _cp(init_meth),
+                                "efficient": _cp(init_meth)}},
                         "refrigerants": {
                             "total": {
-                                "baseline": copy.deepcopy(init_refr),
-                                "efficient": copy.deepcopy(init_refr)},
+                                "baseline": _cp(init_refr),
+                                "efficient": _cp(init_refr)},
                             "competed": {
-                                "baseline": copy.deepcopy(init_refr),
-                                "efficient": copy.deepcopy(init_refr)}}}
+                                "baseline": _cp(init_refr),
+                                "efficient": _cp(init_refr)}}}
 
             # Add market breakout information
 
@@ -1177,10 +1181,11 @@ class Measure(object):
             self.sector_shapes = {
                 a_s: {} for a_s in self.handyvars.adopt_schemes_run}
             # Find applicable region list (ensure it is in list format)s
+            # climate_zone is a list of strings (immutable); shallow copy suffices
             if type(self.climate_zone) is str:
-                grid_regions = copy.deepcopy([self.climate_zone])
+                grid_regions = [self.climate_zone]
             else:
-                grid_regions = copy.deepcopy(self.climate_zone)
+                grid_regions = list(self.climate_zone)
             for a_s in self.handyvars.adopt_schemes_run:
                 self.sector_shapes[a_s] = {reg: {yr: {
                     "baseline": [0 for x in range(8760)],
@@ -2265,11 +2270,14 @@ class Measure(object):
                                     # broken out by each alternate region and
                                     # the second element is the portion of
                                     # each alternate region that falls in the
-                                    # current mseg region
-                                    perf_meas = copy.deepcopy([
-                                        perf_meas,
+                                    # current mseg region.
+                                    # Shallow copy of the dict is sufficient:
+                                    # its values are replaced (not mutated),
+                                    # and the float list is read-only.
+                                    perf_meas = [
+                                        dict(perf_meas),
                                         self.handyvars.alt_attr_brk_map[
-                                            alt_key_reg_typ][mskeys[1]]])
+                                            alt_key_reg_typ][mskeys[1]]]
                                 # If unexpected keys are present, yield error
                                 else:
                                     raise KeyError(
@@ -2346,11 +2354,14 @@ class Measure(object):
                                     # broken out by each alternate region and
                                     # the second element is the portion of
                                     # each alternate region that falls in the
-                                    # current mseg region
-                                    cost_meas = copy.deepcopy([
-                                        cost_meas,
+                                    # current mseg region.
+                                    # Shallow copy of the dict is sufficient:
+                                    # its values are replaced (not mutated),
+                                    # and the float list is read-only.
+                                    cost_meas = [
+                                        dict(cost_meas),
                                         self.handyvars.alt_attr_brk_map[
-                                            alt_key_reg_typ][mskeys[1]]])
+                                            alt_key_reg_typ][mskeys[1]]]
                                 # If unexpected keys are present, yield error
                                 else:
                                     raise KeyError(
@@ -2467,11 +2478,14 @@ class Measure(object):
                                     # broken out by each alternate region and
                                     # the second element is the portion of
                                     # each alternate region that falls in the
-                                    # current mseg region
-                                    mkt_scale_frac = copy.deepcopy([
-                                        mkt_scale_frac,
+                                    # current mseg region.
+                                    # Shallow copy of the dict is sufficient:
+                                    # its values are replaced (not mutated),
+                                    # and the float list is read-only.
+                                    mkt_scale_frac = [
+                                        dict(mkt_scale_frac),
                                         self.handyvars.alt_attr_brk_map[
-                                            alt_key_reg_typ][mskeys[1]]])
+                                            alt_key_reg_typ][mskeys[1]]]
                                 # If unexpected keys are present, yield error
                                 else:
                                     raise KeyError(
@@ -3137,13 +3151,13 @@ class Measure(object):
 
                         # In some cases, typical cost data will be split
                         # further by new vs. existing keys; handle accordingly
-                        # and finalize costs (before incentives). Note: deep copy is
-                        # necessary to ensure that subsequent modification of base costs
-                        # for incentives does not change original data (before incentives)
+                        # and finalize costs (before incentives). Shallow copy
+                        # is sufficient: values are immutable floats/ints so
+                        # modifying incentives cannot affect the original data.
                         if mskeys[-1] in cost_base_init["typical"].keys():
-                            cost_base = copy.deepcopy(cost_base_init["typical"][mskeys[-1]])
+                            cost_base = cost_base_init["typical"][mskeys[-1]].copy()
                         else:
-                            cost_base = copy.deepcopy(cost_base_init["typical"])
+                            cost_base = cost_base_init["typical"].copy()
                         # Set baseline cost units
                         cost_base_units = cost_base_init["units"]
 
@@ -11246,23 +11260,27 @@ class MeasurePackage(Measure):
                     init_refr = {yr: 0 for yr in self.handyvars.aeo_years}
                 else:
                     init_refr = None
-                # Organize methane and refrigerants dict under broader key
+                # Organize methane and refrigerants dict under broader key.
+                # init_meth/init_refr are flat {yr: 0} dicts or None; values
+                # are immutable ints so shallow copy is sufficient.
+                def _cp(d):
+                    return d.copy() if d is not None else None
                 self.markets[adopt_scheme]["master_mseg"][
                     "fugitive emissions"] = {
                         "methane": {
                             "total": {
-                                "baseline": copy.deepcopy(init_meth),
-                                "efficient": copy.deepcopy(init_meth)},
+                                "baseline": _cp(init_meth),
+                                "efficient": _cp(init_meth)},
                             "competed": {
-                                "baseline": copy.deepcopy(init_meth),
-                                "efficient": copy.deepcopy(init_meth)}},
+                                "baseline": _cp(init_meth),
+                                "efficient": _cp(init_meth)}},
                         "refrigerants": {
                             "total": {
-                                "baseline": copy.deepcopy(init_refr),
-                                "efficient": copy.deepcopy(init_refr)},
+                                "baseline": _cp(init_refr),
+                                "efficient": _cp(init_refr)},
                             "competed": {
-                                "baseline": copy.deepcopy(init_refr),
-                                "efficient": copy.deepcopy(init_refr)}}}
+                                "baseline": _cp(init_refr),
+                                "efficient": _cp(init_refr)}}}
 
             # Add market breakout information
 
