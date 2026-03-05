@@ -12974,6 +12974,126 @@ class MeasurePackage(Measure):
         # Cache aeo_years locally to avoid repeated attribute lookups
         aeo_years = self.handyvars.aeo_years
 
+        # Establish applicable climate zone breakout
+        for cz in self.handyvars.out_break_czones.items():
+            if key_list[1] in cz[1]:
+                out_cz = cz[0]
+        # Establish applicable building type breakout
+        for bldg in self.handyvars.out_break_bldgtypes.items():
+            if all([x in bldg[1] for x in [
+                    key_list[2], key_list[-1]]]):
+                out_bldg = bldg[0]
+        # Establish applicable end use breakout
+        for eu in self.handyvars.out_break_enduses.items():
+            # * Note: The 'other' microsegment end
+            # use may map to either the 'Refrigeration' output
+            # breakout or the 'Other' output breakout, depending on
+            # the technology type specified in the measure
+            # definition. Also note that 'supply' side
+            # heating/cooling microsegments map to the
+            # 'Heating (Equip.)'/'Cooling (Equip.)' end uses, while
+            # 'demand' side heating/cooling microsegments map to
+            # the 'Heating (Env.)'/'Cooling (Env.) end use, with the
+            # exception of 'demand' side heating/cooling microsegments that
+            # represent waste heat from lights - these are
+            # categorized as part of the 'Lighting' end use
+            if key_list[4] == "other":
+                if key_list[5] == "freezers":
+                    out_eu = "Refrigeration"
+                else:
+                    out_eu = "Other"
+            elif key_list[4] in eu[1]:
+                if (eu[0] in ["Heating (Equip.)", "Cooling (Equip.)"] and
+                    key_list[5] == "supply") or (
+                    eu[0] in ["Heating (Env.)", "Cooling (Env.)"] and
+                    key_list[5] == "demand" and key_list[0] == "primary") or (
+                    eu[0] not in ["Heating (Equip.)", "Cooling (Equip.)",
+                                  "Heating (Env.)", "Cooling (Env.)"]):
+                    out_eu = eu[0]
+            elif "lighting gain" in key_list:
+                out_eu = "Lighting"
+        # If applicable, establish fuel type breakout (electric vs.
+        # non-electric); note – only applicable to end uses that
+        # are at least in part fossil-fired
+        if len(self.handyvars.out_break_fuels.keys()) != 0 and (
+                out_eu in self.handyvars.out_break_eus_w_fsplits):
+            # Flag for detailed fuel type breakout
+            detail = len(self.handyvars.out_break_fuels.keys()) > 2
+            # Establish breakout of fuel type that is being
+            # reduced (e.g., through efficiency or fuel switching
+            # away from the fuel)
+            for f in self.handyvars.out_break_fuels.items():
+                if key_list[3] in f[1]:
+                    # Special handling for other fuel tech.,
+                    # under detailed fuel type breakouts; this
+                    # tech. may fit into multiple fuel categories
+                    if detail and key_list[3] == "other fuel":
+                        # Assign coal/kerosene tech.
+                        if f[0] == "Distillate/Other" and (
+                            key_list[-2] is not None and any([
+                                x in key_list[-2] for x in [
+                                "coal", "kerosene"]])):
+                            out_fuel_save = f[0]
+                        # Assign commercial other fuel to
+                        # Distillate/Other
+                        elif f[0] == "Distillate/Other" and (
+                            key_list[2] in
+                                self.handyvars.in_all_map[
+                                'bldg_type']['commercial']):
+                            out_fuel_save = f[0]
+                        # Assign wood tech.
+                        elif f[0] == "Biomass" and (
+                            key_list[-2] is not None and "wood" in
+                                key_list[-2]):
+                            out_fuel_save = f[0]
+                        # Assign all other tech. to propane
+                        elif f[0] == "Propane":
+                            out_fuel_save = f[0]
+                    else:
+                        out_fuel_save = f[0]
+            # Establish breakout of fuel type that is being added
+            # to via fuel switching, if applicable
+            if fuel_switch_to == "electricity" and out_fuel_save != "Electric":
+                out_fuel_gain = "Electric"
+            elif fuel_switch_to not in [None, "electricity"] and \
+                    out_fuel_save == "Electric":
+                # Check for detailed fuel types
+                if detail:
+                    for f in self.handyvars.out_break_fuels.items():
+                        # Special handling for other fuel tech.,
+                        # under detailed fuel type breakouts; this
+                        # tech. may fit into multiple fuel cats.
+                        if self.fuel_switch_to in f[1] and \
+                                key_list[3] == "other fuel":
+                            # Assign coal/kerosene tech.
+                            if f[0] == "Distillate/Other" and (
+                                key_list[-2] is not None and any([
+                                    x in key_list[-2] for x in [
+                                    "coal", "kerosene"]])):
+                                out_fuel_gain = f[0]
+                            # Assign commercial other fuel to Distillate/Other
+                            elif f[0] == "Distillate/Other" and (
+                                key_list[2] in
+                                    self.handyvars.in_all_map[
+                                    'bldg_type']['commercial']):
+                                out_fuel_gain = f[0]
+                            # Assign wood tech.
+                            elif f[0] == "Biomass" and (
+                                key_list[-2] is not None and "wood" in
+                                    key_list[-2]):
+                                out_fuel_gain = f[0]
+                            # Assign all other tech. to propane
+                            elif f[0] == "Propane":
+                                out_fuel_gain = f[0]
+                        elif self.fuel_switch_to in f[1]:
+                            out_fuel_gain = f[0]
+                else:
+                    out_fuel_gain = "Non-Electric"
+            else:
+                out_fuel_gain = ""
+        else:
+            out_fuel_save, out_fuel_gain = ("" for n in range(2))
+
         # Shorthands for data used to adjust original output breakouts
         base_orig, eff_orig, save_orig = tot_base_orig, tot_eff_orig, tot_save_orig
         if k == "stock":
