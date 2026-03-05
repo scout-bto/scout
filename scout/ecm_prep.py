@@ -14067,7 +14067,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                         m["usr_opts"][k] is False
                         for k in m["usr_opts"].keys()]) for
                         m in match_in_prep_file])) or
-                    (not all([all([m["usr_opts"][x] ==
+                    (not all([all([m["usr_opts"].get(x) ==
                                   vars(opts)[x] for x in [
                         k for k in vars(opts).keys() if
                         k not in ignore_opts]]) for m in
