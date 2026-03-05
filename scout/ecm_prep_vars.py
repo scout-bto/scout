@@ -1218,10 +1218,14 @@ class UsefulVars(object):
         # used instead of linear scans on every call.
 
         # Climate zone: region_string -> label
+        # Note: out_break_czones values may be a plain string (e.g. 'AIA_CZ1')
+        # or a list of strings (e.g. ['TRE']). Normalise to list before iterating
+        # so we don't accidentally iterate over individual characters.
         self.out_break_czones_rev = {
             region: label
             for label, regions in self.out_break_czones.items()
-            for region in regions}
+            for region in (
+                [regions] if isinstance(regions, str) else regions)}
 
         # Building type: (bldg_type_string, vintage_string) -> label
         # Values in out_break_bldgtypes are lists like ['new', 'single family home', ...]
