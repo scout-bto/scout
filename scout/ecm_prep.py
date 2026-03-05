@@ -13330,8 +13330,7 @@ class MeasurePackage(Measure):
         """
         # If the first dict is nested and the intended level of the data
         # merge has not yet been reached, proceed further down its branches
-        if len(dict1.keys()) != 0 and all([
-                "," not in x for x in dict1.keys()]):
+        if dict1 and not any("," in x for x in dict1):
             for (k, i), (k2, i2) in zip(
                     dict1.items(), dict2.items()):
                 self.update_dict(i, i2)
