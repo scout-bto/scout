@@ -1206,6 +1206,47 @@ class UsefulVars(object):
                 self.out_break_fuels = self.simple_fuel_map
         else:
             self.out_break_fuels = {}
+
+        # Pre-compute reverse lookups for fast O(1) breakout category resolution
+        # in find_adj_out_break_cats (MeasurePackage). Built once at init time;
+        # used instead of linear scans on every call.
+
+        # Climate zone: region_string -> label
+        self.out_break_czones_rev = {
+            region: label
+            for label, regions in self.out_break_czones.items()
+            for region in regions}
+
+        # Building type: (bldg_type_string, vintage_string) -> label
+        # Values in out_break_bldgtypes are lists like ['new', 'single family home', ...]
+        # where the first element is always the vintage ('new' or 'existing').
+        self.out_break_bldgtypes_rev = {}
+        for label, vals in self.out_break_bldgtypes.items():
+            vintage = vals[0]  # first element is always the vintage
+            for bldg in vals[1:]:  # remaining elements are building type strings
+                self.out_break_bldgtypes_rev[(bldg, vintage)] = label
+
+        # End use: a mapping used in find_adj_out_break_cats.
+        # The end-use lookup has conditional logic (supply/demand, 'other' special cases),
+        # so we store a flat mapping from (eu_string, supply_demand) -> label for the
+        # supply/demand-sensitive end uses, and eu_string -> label for the rest.
+        self.out_break_enduses_rev = {}
+        for label, eus in self.out_break_enduses.items():
+            for eu in eus:
+                if label in ["Heating (Equip.)", "Cooling (Equip.)"]:
+                    self.out_break_enduses_rev[(eu, "supply")] = label
+                elif label in ["Heating (Env.)", "Cooling (Env.)"]:
+                    self.out_break_enduses_rev[(eu, "demand")] = label
+                else:
+                    # Non-HVAC end uses: no supply/demand distinction
+                    self.out_break_enduses_rev[eu] = label
+
+        # Fuel type: fuel_string -> label
+        self.out_break_fuels_rev = {
+            fuel: label
+            for label, fuels in self.out_break_fuels.items()
+            for fuel in fuels}
+
         # Use the above output categories to establish a dictionary with blank
         # values at terminal leaf nodes; this dict will eventually store
         # partitioning fractions needed to breakout the measure results
