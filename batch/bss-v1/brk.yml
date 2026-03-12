@@ -223,6 +223,9 @@ ecm_prep:
   split_fuel: true 
   detail_brkout: [regions, codes/bps, fuel types]
   comstock_gap: true
+  report_stk:
+    num_units: true
+    cap_invest: true
 
 run:
   high_res_comp: true
