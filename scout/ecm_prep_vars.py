@@ -2079,9 +2079,9 @@ class UsefulVars(object):
                 len(cpi) != getattr(self, '_cpi_cache_len', None)):
             self._rebuild_cpi_cache()
         cpi_row_in = self._cpi_year_means.get(convert_from,
-                                               self._cpi_latest_value)
+                                              self._cpi_latest_value)
         cpi_row_out = self._cpi_year_means.get(convert_to,
-                                                self._cpi_latest_value)
+                                               self._cpi_latest_value)
         return cpi_row_out / cpi_row_in
 
 
