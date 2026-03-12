@@ -1450,6 +1450,16 @@ class Measure(object):
         # microsegment measure cost updates
         reg_adj_flag, meas_incent_flag, elec_infr_flag = ("" for n in range(3))
 
+        # Sentinel values used in place of locals() checks inside the loop below;
+        # initializing explicitly avoids ~1.28M locals() dict-creation calls
+        _sentinel = object()
+        perf_meas = _sentinel
+        perf_units = _sentinel
+        cost_meas = _sentinel
+        life_meas = _sentinel
+        mkt_scale_frac = _sentinel
+        mkt_scale_frac_source = _sentinel
+
         # Loop through discovered key chains to find needed performance/cost
         # and stock/energy information for measure
         for ind, mskeys in enumerate(ms_iterable):
@@ -1679,11 +1689,11 @@ class Measure(object):
             # building vintage to another * Note: cost/lifetime/ sub-market
             # info. is not updated for "secondary" microsegments, which do not
             # pertain to these variables; lifetime units in years
-            if ('perf_meas' not in locals()) or (
+            if (perf_meas is _sentinel) or (
                 ms_iterable[ind][0] != ms_iterable[ind - 1][0]) \
                or isinstance(self.energy_efficiency, dict):
                 perf_meas = self.energy_efficiency
-            if ('perf_units' not in locals()) or (
+            if (perf_units is _sentinel) or (
                 ms_iterable[ind][0] != ms_iterable[ind - 1][0]) \
                or isinstance(self.energy_efficiency_units, dict):
                 perf_units = self.energy_efficiency_units
@@ -1715,7 +1725,7 @@ class Measure(object):
                 # reset cost/cost units to those of original measure
                 elif ((sqft_subst == 1 or
                       "$/ft^2 floor" in self.cost_units) or (
-                        'cost_meas' not in locals()) or (
+                        cost_meas is _sentinel) or (
                         ms_iterable[ind][0] != ms_iterable[ind - 1][0]) or (
                         ms_iterable[ind][4] != ms_iterable[ind - 1][4]) or (
                         ms_iterable[ind][-1] != ms_iterable[ind - 1][-1]) or
@@ -1724,14 +1734,14 @@ class Measure(object):
                     cost_units, cost_meas = [
                         self.cost_units, self.installed_cost]
                 # Set lifetime attribute to initial value
-                if ('life_meas' not in locals()) or \
+                if (life_meas is _sentinel) or \
                         isinstance(self.product_lifetime, dict):
                     life_meas = self.product_lifetime
                 # Set market scaling attributes to initial values
-                if ('mkt_scale_frac' not in locals()) \
+                if (mkt_scale_frac is _sentinel) \
                         or isinstance(self.market_scaling_fractions, dict):
                     mkt_scale_frac = self.market_scaling_fractions
-                if ('mkt_scale_frac_source' not in locals()) or isinstance(
+                if (mkt_scale_frac_source is _sentinel) or isinstance(
                         self.market_scaling_fractions_source, dict):
                     mkt_scale_frac_source = \
                         self.market_scaling_fractions_source
@@ -10221,21 +10231,27 @@ class Measure(object):
         Raises:
             KeyError: When added dict keys do not match.
         """
-        for (k, i), (k2, i2) in zip(
-                sorted(dict1.items()), sorted(dict2.items())):
-            if k == k2:
-                if isinstance(i, dict):
-                    self.add_keyvals(i, i2)
-                else:
-                    if dict1[k] is None:
-                        dict1[k] = copy.deepcopy(dict2[k2])
-                    else:
-                        dict1[k] = dict1[k] + dict2[k]
+        for k in dict1:
+            if k not in dict2:
+                # dict1 may have more year keys than dict2 when distribution
+                # sampling produces different year ranges; silently skip those
+                # extra keys (replicating original zip/sorted truncation).
+                # But if dict2 has keys that dict1 doesn't, the structures are
+                # genuinely mismatched → raise.
+                if dict2.keys() - dict1.keys():
+                    raise KeyError("When adding together two dicts "
+                                   "for ECM '" + self.name +
+                                   "' update, dict key structures "
+                                   "do not match")
+                continue
+            i = dict1[k]
+            if isinstance(i, dict):
+                self.add_keyvals(i, dict2[k])
             else:
-                raise KeyError("When adding together two dicts "
-                               "for ECM '" + self.name +
-                               "' update, dict key structures "
-                               "do not match")
+                if i is None:
+                    dict1[k] = copy.deepcopy(dict2[k])
+                else:
+                    dict1[k] = i + dict2[k]
         return dict1
 
     def add_keyvals_restrict(self, dict1, dict2):
@@ -10260,23 +10276,22 @@ class Measure(object):
         Raises:
             KeyError: When added dict keys do not match.
         """
-        for (k, i), (k2, i2) in zip(
-                sorted(dict1.items()), sorted(dict2.items())):
-            if k == k2 and k == "lifetime":
+        for k in dict1:
+            if k == "lifetime":
                 continue
-            elif k == k2 and k != "lifetime":
-                if isinstance(i, dict):
-                    self.add_keyvals(i, i2)
-                else:
-                    if dict1[k] is None:
-                        dict1[k] = copy.deepcopy(dict2[k2])
-                    else:
-                        dict1[k] = dict1[k] + dict2[k]
-            else:
+            if k not in dict2:
                 raise KeyError("When adding together two dicts "
                                "for ECM '" + self.name +
                                "' update, dict key structures "
                                "do not match")
+            i = dict1[k]
+            if isinstance(i, dict):
+                self.add_keyvals(i, dict2[k])
+            else:
+                if i is None:
+                    dict1[k] = copy.deepcopy(dict2[k])
+                else:
+                    dict1[k] = i + dict2[k]
         return dict1
 
     def div_keyvals(self, dict1, dict2):
