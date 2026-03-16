@@ -1673,6 +1673,9 @@ class UsefulVars(object):
                     # Set start and end years and applicability fraction
                     start_yr, end_yr, apply_frac = [
                         [row.values[-4]], [row.values[-3]], [row.values[-2]]]
+                    # Finalize start and end years if blank
+                    start_yr[0], end_yr[0] = [
+                        x if not numpy.isnan(x) else False for x in (start_yr[0], end_yr[0])]
                     # Finalize applicability fraction if it is blank in the data
                     if numpy.isnan(apply_frac):
                         apply_frac = [1]
@@ -1787,6 +1790,9 @@ class UsefulVars(object):
                         # a % credit on installed cost or a rebate amount in $)
                         perf_lev, perf_units, credit, rebate, rebate_units = [
                             [x] for x in row.values[-9:-4]]
+                        # Finalize credit and rebate values if blank
+                        credit[0], rebate[0] = [
+                            x if not numpy.isnan(x) else False for x in (credit[0], rebate[0])]
                         # Pull all parameters together in a master list
                         params = [
                             state, bldg, vint, eu, tech, fuel, fuel_base, backup, mod, scope, ira,
@@ -1863,11 +1869,11 @@ class UsefulVars(object):
 
                     # Update segment/row-specific list of state-level inputs and reset attribute
                     state_dat_init.extend(iterable)
-                setattr(self, k, state_dat_init)
-
+                # Finalize data if not empty list
+                setattr(self, k, state_dat_init if state_dat_init else None)
             except FileNotFoundError:
                 # Set segment-specific list of state-level inputs to empty list
-                setattr(self, k, [])
+                setattr(self, k, None)
 
     def set_peak_take(self, sysload_dat, restrict_key):
         """Fill in dicts with seasonal system load shape data.

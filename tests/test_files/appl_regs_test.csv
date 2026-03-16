@@ -1,0 +1,10 @@
+﻿scenario,description,state(s),building type(s),building vintage(s),fuel type(s),end use(s),tech(s),start year,applicable fraction,fraction notes
+reference,"The CO Clean Heat Standard requires gas distribution utilities to cut emissions by 4% by 2025 and by 22% by 2030, with more ambitious cuts to come in later years. Under the CO Clean Heat Standard, those utilities are required to develop cost-effective plans that will achieve meaningful reductions in the emissions that result from delivering fuel to homes and businesses. These plans will then be evaluated by the Colorado Public Utilities Commission.
+
+https://leg.colorado.gov/sites/default/files/2021a_264_signed.pdf",CO,single family home,new,natural gas,heating,furnace (NG),2025,0.04,NA
+reference,"The CO Clean Heat Standard requires gas distribution utilities to cut emissions by 4% by 2025 and by 22% by 2030, with more ambitious cuts to come in later years. Under the CO Clean Heat Standard, those utilities are required to develop cost-effective plans that will achieve meaningful reductions in the emissions that result from delivering fuel to homes and businesses. These plans will then be evaluated by the Colorado Public Utilities Commission.
+
+https://leg.colorado.gov/sites/default/files/2021a_264_signed.pdf",CO,"single family home, multi family home",new,natural gas,"heating, cooking",all,2030,0.22,NA
+aggressive,"The CO Clean Heat Standard requires gas distribution utilities to cut emissions by 4% by 2025 and by 22% by 2030, with more ambitious cuts to come in later years. Under the CO Clean Heat Standard, those utilities are required to develop cost-effective plans that will achieve meaningful reductions in the emissions that result from delivering fuel to homes and businesses. These plans will then be evaluated by the Colorado Public Utilities Commission.
+
+https://leg.colorado.gov/sites/default/files/2021a_264_signed.pdf","CA, CO",all residential,all,natural gas,"heating, water heating",all,2025,0.04,NA

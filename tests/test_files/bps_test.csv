@@ -1,0 +1,28 @@
+﻿scenario,description,state(s),building type(s),onsite pct fossil reduction,EUI pct reduction,EUI benchmark year,start year,applicable fraction,fraction notes,type
+reference,"Chula Vista, CA citywide Building Performance Standard - Covered buildings must comply with all requirements applicable to them: reporting, meeting conservation requirement every 5 years, minimum improvement requirement every 10 years, auditing and retro-commissioning, and prescriptive upgrades as needed
+
+50,000+ square feet GFA
+46-65 Baseline Year ENERGY STAR Score",CA,"all commercial, multi family home",,20,2022,2023,0.039,"Chula Vista city, San Diego County, multifamily homes and commercial buildings over 50k sq ft ",local
+reference,"Chula Vista, CA citywide Building Performance Standard - Covered buildings must comply with all requirements applicable to them: reporting, meeting conservation requirement every 5 years, minimum improvement requirement every 10 years, auditing and retro-commissioning, and prescriptive upgrades as needed
+
+20,000+ square feet GFA
+46-65 Baseline Year ENERGY STAR Score",CA,"all commercial, multi family home",,20,2022,2026,0.039,"Chula Vista city, San Diego County, multifamily homes and commercial buildings over 50k sq ft ",local
+aggressive,"Chula Vista, CA citywide Building Performance Standard - Covered buildings must comply with all requirements applicable to them: reporting, meeting conservation requirement every 5 years, minimum improvement requirement every 10 years, auditing and retro-commissioning, and prescriptive upgrades as needed
+
+50,000+ square feet GFA
+46-65 Baseline Year ENERGY STAR Score",CA,"all commercial, multi family home",,20,2022,2023,0.039,"Chula Vista city, San Diego County, multifamily homes and commercial buildings over 50k sq ft ",local
+aggressive,"Chula Vista, CA citywide Building Performance Standard - Covered buildings must comply with all requirements applicable to them: reporting, meeting conservation requirement every 5 years, minimum improvement requirement every 10 years, auditing and retro-commissioning, and prescriptive upgrades as needed
+
+20,000+ square feet GFA
+46-65 Baseline Year ENERGY STAR Score",CA,"all commercial, multi family home",,20,2022,2026,0.039,"Chula Vista city, San Diego County, multifamily homes and commercial buildings over 50k sq ft ",local
+aggressive,Modeled off of MD and CO but extended to other states considering BPS https://www.usgbc.org/articles/state-power-climate-action beginning in 2030 (w/ compliance by 2035) ,CA,"all commercial, multi family home",20,20,2030,2035,1,,state
+aggressive,Modeled off of MD and CO but extended to other states considering BPS https://www.usgbc.org/articles/state-power-climate-action beginning in 2030 (w/ compliance by 2035) ,CA,"all commercial, multi family home",100,20,2030,2045,1,,state
+reference,"State-wide building performance standard, using option 2 compliance pathway (EUI % reduction vs. benchmark year)",CO,"all commercial, multi family home",,13,2021,2026,1,NA,state
+reference,"State-wide building performance standard, using option 2 compliance pathway (EUI % reduction vs. benchmark year)",CO,"all commercial, multi family home",,29,2021,2030,1,NA,state
+optimistic,"State-wide building performance standard, using option 2 compliance pathway (EUI % reduction vs. benchmark year)",CO,"all commercial, multi family home",,13,2021,2026,1,NA,state
+optimistic,"State-wide building performance standard, using option 2 compliance pathway (EUI % reduction vs. benchmark year)",CO,"all commercial, multi family home",,29,2021,2030,1,NA,state
+aggressive,"State-wide building performance standard, using option 2 compliance pathway (EUI % reduction vs. benchmark year)",CO,"all commercial, multi family home",,13,2021,2026,1,NA,state
+aggressive,"State-wide building performance standard, using option 2 compliance pathway (EUI % reduction vs. benchmark year)",CO,"all commercial, multi family home",,29,2021,2030,1,NA,state
+reference,FEDERAL BPS: https://www.sustainability.gov/pdfs/federal-building-performance-standard.pdf,all,all commercial,30,,,2030,0.03254094,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercial building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
+aggressive,FEDERAL BPS: https://www.sustainability.gov/pdfs/federal-building-performance-standard.pdf,all,all commercial,30,,,2030,0.03254094,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercial building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
+aggressive,"FEDERAL BPS: https://www.sustainability.gov/pdfs/federal-building-performance-standard.pdf, based on net zero by 2045 goal https://www.sustainability.gov/pdfs/EO_14057_Implementing_Instructions.pdf",all,all commercial,100,,,2045,0.03254094,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercial building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal

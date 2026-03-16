@@ -3097,7 +3097,8 @@ class Measure(object):
 
                         # If user has input incentive modifications, pull the relevant ones,
                         # else set to empty list
-                        if self.handyvars.incentives is not None:
+                        if self.handyvars.incentives is not None and \
+                                len(self.handyvars.incentives) != 0:
                             # Pull any relevant incentives mod data that apply to current mseg
                             incent_mod = [x for x in self.handyvars.incentives if (
                                 [x[0], x[1], x[2]] == [mskeys[1], mskeys[2], mskeys[-1]]
@@ -5451,14 +5452,14 @@ class Measure(object):
                 rmv_base, ext_base, rpl_base = [[
                     x for x in incent_mod_base if (
                         y in x[8] and (seg == "all" or x[9] == seg) and
-                        ((numpy.isnan(x[-3]) or x[-3] <= yr_int) and
-                         (numpy.isnan(x[-2]) or x[-2] >= yr_int)))] for y in [
+                        ((not x[-3] or x[-3] <= yr_int) and
+                         (not x[-2] or x[-2] >= yr_int)))] for y in [
                     "remove", "extend", "replace"]]
                 rmv_swtch, ext_swtch, rpl_swtch = [[
                     x for x in incent_mod_swtch if (
                         y in x[8] and (seg == "all" or x[9] == seg) and
-                        ((numpy.isnan(x[-3]) or x[-3] <= yr_int) and
-                         (numpy.isnan(x[-2]) or x[-2] >= yr_int)))] for y in [
+                        ((not x[-3] or x[-3] <= yr_int) and
+                         (not x[-2] or x[-2] >= yr_int)))] for y in [
                     "remove", "extend", "replace"]]
                 # Apply incentives mods to original incentives values pulled above, for both
                 # baseline tech. and measure tech.
@@ -5520,11 +5521,11 @@ class Measure(object):
                                     rebate_units = ""
 
                                 # Rebate present and units match base/measure cost units
-                                if numpy.isfinite(r[-5]) and isinstance(r[-4], str) and \
+                                if r[-5] != 0 and isinstance(r[-4], str) and \
                                         rebate_units in cost_base_units:
                                     rebate_lev = r[-5]
                                 # Rebate presence and units do not match base/measure cost units
-                                elif numpy.isfinite(r[-5]) and (
+                                elif r[-5] != 0 and (
                                         not isinstance(rebate_units, str) or
                                         rebate_units not in cost_base_units):
                                     raise ValueError(
@@ -5540,7 +5541,7 @@ class Measure(object):
                                 # % credits first and if absolute values are also given assume
                                 # they constrain the maximum absolute amount of the credit
                                 # % credit is present
-                                if numpy.isfinite(r[-6]):
+                                if r[-6] != 0:
                                     # Convert % credit to a fraction and multiply by base/meas cost
                                     incent_lev = (r[-6] / 100) * cost
                                     # When both percentage and absolute incentive level are
@@ -7740,7 +7741,8 @@ class Measure(object):
 
         # If a driver that lowers volumetric rates for certain equipment types is represented
         # determine which rates (if any) apply to the current segment
-        if self.handyvars.low_volume_rate is not None:
+        if self.handyvars.low_volume_rate is not None and \
+                len(self.handyvars.low_volume_rate) != 0:
             # Pull microsegment information to compare against, based on whether or not
             # the measure involves fuel and/or tech switching
             fuel_for_rate = (mskeys[3] if not mskeys_swtch else mskeys_swtch[3])
@@ -9114,8 +9116,8 @@ class Measure(object):
             if self.handyvars.low_volume_rate is not None and len(alt_rates_init) != 0:
                 # Pull the alternate rate structure that applies to the current yr
                 alt_rates = [seg for seg in alt_rates_init if (
-                    (numpy.isnan(seg[-3]) or seg[-3] <= int(yr)) and
-                    (numpy.isnan(seg[-2]) or seg[-2] >= int(yr)))]
+                    (not seg[-3] or seg[-3] <= int(yr)) and
+                    (not seg[-2] or seg[-2] >= int(yr)))]
                 # If alternatives apply, pull data on modifications to volumetric energy rates;
                 # if no alternates apply, set modifications to zero
                 if len(alt_rates) != 0:

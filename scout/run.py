@@ -390,6 +390,9 @@ class UsefulVars(object):
                                 regu_type = ["state"]
                             else:
                                 regu_type = ["local"]
+                    # Handle blank applicability factor input
+                    if numpy.isnan(apply_frac):
+                        apply_frac = 1
                     # If start year is None, set to first year in modeling horizon
                     if numpy.isnan(start_yr[0]):
                         start_yr = [int(self.aeo_years[0])]
@@ -486,10 +489,16 @@ class UsefulVars(object):
                         bldg_fin = numpy.unique(bldg_fin)
                         # Onsite restrictions apply to both codes and BPS
                         onsite_reduce = [row.values[3]]
+                        # Finalize onsite reduction
+                        if numpy.isnan(onsite_reduce[0]):
+                            onsite_reduce[0] = 0
                         if "codes" in k:
                             # Find flags for energy gains from updating code to latest, as
                             # well as energy gains from stretch code adoption (if applicable)
                             lag_pct_reduce, strtch_pct_reduce = [[x] for x in row.values[4:6]]
+                            # Finalize stretch reduction if blank
+                            if numpy.isnan(strtch_pct_reduce[0]):
+                                strtch_pct_reduce[0] = 0
                             params = [x for x in [
                                 state, bldg_fin, onsite_reduce, lag_pct_reduce, strtch_pct_reduce,
                                 start_yr, apply_frac, regu_type]]
@@ -497,6 +506,11 @@ class UsefulVars(object):
                             # Find EUI reduction targets and year to benchmark those targets
                             # against
                             eui_pct_reduce, eui_bnch_yr = [[x] for x in row.values[4:6]]
+                            # Finalize EUI reduction and benchmark
+                            if numpy.isnan(eui_pct_reduce[0]):
+                                eui_pct_reduce[0] = 0
+                            if numpy.isnan(eui_bnch_yr[0]):
+                                eui_bnch_yr[0] = None
                             params = [x for x in [
                                 state, bldg_fin, onsite_reduce, eui_pct_reduce, eui_bnch_yr,
                                 start_yr, apply_frac, regu_type]]
@@ -545,11 +559,12 @@ class UsefulVars(object):
                             iterable[ind_r][lag_col] = flag_code_update
                     # Update segment-specific list of state-level inputs and reset attribute
                     state_dat_init.extend(iterable)
-                setattr(self, k, state_dat_init)
+                # Finalize data if not empty list
+                setattr(self, k, state_dat_init if state_dat_init else None)
 
             except FileNotFoundError:
                 # Set segment-specific list of state-level inputs to empty list
-                setattr(self, k, [])
+                setattr(self, k, None)
 
 
 class Codes_BPS_Measure(object):
@@ -5969,9 +5984,6 @@ class Engine(object):
             start_yr = code_std[-4]
             apply_frac = code_std[-3]
             regu_type = code_std[-2]
-            # Handle blank applicability factor input
-            if numpy.isnan(apply_frac):
-                apply_frac = 1
             # Flag for whether current policy applies to residential buildings (or not)
             res_focus = any(
                 [x in self.handyvars.out_break_bldgtypes[bldg] for x in [
@@ -6019,9 +6031,9 @@ class Engine(object):
                 stretch = code_std[4]
                 # Finalize energy index gain by adding the stretch code adoption impact on top
                 # of the impact from updating to the latest code version, if applicable
-                if not numpy.isnan(stretch) and lag_reduce != 0:
+                if stretch != 0 and lag_reduce != 0:
                     impact_thres_tyr = lag_reduce + (stretch / 100)
-                elif not numpy.isnan(stretch):
+                elif stretch != 0:
                     impact_thres_tyr = (stretch / 100)
                 else:
                     impact_thres_tyr = lag_reduce
@@ -6043,7 +6055,7 @@ class Engine(object):
                 bench_yr = code_std[4]
                 # Ensure that benchmark year exists; if not, assume it's 5 years before the
                 # starting year
-                if numpy.isnan(bench_yr):
+                if bench_yr is None:
                     bench_yr = start_yr - 5
                 # Determine the year range for which the current BPS onsite reduction applies
                 apply_yrs = [yr for yr in self.handyvars.aeo_years if int(yr) >= bench_yr]
@@ -6058,7 +6070,7 @@ class Engine(object):
                 else:
                     bench_yr_fin = str(bench_yr)
                 # Convert raw input data (in percentage units) to fraction
-                if not numpy.isnan(code_std[3]):
+                if code_std[3] != 0:
                     impact_thres_tyr = code_std[3] / 100
                 else:
                     impact_thres_tyr = 0
@@ -6077,13 +6089,13 @@ class Engine(object):
 
             # Apply onsite emissions reduction requirements, if any, to measure data that applies
             # to the current region/bldg/vintage combination
-            if not numpy.isnan(onsite_reduce):
+            if onsite_reduce != 0:
                 # Convert onsite reduction input to a fraction (input as a percentage when there)
                 onsite_reduce_frac_tyr = onsite_reduce / 100
                 # Breakout onsite reduction requirements by year
                 onsite_reduce_frac = {}
                 for yr in self.handyvars.aeo_years:
-                    if code_std_flag == "bps" and not numpy.isnan(bench_yr) and \
+                    if code_std_flag == "bps" and not (bench_yr is None) and \
                             int(yr) >= bench_yr and int(yr) < start_yr:
                         # For BPS, assume compliance/progress towards reduction begins in
                         # the benchmark year and proceeds linearly towards the target reduction
@@ -6170,8 +6182,7 @@ class Engine(object):
                 # Finalize determination of relative energy reduction in the efficient case. For
                 # BPS, this is normalized by sf and compared to a benchmark baseline year. For
                 # codes, this is relative to the baseline energy use in each year.
-                if code_std_flag == "bps" and (
-                        not numpy.isnan(impact_thres_tyr) and impact_thres_tyr != 0):
+                if code_std_flag == "bps":
                     # Further normalize energy sums by square foot (to get EUI) if BPS is being
                     # assessed, since BPS generally target EUI reductions and this is the metric
                     # used in the input data for this policy
@@ -6182,14 +6193,11 @@ class Engine(object):
                                  energy_sums_sf["baseline"][bench_yr_fin]) if
                         (yr in apply_yrs and energy_sums_sf["baseline"][bench_yr_fin] != 0) else 0
                         for yr in self.handyvars.aeo_years}
-                elif (not numpy.isnan(impact_thres_tyr) and impact_thres_tyr != 0):
+                else:
                     energy_reduce_frac = {
                         yr: 1 - (energy_sums["efficient"][yr] / energy_sums["baseline"][yr])
                         if (yr in apply_yrs and energy_sums["baseline"][yr] != 0) else 0
                         for yr in self.handyvars.aeo_years}
-                # When there are no energy reductions required, set the relative reduction to null
-                else:
-                    energy_reduce_frac = ""
 
                 # Determine additional fractional energy (and carbon/cost) reduction vs. baseline
                 # that must be applied to meet codes/BPS requirements in each year, if any; if

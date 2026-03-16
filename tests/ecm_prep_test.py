@@ -130133,6 +130133,273 @@ class YrMapTest(unittest.TestCase, CommonMethods):
             self.dict_check(out_map, self.test_out_map[ind])
 
 
+class StateImportTest(unittest.TestCase, CommonMethods):
+    """Test 'import_state_data' function.
+
+    Ensure that state-level incentives and rate information are correctly imported and initialized.
+
+    Attributes:
+        opts (object): Full suite of user-defined options, including incentives/rates.
+        handyfiles (object): Input file paths.
+        hvobj (object): Global variables to use across measure market preparation.
+        test_opts (list): Range of test incentives and rates options to use.
+        test_paths (list): File paths to test databases of incentives and rate information.
+        valid_regions (list): Sample full region set to use in initializing inputs.
+        incentives_out (list): Expected initialized incentives data given sample inputs.
+        low_volume_rate_out (list): Expected initialized rates data given sample inputs.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Define variables and objects for use across all class functions."""
+        # Base directory
+        base_dir = os.getcwd()
+        # Null user options
+        cls.opts = NullOpts().opts
+        # Initialize file paths
+        cls.handyfiles = UsefulInputFiles(cls.opts)
+        # Initialize useful variables
+        cls.hvobj = UsefulVars(base_dir, cls.handyfiles, cls.opts)
+        # Custom incentives and rate user options to use for testing purposes in function below
+        cls.test_opts = [
+            {"incentives": "aggressive", "low_volume_rate": "aggressive"},
+            {"incentives": "aeo", "low_volume_rate": "reference"},
+            {"incentives": "reference", "low_volume_rate": None}]
+        # Custom incentives and rate file paths to use for testing purposes in function below
+        cls.test_paths = {
+            "incentives": Path(__file__).parent / "test_files" / "incentives_test.csv",
+            "low_volume_rate": Path(__file__).parent / "test_files" / "rates_test.csv"}
+        # Set test file paths
+        for k in cls.test_paths.keys():
+            setattr(cls.handyfiles, k, cls.test_paths[k])
+        cls.valid_regions = ["CA", "NY"]
+        cls.incentives_out = [[
+            ['CA', 'single family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'other fuel', 'no', 'replace', 'non-federal', False, 0, '2.69',
+             'COP', 0, 8000, '$/unit', 2024, 2031, 0.244],
+            ['CA', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'other fuel', 'no', 'replace', 'non-federal', False, 0, '2.69',
+             'COP', 0, 0, '$/unit', 2024, 2031, 0.244]
+            ],
+            None,
+            [
+            ['CA', 'single family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'existing', 'heating', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 30.0, 2000, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'multi family home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'mobile home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'natural gas', 'yes', 'replace', 'federal', True, 0,
+             'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'multi family home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'new', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['NY', 'mobile home', 'existing', 'cooling', 'ASHP', 'electricity', 'natural gas',
+             'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
+             'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
+            ['CA', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'other fuel', 'no', 'replace', 'non-federal', True, 0, '2.69',
+             'COP', 0, 4000, '$/unit', 2024, 2031, 0.308],
+            ['CA', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'other fuel', 'no', 'replace', 'non-federal', True, 0, '2.69',
+             'COP', 0, 0, '$/unit', 2024, 2031, 0.308]
+            ]]
+        cls.low_volume_rate_out = [[
+            ['CA', 'multi family home', 'new', 'all', 'all', 'electricity', 0.06,
+             False, 302, 2026, False, 1],
+            ['CA', 'multi family home', 'existing', 'all', 'all', 'electricity', 0.06,
+             False, 302, 2026, False, 1],
+            ['NY', 'single family home', 'new', 'heating', 'ASHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'single family home', 'new', 'heating', 'GSHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'single family home', 'existing', 'heating', 'GSHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'multi family home', 'new', 'heating', 'ASHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'multi family home', 'new', 'heating', 'GSHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'multi family home', 'existing', 'heating', 'ASHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'multi family home', 'existing', 'heating', 'GSHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'mobile home', 'new', 'heating', 'ASHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'mobile home', 'new', 'heating', 'GSHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'mobile home', 'existing', 'heating', 'ASHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1],
+            ['NY', 'mobile home', 'existing', 'heating', 'GSHP', 'electricity',
+             False, 20.0, 0, 2030, False, 1]],
+            [
+            ['CA', 'single family home', 'new', 'all', 'all', 'electricity', 0.06,
+             False, 302, 2026, False, 1],
+            ['CA', 'single family home', 'existing', 'all', 'all', 'electricity', 0.06,
+             False, 302, 2026, False, 1]],
+            None]
+
+    def test_import_state_data(self):
+        """Test 'import_state_data' function with sample inputs."""
+
+        # Loop through the custom user incentives/rates options to be tested
+        for case_ind, case in enumerate(range(len(self.test_opts))):
+            # Loop through and reset options to use test versions
+            for k in self.test_paths.keys():
+                # setattr(self.handyfiles, k, self.test_paths[k])
+                if k == "incentives":
+                    self.opts.incentive_levels = self.test_opts[case_ind][k]
+                else:
+                    self.opts.low_volume_rate = self.test_opts[case_ind][k]
+            # Execute the function to be tested via the useful variables object class
+            self.hvobj.import_state_data(self.handyfiles, self.test_paths.keys(),
+                                         self.valid_regions, self.opts)
+            # Check to ensure that both outputs match test values
+            for output, expected in zip(
+                    [self.hvobj.incentives, self.hvobj.low_volume_rate],
+                    [self.incentives_out[case_ind], self.low_volume_rate_out[case_ind]]):
+                self.assertEqual(output, expected)
+
+
 # Offer external code execution (include all lines below this point in all
 # test files)
 def main():

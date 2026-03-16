@@ -1,0 +1,49 @@
+﻿scenario,description,state(s),building type(s),onsite pct fossil reduction,energy index improvement,stretch pct improvement,start year,applicable fraction,fraction notes,type
+reference,Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2025,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
+reference,Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements).,CA,all,,stretch,20,2025,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+reference,"Lancaster, CA's Zero Net Energy ordinance requires at least 2kWh of solar generation per newly constructed home, beginning in 2017. 
+
+https://lancasterenergy.com/2017/10/12/1274/#:~:text=The%20first%20of%20its%20kind,home%20built%2C%20beginning%20in%202017",CA,all residential,,stretch,20,2017,0.004,"Tiny fraction but interesting code, included just as an example of more aggressive solar codes
+
+Used Lancaster city, res site_energy",local
+reference,"Los Angeles has banned gas in new buildings. This ban applies to most new buildings approved by the Los Angeles Department of Building and Safety. ""Affordable housing proposals will get treated a little differently: Those that are approved before June 1 won’t have to comply with the rules. Meanwhile, secondary housing units on single-family lots won’t be affected by the new requirements, and restaurants will still be allowed to use gas ranges and ovens.""
+
+https://grist.org/beacon/la-bans-natural-gas-in-new-buildings/
+
+https://www.jdesigns.com/blog/los-angeles-gas-banned-new-construction",CA,"all residential, all commercial",100,,,2023,0.152,"Note that this uses LA city res data and LA county com data because we don't have city com data, natural_gas consumption",local
+reference,"San Francisco prohibits installation of infrastructure, piping systems, or piping for distribution of natural gas or propane to such uses for indoor and outdoor space-conditioning, water heating, cooking, and clothes drying systems, requiring these functions to be all-electric. 
+
+https://www.sf.gov/all-electric-new-construction-ordinance#
+
+https://sfbos.org/sites/default/files/o0237-20.pdf",CA,"all residential, all commercial",100,,,2021,0.036,"Note that this uses SF city res data and SF county com data because we don't have city com data, natural_gas consumption",local
+aggressive,Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2025,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
+aggressive,Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements).,CA,all,,stretch,20,2025,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+aggressive,"Lancaster, CA's Zero Net Energy ordinance requires at least 2kWh of solar generation per newly constructed home, beginning in 2017. 
+
+https://lancasterenergy.com/2017/10/12/1274/#:~:text=The%20first%20of%20its%20kind,home%20built%2C%20beginning%20in%202017",CA,all residential,,stretch,20,2017,0.004,"Tiny fraction but interesting code, included just as an example of more aggressive solar codes
+
+Used Lancaster city, res site_energy",local
+aggressive,"Los Angeles has banned gas in new buildings. This ban applies to most new buildings approved by the Los Angeles Department of Building and Safety. ""Affordable housing proposals will get treated a little differently: Those that are approved before June 1 won’t have to comply with the rules. Meanwhile, secondary housing units on single-family lots won’t be affected by the new requirements, and restaurants will still be allowed to use gas ranges and ovens.""
+
+https://grist.org/beacon/la-bans-natural-gas-in-new-buildings/
+
+https://www.jdesigns.com/blog/los-angeles-gas-banned-new-construction",CA,"all residential, all commercial",100,,,2023,0.152,"Note that this uses LA city res data and LA county com data because we don't have city com data, natural_gas consumption",local
+aggressive,"San Francisco prohibits installation of infrastructure, piping systems, or piping for distribution of natural gas or propane to such uses for indoor and outdoor space-conditioning, water heating, cooking, and clothes drying systems, requiring these functions to be all-electric. 
+
+https://www.sf.gov/all-electric-new-construction-ordinance#
+
+https://sfbos.org/sites/default/files/o0237-20.pdf",CA,"all residential, all commercial",100,,,2021,0.036,"Note that this uses SF city res data and SF county com data because we don't have city com data, natural_gas consumption",local
+reference,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
+
+https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,all commercial,100,,,2027,0.183,filtered for natural gas/Denver county comm,local
+reference,"In June of 2024, the City of Boulder, Colorado passed a code that bans the use of gas-powered appliances in newly built properties as well as the discontinuation of gas services for existing properties. The code officially went into effect on December 1, 2024.
+
+https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local
+aggressive,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
+
+https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,all commercial,100,,,2027,0.183,filtered for natural gas/Denver county comm,local
+aggressive,"In June of 2024, the City of Boulder, Colorado passed a code that bans the use of gas-powered appliances in newly built properties as well as the discontinuation of gas services for existing properties. The code officially went into effect on December 1, 2024.
+
+https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local
+aggressive,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
+aggressive,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state

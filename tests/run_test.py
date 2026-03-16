@@ -13,6 +13,7 @@ import itertools
 import numpy_financial as npf
 import pytest
 from pathlib import Path
+from collections import OrderedDict
 
 base_args = run.parse_args([])
 
@@ -28977,6 +28978,209 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
             self.dict_check(self.code_bps_meas_out[ind_code_bps], code_bps_meas_out[
                 ind_code_bps].markets[self.test_adopt_scheme_code_bps]["master_mseg"][
                 "energy"]["total"])
+
+
+class StateImportTest(unittest.TestCase, CommonMethods):
+    """Test 'import_state_data' function.
+
+    Ensure that appliance emissions limits, codes, and BPS are correctly imported and initialized.
+
+    Attributes:
+        opts (object): Full suite of user-defined options, including incentives/rates.
+        handyfiles (object): Input file paths.
+        hvobj (object): Global variables to use across measure market preparation.
+        test_opts (list): Range of test incentives and rates options to use.
+        test_paths (list): File paths to test databases of incentives and rate information.
+        test_vars (list): Set of interventions tested (appliance emissions, codes, bps).
+        state_appl_regs_out (list): Expected initialized appliance limits data given sample inputs.
+        codes_out (list): Expected initialized codes data given sample inputs.
+        bps_out (list): Expected initialized BPS data given sample inputs.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Define variables and objects for use across all class functions."""
+        # Null user options
+        cls.opts = NullOpts().opts
+        # Initialize file paths
+        cls.handyfiles = run.UsefulInputFiles(energy_out=[
+            "fossil_equivalent", "NA", "NA", "NA", "NA"], regions="AIA",
+            grid_decarb=False)
+        # Initialize useful variables
+        cls.hvobj = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                   brkout="basic", regions="State",
+                                   state_appl_regs=None, codes=None, bps=None, exog_rates=False)
+        # Set AEO years to full range present in the test input data
+        cls.hvobj.aeo_years = [str(x) for x in range(2024, 2051)]
+        # Set output breakout categories to states and code/bps building types (in the full run
+        # of the code, the latter is checked for and required to assess code/BPS provisions)
+        cls.hvobj.out_break_czones = {"CA": "CA", "CO": "CO"}
+        cls.hvobj.out_break_bldgtypes = OrderedDict([
+            ('Single Family/Manufactured Homes (New)', [
+                'new', 'single family home', 'mobile home']),
+            ('Single Family/Manufactured Homes (Existing)', [
+                'existing', 'single family home', 'mobile home']),
+            ('Multi Family Homes (New)', ['new', 'multi family home']),
+            ('Multi Family Homes (Existing)', ['existing', 'multi family home']),
+            ('Commercial (New)', [
+                'new', 'assembly', 'education', 'food sales',
+                'food service', 'health care', 'mercantile/service',
+                'lodging', 'large office', 'small office', 'warehouse',
+                'other', 'unspecified']),
+            ('Commercial (Existing)', [
+                'existing', 'assembly', 'education', 'food sales',
+                'food service', 'health care', 'mercantile/service',
+                'lodging', 'large office', 'small office', 'warehouse',
+                'other', 'unspecified'])])
+        # Custom incentives and rate user options to use for testing purposes in function below
+        cls.test_opts = [
+            {"state_appl_regs": "aggressive", "codes": "aggressive", "bps": "aggressive"},
+            {"state_appl_regs": None, "codes": "reference", "bps": "reference"},
+            {"state_appl_regs": "reference", "codes": None, "bps": None}]
+        # Custom appliance limits, codes, BPS file paths to use for testing in function below
+        cls.test_paths = {
+            "state_appl_regs": Path(__file__).parent / "test_files" / "appl_regs_test.csv",
+            "codes": Path(__file__).parent / "test_files" / "codes_test.csv",
+            "codes_lag": Path(__file__).parent / "test_files" / "codes_lag_test.csv",
+            "bps": Path(__file__).parent / "test_files" / "bps_test.csv"}
+        # Set test file paths
+        for k in cls.test_paths.keys():
+            setattr(cls.handyfiles, k, cls.test_paths[k])
+        # Set subset of variables that should be tested
+        cls.test_vars = [k for k in cls.test_paths.keys() if "lag" not in k]
+        cls.state_appl_regs_out = [[
+            ['CA', 'single family home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CA', 'single family home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CA', 'single family home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CA', 'single family home', 'existing', 'natural gas', 'water heating', 'all',
+             2025, 0.04],
+            ['CA', 'multi family home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CA', 'multi family home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CA', 'multi family home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CA', 'multi family home', 'existing', 'natural gas', 'water heating', 'all',
+             2025, 0.04],
+            ['CA', 'mobile home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CA', 'mobile home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CA', 'mobile home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CA', 'mobile home', 'existing', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CO', 'single family home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CO', 'single family home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CO', 'single family home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CO', 'single family home', 'existing', 'natural gas', 'water heating', 'all',
+             2025, 0.04],
+            ['CO', 'multi family home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CO', 'multi family home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CO', 'multi family home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CO', 'multi family home', 'existing', 'natural gas', 'water heating', 'all',
+             2025, 0.04],
+            ['CO', 'mobile home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CO', 'mobile home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
+            ['CO', 'mobile home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
+            ['CO', 'mobile home', 'existing', 'natural gas', 'water heating', 'all', 2025, 0.04]
+            ],
+            None,
+            [
+            ['CO', 'single family home', 'new', 'natural gas', 'heating', 'furnace (NG)',
+             2025, 0.04],
+            ['CO', 'single family home', 'new', 'natural gas', 'heating', 'all', 2030, 0.22],
+            ['CO', 'single family home', 'new', 'natural gas', 'cooking', 'all', 2030, 0.22],
+            ['CO', 'multi family home', 'new', 'natural gas', 'heating', 'all', 2030, 0.22],
+            ['CO', 'multi family home', 'new', 'natural gas', 'cooking', 'all', 2030, 0.22]
+            ]
+            ]
+        cls.codes_out = [
+            [['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2025, 0.8, 'state'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2025, 0.8, 'state'],
+             ['CA', 'Multi Family Homes (New)', 0, 0.0, 20.0, 2025, 0.2, 'state'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 0, 0.0, 20.0, 2025, 0.2, 'state'],
+             ['CA', 'Multi Family Homes (New)', 0, 0.0, 20.0, 2024, 0.004, 'local'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 0, 0.0, 20.0, 2024, 0.004, 'local'],
+             ['CA', 'Commercial (New)', 100.0, 0, 0, 2024, 0.152, 'local'],
+             ['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2024, 0.152, 'local'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2024, 0.152, 'local'],
+             ['CA', 'Commercial (New)', 100.0, 0, 0, 2024, 0.036, 'local'],
+             ['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2024, 0.036, 'local'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2024, 0.036, 'local'],
+             ['CO', 'Commercial (New)', 100.0, 0, 0, 2027, 0.183, 'local'],
+             ['CO', 'Commercial (New)', 100.0, 0, 0, 2024, 0.041, 'local'],
+             ['CO', 'Multi Family Homes (New)', 100.0, 0, 0, 2024, 0.041, 'local'],
+             ['CO', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2024, 0.041, 'local'],
+             ['CO', 'Commercial (New)', 100.0, 0.0, 0, 2030, 0.8, 'state'],
+             ['CO', 'Multi Family Homes (New)', 100.0, 0.0, 0, 2030, 0.8, 'state'],
+             ['CO', 'Single Family/Manufactured Homes (New)', 100.0, 0.0, 0, 2030, 0.8, 'state'],
+             ['CO', 'Commercial (New)', 0, 0.0, 20.0, 2030, 0.2, 'state'],
+             ['CO', 'Multi Family Homes (New)', 0, 0.0, 20.0, 2030, 0.2, 'state'],
+             ['CO', 'Single Family/Manufactured Homes (New)', 0, 0.0, 20.0, 2030, 0.2, 'state']
+             ],
+            [['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2025, 0.8, 'state'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2025, 0.8, 'state'],
+             ['CA', 'Multi Family Homes (New)', 0, 0.0, 20.0, 2025, 0.2, 'state'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 0, 0.0, 20.0, 2025, 0.2, 'state'],
+             ['CA', 'Multi Family Homes (New)', 0, 0.0, 20.0, 2024, 0.004, 'local'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 0, 0.0, 20.0, 2024, 0.004, 'local'],
+             ['CA', 'Commercial (New)', 100.0, 0, 0, 2024, 0.152, 'local'],
+             ['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2024, 0.152, 'local'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2024, 0.152, 'local'],
+             ['CA', 'Commercial (New)', 100.0, 0, 0, 2024, 0.036, 'local'],
+             ['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2024, 0.036, 'local'],
+             ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2024, 0.036, 'local'],
+             ['CO', 'Commercial (New)', 100.0, 0, 0, 2027, 0.183, 'local'],
+             ['CO', 'Commercial (New)', 100.0, 0, 0, 2024, 0.041, 'local'],
+             ['CO', 'Multi Family Homes (New)', 100.0, 0, 0, 2024, 0.041, 'local'],
+             ['CO', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2024, 0.041, 'local']],
+            None
+            ]
+        cls.bps_out = [
+            [['CA', 'Commercial (Existing)', 0, 20.0, 2022.0, 2024, 0.039, 'local'],
+             ['CA', 'Multi Family Homes (Existing)', 0, 20.0, 2022.0, 2024, 0.039, 'local'],
+             ['CA', 'Commercial (Existing)', 0, 20.0, 2022.0, 2026, 0.039, 'local'],
+             ['CA', 'Multi Family Homes (Existing)', 0, 20.0, 2022.0, 2026, 0.039, 'local'],
+             ['CA', 'Commercial (Existing)', 20.0, 20.0, 2030.0, 2035, 1.0, 'state'],
+             ['CA', 'Multi Family Homes (Existing)', 20.0, 20.0, 2030.0, 2035, 1.0, 'state'],
+             ['CA', 'Commercial (Existing)', 100.0, 20.0, 2030.0, 2045, 1.0, 'state'],
+             ['CA', 'Multi Family Homes (Existing)', 100.0, 20.0, 2030.0, 2045, 1.0, 'state'],
+             ['CO', 'Commercial (Existing)', 0, 13.0, 2021.0, 2026, 1.0, 'state'],
+             ['CO', 'Multi Family Homes (Existing)', 0, 13.0, 2021.0, 2026, 1.0, 'state'],
+             ['CO', 'Commercial (Existing)', 0, 29.0, 2021.0, 2030, 1.0, 'state'],
+             ['CO', 'Multi Family Homes (Existing)', 0, 29.0, 2021.0, 2030, 1.0, 'state'],
+             ['CA', 'Commercial (Existing)', 30.0, 0, None, 2030, 0.03254094, 'federal'],
+             ['CO', 'Commercial (Existing)', 30.0, 0, None, 2030, 0.03254094, 'federal'],
+             ['CA', 'Commercial (Existing)', 100.0, 0, None, 2045, 0.03254094, 'federal'],
+             ['CO', 'Commercial (Existing)', 100.0, 0, None, 2045, 0.03254094, 'federal']
+             ],
+            [['CA', 'Commercial (Existing)', 0, 20.0, 2022.0, 2024, 0.039, 'local'],
+             ['CA', 'Multi Family Homes (Existing)', 0, 20.0, 2022.0, 2024, 0.039, 'local'],
+             ['CA', 'Commercial (Existing)', 0, 20.0, 2022.0, 2026, 0.039, 'local'],
+             ['CA', 'Multi Family Homes (Existing)', 0, 20.0, 2022.0, 2026, 0.039, 'local'],
+             ['CO', 'Commercial (Existing)', 0, 13.0, 2021.0, 2026, 1.0, 'state'],
+             ['CO', 'Multi Family Homes (Existing)', 0, 13.0, 2021.0, 2026, 1.0, 'state'],
+             ['CO', 'Commercial (Existing)', 0, 29.0, 2021.0, 2030, 1.0, 'state'],
+             ['CO', 'Multi Family Homes (Existing)', 0, 29.0, 2021.0, 2030, 1.0, 'state'],
+             ['CA', 'Commercial (Existing)', 30.0, 0, None, 2030, 0.03254094, 'federal'],
+             ['CO', 'Commercial (Existing)', 30.0, 0, None, 2030, 0.03254094, 'federal']
+             ],
+            None
+            ]
+
+    def test_import_state_data(self):
+        """Test 'import_state_data' function with sample inputs."""
+
+        # Loop through the custom user appliance limits/codes/bps options to be tested
+        for case_ind, case in enumerate(range(len(self.test_opts))):
+            # Loop through and reset options to use test versions
+            for k in self.test_vars:
+                setattr(self.opts, k, self.test_opts[case_ind][k])
+            # Execute the function to be tested via the useful variables object class
+            self.hvobj.import_state_data(self.handyfiles, self.test_vars,
+                                         [self.test_opts[case_ind]["state_appl_regs"],
+                                          self.test_opts[case_ind]["codes"],
+                                          self.test_opts[case_ind]["bps"]])
+            # Check to ensure that both outputs match test values
+            for output, expected in zip(
+                    [self.hvobj.state_appl_regs, self.hvobj.codes, self.hvobj.bps],
+                    [self.state_appl_regs_out[case_ind], self.codes_out[case_ind],
+                     self.bps_out[case_ind]]):
+                self.assertEqual(output, expected)
 
 
 # Offer external code execution (include all lines below this point in all
