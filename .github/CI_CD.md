@@ -15,10 +15,13 @@ sequenceDiagram
     Dev->>GH: Push to master / Open PR to master
     GH->>QG: Trigger workflow
 
-    par Quality Gates
+    par Quality Gates (gate integration tests)
         QG->>QG: flake8 + JSON validation
-        QG->>QG: Unit tests (Python 3.10, 3.11, 3.12)
         QG->>QG: Documentation check
+    end
+
+    par Unit Tests (run in parallel, do not gate integration)
+        QG->>QG: Unit tests (Python 3.10, 3.11, 3.12)
     end
 
     QG->>GH: Check PR status & profiler label
@@ -55,8 +58,8 @@ sequenceDiagram
 
     alt Ubuntu results match master
         IT->>IT: No commit needed
-    else Ubuntu results differ
-        IT->>GH: Commit results + PNGs to branch
+    else Ubuntu plot images differ
+        IT->>GH: Commit comparison PNGs to branch
     end
 
     alt Ubuntu results match master
@@ -75,7 +78,7 @@ sequenceDiagram
     Note over GH: workflow_run trigger<br/>(base repo context, write access)
     GH->>PR: Download comment artifact
     PR->>GH: Post PR comment
-    Note over PR: Always posted, even on failure.<br/>Works for fork PRs (split workflow pattern).<br/>Includes:<br/>• Ubuntu status + comparison result<br/>• Cross-platform results table<br/>• Before/after plot table (if diffs)<br/>• Failure details (if applicable)
+    Note over PR: Always posted, even on failure.<br/>Works for fork PRs (split workflow pattern).<br/>Includes:<br/>• Ubuntu status + comparison result<br/>• What changed (JSON diffs, pixel-level plot diffs, or both)<br/>• Cross-platform results table<br/>• Before/after plot table (if diffs)<br/>• Failure details (if applicable)
 
     opt Accepting expected changes
         Dev->>GH: Add update-baseline label
@@ -92,6 +95,11 @@ sequenceDiagram
 - **Push to `master`**: Runs full pipeline including profiler
 - **PR to `master`**: Runs on `opened`, `synchronize`, `reopened`, `ready_for_review`, `labeled`
 
+### Pipeline Structure
+- **Quality gates** (flake8, JSON validation, docs check) must pass before integration tests start
+- **Unit tests** (Python 3.10, 3.11, 3.12) run in parallel with integration tests — they do **not** block the integration pipeline
+- **Integration tests** start as soon as quality gates pass, without waiting for unit tests
+
 ### Comparison Strategy
 - **JSON results**: Approximate comparison — values within `0.0001%` tolerance are treated as equal (handles floating-point platform noise)
 - **PDF plots** (Ubuntu only): Rendered to PNG at 150 DPI and compared pixel-by-pixel — metadata-only differences (timestamps, version strings) are ignored
@@ -99,9 +107,11 @@ sequenceDiagram
 - **Cross-platform**: Windows and macOS run JSON-level comparison against master
 
 ### When Results Differ
-1. Results are committed to the PR branch and uploaded as artifacts (Ubuntu only)
-2. Before/after plot images are embedded in the PR comment
-3. The integration test step fails with ❌
+1. Full results (JSON, PDFs, Excel) are uploaded as workflow artifacts (Ubuntu only)
+2. If plot images differ (pixel-level), comparison PNGs are committed to the PR branch for embedding in the PR comment
+3. JSON and PDF result files are **not** committed to avoid breaking GitHub's diff viewer
+4. The failure message specifies what changed: JSON diffs, pixel-level plot diffs, or both
+5. The integration test step fails with ❌
 
 ### PR Comment (Split Workflow Pattern)
 - The integration test workflow saves the comment body + PR number as an artifact (no write access needed)
@@ -137,7 +147,7 @@ sequenceDiagram
 | Label | Effect |
 |---|---|
 | `run-profiler` | Enables memory and CPU profiling during the integration test |
-| `update-baseline` | Accepts result diffs as expected changes (skips failure step) |
+| `update-baseline` | Accepts result diffs as expected changes (skips failure for unit tests and integration tests) |
 
 ### Adding a Label
 1. Go to the PR page on GitHub
@@ -156,7 +166,7 @@ When enabled (via `run-profiler` label or push to `master`), the profiler:
 Use this when code changes intentionally alter results:
 1. Review the before/after plots in the PR comment
 2. If the changes are expected, add the `update-baseline` label
-3. CI re-runs and skips the failure step (emits a warning instead)
+3. CI re-runs and skips the failure step (emits a warning instead) — applies to both **unit tests** and **integration tests**
 4. On merge, the committed results become the new master baseline
 
 ### Constraints File

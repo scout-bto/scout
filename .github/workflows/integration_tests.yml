@@ -17,6 +17,7 @@ jobs:
       statuses: write
     outputs:
       has_diff: ${{ steps.compare.outputs.has_diff }}
+      has_json_diff: ${{ steps.compare.outputs.has_json_diff }}
       has_plot_diff: ${{ steps.compare.outputs.has_plot_diff }}
       changed_plots: ${{ steps.compare.outputs.changed_plots }}
     steps:
@@ -56,6 +57,7 @@ jobs:
         run: |
           git fetch --depth=1 origin master
           has_diff="false"
+          has_json_diff="false"
           has_plot_diff="false"
           changed_plots=""
 
@@ -78,6 +80,7 @@ jobs:
           for csv_file in tests/integration_testing/results/*_diffs.csv tests/integration_testing/results/*_key_diffs.csv; do
             if [[ -f "$csv_file" ]]; then
               # File exists = meaningful differences found
+              has_json_diff="true"
               has_diff="true"
               break
             fi
@@ -115,6 +118,7 @@ jobs:
           fi
 
           echo "has_diff=$has_diff" >> $GITHUB_OUTPUT
+          echo "has_json_diff=$has_json_diff" >> $GITHUB_OUTPUT
           echo "has_plot_diff=$has_plot_diff" >> $GITHUB_OUTPUT
           # Use delimiter for multiline output
           echo "changed_plots<<EOF" >> $GITHUB_OUTPUT
@@ -153,30 +157,33 @@ jobs:
         with:
           name: results
           path: ./tests/integration_testing/results/
-      - name: Commit test results
-        # Only commit when approximate comparison found meaningful diffs.
-        # Byte-level differences (floating-point noise, PDF timestamps) are
-        # not committed — the compare step's has_diff output is the source of truth.
-        if: steps.compare.outputs.has_diff == 'true'
+      - name: Commit plot comparison images
+        # Only commit PNG comparison images (for PR comment embedding).
+        # JSON and PDF results are uploaded as artifacts only — committing them
+        # breaks GitHub's diff viewer due to file size.
+        if: steps.compare.outputs.has_plot_diff == 'true'
         id: commit_results
         run: |
-          git add ./tests/integration_testing/results/*.json
-          git add ./tests/integration_testing/results/plots/**/*.pdf
-          # Also add PNG images if they exist (for plot diff visualization)
+          # Only commit PNG images for plot diff visualization
           if [[ -d ./tests/integration_testing/results/plot_images ]]; then
             git add ./tests/integration_testing/results/plot_images/
           fi
           if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
             git add ./tests/integration_testing/results/base_plot_images/
           fi
+          # Only commit if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No plot images to commit"
+            exit 0
+          fi
           git config --global user.email "github-action@users.noreply.github.com"
           git config --global user.name "GitHub Action"
-          git commit -m "Upload results files from CI build (results differ from master)"
+          git commit -m "Upload plot comparison images from CI build"
           echo "Pushing to branch"
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
           # Set status checks on the new commit so it inherits parent job statuses
-          checks=("code-quality-checks" "python-tests (3.10)" "python-tests (3.11)" "python-tests (3.12)")
+          checks=("code-quality-checks" "Unit Tests (Python 3.10)" "Unit Tests (Python 3.11)" "Unit Tests (Python 3.12)")
           commit_sha=$(git rev-parse HEAD)
           status_url="https://api.github.com/repos/${{ github.repository }}/statuses/$commit_sha"
           for check in "${checks[@]}"; do
@@ -191,16 +198,24 @@ jobs:
                 "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
               }'
           done
-          # Mark integration test as failure since results differ from master
+          # Mark integration test status based on update-baseline label
+          UPDATE_BASELINE="${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}"
+          if [[ "$UPDATE_BASELINE" == "true" ]]; then
+            integ_state="success"
+            integ_desc="Plot images differ from master, but 'update-baseline' label is set"
+          else
+            integ_state="failure"
+            integ_desc="Plot images differ from master (pixel-level comparison)"
+          fi
           curl -L \
             -X POST \
             $status_url \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -d '{
-              "state": "failure",
+              "state": "'"${integ_state}"'",
               "context": "integration-tests / Integration Testing",
-              "description": "Results differ from master",
+              "description": "'"${integ_desc}"'",
               "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }'
       - name: Fail if results differ from master
@@ -208,10 +223,27 @@ jobs:
         env:
           UPDATE_BASELINE: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
         run: |
+          HAS_JSON_DIFF="${{ steps.compare.outputs.has_json_diff }}"
+          HAS_PLOT_DIFF="${{ steps.compare.outputs.has_plot_diff }}"
+
+          # Build a descriptive failure reason
+          reasons=""
+          if [[ "$HAS_JSON_DIFF" == "true" ]]; then
+            reasons="JSON results differ (approximate comparison, 0.0001% threshold)"
+          fi
+          if [[ "$HAS_PLOT_DIFF" == "true" ]]; then
+            if [[ -n "$reasons" ]]; then
+              reasons="$reasons; Plot images differ (pixel-level PDF comparison)"
+            else
+              reasons="Plot images differ (pixel-level PDF comparison)"
+            fi
+          fi
+
           if [[ "$UPDATE_BASELINE" == "true" ]]; then
             echo "::warning::Integration test results differ from master, but 'update-baseline' label is set. Treating as expected change."
+            echo "::warning::Differences: $reasons"
           else
-            echo "::error::Integration test results differ from master. Review the comparison artifacts."
+            echo "::error::Integration test results differ from master: $reasons"
             echo "::notice::To accept these changes as the new baseline, add the 'update-baseline' label to this PR and re-run."
             exit 1
           fi
@@ -241,6 +273,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           HAS_PLOT_DIFF: ${{ needs.run-test.outputs.has_plot_diff }}
+          HAS_JSON_DIFF: ${{ needs.run-test.outputs.has_json_diff }}
           HEAD_REF: ${{ github.head_ref }}
           CROSS_PLATFORM_RESULT: ${{ needs.cross-platform-test.result }}
         with:
@@ -250,6 +283,7 @@ jobs:
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const testResult = '${{ needs.run-test.result }}';
             const hasDiff = '${{ needs.run-test.outputs.has_diff }}';
+            const hasJsonDiff = process.env.HAS_JSON_DIFF;
             const hasPlotDiff = process.env.HAS_PLOT_DIFF;
             const headRef = process.env.HEAD_REF;
             const profilerEnabled = '${{ inputs.enable_profiler }}';
@@ -261,6 +295,12 @@ jobs:
             body += `| Item | Detail |\n|---|---|\n`;
             body += `| **Status** | ${testResult} |\n`;
             body += `| **Results changed vs master** | ${hasDiff === 'true' ? 'Yes — review comparison artifacts' : 'No'} |\n`;
+            if (hasDiff === 'true') {
+              const reasons = [];
+              if (hasJsonDiff === 'true') reasons.push('JSON results (approximate comparison, 0.0001% threshold)');
+              if (hasPlotDiff === 'true') reasons.push('Plot images (pixel-level PDF comparison)');
+              body += `| **What changed** | ${reasons.join('; ')} |\n`;
+            }
             body += `| **Profiler** | ${profilerEnabled === 'true' ? 'Enabled' : 'Disabled'} |\n`;
             body += `| **Artifacts & Logs** | [View workflow run](${runUrl}) |\n`;
 
@@ -296,8 +336,14 @@ jobs:
             if (testResult === 'failure') {
               body += `\n### ❌ Failure Details\n\n`;
               if (hasDiff === 'true') {
-                body += `Integration test results differ from master. `;
-                body += `Review the comparison artifacts in the [workflow run](${runUrl}).\n\n`;
+                const reasons = [];
+                if (hasJsonDiff === 'true') reasons.push('JSON results differ (approximate comparison, 0.0001% threshold)');
+                if (hasPlotDiff === 'true') reasons.push('Plot images differ (pixel-level PDF comparison)');
+                body += `Integration test results differ from master:\n`;
+                for (const reason of reasons) {
+                  body += `- ${reason}\n`;
+                }
+                body += `\nReview the comparison artifacts in the [workflow run](${runUrl}).\n\n`;
                 body += `> **To accept these changes:** Add the \`update-baseline\` label to this PR and re-run CI.\n\n`;
               } else {
                 body += `The integration test encountered an error. Check the [workflow logs](${runUrl}) for details.\n\n`;

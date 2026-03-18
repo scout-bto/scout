@@ -31,7 +31,8 @@ jobs:
       - name: Check Python code quality
         run: flake8 --exclude docs/conf.py --max-line-length=100
 
-  python-tests:
+  unit-tests:
+    name: Unit Tests (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
 
     # Specify python versions to run
@@ -51,7 +52,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
       - name: Run tests
+        id: run_tests
+        continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
         run: python -m unittest discover -p '*_test.py' tests/
+      - name: Warn if tests failed with update-baseline
+        if: steps.run_tests.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'update-baseline')
+        run: |
+          echo "::warning::Unit tests failed, but 'update-baseline' label is set. Treating as expected change."
 
   check-docs:
     runs-on: ubuntu-latest
@@ -81,7 +88,7 @@ jobs:
 
   check-PR:
     # Check if there is a PR - allows one main workflow with dependency on previous jobs
-    needs: [code-quality-checks, python-tests, check-docs]
+    needs: [code-quality-checks, check-docs]
     runs-on: ubuntu-latest
     outputs:
       PR_status: ${{ steps.PR.outputs.pr_found }}

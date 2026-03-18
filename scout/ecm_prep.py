@@ -32,11 +32,6 @@ class ECMPrepHelper:
     """Shared methods used throughout ecm_prep.py"""
 
     @staticmethod
-    def _unused_ci_test_method():
-        """Temporary method to test CI pipeline with a trivial change."""
-        return True
-
-    @staticmethod
     def configure_ecm_prep_logger():
         # Set file name for prep error logs using current date and time
         err_f_name = fp.GENERATED / ("log_ecm_prep_" + time.strftime("%Y%m%d-%H%M%S") + ".txt")
