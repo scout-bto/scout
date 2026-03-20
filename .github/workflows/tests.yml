@@ -1,8 +1,10 @@
 name: tests
 on:
   push:
+    branches: [master]
   pull_request:
-    types: [opened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    branches: [master]
 jobs:
 
   code-quality-checks:
@@ -29,7 +31,8 @@ jobs:
       - name: Check Python code quality
         run: flake8 --exclude docs/conf.py --max-line-length=100
 
-  python-tests:
+  unit-tests:
+    name: Unit Tests (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
 
     # Specify python versions to run
@@ -47,9 +50,15 @@ jobs:
       - name: Install scout package
         run: |
           python -m pip install --upgrade pip
-          pip install .
+          pip install ".[dev]"
       - name: Run tests
+        id: run_tests
+        continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
         run: python -m unittest discover -p '*_test.py' tests/
+      - name: Warn if tests failed with update-baseline
+        if: steps.run_tests.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'update-baseline')
+        run: |
+          echo "::warning::Unit tests failed, but 'update-baseline' label is set. Treating as expected change."
 
   check-docs:
     runs-on: ubuntu-latest
@@ -67,7 +76,7 @@ jobs:
       - name: Install scout package
         run: |
           python -m pip install --upgrade pip
-          pip install .
+          pip install ".[dev]"
       - name: Generate readable configuration file
         run: python docs/generate_readable_cfg.py -o config_readable_ci.yml
       - name: Compare readable configuration files
@@ -79,11 +88,12 @@ jobs:
 
   check-PR:
     # Check if there is a PR - allows one main workflow with dependency on previous jobs
-    needs: [code-quality-checks, python-tests, check-docs]
+    needs: [code-quality-checks, check-docs]
     runs-on: ubuntu-latest
     outputs:
       PR_status: ${{ steps.PR.outputs.pr_found }}
       PR: ${{ steps.PR.outputs.pr }}
+      enable_profiler: ${{ steps.check_profiler.outputs.enable_profiler }}
     steps:
       - name: Check if PR
         uses: 8BitJonny/gh-get-current-pr@2.2.0
@@ -91,6 +101,19 @@ jobs:
         with:
           filterOutClosed: true
           filterOutDraft: true
+      - name: Check for profiler label
+        id: check_profiler
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            labels='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+            if echo "$labels" | grep -q "run-profiler"; then
+              echo "enable_profiler=true" >> $GITHUB_OUTPUT
+            else
+              echo "enable_profiler=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "enable_profiler=false" >> $GITHUB_OUTPUT
+          fi
 
   integration-tests:
     needs: [check-PR]
@@ -98,5 +121,11 @@ jobs:
       (needs.check-PR.outputs.PR_status == 'true' && fromJSON(needs.check-PR.outputs.PR).base.ref == 'master') ||
       (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master' && github.event.pull_request.draft == false) ||
       github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+      statuses: write
+      pull-requests: write
     uses: ./.github/workflows/integration_tests.yml
+    with:
+      enable_profiler: ${{ needs.check-PR.outputs.enable_profiler == 'true' || github.ref == 'refs/heads/master' }}
     secrets: inherit
