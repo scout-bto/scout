@@ -126368,7 +126368,7 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
         cls.opts_env_costs, opts_env_costs_dict = [
             copy.deepcopy(x) for x in [cls.opts, opts_dict]]
         cls.opts_env_costs.pkg_env_costs, \
-            opts_env_costs_dict["pkg_env_costs"] = (True for n in range(2))
+            opts_env_costs_dict["pkg_env_costs"] = ("1" for n in range(2))
         # Modify options for tests that generate sector shapes
         cls.opts_sect_shapes, opts_sect_shapes_dict = [
             copy.deepcopy(x) for x in [cls.opts, opts_dict]]
@@ -128992,8 +128992,8 @@ class MergeMeasuresandApplyBenefitsTest(unittest.TestCase, CommonMethods):
                 copy.deepcopy(x) for x in [
                     cls.sample_measures_in_mkts[1],
                     cls.sample_measures_in_mkts[2]]]
-        sample_measures_in_mkts_envcosts_1.usr_opts["pkg_env_costs"] = True
-        sample_measures_in_mkts_envcosts_2.usr_opts["pkg_env_costs"] = True
+        sample_measures_in_mkts_envcosts_1.usr_opts["pkg_env_costs"] = "1"
+        sample_measures_in_mkts_envcosts_2.usr_opts["pkg_env_costs"] = "1"
         sample_package_meas_pairs_env_costs = [
             cls.sample_measures_in_env_costs[0],
             sample_measures_in_mkts_envcosts_1,
