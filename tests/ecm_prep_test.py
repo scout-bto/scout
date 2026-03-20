@@ -223,7 +223,11 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             should yield warnings when entered into function (measure
             sub-market scaling fraction source attributions are invalid).
         ok_mapmeas_hp_chk_in (list): Valid sample measure information to update
-            with markets data, where measures pertain to heat pump tech.
+            with markets data, where measures pertain to heat pump tech and only the
+            heating stock costs of comparable baseline equipment are counted.
+        ok_coolcost_chk_in (list): Valid sample measure information to update
+            with markets data, where measures pertain to heat pump tech. and both heating
+            and cooling costs of comparable baseline equipment are counted.
         ok_tp_fmeth_chk_in (list): Valid sample measure information to update
             with markets data, where measures affect fugitive methane.
         ok_map_frefr_chk_in (list): Valid sample measure information to update
@@ -310,6 +314,13 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             "exog_hp_rates"] = (["gh-aggressive", '1'] for n in range(2))
         cls.opts_hp_rates.adopt_scn_usr, opts_hp_rates_dict[
             "adopt_scn_usr"] = (["Max adoption potential"] for n in range(2))
+        # Heat pump calculations where cooling costs of comparable baseline equipment
+        # are counted alongside heating costs, by removing the 'no_lnkd_stk_costs' option
+        # that is attached to other tested heat pump measures
+        cls.opts_coolcosts, opts_coolcosts_dict = [
+            copy.deepcopy(x) for x in [cls.opts_hp_rates, opts_hp_rates_dict]]
+        cls.opts_coolcosts.no_lnkd_stk_costs, opts_coolcosts_dict["no_lnkd_stk_costs"] = (
+            None for n in range(2))
         handyvars_hp_rates = UsefulVars(
             base_dir, handyfiles_emm, cls.opts_hp_rates)
         handyvars_hp_rates.hp_rates_reg_map = {
@@ -7618,6 +7629,10 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             Measure(
                 base_dir, handyvars_hp_norates, handyfiles_emm,
                 opts_hp_rates_dict, **x) for x in ok_hp_measures_in[3:]])
+        cls.ok_coolcost_chk_in = [
+            Measure(
+                base_dir, handyvars_hp_rates, handyfiles_emm,
+                opts_coolcosts_dict, **x) for x in ok_hp_measures_in[0:1]]
         cls.ok_tp_fmeth_chk_in = [
             Measure(
                 base_dir, handyvars_fmeth[ind], handyfiles_emm,
@@ -17599,6 +17614,15 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                                 'Electric': {'2009': 68.59487,
                                              '2010': 120.5914},
                                 'Non-Electric': {}}}}}}}]
+        # Note: accounts for 50% market scaling fraction in the cooling segments when
+        # adding cooling costs to heating costs
+        cls.ok_coolcost_meas_stkcost_out = {
+            "total": {
+                "baseline": {"2009": 150000, "2010": 150000},
+                "efficient": {"2009": 500000, "2010": 500000}},
+            "competed": {
+                "baseline": {"2009": 150000, "2010": 150000},
+                "efficient": {"2009": 500000, "2010": 500000}}}
         cls.ok_tp_fmeth_mkts_out = [
             {
                 'total': {
@@ -20031,6 +20055,34 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             self.dict_check(
                 measure.markets['Max adoption potential']['master_mseg']["stock"],
                 user_master_mseg_stock)
+
+    def test_mseg_ok_cool_cost(self):
+        """Test 'fill_mkts' function given valid inputs.
+
+        Notes:
+            Borrows measure characteristics and settings from the 'test_mseg_ok_hp_rates_map'
+            function; the only difference is the cost calculation options for this test are
+            set to ensure that stock costs for both the baseline heating AND cooling equipment
+            are counted when comparing against the heat pump measure costs, by removing the
+            no_lnkd_stk_costs flag that is assigned in the other test (which limits stock cost
+            calculations to just the heating costs in the baseline).
+
+            Also note that the technical potential result for the measure is being checked here
+            for simplicity, though the removal of the no_lnkd_stk_costs setting affects all
+            adoption scenario results.
+
+        Raises:
+            AssertionError: If function yields unexpected results.
+        """
+        for idx, measure in enumerate(self.ok_coolcost_chk_in):
+            measure.fill_mkts(
+                self.sample_mseg_in_emm, self.sample_cpl_in_emm,
+                self.convert_data, self.tsv_data, self.opts_coolcosts,
+                ctrb_ms_pkg_prep=[], tsv_data_nonfs=None)
+            self.dict_check(
+                measure.markets[
+                    'Technical potential']['master_mseg']["cost"]["stock"],
+                self.ok_coolcost_meas_stkcost_out)
 
 
 class TimeSensitiveValuationTest(unittest.TestCase, CommonMethods):
