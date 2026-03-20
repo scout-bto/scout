@@ -1421,9 +1421,10 @@ class Measure(object):
         warn_list, suppress_incent = ([] for n in range(2))
 
         # Initialize flag for whether loop through previous microsegment has modified original
-        # measure costs/units when pulling incentives information and/or electrical infrastructure
-        # upgrade costs and these need to be reset for future microsegment measure cost updates
-        meas_incent_flag, elec_infr_flag = ("" for n in range(2))
+        # measure costs/units with a regional adjustment or when pulling incentives information
+        # and/or electrical infrastructure upgrade costs and these need to be reset for future
+        # microsegment measure cost updates
+        reg_adj_flag, meas_incent_flag, elec_infr_flag = ("" for n in range(3))
 
         # Loop through discovered key chains to find needed performance/cost
         # and stock/energy information for measure
@@ -1662,17 +1663,18 @@ class Measure(object):
                 mkt_scale_frac, mkt_scale_frac_source = (
                     None for n in range(2))
             else:
-                # Case where incentives or electrical infrastructure costs were added in previous
-                # mseg update; reset costs/units to those of original measure
-                if meas_incent_flag or elec_infr_flag:
+                # Reset costs/units to those of original measure in cases where: 1) regional cost
+                # adjustments were added in previous mseg update and region switches; or 2)
+                # incentives or electrical infrastructure costs were added in previous mseg update
+                if (reg_adj_flag and (ms_iterable[ind][1] != ms_iterable[ind - 1][1])) or (
+                        meas_incent_flag or elec_infr_flag):
                     cost_units, cost_meas = [
                         self.cost_units, self.installed_cost]
-                    # Reset flag for original measure cost reset due to its modification in
-                    # incentives or electrical infr. cost calculations for previous microsegments
-                    if meas_incent_flag:
-                        meas_incent_flag = ""
-                    if elec_infr_flag:
-                        elec_infr_flag = ""
+                    # Reset flags for original measure cost rest due to regional adjustment,
+                    # incentives modification, or electrical infr. cost modifications for previous
+                    # microsegments
+                    reg_adj_flag, meas_incent_flag, elec_infr_flag = [
+                        ("" if x else x) for x in [reg_adj_flag, meas_incent_flag, elec_infr_flag]]
                 # Case where square footage cost units are used or there is
                 # a switch from one end use, building type, or building vintage
                 # to another, or original cost/cost units are in dict format;
@@ -3865,10 +3867,12 @@ class Measure(object):
                         self.add_elec_infr_costs(cost_meas, mskeys, elec_infr_flag, opts)
 
                 # Adjust baseline and measure costs to current region, if applicable
-                if self.handyvars.reg_cost_adj is not None:
+                if self.handyvars.reg_cost_adj is not None and not reg_adj_flag:
                     cost_meas, cost_base = [
                         {yr: x[yr] * self.handyvars.reg_cost_adj[mskeys[1]][bldg_sect]
                          for yr in self.handyvars.aeo_years} for x in [cost_meas, cost_base]]
+                    # Reset flag for regional cost adjustment for current region
+                    reg_adj_flag = True
 
                 # Set stock turnover info. and consumer choice info. to
                 # appropriate building type

@@ -201,6 +201,10 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             attribute under a 'Technical potential scenario.
         ok_tpmeas_partchk_emm_in (list): Valid sample measure information to
             update with markets data under EMM region analysis.
+        ok_tpmeas_partchk_state_in (list): Valid sample measure information to
+            update with markets data under state region analysis, regional cost adjustment off.
+        ok_tpmeas_partchk_state_regadj_in (list): Valid sample measure information to
+            update with markets data under state region analysis, regional cost adjustment on.
         ok_mapmeas_partchk_in (list): Valid sample measure information
             to update with markets data; measure cost, performance, and life
             attributes are given as point estimates. Used to check the
@@ -236,6 +240,10 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             information that should be yielded given 'ok_tpmeas_partchk_in'.
         ok_tpmeas_partchk_msegout_emm (list): Master market microsegments
             information that should be yielded via 'ok_tpmeas_partchk_emm_in'.
+        ok_tpmeas_partchk_msegout_state (list): Master market microsegments
+            information that should be yielded via 'ok_tpmeas_partchk_state_in'.
+        ok_tpmeas_partchk_msegout_state_regadj (list): Master market microsegments
+            information that should be yielded via 'ok_tpmeas_partchk_state_regadj_in'.
         ok_mapmeas_partchck_msegout (list): Master market microsegments
             information that should be yielded given 'ok_mapmeas_partchk_in'.
         ok_distmeas_out (list): Means and sampling Ns for measure energy/cost
@@ -293,8 +301,6 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             Path(__file__).parent / "test_files" / "loc_cost_adj_test.csv"
         handyvars_state = UsefulVars(
             base_dir, handyfiles_state, cls.opts_state)
-        # Suppress regional cost adjustment factors for states
-        handyvars_state.reg_cost_adj = None
         # Fuel switching with exogenous rates
         cls.opts_hp_rates, opts_hp_rates_dict = [
             copy.deepcopy(x) for x in [cls.opts_emm, opts_emm_dict]]
@@ -1635,6 +1641,11 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                     "heating", "secondary heating", "cooling", "water heating", "cooking",
                     "drying"]}
         }
+        # Set up a unique set of handyvars for regional cost adjustment measure state test
+        handyvars_state_regadj = copy.deepcopy(handyvars_state)
+        # Suppress regional cost adjustment factors for the other state test
+        handyvars_state.reg_cost_adj = None
+
         cls.convert_data = {}
         cls.tsv_data = {}
         cls.sample_mseg_in = {
@@ -6947,6 +6958,10 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
         cls.ok_tpmeas_partchk_state_in = [
             Measure(
                 base_dir, handyvars_state, handyfiles_state, opts_state_dict,
+                **ok_measures_in[28])]
+        cls.ok_tpmeas_partchk_state_regadj_in = [
+            Measure(
+                base_dir, handyvars_state_regadj, handyfiles_state, opts_state_dict,
                 **ok_measures_in[28])]
         cls.ok_mapmeas_partchk_in = [
             Measure(
@@ -16828,6 +16843,61 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                             "2010": 2.71404e-05}}}},
             "lifetime": {"baseline": {"2009": 12, "2010": 12},
                          "measure": 1}}]
+        cls.ok_tpmeas_partchk_msegout_state_regadj = [{
+            "stock": {
+                "total": {
+                    "all": {"2009": 18 * 2, "2010": 18 * 2},
+                    "measure": {"2009": 18 * 2, "2010": 18 * 2}},
+                "competed": {
+                    "all": {"2009": 18 * 2, "2010": 18 * 2},
+                    "measure": {"2009": 18 * 2, "2010": 18 * 2}}},
+            "energy": {
+                "total": {
+                    "baseline": {"2009": 18, "2010": 18},
+                    "efficient": {"2009": 9, "2010": 9}},
+                "competed": {
+                    "baseline": {"2009": 18, "2010": 18},
+                    "efficient": {"2009": 9, "2010": 9}}},
+            "carbon": {
+                "total": {
+                    "baseline": {"2009": 1.4589e-06, "2010": 1.2924e-06},
+                    "efficient": {"2009": 7.2945e-07, "2010": 6.462e-07}},
+                "competed": {
+                    "baseline": {"2009": 1.4589e-06, "2010": 1.2924e-06},
+                    "efficient": {"2009": 7.2945e-07, "2010": 6.462e-07}}},
+            "cost": {
+                "stock": {
+                    "total": {
+                        "baseline": {"2009": 216 * 2 * 2 * 2, "2010": 216 * 2 * 2 * 2},
+                        "efficient": {"2009": 450 * 2 * 2, "2010": 450 * 2 * 2}},
+                    "competed": {
+                        "baseline": {"2009": 216 * 2 * 2 * 2, "2010": 216 * 2 * 2 * 2},
+                        "efficient": {"2009": 450 * 2 * 2, "2010": 450 * 2 * 2}}},
+                "energy": {
+                    "total": {
+                        "baseline": {"2009": 787.977432, "2010": 786.758796},
+                        "efficient": {"2009": 393.988716, "2010": 393.379398}},
+                    "competed": {
+                        "baseline": {"2009": 787.977432, "2010": 786.758796},
+                        "efficient": {
+                            "2009": 393.988716, "2010": 393.379398}}},
+                "carbon": {
+                    "total": {
+                        "baseline": {
+                            "2009": 5.9814899999999995e-05,
+                            "2010": 5.42808e-05},
+                        "efficient": {
+                            "2009": 2.9907449999999998e-05,
+                            "2010": 2.71404e-05}},
+                    "competed": {
+                         "baseline": {
+                            "2009": 5.9814899999999995e-05,
+                            "2010": 5.42808e-05},
+                        "efficient": {
+                            "2009": 2.9907449999999998e-05,
+                            "2010": 2.71404e-05}}}},
+            "lifetime": {"baseline": {"2009": 12, "2010": 12},
+                         "measure": 1}}]
         cls.ok_mapmas_partchck_msegout = [{
             "stock": {
                 "total": {
@@ -17902,7 +17972,8 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
 
         Notes:
             Checks the 'master_mseg' branch of measure 'markets' attribute
-            under a Technical potential scenario with states specified.
+            under a Technical potential scenario with states specified and regional
+            cost adjustments suppressed.
 
         Raises:
             AssertionError: If function yields unexpected results.
@@ -17915,6 +17986,26 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             self.dict_check(
                 measure.markets['Technical potential']['master_mseg'],
                 self.ok_tpmeas_partchk_msegout_state[idx])
+
+    def test_mseg_ok_part_tp_state_regadj(self):
+        """Test 'fill_mkts' function given valid inputs.
+
+        Notes:
+            Checks the 'master_mseg' branch of measure 'markets' attribute
+            under a Technical potential scenario with states specified and regional
+            cost adjustments implemented.
+
+        Raises:
+            AssertionError: If function yields unexpected results.
+        """
+        for idx, measure in enumerate(self.ok_tpmeas_partchk_state_regadj_in):
+            measure.fill_mkts(
+                self.sample_mseg_in_state, self.sample_cpl_in_state,
+                self.convert_data, self.tsv_data, self.opts_state,
+                ctrb_ms_pkg_prep=[], tsv_data_nonfs=None)
+            self.dict_check(
+                measure.markets['Technical potential']['master_mseg'],
+                self.ok_tpmeas_partchk_msegout_state_regadj[idx])
 
     def test_mseg_ok_hp_rates_map(self):
         """Test 'fill_mkts' function given valid inputs.

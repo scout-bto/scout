@@ -1,52 +1,52 @@
 state,city,residential,commercial
-AL,Huntsville,0.83,0.85
-AK,Anchorage,1.17,1.16
-AZ,Phoenix,0.84,0.87
-AR,Little Rock,0.83,0.82
-CA,Los Angeles,1.15,1.12
-CO,Denver,0.91,0.92
-CT,Bridgeport,1.1,1.08
-DE,Wilmington,1.01,1.04
-DC,"Washington, D.C.",0.92,0.96
-FL,Jacksonville,0.81,0.84
-GA,Atlanta,0.9,0.89
-HI,Honolulu,1.22,1.19
-ID,Boise,0.89,0.91
-IL,Chicago,1.25,1.2
-IN,Indianapolis,0.92,0.92
-IA,Des Moines,0.92,0.94
-KS,Wichita,0.81,0.86
-KY,Louisville,0.89,0.88
-LA,New Orleans,0.85,0.85
-ME,Portland,0.94,0.94
-MD,Baltimore,0.93,0.94
-MA,Boston,1.18,1.14
+AL,Huntsville,1,1
+AK,Anchorage,1,1
+AZ,Phoenix,1,1
+AR,Little Rock,1,1
+CA,Los Angeles,1,1
+CO,Denver,1,1
+CT,Bridgeport,2,2
+DE,Wilmington,1,1
+DC,"Washington, D.C.",1,1
+FL,Jacksonville,1,1
+GA,Atlanta,1,1
+HI,Honolulu,1,1
+ID,Boise,1,1
+IL,Chicago,1,1
+IN,Indianapolis,1,1
+IA,Des Moines,1,1
+KS,Wichita,1,1
+KY,Louisville,1,1
+LA,New Orleans,1,1
+ME,Portland,1,1
+MD,Baltimore,1,1
+MA,Boston,1,1
 MI,Detroit,1,1
-MN,Minneapolis,1.09,1.07
-MS,Jackson,0.84,0.85
-MO,Kansas City,0.99,0.99
-MT,Billings,0.89,0.91
-NE,Omaha,0.9,0.92
-NV,Las Vegas,1.03,1.05
-NH,Manchester,0.99,0.97
-NJ,Newark,1.2,1.17
-NM,Albuquerque,0.86,0.87
-NY,New York,1.36,1.32
-NC,Charlotte,0.99,0.87
-ND,Fargo,0.87,0.91
-OH,Columbus,0.91,0.92
-OK,Oklahoma City,0.84,0.85
-OR,Portland,1.02,1.03
-PA,Philadelphia,1.17,1.16
-RI,Providence,1.09,1.06
-SC,Charleston,0.98,0.85
-SD,Sioux Falls,0.92,0.92
-TN,Nashville,0.87,0.89
-TX,Houston,0.84,0.87
-UT,Salt Lake City,0.85,0.91
-VT,Burlington,1,0.95
-VA,Newport News,0.97,0.87
-WA,Seattle,1.06,1.07
-WV,Charleston,0.94,0.94
-WI,Milwaukee,1.07,1.04
-WY,Cheyenne,0.86,0.89
+MN,Minneapolis,1,1
+MS,Jackson,1,1
+MO,Kansas City,1,1
+MT,Billings,1,1
+NE,Omaha,1,1
+NV,Las Vegas,1,1
+NH,Manchester,2,2
+NJ,Newark,1,1
+NM,Albuquerque,1,1
+NY,New York,1,1
+NC,Charlotte,1,1
+ND,Fargo,1,1
+OH,Columbus,1,1
+OK,Oklahoma City,1,1
+OR,Portland,1,1
+PA,Philadelphia,1,1
+RI,Providence,1,1
+SC,Charleston,1,1
+SD,Sioux Falls,1,1
+TN,Nashville,1,1
+TX,Houston,1,1
+UT,Salt Lake City,1,1
+VT,Burlington,1,1
+VA,Newport News,1,1
+WA,Seattle,1,1
+WV,Charleston,1,1
+WI,Milwaukee,1,1
+WY,Cheyenne,1,1
