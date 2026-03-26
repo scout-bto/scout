@@ -181,9 +181,9 @@ class CommercialTranslationDicts(object):
                                 'infiltration': 'INFIL',
                                 'ventilation': 'VENT',
                                 'people gain': 'PEOPLE',
-                                'equipment gain': 'EQUIP_ELEC',
+                                'equipment gain': 'EQUIP',
                                 'lighting gain': 'LIGHTS',
-                                'other heat gain': 'EQUIP_NELEC'
+                                'other heat gain': 'REFRIG'
                                 }
 
 

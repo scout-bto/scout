@@ -1,66 +1,45 @@
 name: integration-tests
-on: [workflow_call]
+on:
+  workflow_call:
+    inputs:
+      enable_profiler:
+        description: 'Run with profiler enabled'
+        required: false
+        type: boolean
+        default: false
 jobs:
-  start-runner:
-    name: Start self-hosted EC2 runner
-    runs-on: ubuntu-latest
-    outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Start EC2 runner
-        id: start-ec2-runner
-        uses: machulav/ec2-github-runner@v2
-        with:
-          mode: start
-          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          ec2-image-id: ami-0f57c48465f6361a6
-          ec2-instance-type: r5a.4xlarge
-          subnet-id: subnet-a4b769c3
-          security-group-id: sg-06a2ae324a6e68d4d
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "scout-github-runner"},
-              {"Key": "billingId", "Value": "210109"},
-              {"Key": "org", "Value": "scout"}
-            ]
-
   run-test:
-    name: Integration Testing
-    needs: start-runner
-    runs-on: ${{ needs.start-runner.outputs.label }}
+    name: Integration Testing (Ubuntu)
+    runs-on: ubuntu-latest
     timeout-minutes: 600
+    permissions:
+      contents: write
+      statuses: write
+    outputs:
+      has_diff: ${{ steps.compare.outputs.has_diff }}
+      has_json_diff: ${{ steps.compare.outputs.has_json_diff }}
+      has_plot_diff: ${{ steps.compare.outputs.has_plot_diff }}
+      changed_plots: ${{ steps.compare.outputs.changed_plots }}
     steps:
-      - name: Determine branch ref
-        id: branch_ref
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "branch_ref=refs/heads/${{ github.head_ref }}" >> $GITHUB_OUTPUT
-          else
-            echo "branch_ref=${{ github.ref }}" >> $GITHUB_OUTPUT
-          fi
       - uses: actions/checkout@v4
         with:
-          ref: "${{ steps.branch_ref.outputs.branch_ref }}"
-      - name: Set up Python 3.10
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Shallow clone; master is fetched separately in the compare step
+          fetch-depth: 1
+      - name: Set up Python 3.10.17
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.10.17'
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ".[dev]" psrecord
+          pip install -c .github/constraints.txt ".[dev]" psrecord
       - name: Run and profile workflow
         env:
-          branch_ref: ${{ steps.branch_ref.outputs.branch_ref }}
+          ENABLE_PROFILER: ${{ inputs.enable_profiler || (github.ref == 'refs/heads/master') }}
+          SOURCE_DATE_EPOCH: '0'
         run: |
-          if [[ $branch_ref == 'refs/heads/master' ]]; then
+          if [[ "$ENABLE_PROFILER" == 'true' ]]; then
             steps=("ecm_prep" "run")
             for step in "${steps[@]}"; do
               psrecord --log memory_log_${step}.txt --include-children --interval 1 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
@@ -74,75 +53,426 @@ jobs:
           mv ./results/* ./tests/integration_testing/results/
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null
       - name: Compare integration test results
+        id: compare
         run: |
-          git fetch origin master
-          branch_name="${{ github.ref }}"
-          if [[ $(git diff --exit-code origin/master ./tests/integration_testing/results/agg_results.json ./tests/integration_testing/results/ecm_results.json) ]]; then
-            mkdir tests/integration_testing/base_results
-            git show origin/master:tests/integration_testing/results/agg_results.json > tests/integration_testing/base_results/agg_results.json
-            git show origin/master:tests/integration_testing/results/ecm_results.json > tests/integration_testing/base_results/ecm_results.json
-            git show origin/master:tests/integration_testing/results/plots/tech_potential/Summary_Data-TP.xlsx > tests/integration_testing/base_results/Summary_Data-TP.xlsx
-            git show origin/master:tests/integration_testing/results/plots/max_adopt_potential/Summary_Data-MAP.xlsx > tests/integration_testing/base_results/Summary_Data-MAP.xlsx
+          git fetch --depth=1 origin master
+          has_diff="false"
+          has_json_diff="false"
+          has_plot_diff="false"
+          changed_plots=""
 
-            python tests/integration_testing/compare_results.py --base-dir tests/integration_testing/base_results --new-dir tests/integration_testing/results
+          # --- JSON comparison: approximate (threshold-based) ---
+          # Extract baseline JSONs from master
+          mkdir -p tests/integration_testing/base_results
+          git show origin/master:tests/integration_testing/results/agg_results.json > tests/integration_testing/base_results/agg_results.json
+          git show origin/master:tests/integration_testing/results/ecm_results.json > tests/integration_testing/base_results/ecm_results.json
+          git show origin/master:tests/integration_testing/results/plots/tech_potential/Summary_Data-TP.xlsx > tests/integration_testing/base_results/Summary_Data-TP.xlsx
+          git show origin/master:tests/integration_testing/results/plots/max_adopt_potential/Summary_Data-MAP.xlsx > tests/integration_testing/base_results/Summary_Data-MAP.xlsx
+
+          # Run compare_results.py with a tight threshold (0.0001%) to catch real changes
+          # but ignore floating-point platform noise
+          python tests/integration_testing/compare_results.py \
+            --base-dir tests/integration_testing/base_results \
+            --new-dir tests/integration_testing/results \
+            --threshold 0.0001
+
+          # Check if any meaningful diffs were reported (csv files with actual content)
+          for csv_file in tests/integration_testing/results/*_diffs.csv tests/integration_testing/results/*_key_diffs.csv; do
+            if [[ -f "$csv_file" ]]; then
+              # File exists = meaningful differences found
+              has_json_diff="true"
+              has_diff="true"
+              break
+            fi
+          done
+
+          # --- PDF comparison: pixel-level via rendered PNGs ---
+          # Install poppler for PDF→PNG conversion
+          sudo apt-get update && sudo apt-get install -y poppler-utils imagemagick
+
+          plot_diffs_list=""
+          while IFS= read -r pdf_file; do
+            [[ -z "$pdf_file" ]] && continue
+            # Render current PDF to a temp PNG
+            new_png=$(mktemp --suffix=.png)
+            pdftoppm -png -r 150 -singlefile "$pdf_file" "${new_png%.png}"
+            # Render master PDF to a temp PNG
+            master_pdf=$(mktemp --suffix=.pdf)
+            git show origin/master:"$pdf_file" > "$master_pdf" 2>/dev/null || { rm -f "$new_png" "$master_pdf"; continue; }
+            base_png=$(mktemp --suffix=.png)
+            pdftoppm -png -r 150 -singlefile "$master_pdf" "${base_png%.png}"
+            rm -f "$master_pdf"
+            # Compare PNGs pixel-by-pixel using ImageMagick
+            ae_count=$(compare -metric AE "$base_png" "$new_png" /dev/null 2>&1 || true)
+            if [[ "$ae_count" != "0" ]]; then
+              # Pixel differences found — this is a real visual change
+              plot_diffs_list="${plot_diffs_list}${pdf_file}"$'\n'
+            fi
+            rm -f "$new_png" "$base_png"
+          done < <(git diff --name-only origin/master -- 'tests/integration_testing/results/plots/' | grep '\.pdf$' || true)
+
+          if [[ -n "$plot_diffs_list" ]]; then
+            has_plot_diff="true"
+            has_diff="true"
+            changed_plots="$plot_diffs_list"
           fi
+
+          echo "has_diff=$has_diff" >> $GITHUB_OUTPUT
+          echo "has_json_diff=$has_json_diff" >> $GITHUB_OUTPUT
+          echo "has_plot_diff=$has_plot_diff" >> $GITHUB_OUTPUT
+          # Use delimiter for multiline output
+          echo "changed_plots<<EOF" >> $GITHUB_OUTPUT
+          echo "$changed_plots" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Convert changed plot PDFs to PNGs
+        if: steps.compare.outputs.has_plot_diff == 'true'
+        run: |
+          # poppler-utils already installed in compare step
+          # Convert new (current) PDFs to PNGs
+          mkdir -p tests/integration_testing/results/plot_images
+          while IFS= read -r pdf_file; do
+            [[ -z "$pdf_file" ]] && continue
+            basename=$(basename "$pdf_file" .pdf)
+            dirname=$(dirname "$pdf_file")
+            rel_path=${dirname#tests/integration_testing/results/plots/}
+            mkdir -p "tests/integration_testing/results/plot_images/$rel_path"
+            pdftoppm -png -r 150 -singlefile "$pdf_file" "tests/integration_testing/results/plot_images/$rel_path/$basename"
+          done <<< "${{ steps.compare.outputs.changed_plots }}"
+          # Convert baseline (master) PDFs to PNGs for before/after comparison
+          mkdir -p tests/integration_testing/results/base_plot_images
+          while IFS= read -r pdf_file; do
+            [[ -z "$pdf_file" ]] && continue
+            basename=$(basename "$pdf_file" .pdf)
+            dirname=$(dirname "$pdf_file")
+            rel_path=${dirname#tests/integration_testing/results/plots/}
+            mkdir -p "tests/integration_testing/results/base_plot_images/$rel_path"
+            # Extract the master version of this PDF into a temp file
+            master_pdf=$(mktemp --suffix=.pdf)
+            git show origin/master:"$pdf_file" > "$master_pdf" 2>/dev/null || continue
+            pdftoppm -png -r 150 -singlefile "$master_pdf" "tests/integration_testing/results/base_plot_images/$rel_path/$basename"
+            rm -f "$master_pdf"
+          done <<< "${{ steps.compare.outputs.changed_plots }}"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: results
           path: ./tests/integration_testing/results/
-      - name: Commit test results
-        env:
-          branch_ref: ${{ steps.branch_ref.outputs.branch_ref }}
+      - name: Commit plot comparison images
+        # Only commit PNG comparison images (for PR comment embedding).
+        # JSON and PDF results are uploaded as artifacts only — committing them
+        # breaks GitHub's diff viewer due to file size.
+        if: steps.compare.outputs.has_plot_diff == 'true'
+        id: commit_results
         run: |
-          git pull origin $branch_ref
-          git add ./tests/integration_testing/results/*.json
-          if [[ $(git diff --cached --exit-code) ]]; then
-            git add ./tests/integration_testing/results/plots/**/*.pdf
-            git config --system user.email "github-action@users.noreply.github.com"
-            git config --system user.name "GitHub Action"
-            git commit -m "Upload results files from CI build"
-            echo "Pushing to branch: $branch_ref"
-            git push -u origin $branch_ref
+          # Only commit PNG images for plot diff visualization
+          if [[ -d ./tests/integration_testing/results/plot_images ]]; then
+            git add ./tests/integration_testing/results/plot_images/
+          fi
+          if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
+            git add ./tests/integration_testing/results/base_plot_images/
+          fi
+          # Only commit if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No plot images to commit"
+            exit 0
+          fi
+          git config --global user.email "github-action@users.noreply.github.com"
+          git config --global user.name "GitHub Action"
+          git commit -m "Upload plot comparison images from CI build"
+          echo "Pushing to branch"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
-            # Set status checks to success
-            checks=("code-quality-checks" "python-tests (3.10)" "python-tests (3.11)" "python-tests (3.12)" "integration-tests / Integration Testing")
-            commit_sha=$(git rev-parse HEAD)
-            status_url="https://api.github.com/repos/${{ github.repository }}/statuses/$commit_sha"
-            for check in "${checks[@]}"; do
-              curl -L \
-                -X POST \
-                $status_url \
-                -H "Accept: application/vnd.github+json" \
-                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                -d '{
-                  "state": "success",
-                  "context": "'"${check}"'",
-                  "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                }'
-            done
+          # Set status checks on the new commit so it inherits parent job statuses
+          checks=("code-quality-checks" "Unit Tests (Python 3.10)" "Unit Tests (Python 3.11)" "Unit Tests (Python 3.12)")
+          commit_sha=$(git rev-parse HEAD)
+          status_url="https://api.github.com/repos/${{ github.repository }}/statuses/$commit_sha"
+          for check in "${checks[@]}"; do
+            curl -L \
+              -X POST \
+              $status_url \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -d '{
+                "state": "success",
+                "context": "'"${check}"'",
+                "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }'
+          done
+          # Mark integration test status based on update-baseline label
+          UPDATE_BASELINE="${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}"
+          if [[ "$UPDATE_BASELINE" == "true" ]]; then
+            integ_state="success"
+            integ_desc="Plot images differ from master, but 'update-baseline' label is set"
           else
-            echo "No changes to commit."
+            integ_state="failure"
+            integ_desc="Plot images differ from master (pixel-level comparison)"
+          fi
+          curl -L \
+            -X POST \
+            $status_url \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{
+              "state": "'"${integ_state}"'",
+              "context": "integration-tests / Integration Testing",
+              "description": "'"${integ_desc}"'",
+              "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }'
+      - name: Fail if results differ from master
+        if: steps.compare.outputs.has_diff == 'true'
+        env:
+          UPDATE_BASELINE: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
+        run: |
+          HAS_JSON_DIFF="${{ steps.compare.outputs.has_json_diff }}"
+          HAS_PLOT_DIFF="${{ steps.compare.outputs.has_plot_diff }}"
+
+          # Build a descriptive failure reason
+          reasons=""
+          if [[ "$HAS_JSON_DIFF" == "true" ]]; then
+            reasons="JSON results differ (approximate comparison, 0.0001% threshold)"
+          fi
+          if [[ "$HAS_PLOT_DIFF" == "true" ]]; then
+            if [[ -n "$reasons" ]]; then
+              reasons="$reasons; Plot images differ (pixel-level PDF comparison)"
+            else
+              reasons="Plot images differ (pixel-level PDF comparison)"
+            fi
           fi
 
-  stop-runner:
-    name: Stop self-hosted EC2 runner
-    needs:
-      - start-runner # required to get output from the start-runner job
-      - run-test # required to wait when the main job is done
+          if [[ "$UPDATE_BASELINE" == "true" ]]; then
+            echo "::warning::Integration test results differ from master, but 'update-baseline' label is set. Treating as expected change."
+            echo "::warning::Differences: $reasons"
+          else
+            echo "::error::Integration test results differ from master: $reasons"
+            echo "::notice::To accept these changes as the new baseline, add the 'update-baseline' label to this PR and re-run."
+            exit 1
+          fi
+
+  # Build a Markdown summary of the integration test run (Ubuntu baseline +
+  # cross-platform results, diff details, and before/after plot images) and
+  # post it as a comment on the pull request so reviewers can quickly see
+  # the current state of the integration tests.
+  post-pr-comment:
+    name: Post PR Comment
+    needs: [run-test, cross-platform-test]
     runs-on: ubuntu-latest
-    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
+    permissions:
+      pull-requests: write
+    if: ${{ always() && github.event_name == 'pull_request' }}
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Download Ubuntu artifacts
+        if: needs.run-test.outputs.has_plot_diff == 'true'
+        uses: actions/download-artifact@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@v2
+          name: results
+          path: ./results
+      - name: Download cross-platform artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@v4
         with:
-          mode: stop
-          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          label: ${{ needs.start-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
+          pattern: results-*
+          path: ./cross-platform-results
+      # Assemble the PR comment body: a status table for Ubuntu, a cross-
+      # platform results table (Windows/macOS), failure details if applicable,
+      # and embedded before/after plot images when plots differ from master.
+      # Post it directly as a PR comment.
+      - name: Post comment to PR
+        uses: actions/github-script@v7
+        env:
+          HAS_PLOT_DIFF: ${{ needs.run-test.outputs.has_plot_diff }}
+          HAS_JSON_DIFF: ${{ needs.run-test.outputs.has_json_diff }}
+          HEAD_REF: ${{ github.head_ref }}
+          CROSS_PLATFORM_RESULT: ${{ needs.cross-platform-test.result }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const testResult = '${{ needs.run-test.result }}';
+            const hasDiff = '${{ needs.run-test.outputs.has_diff }}';
+            const hasJsonDiff = process.env.HAS_JSON_DIFF;
+            const hasPlotDiff = process.env.HAS_PLOT_DIFF;
+            const headRef = process.env.HEAD_REF;
+            const profilerEnabled = '${{ inputs.enable_profiler }}';
+            const crossPlatformResult = process.env.CROSS_PLATFORM_RESULT;
+            const statusIcon = testResult === 'success' ? '✅' : (hasDiff === 'true' ? '⚠️' : '❌');
+
+            let body = `## ${statusIcon} Integration Test Results\n\n`;
+            body += `### Ubuntu (Baseline)\n`;
+            body += `| Item | Detail |\n|---|---|\n`;
+            body += `| **Status** | ${testResult} |\n`;
+            body += `| **Results changed vs master** | ${hasDiff === 'true' ? 'Yes — review comparison artifacts' : 'No'} |\n`;
+            if (hasDiff === 'true') {
+              const reasons = [];
+              if (hasJsonDiff === 'true') reasons.push('JSON results (approximate comparison, 0.0001% threshold)');
+              if (hasPlotDiff === 'true') reasons.push('Plot images (pixel-level PDF comparison)');
+              body += `| **What changed** | ${reasons.join('; ')} |\n`;
+            }
+            body += `| **Profiler** | ${profilerEnabled === 'true' ? 'Enabled' : 'Disabled'} |\n`;
+            body += `| **Artifacts & Logs** | [View workflow run](${runUrl}) |\n`;
+
+            // Cross-platform results table
+            const crossPlatformDir = './cross-platform-results';
+            const platforms = [
+              { dir: 'results-windows-latest', display: 'Windows' },
+              { dir: 'results-macos-latest', display: 'macOS' }
+            ];
+            let crossPlatformRows = '';
+            for (const { dir, display } of platforms) {
+              const statusFile = path.join(crossPlatformDir, dir, 'comparison_status.txt');
+              let platformStatus = '❌ Failed';
+              let platformDiff = 'N/A';
+              if (fs.existsSync(statusFile)) {
+                const content = fs.readFileSync(statusFile, 'utf8');
+                const hasDiffMatch = content.match(/has_diff=(\w+)/);
+                if (hasDiffMatch) {
+                  platformDiff = hasDiffMatch[1] === 'true' ? 'Yes' : 'No';
+                  platformStatus = hasDiffMatch[1] === 'true' ? '⚠️ Diffs found' : '✅ Pass';
+                }
+              } else if (crossPlatformResult === 'success') {
+                platformStatus = '✅ Pass';
+                platformDiff = 'Unknown';
+              }
+              crossPlatformRows += `| ${display} | ${platformStatus} | ${platformDiff} |\n`;
+            }
+            body += `\n### Cross-Platform Results\n`;
+            body += `| Platform | Status | JSON Diffs vs Master |\n|---|---|---|\n`;
+            body += crossPlatformRows;
+
+            // Add failure details section
+            if (testResult === 'failure') {
+              body += `\n### ❌ Failure Details\n\n`;
+              if (hasDiff === 'true') {
+                const reasons = [];
+                if (hasJsonDiff === 'true') reasons.push('JSON results differ (approximate comparison, 0.0001% threshold)');
+                if (hasPlotDiff === 'true') reasons.push('Plot images differ (pixel-level PDF comparison)');
+                body += `Integration test results differ from master:\n`;
+                for (const reason of reasons) {
+                  body += `- ${reason}\n`;
+                }
+                body += `\nReview the comparison artifacts in the [workflow run](${runUrl}).\n\n`;
+                body += `> **To accept these changes:** Add the \`update-baseline\` label to this PR and re-run CI.\n\n`;
+              } else {
+                body += `The integration test encountered an error. Check the [workflow logs](${runUrl}) for details.\n\n`;
+              }
+            } else if (testResult === 'cancelled') {
+              body += `\n### ⚠️ Cancelled\n\nThe workflow was cancelled before completion. [View run](${runUrl}).\n\n`;
+            }
+
+            // Embed before/after plot images if there are plot diffs
+            if (hasPlotDiff === 'true') {
+              body += `\n### 📊 Changed Plots (Before → After)\n\n`;
+              const newImagesDir = './results/plot_images';
+              const baseImagesDir = './results/base_plot_images';
+              const makeUrl = (repoSubPath) => {
+                const encodedPath = repoSubPath.split('/').map(s => encodeURIComponent(s)).join('/');
+                return `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/${headRef}/${encodedPath}`;
+              };
+              if (fs.existsSync(newImagesDir)) {
+                const walkDir = (dir) => {
+                  let files = [];
+                  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                    const fullPath = path.join(dir, entry.name);
+                    if (entry.isDirectory()) {
+                      files = files.concat(walkDir(fullPath));
+                    } else if (entry.name.endsWith('.png')) {
+                      files.push(fullPath);
+                    }
+                  }
+                  return files;
+                };
+                const pngFiles = walkDir(newImagesDir).sort();
+                for (const pngFile of pngFiles) {
+                  const relPath = path.relative(newImagesDir, pngFile);
+                  const plotName = path.basename(pngFile, '.png');
+                  const newRepoPath = `tests/integration_testing/results/plot_images/${relPath}`;
+                  const baseRepoPath = `tests/integration_testing/results/base_plot_images/${relPath}`;
+                  const newUrl = makeUrl(newRepoPath);
+                  const baseUrl = makeUrl(baseRepoPath);
+                  const displayName = relPath.endsWith('.png') ? relPath.slice(0, -4) : relPath;
+                  const hasBase = fs.existsSync(path.join(baseImagesDir, relPath));
+                  body += `<details><summary><b>${displayName}</b></summary>\n\n`;
+                  body += `| Master (before) | PR (after) |\n|---|---|\n`;
+                  if (hasBase) {
+                    body += `| ![before](${baseUrl}) | ![after](${newUrl}) |\n`;
+                  } else {
+                    body += `| _(new plot)_ | ![after](${newUrl}) |\n`;
+                  }
+                  body += `\n</details>\n\n`;
+                }
+              }
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
+
+  cross-platform-test:
+    name: Integration Testing (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 600
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -c .github/constraints.txt ".[dev]"
+      - name: Run integration test
+        env:
+          SOURCE_DATE_EPOCH: '0'
+        run: python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
+      - name: Move results
+        shell: bash
+        run: |
+          rm -rf ./tests/integration_testing/results/*
+          mv ./results/* ./tests/integration_testing/results/
+          mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
+      - name: Compare results against master
+        id: compare
+        shell: bash
+        run: |
+          git fetch --depth=1 origin master
+          has_diff="false"
+
+          # --- JSON comparison: approximate (threshold-based) ---
+          mkdir -p tests/integration_testing/base_results
+          git show origin/master:tests/integration_testing/results/agg_results.json > tests/integration_testing/base_results/agg_results.json
+          git show origin/master:tests/integration_testing/results/ecm_results.json > tests/integration_testing/base_results/ecm_results.json
+          git show origin/master:tests/integration_testing/results/plots/tech_potential/Summary_Data-TP.xlsx > tests/integration_testing/base_results/Summary_Data-TP.xlsx
+          git show origin/master:tests/integration_testing/results/plots/max_adopt_potential/Summary_Data-MAP.xlsx > tests/integration_testing/base_results/Summary_Data-MAP.xlsx
+
+          python tests/integration_testing/compare_results.py \
+            --base-dir tests/integration_testing/base_results \
+            --new-dir tests/integration_testing/results \
+            --threshold 0.0001
+
+          for csv_file in tests/integration_testing/results/*_diffs.csv tests/integration_testing/results/*_key_diffs.csv; do
+            if [[ -f "$csv_file" ]]; then
+              has_diff="true"
+              break
+            fi
+          done
+
+          # Write status file for PR comment aggregation
+          echo "has_diff=$has_diff" > tests/integration_testing/results/comparison_status.txt
+          echo "platform=${{ matrix.os }}" >> tests/integration_testing/results/comparison_status.txt
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.os }}
+          path: ./tests/integration_testing/results/

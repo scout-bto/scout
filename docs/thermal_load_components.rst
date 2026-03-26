@@ -48,25 +48,25 @@ The residential and commercial building thermal load component values are derive
         * 2 Unit -> multi family home
         * nan -> None
 
-* Commercial: Tables 18-23, pages 39-44.
+* Commercial: Annual Baseline Results with Component Loads CSV.
 
-    * Simulations cover nine of eleven AEO commercial building types and a city in each of the five AIA climate zones for heating and cooling end uses separately.
-    * Baseline tables include unnecessary sub-groupings of commercial thermal loads data, including by building vintage and in some cases by size classes that do not correspond to AEO (i.e., large/small retail).
+    * Simulations cover nine of eleven AEO commercial building types and nine U.S. census regions for heating and cooling end uses separately.
     * Each simulated building type/location combination has an associated floor space square footage in the U.S. stock reported with it for weighting purposes.
     * Map commercial table building types to AEO building types.
-        * Retail -> Merch./Service
-        * Hotel -> Lodging
-        * Fast/sit down restaurants -> Food Service
-        * Supermarket -> Food Sales
-        * School -> Education
         * Hospital -> Healthcare
-        * Lg./Sm. Office, Warehouse -> Same in AEO
+        * Outpatient -> Healthcare
+        * Retail Strip mall -> Merch./Service
+        * Retail Standalone -> Merch./Service
+        * Full Service Restaurant -> Merch./Service
+        * Medium Office -> LargeOffice
+        * Quick Service Restaurant -> Food Service
+        * Large Hotel -> Lodging
+        * Secondary chool -> Education
+        * PrimarySchool -> Education  
+        * Grocery -> Food Sales
+        * LargeOffice, SmallOffice, Warehouse -> Same in AEO
 
-2. Translate PDF table information to text tables.
-
-* Manually input data from the PDF publications, as in :repo_file:`Res_TLoads_Base.csv` and :repo_file:`Com_TLoads_Base.csv`.
-
-3. Condense CSV tables into final set of thermal load components data.
+2. Condense CSV tables into final set of thermal load components data.
 
 *Python pseudocode (Residential)*
 
@@ -76,28 +76,23 @@ The residential and commercial building thermal load component values are derive
     #. Combine the thermal load components calculated for each unique combination of census, AEO building type, and end use into a master table.
     #. Write the final thermal load components table to a text file.    
 
-*R pseudocode (Commercial)*
+*Python pseudocode (Commercial)*
 
-    #. Import \*_Base CSV file.
-    #. Find subset of CSV rows associated with each unique combination of climate division (commercial), AEO building type, and heating or cooling end use.
-    #. For each subset of rows, calculate a weighted average of the thermal load components across all rows using square footage floor space associated with each row to establish weighting factors.
-    #. Combine the thermal load components calculated for each unique combination of climate, AEO building type, and end use into a master table.
-    #. Calculate thermal load components for missing AEO building types using a weighted combination of similar and available AEO building types.
+    #. Import upgrade0_agg CSV file.
+    #. Find subset of CSV rows associated with each unique combination of census division, AEO building type, and heating or cooling end use.
+    #. For each subset of rows, calculate a weighted average of the thermal load components across all rows using the number of buildings associated with each row to establish weighting factors.
+    #. Combine the thermal load components calculated for each unique combination of census, AEO building type, and end use into a master table.
+    #. Calculate thermal load components for missing AEO building types using a weighted combination of similar and available ComStock building types.
 
-        * The missing “Assembly” commercial building type is created as a floor area weighted combination of “Education”, “Small Office”, and “Merch/Service” building types.
-        * The missing “Other” commercial building type is created as a floor area weighted combination of “Lodging”, “Large Office”, and “Warehouse” building types.
-    
-    #. Translate AIA climate zone geographical breakdowns to census division breakdowns.
-    
-        * Map U.S. commercial floor area in each AIA climate zone to floor area in each census division using Commercial Building Energy Consumption Survey (CBECS) `raw data`__.
-        * Conversion factors for mapping AIA climate zone to census division for both residential and commercial buildings are available from :repo_file:`Res_Cdiv_Czone_ConvertTable_Final.txt` and :repo_file:`Com_Cdiv_Czone_ConvertTable_Final.txt`. Note that residential data were drawn from the Residential Energy Consumption Survey (RECS) `raw data`__.
+        * The missing “Assembly” commercial building type is created as a floor area weighted combination of "Secondary School", “Small Office”, and “Merch/Service” building types.
+        * The missing “Other” commercial building type is created as a floor area weighted combination of all building types.
 
     #. Write the final thermal load components table to a text file.
 
-4. :repo_file:`Res_TLoads_Final.txt` and :repo_file:`Com_TLoads_Final.txt` files contain final thermal loads components broken down by census division, AEO building type, and heating/cooling end use for further analysis.
+3. :repo_file:`Res_TLoads_Final.txt` and :repo_file:`Com_TLoads_Final.txt` files contain final thermal loads components broken down by census division, AEO building type, and heating/cooling end use for further analysis.
 
 .. Anonymous links for content under Python/R pseudocode bullet
-.. __: http://www.eia.gov/consumption/commercial/data/2003/index.cfm?view=microdata
+.. __: https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=nrel-pds-building-stock%2Fend-use-load-profiles-for-us-building-stock%2F2025%2Fcomstock_amy2018_release_3%2F&limit=50
 .. __: https://data.openei.org/submissions/5959
 
 .. _tlcomponents_references:
