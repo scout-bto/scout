@@ -1220,9 +1220,11 @@ class Measure(object):
         # Update information needed to link the stock turnover rates and
         # exogenous HP conversion rates for measures that apply to separate
         # heating and/or cooling + other (e.g., ventilation, lighting) msegs,
-        # as applicable. Such links are only needed for equipment microsegments
-        # (e.g., not envelope)
-        if (len(self.end_use["primary"]) > 1 and any([
+        # as applicable. Exclude links between envelope ("demand") microsegments because
+        # these microsegments do not have specific stock totals to link (instead they share
+        # square footage values for a given region, building type, and building vintage
+        # as "stock" substitutes)
+        if not dmd_meas and (len(self.end_use["primary"]) > 1 and any([
             x in self.end_use["primary"] for x in [
                 "heating", "cooling"]])):
             # Reset flag for linked heating/cooling mseg turnover
@@ -4674,7 +4676,7 @@ class Measure(object):
                      add_fs_energy_eff_remain_switch,
                      add_fs_carb_eff_remain_switch,
                      add_fs_energy_cost_eff_remain_switch,
-                     mkt_scale_frac_fin, stk_cap_fact, lnkd_stk_cost_adj_fact, warn_list] = \
+                     mkt_scale_frac_fin, stk_cap_fact, lnkd_cost_adj_fact, warn_list] = \
                         self.partition_microsegment(
                             adopt_scheme, diffuse_params, mskeys, mskeys_swtch, bldg_sect,
                             sqft_subst, mkt_scale_frac, new_constr, add_stock,
@@ -4739,99 +4741,6 @@ class Measure(object):
                                     "baseline": add_carb_cost_compete,
                                     "efficient": add_carb_cost_compete_eff}}}}
 
-                    # If user has not suppress the inclusion of linked stock/operating costs for
-                    # measures that apply to heating or cooling and other end use segments, transfer
-                    # any costs from the primary linked tech segments over to the anchor end use
-                    # segments (by default this is the heating end use segments).
-                    if adopt_scheme == "Technical potential" and (
-                            # Linked unit stock cost assessment not suppressed for adoption calcs
-                            not opts.no_lnkd_stk_costs
-                            # Linked operational cost assessment not suppressed
-                            or not opts.no_lnkd_op_costs) and (
-                            # Mseg tech. is linked to that of an anchor mseg and designated as
-                            # the linked technology to assess linked costs for
-                            (self.linked_htcl_tover and
-                             self.linked_htcl_tover_anchor_eu not in mskeys and (
-                            mskeys[-2] is not None and (
-                                self.linked_htcl_tover_linked_tech == "all" or
-                                self.linked_htcl_tover_linked_tech in mskeys[-2])))):
-                        # Set the list of contributing mseg information to use in matching
-                        # the linked segments to the anchor segment, including primary/secondary
-                        # mseg type, region, building type, and building vintage
-                        linked_mseg_elems = [mskeys[0], mskeys[1], mskeys[2], mskeys[-1]]
-                        # If technology information is subsegmented to convey info. about panel
-                        # upgrade needs, link to associated subsegment of anchor technology
-                        try:
-                            append_tech = [x for x in self.handyvars.alt_panel_names if
-                                           x in mskeys[-2]][0]
-                        except IndexError:
-                            append_tech = False
-                        # Find the specific contributing microsegment data for the anchor end use
-                        # to add costs to. Ensure that linked data are only added to anchor end
-                        # use segments that apply to the same mseg type (primary/secondary),
-                        # region, building type, building vintage, and if applicable, panel upgrade
-                        # sub-segment; also ensure that no envelope ("demand") msegs are pulled
-                        # into this calculation, which applies to equipment segments only
-                        ctb_mseg_to_add_cost_to = [x for x in self.markets[adopt_scheme][
-                            "mseg_adjust"]["contributing mseg keys and values"].keys() if
-                            "demand" not in x and self.linked_htcl_tover_anchor_eu in x and all([
-                                elem in x for elem in linked_mseg_elems]) and (
-                                (not append_tech and all(
-                                    [y not in x for y in self.handyvars.alt_panel_names])) or (
-                                    append_tech and append_tech in x))]
-                        # Loop through the applicable msegs to add costs to and add costs
-                        for add_to_mseg in ctb_mseg_to_add_cost_to:
-                            # Shorthand for mseg data to add costs to
-                            add_to_dict = self.markets[adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"][add_to_mseg]
-                            # If full detailed data were not prepared for current scenario (see var
-                            # 'add_dict_limited' below, account for this by only linking to the
-                            # data available (efficient/measure variables only)
-                            if not self.handyvars.full_dat_out[adopt_scheme] and \
-                                    self.name not in ctrb_ms_pkg_prep:
-                                ecarb_cases, stk_cases, rmv_hp_cases, outputs, cost_keys = [
-                                    ["efficient"], ["measure"], [rmv_hp_dblct_meas_stkcosts],
-                                    ["competed"], ["stock", "energy"]]
-                            else:
-                                ecarb_cases, stk_cases, rmv_hp_cases, outputs, cost_keys = [
-                                    ["baseline", "efficient"], ["all", "measure"],
-                                    [rmv_hp_dblct_base_stkcosts, rmv_hp_dblct_meas_stkcosts],
-                                    ["total", "competed"], ["stock", "energy", "carbon"]]
-                            # Track data to be converted over
-
-                            # Add in all cost data (stock, energy, and carbon)
-                            add_to_dict["cost"] = {cost_key: {output: {
-                                # Add to cost data for baseline/efficient cases
-                                case: {
-                                    # anchor mseg cost data plus unit costs for current
-                                    # linked mseg (normalizing aggregate costs to a per unit basis
-                                    # requires re-applying any aggregate stock-to-stock cost
-                                    # conversions made in partition_microsegment), multiplied by #
-                                    # of anchor mseg units. Handle cases where linked mseg units are
-                                    # zero, or a heat pump case where stock costs will have been
-                                    # counted in the anchor end use, or user has suppressed linked
-                                    # stock or operating cost calcs, or the current linked mseg
-                                    # represents a minor technology that shouldn't be counted
-                                    # towards stock costs (do not modify anchor mseg data further)
-                                    yr: (add_to_dict["cost"][cost_key][output][
-                                        case][yr] + ((add_dict["cost"][
-                                            cost_key][output][case][yr] / (
-                                            add_dict["stock"][output][stk_var][yr] * stk_cap_fact *
-                                            lnkd_stk_cost_adj_fact[yr]))
-                                            * (add_to_dict["stock"][output][stk_var][yr] *
-                                               self.markets[adopt_scheme]["mseg_adjust"][
-                                                "capacity factor"][add_to_mseg])))
-                                    if ((add_dict["stock"][output][stk_var][yr] * stk_cap_fact *
-                                         lnkd_stk_cost_adj_fact[yr]) != 0 and (
-                                        (cost_key == "stock" and not opts.no_lnkd_stk_costs
-                                         and not dmd_meas
-                                         and not rmv_hp
-                                         and not rmv_scnd_hvac_stkcosts)
-                                        or cost_key != "stock" and not opts.no_lnkd_op_costs)) else
-                                    add_to_dict["cost"][cost_key][output][case][yr]
-                                    for yr in self.handyvars.aeo_years} for case, stk_var, rmv_hp in
-                                zip(ecarb_cases, stk_cases, rmv_hp_cases)
-                                } for output in outputs} for cost_key in cost_keys}
                     # Remove minor HVAC equipment stocks in cases where major HVAC tech. is also
                     # covered by the measure definition, as well as double counted stock and stock
                     # cost for equipment measures that apply to more than one end use that includes
@@ -4950,6 +4859,127 @@ class Measure(object):
                         self.breakout_mseg(mskeys, contrib_mseg_key, adopt_scheme, opts, brk_in_dat,
                                            brk_stk_costs)
 
+                    # If user has not suppressed the inclusion of linked stock/operating costs for
+                    # measures that apply to heating or cooling and other end use segments, transfer
+                    # any costs from the primary linked tech segments over to the anchor end use
+                    # segments (by default this is the heating end use segments). This is only
+                    # done for the technical potential numbers, which are used later in the run
+                    # module as the basis for calculating unit-level cost numbers for competition
+                    # (across both TP and MAP adoption scenarios)
+                    if adopt_scheme == "Technical potential" and (
+                            # Linked unit stock cost assessment not suppressed for adoption calcs
+                            not opts.no_lnkd_stk_costs
+                            # Linked operational cost assessment not suppressed
+                            or not opts.no_lnkd_op_costs) and (
+                            # Mseg tech. is linked to that of an anchor mseg and designated as
+                            # the linked technology to assess linked costs for
+                            (self.linked_htcl_tover and
+                             self.linked_htcl_tover_anchor_eu not in mskeys and (
+                            mskeys[-2] is not None and (
+                                self.linked_htcl_tover_linked_tech == "all" or
+                                self.linked_htcl_tover_linked_tech in mskeys[-2])))):
+                        # Set the list of contributing mseg information to use in matching
+                        # the linked segments to the anchor segment, including primary/secondary
+                        # mseg type, region, building type, and building vintage
+                        linked_mseg_elems = [mskeys[0], mskeys[1], mskeys[2], mskeys[-1]]
+                        # If technology information is subsegmented to convey info. about panel
+                        # upgrade needs, link to associated subsegment of anchor technology
+                        try:
+                            append_tech = [x for x in self.handyvars.alt_panel_names if
+                                           x in mskeys[-2]][0]
+                        except IndexError:
+                            append_tech = False
+                        # Find the specific contributing microsegment data for the anchor end use
+                        # to add costs to. Ensure that linked data are only added to anchor end
+                        # use segments that apply to the same mseg type (primary/secondary),
+                        # region, building type, building vintage, and if applicable, panel upgrade
+                        # sub-segment; also ensure that no envelope ("demand") msegs are pulled
+                        # into this calculation, which applies to equipment segments only
+                        ctb_mseg_to_add_cost_to = [x for x in self.markets[adopt_scheme][
+                            "mseg_adjust"]["contributing mseg keys and values"].keys() if
+                            "demand" not in x and self.linked_htcl_tover_anchor_eu in x and all([
+                                elem in x for elem in linked_mseg_elems]) and (
+                                (not append_tech and all(
+                                    [y not in x for y in self.handyvars.alt_panel_names])) or (
+                                    append_tech and append_tech in x))]
+                        # Set shorthands for the cases, outputs, and keys to use in transferring
+                        # the cost data
+                        ecarb_cases, stk_cases, rmv_hp_cases, outputs, cost_keys = [
+                            ["baseline", "efficient"], ["all", "measure"],
+                            [rmv_hp_dblct_base_stkcosts, rmv_hp_dblct_meas_stkcosts],
+                            ["total", "competed"], ["stock", "energy", "carbon"]]
+                        # Initialize a tracker of all costs to be transferred from one mseg
+                        # to another below (see later use of this for accounting purposes when
+                        # calculating high-level cost totals via
+                        # 'self.markets[adopt_scheme]["master_mseg"]["cost"]'
+                        transfer_costs = {cost_key: {output: {case: {
+                            yr: 0 for yr in self.handyvars.aeo_years} for case in ecarb_cases}
+                            for output in outputs} for cost_key in cost_keys}
+
+                        # Loop through the applicable msegs to add costs to and add costs
+                        for add_to_mseg in ctb_mseg_to_add_cost_to:
+                            # Shorthand for mseg data to add costs to
+                            add_to_dict = self.markets[adopt_scheme]["mseg_adjust"][
+                                "contributing mseg keys and values"][add_to_mseg]
+                            # Determine the magnitude of costs that should be transferred
+                            transfer_costs_loop = {cost_key: {output: {
+                                # Baseline/efficient cases
+                                case: {
+                                    # pull the unit costs for current linked mseg, multiplied by #
+                                    # of anchor mseg units. Handle cases where linked mseg units are
+                                    # zero, or a heat pump case where stock costs have already been
+                                    # counted in the anchor end use, or user has suppressed linked
+                                    # stock or operating cost calcs, or the current linked mseg
+                                    # represents a minor technology that shouldn't be counted
+                                    # towards stock costs (do not modify anchor mseg data further)
+                                    yr: ((
+                                        # Pull per-unit stock/energy/carbon cost for linked
+                                        # mseg. Account for any conversion factors that were
+                                        # applied to aggregate cost calculations in
+                                        # partition_microsegment (see 'lnkd_cost_adj_fact' and
+                                        # 'stk_cap_fact') when normalizing aggregate costs by
+                                        # stock totals to get to per unit stock result
+                                        (add_dict["cost"][cost_key][output][case][yr] / (
+                                            add_dict["stock"][output][stk_var][yr] * stk_cap_fact *
+                                            lnkd_cost_adj_fact[yr])) * \
+                                        # Multiply the above by the number of stock units that is
+                                        # associated with the anchor mseg that costs are being
+                                        # added to
+                                        (add_to_dict["stock"][output][stk_var][yr] *
+                                         self.markets[adopt_scheme]["mseg_adjust"][
+                                            "capacity factor"][add_to_mseg])))
+                                    # Check to ensure the cost transfer does not violate the
+                                    # rules noted above preventing this transfer, if it does set
+                                    # transferred costs to zero
+                                    if ((add_dict["stock"][output][stk_var][yr] * stk_cap_fact *
+                                         lnkd_cost_adj_fact[yr]) != 0 and (
+                                        (cost_key == "stock" and not opts.no_lnkd_stk_costs
+                                         and not dmd_meas and not rmv_hp and not
+                                         rmv_scnd_hvac_stkcosts) or cost_key != "stock" and not
+                                        opts.no_lnkd_op_costs)) else 0
+                                    for yr in self.handyvars.aeo_years} for
+                                case, stk_var, rmv_hp in zip(ecarb_cases, stk_cases, rmv_hp_cases)
+                                } for output in outputs} for cost_key in cost_keys}
+
+                            # Add cost data to targeted anchor segment (stock, energy, and carbon)
+                            add_to_dict["cost"] = {cost_key: {output: {
+                                # Add to cost data for baseline/efficient cases
+                                case: {yr: (add_to_dict["cost"][cost_key][output][
+                                    case][yr] + transfer_costs_loop[cost_key][output][case][yr])
+                                    for yr in self.handyvars.aeo_years} for case in
+                                ecarb_cases} for output in outputs} for cost_key in cost_keys}
+                            # Subtract added cost data from original segment (stock, energy, carbon)
+                            add_dict["cost"] = {cost_key: {output: {
+                                # Add to cost data for baseline/efficient cases
+                                case: {yr: (add_dict["cost"][cost_key][output][
+                                    case][yr] - transfer_costs_loop[cost_key][output][case][yr])
+                                    for yr in self.handyvars.aeo_years} for case in
+                                ecarb_cases} for output in outputs} for cost_key in cost_keys}
+                            # Update tracker of transferred costs
+                            transfer_costs = self.add_keyvals(transfer_costs, transfer_costs_loop)
+                    else:
+                        transfer_costs = False
+
                     # Record contributing microsegment data needed for ECM
                     # competition in the analysis engine
                     contrib_mseg_key_str = str(contrib_mseg_key)
@@ -5009,19 +5039,6 @@ class Measure(object):
                             contrib_mseg_key_str]["sub-market scaling"] = \
                             mkt_scale_frac_fin
                     else:
-                        # If full detailed data are not needed for current scenario, restrict
-                        # data to only those necessary to support high resolution competition
-                        # calculations, (measure capital costs, energy costs, lifetime) should user
-                        # opt for these calculations in the run module
-                        add_dict_limited = {
-                            "stock": {"competed": {"measure": add_dict[
-                                "stock"]["competed"]["measure"]}},
-                            "cost": {
-                                "stock": {"competed": {"efficient": add_dict[
-                                    "cost"]["stock"]["competed"]["efficient"]}},
-                                "energy": {"competed": {"efficient": add_dict[
-                                    "cost"]["energy"]["competed"]["efficient"]}}},
-                            "lifetime": {"measure": add_dict["lifetime"]["measure"]}}
                         # Case with no existing 'windows' contributing mseg
                         # for the current climate zone, building type, fuel,
                         # and end use (create new 'contributing mseg keys and
@@ -5034,7 +5051,7 @@ class Measure(object):
                             # costs for potential later use in determining unit stock and energy
                             self.markets[adopt_scheme]["mseg_adjust"][
                                 "contributing mseg keys and values"][
-                                contrib_mseg_key_str] = add_dict_limited
+                                contrib_mseg_key_str] = add_dict
                         # Case with existing 'windows' contributing mseg
                         # for the current climate zone, building type, fuel,
                         # and end use (add to existing 'contributing mseg keys
@@ -5045,7 +5062,7 @@ class Measure(object):
                                 contrib_mseg_key_str] = self.add_keyvals(
                                     self.markets[adopt_scheme]["mseg_adjust"][
                                         "contributing mseg keys and values"][
-                                        contrib_mseg_key_str], add_dict_limited)
+                                        contrib_mseg_key_str], add_dict)
 
                     # Add all updated contributing microsegment stock, energy
                     # carbon, cost, and lifetime information to existing master
@@ -5054,6 +5071,15 @@ class Measure(object):
                     self.markets[adopt_scheme]["master_mseg"] = \
                         self.add_keyvals(self.markets[adopt_scheme][
                             "master_mseg"], add_dict)
+                    # If there has been a cost transfer from linked msegs to anchor msegs
+                    # (to support later calculation of per unit costs in run module on the basis
+                    # of the anchor mseg stock numbers), add those transferred costs, which are
+                    # separately tracked, to the master mseg dict
+                    if transfer_costs:
+                        # Add cost data into master mseg
+                        self.markets[adopt_scheme]["master_mseg"]["cost"] = \
+                            self.add_keyvals(self.markets[adopt_scheme][
+                                "master_mseg"]["cost"], transfer_costs)
                     # Add capacity factor information to contributing microsegment data
                     self.markets[adopt_scheme]["mseg_adjust"][
                         "capacity factor"][contrib_mseg_key_str] = stk_cap_fact
@@ -7234,11 +7260,12 @@ class Measure(object):
             new_cool_units, uec_eff_yr, ci_eff_yr, uecst_eff_yr, \
             uec_eff_yr_tot, ci_eff_yr_tot, uecst_eff_yr_tot = (
                 None for n in range(10))
-        # Initialize flag for a potential adjustment to capital cost calculations that is required
-        # to produce an apples-to-apples comparison of measures that encompass both heating and
-        # cooling equipment; also initiate adjustment fractions as all ones
-        lnkd_stk_cost_adj, lnkd_stk_cost_adj_fact = (
-            False, {yr: 1 for yr in self.handyvars.aeo_years})
+        # Initialize flag for a potential adjustment to stock/energy/carbon cost calculations that
+        # is required to produce an apples-to-apples comparison of measures that encompass both
+        # heating and cooling equipment; also initiate adjustment fractions as all ones
+        lnkd_cost_adj = False
+        lnkd_cost_adj_fact, lnkd_stk_cost_adj_fact, lnkd_ecarb_cost_adj_fact = (
+            {yr: 1 for yr in self.handyvars.aeo_years} for n in range(3))
 
         # Initialize flag for whether measure is on the market in a given year
         # as false
@@ -7426,38 +7453,41 @@ class Measure(object):
                     null_val = 1
                 if not initiate_linked_dat:
                     # In the case of linked heating and cooling costs for major/central equipment
-                    # types, produce a stock adjustment factor to ensure that the aggregate stock
-                    # costs calculated for linked msegs are based on the number of stock units for
+                    # types, produce a cost adjustment factor to ensure that the aggregate
+                    # costs calculated for linked msegs are consistent with the stock numbers for
                     # the anchor mseg. For example, the stock costs of a CAC mseg for a measure that
                     # links CACs and gas furnaces are calculated by multiplying the per unit cost of
                     # the CAC unit by the number of total gas furnace units (heating msegs are the
                     # default anchor in such cases). This ensures an apples-to-apples comparison
-                    # between the aggregate stock costs of measures that apply to separate heating
-                    # and cooling technologies (e.g., gas + AC) and those of heat pumps, for which
-                    # heating and cooling stock costs are always based on the number of units in the
-                    # anchor mseg. It also ensures that any attempts later to normalize aggregate
-                    # stock costs by number of stock units (which are only reported for the anchor
-                    # end use) will produce the correct per unit cost result
-                    lnkd_stk_cost_adj_fact = {
-                        yr: (total_htcl_lnk[htcl_lnk_adjkey][yr] /
-                             (stock_total_init[yr] * mkt_scale_frac)) if (
-                             (stock_total_init[yr] * mkt_scale_frac) != 0 and (
-                                # Only adjust for heating and cooling cases
-                                mskeys[4] in ["heating", "cooling"] and
-                                # Do not adjust if no linked stock costs are assumed for heat/cool;
-                                # not necessary b/c linked stock costs are zeroed out subsequently
-                                not (opts.no_lnkd_stk_costs and "report" in opts.no_lnkd_stk_costs)
-                                # Ensure that current linked tech. is designated as the linked tech.
-                                # to use for stock cost reporting purposes
-                                and (self.linked_htcl_tover_linked_tech == "all" or
-                                     self.linked_htcl_tover_linked_tech in mskeys[-2])
-                                # Only adjust for central heat/cool tech (e.g., does not apply to
-                                # room ACs or space heaters, we don't report aggregate costs for)
-                                and not any([mskeys[-2] is not None and x in mskeys[-2]
-                                             for x in self.handyvars.secondary_hvac_tech])))
-                        else 1 for yr in self.handyvars.aeo_years}
-                    # Reset flag for capital cost adjustment
-                    lnkd_stk_cost_adj = True
+                    # between the aggregate stock/energy/carbon costs of measures that apply to
+                    # separate heating and cooling technologies (e.g., gas + AC) and those of heat
+                    # pumps. It also ensures that any attempts later in the run module to normalize
+                    # aggregate stock/energy/carbon costs by number of stock units (which are only
+                    # reported for the anchor end use) will produce the correct per unit cost result
+                    if any([not x for x in [opts.no_lnkd_stk_costs, opts.no_lnkd_op_costs]]):
+                        lnkd_cost_adj_fact = {
+                            yr: (total_htcl_lnk[htcl_lnk_adjkey][yr] /
+                                 (stock_total_init[yr] * mkt_scale_frac)) if (
+                                 (stock_total_init[yr] * mkt_scale_frac) != 0 and (
+                                    # Only adjust for heating and cooling cases
+                                    mskeys[4] in ["heating", "cooling"]
+                                    # Ensure that current linked tech. is designated as the linked
+                                    # tech. to use for stock cost reporting purposes
+                                    and (self.linked_htcl_tover_linked_tech == "all" or
+                                         self.linked_htcl_tover_linked_tech in mskeys[-2])
+                                    # Only adjust for central heat/cool tech (e.g., does not apply
+                                    # to room ACs or space heaters, we don't report agg. costs for)
+                                    and not any([mskeys[-2] is not None and x in mskeys[-2]
+                                                 for x in self.handyvars.secondary_hvac_tech])))
+                            else 1 for yr in self.handyvars.aeo_years}
+                        # Reset flag for linked cost adjustment to True
+                        lnkd_cost_adj = True
+                        # If not suppressed, set the stock cost adjustment factor
+                        if not opts.no_lnkd_stk_costs or ("report" not in opts.no_lnkd_stk_costs):
+                            lnkd_stk_cost_adj_fact = lnkd_cost_adj_fact
+                        # If not suppressed, set operating (energy/carbon) cost adjustment factor
+                        if not opts.no_lnkd_op_costs:
+                            lnkd_ecarb_cost_adj_fact = lnkd_cost_adj_fact
                     # Update stock turnover fractions for current mseg based
                     # on turnover data calculated for linked anchor
                     # heating/cooling mseg
@@ -7568,10 +7598,10 @@ class Measure(object):
                 mskeys[4] not in self.handyvars.com_eqp_eus_nostk):
             # Use try/except to handle missing capacity factor data
             try:
-                # Determine whether to key in capacity factor by current mseg's
-                # end use or by anchor end use if the current mseg is linked
+                # Determine whether to key in capacity factor (which dicates stock costs)
+                # by current mseg's end use or by anchor end use if the current mseg is linked
                 # to that anchor end use
-                eu_key = (mskeys[4] if not lnkd_stk_cost_adj else self.linked_htcl_tover_anchor_eu)
+                eu_key = (mskeys[4] if not lnkd_cost_adj else self.linked_htcl_tover_anchor_eu)
                 # Set appropriate capacity factor (TBtu delivered service
                 # for hours of actual operation / TBtu service running at
                 # full capacity for all hours of the year)
@@ -9069,11 +9099,11 @@ class Measure(object):
                                             lnkd_stk_cost_adj_fact[yr]) * cost_meas[yr]
 
             # Competed baseline energy cost
-            energy_compete_cost[yr] = energy_total_sbmkt[yr] * \
+            energy_compete_cost[yr] = energy_total_sbmkt[yr] * lnkd_ecarb_cost_adj_fact[yr] * \
                 diffuse_frac * comp_frac_diffuse * cost_energy_base[yr] * \
                 tsv_ecost_base
             # Total baseline energy cost
-            energy_total_cost[yr] = energy_total_sbmkt[yr] * \
+            energy_total_cost[yr] = energy_total_sbmkt[yr] * lnkd_ecarb_cost_adj_fact[yr] * \
                 diffuse_frac * cost_energy_base[yr] * tsv_ecost_base
 
             # Set common variables for the energy cost calculations
@@ -9180,24 +9210,27 @@ class Measure(object):
                 cost_energy_base[yr]
 
             # Competed-efficient energy cost
-            energy_compete_cost_eff[yr] = energy_cost_tot_comp_meas + \
-                energy_cost_tot_comp_base
+            energy_compete_cost_eff[yr] = (
+                energy_cost_tot_comp_meas + energy_cost_tot_comp_base) * \
+                lnkd_ecarb_cost_adj_fact[yr]
             # Total-efficient energy cost
             energy_total_eff_cost[yr] = energy_compete_cost_eff[yr] + \
-                energy_cost_tot_uncomp_meas + energy_cost_tot_uncomp_base
+                (energy_cost_tot_uncomp_meas + energy_cost_tot_uncomp_base) * \
+                lnkd_ecarb_cost_adj_fact[yr]
 
             # Competed baseline carbon cost
-            carb_compete_cost[yr] = carb_compete[yr] * \
+            carb_compete_cost[yr] = carb_compete[yr] * lnkd_ecarb_cost_adj_fact[yr] * \
                 self.handyvars.ccosts[yr]
             # Total baseline carbon cost
-            carb_total_cost[yr] = carb_total[yr] * self.handyvars.ccosts[yr]
+            carb_total_cost[yr] = carb_total[yr] * lnkd_ecarb_cost_adj_fact[yr] * \
+                self.handyvars.ccosts[yr]
 
             # Competed carbon-efficient cost
             carb_compete_cost_eff[yr] = \
-                carb_compete_eff[yr] * self.handyvars.ccosts[yr]
+                carb_compete_eff[yr] * lnkd_ecarb_cost_adj_fact[yr] * self.handyvars.ccosts[yr]
             # Total carbon-efficient cost
             carb_total_eff_cost[yr] = \
-                carb_total_eff[yr] * self.handyvars.ccosts[yr]
+                carb_total_eff[yr] * lnkd_ecarb_cost_adj_fact[yr] * self.handyvars.ccosts[yr]
 
             # Reset previously captured measure relative performance for next
             # year to that of the overall stock in the current year
@@ -9357,7 +9390,7 @@ class Measure(object):
                 fs_carb_eff_remain_base, fs_energy_cost_eff_remain_base,
                 fs_energy_eff_remain_switch, fs_carb_eff_remain_switch,
                 fs_energy_cost_eff_remain_switch, mkt_scale_frac_fin,
-                stk_serv_cap_cnv, lnkd_stk_cost_adj_fact, warn_list]
+                stk_serv_cap_cnv, lnkd_cost_adj_fact, warn_list]
 
     def check_meas_inputs(self):
         """Check for valid inputs for key measure characteristics.
