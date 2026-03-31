@@ -523,9 +523,30 @@ class Measure(object):
                 self.usr_opts["health_costs"] = "Uniform EE-high"
         self.eff_fs_splt = {a_s: {} for a_s in handyvars.adopt_schemes_prep}
         self.sector_shapes = None
-        # Deep copy handy vars to avoid any dependence of changes to these vars
-        # across other measures that use them
-        self.handyvars = copy.deepcopy(handyvars)
+        # Shallow-copy handyvars so that we avoid deep-copying the entire,
+        # very large UsefulVars object (~34 s for 94 measures in profiling).
+        # Attributes that are mutated during fill_mkts must be deep-copied
+        # individually so that changes in one measure do not affect others.
+        # All other attributes are read-only across Measure methods.
+        self.handyvars = copy.copy(handyvars)
+        self.handyvars.panel_shares = copy.deepcopy(handyvars.panel_shares)
+        # sf_to_house is populated incrementally per measure and must not be
+        # shared across measure instances.
+        self.handyvars.sf_to_house = copy.deepcopy(handyvars.sf_to_house)
+        # tsv_hourly_lafs / tsv_hourly_price / tsv_hourly_emissions are
+        # lazy caches populated during fill_mkts; each measure needs its own
+        # copy so that one measure's cached factors don't leak into another.
+        # At init time these structures are small (empty inner dicts / None),
+        # so the deepcopy is cheap.  Guard with getattr because these
+        # attributes are only present when TSV options are enabled.
+        for _tsv_attr in (
+                "tsv_hourly_lafs", "tsv_hourly_price", "tsv_hourly_emissions"):
+            if hasattr(handyvars, _tsv_attr):
+                setattr(self.handyvars, _tsv_attr,
+                        copy.deepcopy(getattr(handyvars, _tsv_attr)))
+        # save_shp_warn is a list that is appended to during fill_mkts;
+        # give each measure its own copy to avoid cross-measure deduplication.
+        self.handyvars.save_shp_warn = copy.copy(handyvars.save_shp_warn)
         # Set the rate of baseline retrofitting for ECM stock-and-flow calcs
         try:
             # Check first to see whether pulling up retrofit rate errors
@@ -1041,16 +1062,23 @@ class Measure(object):
 
             # Add market breakout information
 
+            # Deep-copy the out_break_in template once per adopt_scheme, then
+            # reuse that single copy for the remaining slots — avoids 8-11
+            # redundant full deep-copies of the (potentially large) nested
+            # OrderedDict per measure per scheme.
+            def _obi():
+                return copy.deepcopy(self.handyvars.out_break_in)
+
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": copy.deepcopy(self.handyvars.out_break_in),
-                "efficient": copy.deepcopy(self.handyvars.out_break_in),
-                "savings": copy.deepcopy(self.handyvars.out_break_in)} for
+                "baseline": _obi(),
+                "efficient": _obi(),
+                "savings": _obi()} for
                 key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
-                    key: copy.deepcopy(self.handyvars.out_break_in) for key in
+                    key: _obi() for key in
                     ["baseline", "efficient"]}
             # Add stock cost (capital investment) breakouts
             if self.usr_opts["cap_invest"]:
@@ -1063,7 +1091,7 @@ class Measure(object):
             if self.usr_opts["no_eff_capt"] is not True:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"]["efficient-captured"] = \
-                    copy.deepcopy(self.handyvars.out_break_in)
+                    _obi()
 
     def fill_mkts(self, msegs, msegs_cpl, convert_data, tsv_data_init, opts,
                   ctrb_ms_pkg_prep, tsv_data_nonfs):
@@ -7194,6 +7222,10 @@ class Measure(object):
             also return any remaining (unswitched) energy, carbon, and cost
             segments by year.
         """
+        # Cache aeo_years locally — avoids repeated attribute lookups through
+        # self.handyvars inside the per-year inner loop (~121 K calls × N years)
+        _aeo_years = self.handyvars.aeo_years
+
         # Initialize stock, energy, and carbon mseg partition dicts, where the
         # dict keys will be years in the modeling time horizon
         stock_total, stock_total_sbmkt, energy_total, carb_total, \
@@ -7235,7 +7267,7 @@ class Measure(object):
             # Set fugitive methane dicts to all zeros
             fmeth_total_sbmkt, fmeth_total, fmeth_total_eff, fmeth_compete, \
                 fmeth_compete_sbmkt, fmeth_compete_eff = (
-                    {yr: 0 for yr in self.handyvars.aeo_years} for
+                    dict.fromkeys(_aeo_years, 0) for
                     n in range(6))
             # No further assessment of fugitive methane required in function
             f_meth_assess = ""
@@ -7263,8 +7295,8 @@ class Measure(object):
         elif opts.fugitive_emissions is not False and \
                 opts.fugitive_emissions[0] in ['2', '3']:
             # Set fugitive refrigerants dicts to all zeros
-            frefr_total, frefr_total_eff, frefr_compete, frefr_compete_eff = ({
-                    yr: 0 for yr in self.handyvars.aeo_years} for
+            frefr_total, frefr_total_eff, frefr_compete, frefr_compete_eff = (
+                    dict.fromkeys(_aeo_years, 0) for
                     n in range(4))
             # No further assessment of fugitive refrig. required in function
             f_refr_assess = ""
@@ -7314,8 +7346,8 @@ class Measure(object):
         fs_stk_eff_remain, fs_stk_cost_eff_remain, fs_energy_eff_remain_base, \
             fs_carb_eff_remain_base, fs_energy_cost_eff_remain_base, \
             fs_energy_eff_remain_switch, fs_carb_eff_remain_switch, \
-            fs_energy_cost_eff_remain_switch = ({
-                yr: 0 for yr in self.handyvars.aeo_years} for n in range(8))
+            fs_energy_cost_eff_remain_switch = (
+                dict.fromkeys(_aeo_years, 0) for n in range(8))
 
         # For measures that retain baseline fuel as backup, pull in the
         # remaining fuel fraction for the current mseg's region; if not, set
@@ -7563,9 +7595,8 @@ class Measure(object):
                     # and competition fraction to zero; also set data needed
                     # to determined cumulative stock fractions to zero
                     diffuse_frac_linked = {
-                        yr: null_val for yr in self.handyvars.aeo_years}
-                    comp_frac_diffuse_linked = {
-                        yr: 0 for yr in self.handyvars.aeo_years}
+                        yr: null_val for yr in _aeo_years}
+                    comp_frac_diffuse_linked = dict.fromkeys(_aeo_years, 0)
                     cum_frac_linked = 0
                     fmt.verboseprint(
                         opts.verbose,
@@ -7792,7 +7823,7 @@ class Measure(object):
 
         # Loop through and update stock, energy, and carbon mseg partitions for
         # each year in the modeling time horizon
-        for yr in self.handyvars.aeo_years:
+        for yr in _aeo_years:
             # Reset flag for whether measure is on the market in current year
             # and for whether measure has exited the market
             if (int(yr) >= self.market_entry_year and
@@ -8599,8 +8630,7 @@ class Measure(object):
             elif cum_frac_linked and cum_frac_linked == 0:
                 stk_tot_sbmkt, stk_tot_diff, stk_cmp_sbmkt, stk_cmp_diff, \
                     stk_cum_m, stk_cum_cmp = (
-                        {yr: 0 for yr in self.handyvars.aeo_years} for
-                        n in range(6))
+                        dict.fromkeys(_aeo_years, 0) for n in range(6))
             # Not linked to another mseg; use data for this mseg
             else:
                 stk_tot_sbmkt, stk_tot_diff, stk_cmp_sbmkt, stk_cmp_diff, \
@@ -10245,13 +10275,20 @@ class Measure(object):
                                    "do not match")
                 continue
             i = dict1[k]
-            if isinstance(i, dict):
-                self.add_keyvals(i, dict2[k])
+            # Avoid isinstance() on every leaf — try addition first (fast
+            # path for numeric values), fall back to recursion for dicts.
+            # The None case (master_mseg initialising from the first
+            # microsegment) must deepcopy dict2[k] because the master_mseg
+            # will be modified in-place by later add_keyvals calls, and
+            # dict2[k] may be a nested dict that is aliased elsewhere.
+            if i is None:
+                dict1[k] = copy.deepcopy(dict2[k])
             else:
-                if i is None:
-                    dict1[k] = copy.deepcopy(dict2[k])
-                else:
+                try:
                     dict1[k] = i + dict2[k]
+                except TypeError:
+                    # i is a dict — recurse
+                    self.add_keyvals(i, dict2[k])
         return dict1
 
     def add_keyvals_restrict(self, dict1, dict2):
@@ -10285,13 +10322,13 @@ class Measure(object):
                                "' update, dict key structures "
                                "do not match")
             i = dict1[k]
-            if isinstance(i, dict):
-                self.add_keyvals(i, dict2[k])
+            if i is None:
+                dict1[k] = copy.deepcopy(dict2[k])
             else:
-                if i is None:
-                    dict1[k] = copy.deepcopy(dict2[k])
-                else:
+                try:
                     dict1[k] = i + dict2[k]
+                except TypeError:
+                    self.add_keyvals(i, dict2[k])
         return dict1
 
     def div_keyvals(self, dict1, dict2):
@@ -10521,7 +10558,14 @@ class Measure(object):
             fuel type that reflect the influence of the current mseg being looped.
 
         """
+        # Cache aeo_years locally to avoid repeated attribute lookups across
+        # the multiple year-loops inside this function (called 121 K times).
+        _aeo_years = self.handyvars.aeo_years
+
         # Pull out variables to use in developing breakout values
+        # Use dict.copy() (O(n) shallow copy) rather than a year-by-year dict
+        # comprehension — values are scalars so shallow is equivalent here and
+        # avoids rebuilding every key for each of the 16 variables every call.
         brk_stock_total, brk_energy_total, brk_energy_cost, brk_carb_total, brk_stock_total_meas, \
             brk_energy_total_eff, brk_energy_total_eff_capt, brk_energy_cost_eff, \
             brk_carb_total_eff, brk_fs_stk_eff_remain, brk_fs_energy_eff_remain_base, \
@@ -10634,54 +10678,111 @@ class Measure(object):
                 # for the current region, bldg., end use, and fuel have not yet
                 # been initialized
                 try:
-                    for yr in self.handyvars.aeo_years:
+                    try:
+                        for yr in _aeo_years:
+                            for ind, key in enumerate(breakout_vars):
+                                self.markets[adopt_scheme]["mseg_out_break"][key][
+                                    "baseline"][out_cz][out_bldg][out_eu][
+                                    out_fuel_save][yr] += base_data[ind][yr]
+                                # Efficient and savings; if there is fuel switching,
+                                # only the portion of the efficient case results that
+                                # have not yet switched (due to stock turnover
+                                # limitations or dual fuel settings) remain, and
+                                # savings are the delta between what remains
+                                # unswitched in the efficient case and the baseline
+                                if not out_fuel_gain:
+                                    self.markets[adopt_scheme]["mseg_out_break"][key][
+                                        "efficient"][out_cz][out_bldg][out_eu][
+                                        out_fuel_save][yr] += eff_data[ind][yr]
+                                    if key == "energy" and capt_e:
+                                        self.markets[adopt_scheme]["mseg_out_break"][
+                                            key]["efficient-captured"][out_cz][
+                                            out_bldg][out_eu][out_fuel_save][yr] += \
+                                            capt_e[yr]
+                                    if key != "stock":  # no stk save
+                                        self.markets[adopt_scheme]["mseg_out_break"][
+                                            key]["savings"][out_cz][out_bldg][out_eu][
+                                            out_fuel_save][yr] += (
+                                                base_data[ind][yr] - eff_data[ind][yr])
+                                else:
+                                    self.markets[adopt_scheme]["mseg_out_break"][key][
+                                        "efficient"][out_cz][out_bldg][out_eu][
+                                        out_fuel_save][yr] += \
+                                        (eff_data_fs_base[ind][yr] +
+                                         eff_data_fs_switch[(ind-1)][yr])
+                                    # Note that no baseline fuel, baseline technology
+                                    # consumption (e.g., not in backup service to
+                                    # measure) remains for captured stock by
+                                    # definition (all captured stock has been switched
+                                    # to measure)
+                                    if key == "energy" and capt_e:
+                                        self.markets[adopt_scheme]["mseg_out_break"][
+                                            key]["efficient-captured"][out_cz][
+                                            out_bldg][out_eu][out_fuel_save][yr] += \
+                                            eff_data_fs_switch[(ind-1)][yr]
+                                    if key != "stock":  # no stk save
+                                        self.markets[adopt_scheme]["mseg_out_break"][
+                                            key]["savings"][out_cz][out_bldg][out_eu][
+                                            out_fuel_save][yr] += (
+                                                base_data[ind][yr] -
+                                                (eff_data_fs_base[ind][yr] +
+                                                 eff_data_fs_switch[(ind-1)][yr]))
+                    except KeyError:
                         for ind, key in enumerate(breakout_vars):
+                            # Baseline; add in baseline data as-is
                             self.markets[adopt_scheme]["mseg_out_break"][key][
                                 "baseline"][out_cz][out_bldg][out_eu][
-                                out_fuel_save][yr] += base_data[ind][yr]
-                            # Efficient and savings; if there is fuel switching,
-                            # only the portion of the efficient case results that
-                            # have not yet switched (due to stock turnover
-                            # limitations or dual fuel settings) remain, and
-                            # savings are the delta between what remains
+                                out_fuel_save] = {yr: base_data[ind][yr] for
+                                                  yr in _aeo_years}
+                            # Efficient and savings; if there is fuel switching, only
+                            # the portion of the efficient case results that have not
+                            # yet switched (due to stock turnover limitations) remain,
+                            # and savings are the delta between what remains
                             # unswitched in the efficient case and the baseline
                             if not out_fuel_gain:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient"][out_cz][out_bldg][out_eu][
-                                    out_fuel_save][yr] += eff_data[ind][yr]
+                                    out_fuel_save] = {
+                                        yr: eff_data[ind][yr] for
+                                        yr in _aeo_years}
                                 if key == "energy" and capt_e:
-                                    self.markets[adopt_scheme]["mseg_out_break"][
-                                        key]["efficient-captured"][out_cz][
-                                        out_bldg][out_eu][out_fuel_save][yr] += \
-                                        capt_e[yr]
+                                    self.markets[adopt_scheme]["mseg_out_break"][key][
+                                        "efficient-captured"][out_cz][out_bldg][
+                                        out_eu][out_fuel_save] = {
+                                            yr: capt_e[yr] for yr in
+                                            _aeo_years}
                                 if key != "stock":  # no stk save
-                                    self.markets[adopt_scheme]["mseg_out_break"][
-                                        key]["savings"][out_cz][out_bldg][out_eu][
-                                        out_fuel_save][yr] += (
-                                            base_data[ind][yr] - eff_data[ind][yr])
+                                    self.markets[adopt_scheme]["mseg_out_break"][key][
+                                        "savings"][out_cz][out_bldg][out_eu][
+                                        out_fuel_save] = {yr: (
+                                            base_data[ind][yr] - eff_data[ind][yr]) for
+                                            yr in _aeo_years}
                             else:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient"][out_cz][out_bldg][out_eu][
-                                    out_fuel_save][yr] += \
-                                    (eff_data_fs_base[ind][yr] +
-                                     eff_data_fs_switch[ind][yr])
+                                    out_fuel_save] = {
+                                        yr: (eff_data_fs_base[ind][yr] +
+                                             eff_data_fs_switch[(ind-1)][yr]) for
+                                        yr in _aeo_years}
                                 # Note that no baseline fuel, baseline technology
                                 # consumption (e.g., not in backup service to
                                 # measure) remains for captured stock by
                                 # definition (all captured stock has been switched
                                 # to measure)
                                 if key == "energy" and capt_e:
-                                    self.markets[adopt_scheme]["mseg_out_break"][
-                                        key]["efficient-captured"][out_cz][
-                                        out_bldg][out_eu][out_fuel_save][yr] += \
-                                        eff_data_fs_switch[ind][yr]
+                                    self.markets[adopt_scheme]["mseg_out_break"][key][
+                                        "efficient-captured"][out_cz][out_bldg][
+                                        out_eu][out_fuel_save] = {
+                                        yr: eff_data_fs_switch[(ind-1)][yr] for
+                                        yr in _aeo_years}
                                 if key != "stock":  # no stk save
-                                    self.markets[adopt_scheme]["mseg_out_break"][
-                                        key]["savings"][out_cz][out_bldg][out_eu][
-                                        out_fuel_save][yr] += (
-                                            base_data[ind][yr] -
-                                            (eff_data_fs_base[ind][yr] +
-                                             eff_data_fs_switch[ind][yr]))
+                                    self.markets[adopt_scheme]["mseg_out_break"][key][
+                                        "savings"][out_cz][out_bldg][out_eu][
+                                        out_fuel_save] = {yr: (
+                                            base_data[ind][yr] - (
+                                                eff_data_fs_base[ind][yr] +
+                                                eff_data_fs_switch[(ind - 1)][yr]))
+                                            for yr in _aeo_years}
                 except KeyError:
                     for ind, key in enumerate(breakout_vars):
                         # Baseline; add in baseline data as-is
@@ -10744,7 +10845,7 @@ class Measure(object):
                     # Handle case where results for the current region, bldg.,
                     # end use, and fuel have not yet been initialized
                     try:
-                        for yr in self.handyvars.aeo_years:
+                        for yr in _aeo_years:
                             for ind, key in enumerate(breakout_vars):
                                 # Note: no need to add to baseline for fuel being
                                 # switched to, which remains zero
@@ -10796,8 +10897,7 @@ class Measure(object):
                             # initialized as zero
                             self.markets[adopt_scheme]["mseg_out_break"][key][
                                 "baseline"][out_cz][out_bldg][out_eu][
-                                out_fuel_gain] = {yr: 0 for yr in
-                                                  self.handyvars.aeo_years}
+                                out_fuel_gain] = dict.fromkeys(_aeo_years, 0)
                             # Efficient and savings; efficient case energy/
                             # emissions/cost that do not remain with the baseline
                             # fuel are added to the switched to fuel and
@@ -10809,8 +10909,8 @@ class Measure(object):
                                         out_fuel_gain] = {
                                         yr: (eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[ind][yr]))
-                                        for yr in self.handyvars.aeo_years}
+                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                        for yr in _aeo_years}
                                 # All captured efficient energy
                                 # goes to switched to fuel, except in the case
                                 # where the switched to measure has dual fuel
@@ -10824,31 +10924,31 @@ class Measure(object):
                                             yr: (capt_e[yr] -
                                                  eff_data_fs_switch[ind][yr])
                                             for yr in
-                                            self.handyvars.aeo_years}
+                                            _aeo_years}
                                 self.markets[adopt_scheme][
                                     "mseg_out_break"][key]["savings"][out_cz][
                                         out_bldg][out_eu][out_fuel_gain] = {
                                         yr: -(eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[ind][yr]))
-                                        for yr in self.handyvars.aeo_years}
+                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                        for yr in _aeo_years}
                             else:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient"][out_cz][out_bldg][out_eu][
                                     out_fuel_gain] = {
                                         yr: eff_data[ind][yr]
-                                        for yr in self.handyvars.aeo_years}
+                                        for yr in _aeo_years}
                                 if key == "energy" and capt_e:
                                     self.markets[adopt_scheme]["mseg_out_break"][
                                         key]["efficient-captured"][out_cz][
                                         out_bldg][out_eu][out_fuel_gain] = {
                                             yr: capt_e[yr]
-                                            for yr in self.handyvars.aeo_years}
+                                            for yr in _aeo_years}
             else:
                 # Handle case where results for the current region, bldg., end use,
                 # and fuel have not yet been initialized
                 try:
-                    for yr in self.handyvars.aeo_years:
+                    for yr in _aeo_years:
                         for ind, key in enumerate(breakout_vars):
                             self.markets[adopt_scheme]["mseg_out_break"][key][
                                 "baseline"][out_cz][out_bldg][out_eu][yr] += \
@@ -10869,23 +10969,23 @@ class Measure(object):
                         self.markets[adopt_scheme]["mseg_out_break"][key][
                             "baseline"][out_cz][out_bldg][out_eu] = {
                                 yr: base_data[ind][yr] for
-                                yr in self.handyvars.aeo_years}
+                                yr in _aeo_years}
                         self.markets[adopt_scheme]["mseg_out_break"][key][
                             "efficient"][out_cz][out_bldg][out_eu] = {
                                 yr: eff_data[ind][yr] for
-                                yr in self.handyvars.aeo_years}
+                                yr in _aeo_years}
                         if key == "energy" and capt_e:
                             self.markets[adopt_scheme][
                                 "mseg_out_break"][key]["efficient-captured"][
                                 out_cz][out_bldg][out_eu] = {
                                     yr: capt_e[yr] for
-                                    yr in self.handyvars.aeo_years}
+                                    yr in _aeo_years}
                         if key != "stock":  # no stk save
                             self.markets[adopt_scheme]["mseg_out_break"][key][
                                 "savings"][out_cz][out_bldg][out_eu] = {
                                     yr: (base_data[ind][yr] -
                                          eff_data[ind][yr]) for
-                                    yr in self.handyvars.aeo_years}
+                                    yr in _aeo_years}
 
         # Yield warning if current contributing microsegment cannot
         # be mapped to an output breakout category
@@ -14704,12 +14804,17 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 meas_file_name = m.name + ".pkl.gz"
                 # Assemble folder path for measure competition data
                 comp_folder_name = handyfiles.ecm_compete_data
-                with gzip.open(comp_folder_name / meas_file_name, 'w') as zp:
+                # Use compresslevel=1 (fastest gzip) — profiling shows
+                # compression was ~52 s; data are already binary/float-heavy
+                # so higher compression levels yield little size reduction.
+                with gzip.open(comp_folder_name / meas_file_name, 'w',
+                               compresslevel=1) as zp:
                     pickle.dump(meas_prepped_compete[ind], zp, -1)
                 if len(meas_eff_fs_splt[ind].keys()) != 0:
                     # Assemble path for measure efficient fs split data
                     fs_splt_folder_name = handyfiles.ecm_eff_fs_splt_data
-                    with gzip.open(fs_splt_folder_name / meas_file_name, 'w') as zp:
+                    with gzip.open(fs_splt_folder_name / meas_file_name, 'w',
+                                   compresslevel=1) as zp:
                         pickle.dump(meas_eff_fs_splt[ind], zp, -1)
         # Write prepared high-level measure attributes data to JSON
         JsonIO.dump_json(meas_summary, handyfiles.ecm_prep)
