@@ -17622,10 +17622,10 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
         # adding cooling costs to heating costs
         cls.ok_coolcost_meas_stkcost_out = {
             "total": {
-                "baseline": {"2009": 150000, "2010": 150000},
+                "baseline": {"2009": 200000, "2010": 200000},
                 "efficient": {"2009": 500000, "2010": 500000}},
             "competed": {
-                "baseline": {"2009": 150000, "2010": 150000},
+                "baseline": {"2009": 200000, "2010": 200000},
                 "efficient": {"2009": 500000, "2010": 500000}}}
         cls.ok_tp_fmeth_mkts_out = [
             {
