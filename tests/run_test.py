@@ -29008,6 +29008,7 @@ class StateImportTest(unittest.TestCase, CommonMethods):
             grid_decarb=False)
         # Initialize useful variables
         cls.hvobj = run.UsefulVars(Constants.HANDYFILES, NullOpts().opts,
+                                   brk_vars=["stock", "energy", "carbon", "energy cost"],
                                    brkout="basic", regions="State",
                                    state_appl_regs=None, codes=None, bps=None, exog_rates=False)
         # Set AEO years to full range present in the test input data
