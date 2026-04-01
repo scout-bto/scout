@@ -7636,8 +7636,8 @@ def main(opts: argparse.NameSpace):  # noqa: F821
             grid_decarb is True:
         handyfiles = UsefulInputFiles(energy_out, regions, grid_decarb)
     # Re-instantiate useful variables object
-        handyvars = UsefulVars(
-            handyfiles, opts, brk_vars, brkout, regions, state_appl_regs, codes, bps, exog_rates)
+    handyvars = UsefulVars(
+        handyfiles, opts, brk_vars, brkout, regions, state_appl_regs, codes, bps, exog_rates)
 
     # Load and set competition data for active measure objects (provided competition is not
     # suppressed by user); suppress new line if not in verbose mode ('Data load complete' is

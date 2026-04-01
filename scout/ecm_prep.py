@@ -7464,7 +7464,8 @@ class Measure(object):
                     # pumps. It also ensures that any attempts later in the run module to normalize
                     # aggregate stock/energy/carbon costs by number of stock units (which are only
                     # reported for the anchor end use) will produce the correct per unit cost result
-                    if any([not x for x in [opts.no_lnkd_stk_costs, opts.no_lnkd_op_costs]]):
+                    if adopt_scheme == "Technical potential" and any(
+                            [not x for x in [opts.no_lnkd_stk_costs, opts.no_lnkd_op_costs]]):
                         lnkd_cost_adj_fact = {
                             yr: (total_htcl_lnk[htcl_lnk_adjkey][yr] /
                                  (stock_total_init[yr] * mkt_scale_frac)) if (
@@ -10929,7 +10930,7 @@ class Measure(object):
                     for f in self.handyvars.out_break_fuels.items():
                         # Special handling for other fuel tech., under detailed fuel type breakouts;
                         # this tech. may fit into multiple fuel cats.
-                        if self.fuel_switch_to in f[1] and key_list[3] == "other fuel":
+                        if fuel_switch_to in f[1] and key_list[3] == "other fuel":
                             # Assign coal/kerosene tech.
                             if f[0] == "Distillate/Other" and (key_list[-2] is not None and any([
                                     x in key_list[-2] for x in ["coal", "kerosene"]])):
@@ -10946,7 +10947,7 @@ class Measure(object):
                             # Assign all other tech. to propane
                             elif f[0] == "Propane":
                                 out_fuel_gain = f[0]
-                        elif self.fuel_switch_to in f[1]:
+                        elif fuel_switch_to in f[1]:
                             out_fuel_gain = f[0]
                 else:
                     out_fuel_gain = "Non-Electric"
