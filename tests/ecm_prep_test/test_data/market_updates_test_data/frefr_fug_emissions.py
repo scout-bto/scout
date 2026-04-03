@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+
+"""Test data: frefr_fug_emissions."""
+
+frefr_fug_emissions = {
+    "methane": {},
+    "refrigerants": {
+        "refrigerant_data_by_tech_type": {
+            "commercial": {
+                "rooftop_ASHP-cool": {
+                    "typ_refrigerant": {"2009": "R-410A", "2010": "R-32"},
+                    "low_gwp_refrigerant": "R-32",
+                    "typ_charge": 1.571111111,
+                    "typ_ann_leak_pct": 0.05,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "rooftop_AC": {
+                    "typ_refrigerant": {"2009": "R-410A", "2010": "R-32"},
+                    "low_gwp_refrigerant": "R-32",
+                    "typ_charge": 1.571111111,
+                    "typ_ann_leak_pct": 0.05,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Centralized refrigeration": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Walk-In Freezers": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Walk-In Refrigerators": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Reach-In Refrigerators": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Reach-In Freezers": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Ice Machines": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Beverage Merchandisers": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "Commercial Refrigerated Vending Machines": {
+                    "typ_refrigerant": {"2009": "R-404A", "2010": "R-454C"},
+                    "low_gwp_refrigerant": "R-454C",
+                    "typ_charge": 1.78412132,
+                    "typ_ann_leak_pct": 0.225,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+            },
+            "residential": {
+                "ASHP": {
+                    "typ_refrigerant": {"2009": "R-410A", "2010": "R-32"},
+                    "low_gwp_refrigerant": "R-32",
+                    "typ_charge": 3.59,
+                    "typ_ann_leak_pct": 0.058,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "central AC": {
+                    "typ_refrigerant": {"2009": "R-410A", "2010": "R-32"},
+                    "low_gwp_refrigerant": "R-32",
+                    "typ_charge": 2.95,
+                    "typ_ann_leak_pct": 0.058,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+                "HPWH": {
+                    "typ_refrigerant": {"2009": "R-134a", "2010": "R-1234yf"},
+                    "low_gwp_refrigerant": "R-1234yf",
+                    "typ_charge": 4.7,
+                    "typ_ann_leak_pct": 0.02,
+                    "EOL_leak_pct": 0.15,
+                    "References": "",
+                },
+            },
+        },
+        "refrigerant_GWP100": {
+            "R-410A": 2088.0,
+            "R-32": 675.0,
+            "R-404A": 3900.0,
+            "R-454C": 148.0,
+            "R-1234ze": 1.0,
+            "R-1234yf": 1.0,
+            "R-134a": 1430.0,
+        },
+    },
+}
