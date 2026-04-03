@@ -5813,7 +5813,6 @@ class Measure(object):
                 eu_key = str(eu) if hasattr(eu, 'item') else eu
                 load_fact = tsv_data["load"][bldg_sect][eu_key]
 
-
             # Find weights needed to map ASHRAE climate zones to EMM
             # region, and EnergyPlus building type to Scout building type
 

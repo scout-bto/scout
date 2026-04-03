@@ -34,21 +34,21 @@ def setup_data():
     opts = NullOpts().opts
     handyfiles = UsefulInputFiles(opts)
     hvobj = UsefulVars(base_dir, handyfiles, opts)
-    
+
     test_opts = [
         {"incentives": "aggressive", "low_volume_rate": "aggressive"},
         {"incentives": "aeo", "low_volume_rate": "reference"},
         {"incentives": "reference", "low_volume_rate": None}]
-    
+
     test_paths = {
         "incentives": Path(__file__).parent.parent / "test_files" / "incentives_test.csv",
         "low_volume_rate": Path(__file__).parent.parent / "test_files" / "rates_test.csv"}
-    
+
     for k in test_paths.keys():
         setattr(handyfiles, k, test_paths[k])
-    
+
     valid_regions = ["CA", "NY"]
-    
+
     incentives_out = [[
             ['CA', 'single family home', 'new', 'heating', 'ASHP', 'electricity', 'natural gas',
              'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
@@ -218,7 +218,7 @@ def setup_data():
              'other fuel', 'no', 'replace', 'non-federal', True, 0, '2.69',
              'COP', 0, 0, '$/unit', 2024, 2031, 0.308]
             ]]
-    
+
     low_volume_rate_out = [[
             ['CA', 'multi family home', 'new', 'all', 'all', 'electricity', 0.06,
              False, 302, 2026, False, 1],
@@ -254,7 +254,7 @@ def setup_data():
             ['CA', 'single family home', 'existing', 'all', 'all', 'electricity', 0.06,
              False, 302, 2026, False, 1]],
             None]
-    
+
     return {
         'opts': opts,
         'handyfiles': handyfiles,
@@ -269,8 +269,8 @@ def setup_data():
 
 def test_import_state_data(setup_data):
     """Test 'import_state_data' function with sample inputs.
-    
-    Ensure that state-level incentives and rate information are correctly 
+
+    Ensure that state-level incentives and rate information are correctly
     imported and initialized.
     """
     for case_ind, case in enumerate(range(len(setup_data['test_opts']))):
@@ -279,14 +279,18 @@ def test_import_state_data(setup_data):
                 setup_data['opts'].incentive_levels = setup_data['test_opts'][case_ind][k]
             else:
                 setup_data['opts'].low_volume_rate = setup_data['test_opts'][case_ind][k]
-        
+
         setup_data['hvobj'].import_state_data(
-            setup_data['handyfiles'], 
+            setup_data['handyfiles'],
             setup_data['test_paths'].keys(),
-            setup_data['valid_regions'], 
+            setup_data['valid_regions'],
             setup_data['opts'])
-        
+
         for output, expected in zip(
                 [setup_data['hvobj'].incentives, setup_data['hvobj'].low_volume_rate],
-                [setup_data['incentives_out'][case_ind], setup_data['low_volume_rate_out'][case_ind]]):
+                [
+                    setup_data['incentives_out'][case_ind],
+                    setup_data['low_volume_rate_out'][case_ind]
+                    ]
+                    ):
             assert output == expected

@@ -644,7 +644,13 @@ def market_test_data():
         Measure(base_dir, handyvars_state, handyfiles_state, opts_state_dict, **ok_measures_in[28])
     ]
     ok_tpmeas_partchk_state_regadj_in = [
-        Measure(base_dir, handyvars_state_regadj, handyfiles_state, opts_state_dict, **ok_measures_in[28])
+        Measure(
+            base_dir,
+            handyvars_state_regadj,
+            handyfiles_state,
+            opts_state_dict,
+            **ok_measures_in[28]
+            )
     ]
     ok_mapmeas_partchk_in = [
         Measure(base_dir, handyvars, handyfiles, opts_dict, **x) for x in ok_measures_in[24:26]
@@ -1706,7 +1712,9 @@ def test_mseg_ok_part_tp_state_regadj(market_test_data):
         AssertionError: If function yields unexpected results.
     '''
 
-    ok_tpmeas_partchk_msegout_state_regadj = market_test_data["ok_tpmeas_partchk_msegout_state_regadj"]
+    ok_tpmeas_partchk_msegout_state_regadj = market_test_data[
+        "ok_tpmeas_partchk_msegout_state_regadj"
+        ]
 
     for idx, measure in enumerate(market_test_data["ok_tpmeas_partchk_state_regadj_in"]):
         measure.fill_mkts(
@@ -1743,7 +1751,9 @@ def test_elec_upgrade_costs(market_test_data):
     # Set base directory
     base_dir = os.getcwd()
     # Set user options
-    opts_all, opts_shares, opts_ign = [copy.deepcopy(market_test_data['opts_state']) for n in range(3)]
+    opts_all, opts_shares, opts_ign = [
+        copy.deepcopy(market_test_data['opts_state']) for n in range(3)
+        ]
     # Test three scenarios of electric upgrade cost settings
     opts_all.elec_upgrade_costs, opts_shares.elec_upgrade_costs, opts_ign.elec_upgrade_costs = [
         'all', 'shares', 'ignore'
@@ -2092,7 +2102,7 @@ def test_mseg_ok_cool_cost(market_test_data):
     Raises:
         AssertionError: If function yields unexpected results.
     '''
-    
+
     # Use data from fixture
     for idx, measure in enumerate(market_test_data['ok_coolcost_chk_in']):
         measure.fill_mkts(
