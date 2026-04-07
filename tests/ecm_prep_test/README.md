@@ -35,7 +35,6 @@ This directory contains pytest-based tests for the Scout ECM preparation module,
 
 ```
 tests/ecm_prep_test/
-├── __init__.py                                # Package marker
 ├── README.md                                  # This file
 ├── common.py                                  # Shared fixtures and helpers (dict_check, NullOpts)
 │
@@ -67,22 +66,42 @@ tests/ecm_prep_test/
 └── test_data/                                 # Refactored test data (modular structure)
     ├── __init__.py                            # Package marker
     │
-    ├── market_updates_test_data/              # Market updates test data (31 variables)
+    ├── market_updates_test_data/              # Market updates test data (34 variables)
+    │   ├── __init__.py                        # Auto-imports all variables
     │   ├── ok_tpmeas_fullchk_break_out.py     # Tech potential full check breakout
-    │   ├── ok_tpmeas_fullchk_competechoiceout.py  # Consumer choice output
     │   ├── ok_tpmeas_fullchk_msegout.py       # Full check microseg output
+    │   ├── ok_tpmeas_fullchk_competechoiceout.py  # Consumer choice output
     │   ├── ok_tpmeas_fullchk_supplydemandout.py   # Supply/demand output
     │   ├── ok_tpmeas_partchk_msegout.py       # Partial check microseg output
     │   ├── ok_tpmeas_partchk_msegout_emm.py   # EMM partial check output
-    │   ├── ok_tpmeas_partchk_msegout_state_regadj.py # State partial check output
-    │   ├── ok_tpmeas_partchk_msegout_state.py # State partial check output    
-    │   ├── sample_cpl_in.py                   # Competition data
-    │   ├── sample_cpl_in_emm.py               # EMM region competition data
-    │   ├── sample_cpl_in_state.py             # State-level competition data
-    │   ├── sample_mseg_in.py                  # Microsegment input data
-    │   ├── sample_mseg_in_emm.py              # EMM microsegment data
-    │   ├── sample_mseg_in_state.py            # State microsegment data
-    │   └── warnmeas_in.py                     # Warning test measures
+    │   ├── ok_tpmeas_partchk_msegout_state.py # State partial check output
+    │   ├── ok_tpmeas_partchk_msegout_state_regadj.py # State partial check output with regional cost adj
+    │   ├── ok_measures_in.py                  # Standard measure inputs
+    │   ├── ok_partialmeas_in.py               # Partial measure inputs
+    │   ├── ok_partialmeas_out.py              # Partial measure outputs
+    │   ├── ok_distmeas_in.py                  # Distribution measures
+    │   ├── ok_hp_measures_in.py               # Heat pump measures
+    │   ├── ok_hpmeas_rates_mkts_out.py        # HP rates market outputs
+    │   ├── ok_hpmeas_rates_breakouts.py       # Heat pump rates breakouts
+    │   ├── ok_mapmas_partchck_msegout.py      # Partial check microseg adjustment
+    │   ├── ok_map_frefr_mkts_out.py           # Refrigerant market outputs
+    │   ├── ok_fmeth_measures_in.py            # Fugitive methane emissions measures
+    │   ├── ok_frefr_measures_in.py            # Fugitive refrigerant emissions measures
+    │   ├── fmeth_fug_emissions.py             # Methane fugitive emissions data
+    │   ├── frefr_fug_emissions.py             # Refrigerant fugitive emissions data
+    │   ├── frefr_hp_rates.py                  # Refrigerant HP rates data
+    │   ├── fmeth_carb_int.py                  # Methane carbon intensity data
+    │   ├── frefr_carb_int.py                  # Refrigerant carbon intensity data
+    │   ├── fmeth_ecosts.py                    # Methane energy costs data
+    │   ├── frefr_ecosts.py                    # Refrigerant energy costs data
+    │   ├── sample_cpl_in.py                   # Competition data (national)
+    │   ├── sample_cpl_in_emm.py               # Competition data (EMM regions)
+    │   ├── sample_cpl_in_state.py             # Competition data (state-level)
+    │   ├── sample_mseg_in.py                  # Microsegment input data (national)
+    │   ├── sample_mseg_in_emm.py              # Microsegment input data (EMM)
+    │   ├── sample_mseg_in_state.py            # Microsegment input data (state)
+    │   ├── failmeas_in.py                     # Failure test measures (invalid inputs)
+    │   └── warnmeas_in.py                     # Warning test measures (incomplete inputs)
     │
     ├── merge_measuresand_apply_benefits_test_data/  # Merge measures test data (6 variables)
     │   ├── __init__.py                        # Auto-imports all variables
