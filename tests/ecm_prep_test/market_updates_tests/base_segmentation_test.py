@@ -2,7 +2,6 @@
 
 """Tests for base market segmentation (fill_mkts function)."""
 
-import pytest
 import numpy
 from tests.ecm_prep_test.common import dict_check
 
