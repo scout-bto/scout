@@ -66,7 +66,7 @@ def test_mseg_ok_hp_rates_map(market_test_data):
 
 def test_dual_fuel(market_test_data):
     """Test dual-fuel (STATE breakout, CA) market segmentation.
-    
+
     Validates that the outputs master_mseg and mseg_out_break are produced,
     contains both Electric and Non-Electric for Heating (Equip.), and
     compares against the expected one.
@@ -133,7 +133,7 @@ def test_dual_fuel(market_test_data):
 
 def test_added_cooling(market_test_data):
     """Test added cooling only (no dual-fuel).
-    
+
     Constructs a minimal NG→Electric (ASHP) full-service HP measure that
     adds cooling where baseline has (effectively) none.
     Validates that mseg_out_break is populated and contains Cooling (Equip.)

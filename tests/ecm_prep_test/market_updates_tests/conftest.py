@@ -8,10 +8,8 @@ import pytest
 import numpy
 import os
 import copy
-import warnings
-from collections import OrderedDict
 from pathlib import Path
-from tests.ecm_prep_test.common import NullOpts, dict_check
+from tests.ecm_prep_test.common import NullOpts
 
 # Import extracted test data
 from tests.ecm_prep_test.test_data.market_updates_test_data import (
