@@ -8,7 +8,13 @@ This directory contains pytest-based tests for the Scout ECM preparation module,
 
 ### Test Files (49 total tests)
 
-- `market_updates_test.py` - **20 passed** - 2,111 lines (Market fill_mkts function) - **89% reduction**
+- `market_updates_tests/` - **20 passed** - 560 lines (Market fill_mkts function - modular structure) - **94% reduction**:
+  - `base_segmentation_test.py` - **6 tests**
+  - `regional_variants_test.py` - **3 tests**
+  - `fuel_energy_features_test.py` - **4 tests**
+  - `emissions_test.py` - **2 tests**
+  - `costs_incentives_test.py` - **2 tests**
+  - `edge_cases_test.py` - **3 tests**
 - `merge_measuresand_apply_benefits_test.py` - **5 passed** - 560 lines (Measure merging and packaging) - **84% reduction**
 - `update_measures_test.py` - **4 passed** - 900 lines (Update results function) - **98% reduction**
 - `partition_microsegment_test.py` - **2 passed** - 922 lines (Microsegment partitioning) - **76% reduction**
@@ -43,7 +49,14 @@ tests/ecm_prep_test/
 ├── div_key_vals_float_test.py                # 2 tests passing
 ├── div_key_vals_test.py                      # 1 test passing
 ├── fill_parameters_test.py                   # 1 test passing
-├── market_updates_test.py                    # 20 tests passing
+├── market_updates_tests/                     # 20 tests passing (modular structure)
+│   ├── conftest.py                           # Shared fixture for all market tests
+│   ├── base_segmentation_test.py             # 6 tests - Base market segmentation
+│   ├── regional_variants_test.py             # 3 tests - Regional variants (EMM, State, regadj)
+│   ├── fuel_energy_features_test.py          # 4 tests - Fuel switching & HP measures
+│   ├── emissions_test.py                     # 2 tests - Emissions (methane & refrigerant)
+│   ├── costs_incentives_test.py              # 2 tests - Incentives & electrical upgrades
+│   └── edge_cases_test.py                    # 3 tests - Error handling & special cases
 ├── merge_measuresand_apply_benefits_test.py  # 5 tests passing
 ├── partition_microsegment_test.py            # 2 tests passing
 ├── state_import_test.py                      # 1 test passing
@@ -55,24 +68,6 @@ tests/ecm_prep_test/
     ├── __init__.py                            # Package marker
     │
     ├── market_updates_test_data/              # Market updates test data (31 variables)
-    │   ├── __init__.py                        # Auto-imports all variables
-    │   ├── carb_int_data.py                   # Carbon intensity data
-    │   ├── ecosts_data.py                     # Energy costs data
-    │   ├── failmeas_in.py                     # Failure test measures
-    │   ├── fmeth_fug_emissions.py             # Methane fugitive emissions data
-    │   ├── frefr_fug_emissions.py             # Refrigerant emissions data
-    │   ├── frefr_hp_rates.py                  # Refrigerant HP rates
-    │   ├── ok_distmeas_in.py                  # Distribution measures
-    │   ├── ok_fmeth_measures_in.py            # Methane fugitive emissions measures
-    │   ├── ok_frefr_measures_in.py            # Refrigerant fugitive emissions measures
-    │   ├── ok_hp_measures_in.py               # Heat pump measures
-    │   ├── ok_hpmeas_rates_breakouts.py       # Heat pump rates breakouts
-    │   ├── ok_hpmeas_rates_mkts_out.py        # HP rates market outputs
-    │   ├── ok_map_frefr_mkts_out.py           # Refrigerant market outputs
-    │   ├── ok_mapmas_partchck_msegout.py      # Partial check microseg adjustment
-    │   ├── ok_measures_in.py                  # Standard measure inputs
-    │   ├── ok_partialmeas_in.py               # Partial measure inputs
-    │   ├── ok_partialmeas_out.py              # Partial measure outputs
     │   ├── ok_tpmeas_fullchk_break_out.py     # Tech potential full check breakout
     │   ├── ok_tpmeas_fullchk_competechoiceout.py  # Consumer choice output
     │   ├── ok_tpmeas_fullchk_msegout.py       # Full check microseg output
@@ -143,13 +138,13 @@ tests/ecm_prep_test/
 
 ### File Size Reductions
 
-| File | Original Lines | After Refactor | Reduction |
-|------|----------------|----------------|-----------|
-| time_sensitive_valuation_test.py | 44,698 | 245 | **99.5%** |
-| update_measures_test.py | 55,717 | 900 | **98%** |
-| merge_measuresand_apply_benefits_test.py | 3,506 | 560 | **84%** |
-| partition_microsegment_test.py | 3,883 | 922 | **76%** |
-| market_updates_test.py | 19,935 | 2,111 | **89%** |
+| File | Original Lines | After Refactor | Reduction | Additional Notes |
+|------|----------------|----------------|-----------|------------------|
+| market_updates - Full Suite | 19,935 | ~1,220 (6 files) | **94%** | Split into 6 focused test files + conftest |
+| time_sensitive_valuation_test.py | 44,698 | 245 | **99.5%** | — |
+| update_measures_test.py | 55,717 | 900 | **98%** | — |
+| merge_measuresand_apply_benefits_test.py | 3,506 | 560 | **84%** | — |
+| partition_microsegment_test.py | 3,883 | 922 | **76%** | — |
 
 
 ## Running Tests
@@ -163,18 +158,14 @@ Expected output: `49 passed` ✅
 
 ### Run specific test file
 ```bash
-pytest tests/ecm_prep_test/market_updates_test.py -v
+# Market updates tests (all 20 tests in modular structure)
+pytest tests/ecm_prep_test/market_updates_tests/ -v
+
+# Specific market updates test file
+pytest tests/ecm_prep_test/market_updates_tests/base_segmentation_test.py -v
+
+# Other test files
 pytest tests/ecm_prep_test/time_sensitive_valuation_test.py -v
-```
-
-### Run with coverage
-```bash
-pytest tests/ecm_prep_test/ --cov=scout.ecm_prep --cov-report=html
-```
-
-### Quick summary
-```bash
-pytest tests/ecm_prep_test/ -v --tb=no -q
 ```
 
 ## Migration from unittest to pytest
