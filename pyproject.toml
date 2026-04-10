@@ -31,7 +31,8 @@ dependencies = [
     "python-dotenv",
     "pyyaml",
     "jsonschema",
-    "pytest"
+    "pytest",
+    "orjson"
 ]
 
 [tool.setuptools_scm]
