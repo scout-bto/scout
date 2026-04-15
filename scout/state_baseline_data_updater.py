@@ -185,14 +185,14 @@ def api_query(query_str, api_key):
             timeout=API_TIMEOUT_SECONDS
         )
         response.raise_for_status()
-        
+
         # Validate response structure
         resp_json = response.json()
         if 'response' not in resp_json or 'data' not in resp_json.get('response', {}):
             logger.warning(f'Unexpected response structure: {resp_json.keys()}')
             return resp_json.get('response', {}).get('data', [])
-        
-        logger.info(f'Successfully retrieved data from EIA API')
+
+        logger.info('Successfully retrieved data from EIA API')
         return resp_json['response']['data']
     except requests.exceptions.Timeout:
         logger.error(f'API request timed out after {API_TIMEOUT_SECONDS} seconds')
@@ -383,8 +383,10 @@ def main():
         try:
             logger.info(f'Querying EIA API for {key}')
             # Pull state/price pairs, restricted to current year of focus
-            gas_prices_init = ([(x["duoarea"], x["value"]) for x in api_query(gas_prices[key], api_key)
-                                if x['period'] == year])
+            gas_prices_init = (
+                [(x["duoarea"], x["value"]) for x in api_query(gas_prices[key], api_key)
+                 if x['period'] == year]
+                 )
             logger.info(f'Successfully retrieved {key} data for {year}')
         except Exception as e:
             logger.error(f'Failed to retrieve {key} for {year}: {e}')

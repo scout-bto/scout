@@ -79,6 +79,16 @@ logger = logging.getLogger(__name__)
 # API Configuration
 API_TIMEOUT_SECONDS = 30
 
+# CO2 intensity constants (kg CO2/MMBtu)
+CO2_INTENSITIES = {'propane': 62.88, 'distillate': 74.14}
+
+# Energy conversion factors
+ENERGY_CONVERSION_FACTORS = {
+    'renewable_factor_btu': 3412,
+    'standard_btu': 9510,
+    'short_to_metric_tons': 0.90718474,
+}
+
 
 class UsefulVars(object):
     """Class of variables that are handy to have widely available.
@@ -402,7 +412,7 @@ def api_query(api_key, query_str, expect_table_id):
         if 'response' not in response_data or 'data' not in response_data.get('response', {}):
             logger.error(f"Unexpected API response structure: {response_data}")
             return []
-        
+
         data = response_data['response']['data']
         # Extract only the required data in the API response; ensure that
         # all numbers are formatted as floats (in some cases, they are retrieved as strings)
@@ -415,7 +425,7 @@ def api_query(api_key, query_str, expect_table_id):
         else:
             logger.error(f"Invalid API response: {e}")
             return []
-    
+
     return data
 
 
@@ -833,7 +843,7 @@ def updater_gastrend(conv, api_key, aeo_yr, scen_gas):
         logger.info('Residential natural gas prices (gastrend) updated')
     except KeyError as e:
         logger.warning(f'Failed to update residential natural gas prices (gastrend): {e}')
-    
+
     # Commercial natural gas prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs):
@@ -1298,7 +1308,7 @@ def main():
 
         # Warn user that source fields need to be updated manually
         logger.warning('Social cost of carbon and source/units fields in conversions JSON '
-                      'are NOT updated by this function. Please update manually.')
+                       'are NOT updated by this function. Please update manually.')
         print('\nWARNING: THE SOCIAL COST OF CARBON AND ALL "source" AND '
               '"units" FIELDS IN THE CONVERSIONS JSON ARE NOT UPDATED '
               'BY THIS FUNCTION. PLEASE UPDATE THOSE FIELDS MANUALLY.\n')
