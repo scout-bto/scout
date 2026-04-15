@@ -4983,10 +4983,7 @@ class Measure(object):
 
                     # Record contributing microsegment data needed for ECM
                     # competition in the analysis engine
-                    # Convert numpy strings to Python strings in the tuple before stringification
-                    contrib_mseg_key_clean = tuple(
-                        str(k) if hasattr(k, 'item') else k for k in contrib_mseg_key)
-                    contrib_mseg_key_str = str(contrib_mseg_key_clean)
+                    contrib_mseg_key_str = str(contrib_mseg_key)
 
                     # Check for whether detailed contributing mseg data
                     # are needed for current adoption scenario, and if so,
@@ -5753,9 +5750,7 @@ class Measure(object):
                 if self.handyvars.tsv_hourly_lafs is not None and \
                     eu not in self.handyvars.tsv_hourly_lafs[mskeys[1]][
                         bldg_sect][mskeys[2]].keys():
-                    # Convert numpy strings to Python strings for dict lookup
-                    eu_key = str(eu) if hasattr(eu, 'item') else eu
-                    load_fact = tsv_data["load"][bldg_sect][eu_key]
+                    load_fact = tsv_data["load"][bldg_sect][eu]
         except KeyError:
             # If there is no load shape for the current end use, handle
             # the resultant error differently for res./com.
@@ -5809,9 +5804,7 @@ class Measure(object):
             # Key in the appropriate load shape data if it wasn't successfully
             # keyed in above via the current end use name
             if not load_fact:
-                # Convert numpy strings to Python strings for dict lookup
-                eu_key = str(eu) if hasattr(eu, 'item') else eu
-                load_fact = tsv_data["load"][bldg_sect][eu_key]
+                load_fact = tsv_data["load"][bldg_sect][eu]
 
             # Find weights needed to map ASHRAE climate zones to EMM
             # region, and EnergyPlus building type to Scout building type
