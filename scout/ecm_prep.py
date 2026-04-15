@@ -9913,12 +9913,11 @@ class Measure(object):
         # Case with heating and/or cooling microsegments
         if any([x in ht_cl_euses for x in self.end_use[mseg_type]]):
             # Format measure end use attribute as numpy array
-            eu = numpy.array(self.end_use[mseg_type])
             # Set a list of heating and/or cooling end uses
-            eu_hc = list(eu[numpy.where([x in ht_cl_euses for x in eu])])
+            eu_hc = [x for x in self.end_use[mseg_type] if x in ht_cl_euses]
             # Set a list of all other end uses
-            eu_non_hc = list(eu[numpy.where([
-                x not in ht_cl_euses for x in eu])])
+            eu_non_hc = [x for x in self.end_use[mseg_type]
+                         if x not in ht_cl_euses]
             # Set a list including all measure microsegment attributes,
             # constraining the 'end_use' attribute to only heating/cooling
             # end uses
