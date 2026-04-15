@@ -62,11 +62,22 @@ import sys
 import numpy as np
 import json
 import argparse
+import logging
 import pandas as pd
 from backoff import on_exception, expo
 from collections import OrderedDict
 from pathlib import Path
 from scout.config import FilePaths as fp
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# API Configuration
+API_TIMEOUT_SECONDS = 30
 
 
 class UsefulVars(object):
@@ -373,21 +384,38 @@ def api_query(api_key, query_str, expect_table_id):
         A nested list of data with inner lists structured as
         [year, data value] where the years are YYYY strings.
     """
-    response = requests.get(query_str + '&api_key=' + api_key)
+    try:
+        response = requests.get(
+            query_str + '&api_key=' + api_key,
+            timeout=API_TIMEOUT_SECONDS
+        )
+        response.raise_for_status()
+    except requests.exceptions.Timeout:
+        logger.error(f"API request timed out after {API_TIMEOUT_SECONDS} seconds")
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"API request failed: {e}")
+        raise
 
     try:
-        data = response.json()['response']['data']
+        response_data = response.json()
+        if 'response' not in response_data or 'data' not in response_data.get('response', {}):
+            logger.error(f"Unexpected API response structure: {response_data}")
+            return []
+        
+        data = response_data['response']['data']
         # Extract only the required data in the API response; ensure that
         # all numbers are formatted as floats (in some cases, they are retrieved as strings)
         data = [[str(x['period']), float(x['value'])] for x in data if
                 x['tableId'] == expect_table_id]
-    except KeyError:
+    except (KeyError, json.JSONDecodeError) as e:
         if response.status_code == 429:  # API rate limit exceeded
-            raise Exception('Rate limit reached')
+            logger.error('API rate limit (429) reached - backing off')
+            raise Exception('Rate limit reached') from e
         else:
-            # Any other response, e.g., malformed header or no data returned
-            print('\nAttempted query invalid: ' + query_str)
-    # print(query_str + '&api_key=' + api_key)
+            logger.error(f"Invalid API response: {e}")
+            return []
+    
     return data
 
 
@@ -552,9 +580,9 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_elec):
             conv['electricity']['site to source conversion']['data'][year] = (
                 round(ss_conv[idx]*capnrg[idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, electricity '
-              'site-source conversion factors were not updated.')
+        logger.info('Electricity site-source conversion factors updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update electricity site-source conversion factors: {e}')
 
     # Update electricity CO2 intensities
     # Residential electricity CO2 intensities [Mt CO2/quads]
@@ -565,9 +593,9 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_elec):
             conv['electricity']['CO2 intensity']['data']['residential'][
                  year] = (round(co2_res_ints[idx]/capnrg[idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, residential '
-              'electricity CO2 emissions intensities were not updated.')
+        logger.info('Residential electricity CO2 intensities updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update residential electricity CO2 intensities: {e}')
 
     # Commercial electricity CO2 intensities [Mt CO2/quads]
     try:
@@ -577,9 +605,9 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_elec):
             conv['electricity']['CO2 intensity']['data']['commercial'][
                  year] = (round(co2_com_ints[idx]/capnrg[idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, commercial '
-              'electricity CO2 emissions intensities were not updated.')
+        logger.info('Commercial electricity CO2 intensities updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update commercial electricity CO2 intensities: {e}')
 
     # Residential natural gas CO2 intensities [Mt CO2/quads]
     try:
@@ -587,9 +615,9 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_foss):
             conv['natural gas']['CO2 intensity']['data']['residential'][
                  year] = (round(co2_res_ng_ints[idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, residential '
-              'natural gas CO2 emissions intensities were not updated.')
+        logger.info('Residential natural gas CO2 intensities updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update residential natural gas CO2 intensities: {e}')
 
     # Commercial natural gas CO2 intensities [Mt CO2/quads]
     try:
@@ -597,49 +625,49 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_foss):
             conv['natural gas']['CO2 intensity']['data']['commercial'][
                  year] = (round(co2_com_ng_ints[idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, commercial '
-              'natural gas CO2 emissions intensities were not updated.')
+        logger.info('Commercial natural gas CO2 intensities updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update commercial natural gas CO2 intensities: {e}')
 
     # Residential propane CO2 intensities [Mt CO2/quads]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['propane']['CO2 intensity']['data']['residential'][year] = (
-                62.88)  # hard coded CO2 intensity of propane
-    except KeyError:
+                CO2_INTENSITIES['propane'])
+        logger.info('Residential propane CO2 intensities updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, residential '
-                  'propane CO2 emissions intensities were not updated.')
+            logger.warning(f'Failed to update residential propane CO2 intensities: {e}')
 
     # Commercial propane CO2 intensities [Mt CO2/quads]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['propane']['CO2 intensity']['data']['commercial'][year] = (
-                62.88)  # hard coded CO2 intensity of propane
-    except KeyError:
+                CO2_INTENSITIES['propane'])
+        logger.info('Commercial propane CO2 intensities updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  'propane CO2 emissions intensities were not updated.')
+            logger.warning(f'Failed to update commercial propane CO2 intensities: {e}')
 
     # Residential distillate CO2 intensities [Mt CO2/quads]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['distillate']['CO2 intensity']['data']['residential'][
-                year] = (74.14)  # hard coded CO2 intensity of distillate
-    except KeyError:
+                year] = (CO2_INTENSITIES['distillate'])
+        logger.info('Residential distillate CO2 intensities updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, residential '
-                  'distillate CO2 emissions intensities were not updated.')
+            logger.warning(f'Failed to update residential distillate CO2 intensities: {e}')
 
     # Commercial distillate CO2 intensities [Mt CO2/quads]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['distillate']['CO2 intensity']['data']['commercial'][
-                 year] = (74.14)  # hard coded CO2 intensity of distillate
-    except KeyError:
+                 year] = (CO2_INTENSITIES['distillate'])
+        logger.info('Commercial distillate CO2 intensities updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  'distillate CO2 emissions intensities were not updated.')
+            logger.warning(f'Failed to update commercial distillate CO2 intensities: {e}')
 
     # Residential other fuel CO2 intensities [Mt CO2/quads]
     try:
@@ -647,10 +675,10 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_foss):
             conv['other']['CO2 intensity']['data']['residential'][year] = (
                 round(co2_res_ot_ints[idx], 6))
-    except KeyError:
+        logger.info('Residential other fuel CO2 intensities updated')
+    except KeyError as e:
         if web:
-            print('\nDue to failed data retrieval from the API, residential '
-                  '"other fuel" CO2 emissions intensities were not updated.')
+            logger.warning(f'Failed to update residential other fuel CO2 intensities: {e}')
 
     # Commercial other fuel CO2 intensities [Mt CO2/quads]
     try:
@@ -659,86 +687,86 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_foss):
             conv['other']['CO2 intensity']['data']['commercial'][year] = (
                 round(co2_com_ot_ints[idx], 6))
-    except KeyError:
+        logger.info('Commercial other fuel CO2 intensities updated')
+    except KeyError as e:
         if web:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  '"other fuel" CO2 emissions intensities were not updated.')
+            logger.warning(f'Failed to update commercial other fuel CO2 intensities: {e}')
 
     # Residential electricity prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_elec):
             conv['electricity']['price']['data']['residential'][year] = (
                 round(z_elec['elec_res_price'][idx]/(ss_conv[idx]*capnrg[idx]), 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, residential '
-              'electricity prices were not updated.')
+        logger.info('Residential electricity prices updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update residential electricity prices: {e}')
 
     # Commercial electricity prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_elec):
             conv['electricity']['price']['data']['commercial'][year] = (
                 round(z_elec['elec_com_price'][idx]/(ss_conv[idx]*capnrg[idx]), 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, commercial '
-              'electricity prices were not updated.')
+        logger.info('Commercial electricity prices updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update commercial electricity prices: {e}')
 
     # Residential natural gas prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['natural gas']['price']['data']['residential'][year] = (
                 round(z_foss['ng_res_price'][idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, residential '
-              'natural gas prices were not updated.')
+        logger.info('Residential natural gas prices updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update residential natural gas prices: {e}')
 
     # Commercial natural gas prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['natural gas']['price']['data']['commercial'][year] = (
                 round(z_foss['ng_com_price'][idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, commercial '
-              'natural gas prices were not updated.')
+        logger.info('Commercial natural gas prices updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update commercial natural gas prices: {e}')
 
     # Residential propane prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['propane']['price']['data']['residential'][year] = (
                 round(z_foss['lpg_res_price'][idx], 6))
-    except KeyError:
+        logger.info('Residential propane prices updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, residential '
-                  'propane prices were not updated.')
+            logger.warning(f'Failed to update residential propane prices: {e}')
 
     # Commercial propane prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['propane']['price']['data']['commercial'][year] = (
                 round(z_foss['lpg_com_price'][idx], 6))
-    except KeyError:
+        logger.info('Commercial propane prices updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  'propane prices were not updated.')
+            logger.warning(f'Failed to update commercial propane prices: {e}')
 
     # Residential distillate prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['distillate']['price']['data']['residential'][year] = (
                 round(z_foss['distl_res_price'][idx], 6))
-    except KeyError:
+        logger.info('Residential distillate prices updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, residential '
-                  'distillate prices were not updated.')
+            logger.warning(f'Failed to update residential distillate prices: {e}')
 
     # Commercial distillate prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs_foss):
             conv['distillate']['price']['data']['commercial'][year] = (
                 round(z_foss['distl_com_price'][idx], 6))
-    except KeyError:
+        logger.info('Commercial distillate prices updated')
+    except KeyError as e:
         if not web:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  'distillate prices were not updated.')
+            logger.warning(f'Failed to update commercial distillate prices: {e}')
 
     # Residential other fuel price as energy use-weighted average
     # of propane and distillate (fuel oil) prices [$/MMBtu source]
@@ -750,10 +778,10 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_foss):
             conv['other']['price']['data']['residential'][year] = (
                 round(res_other_price[idx], 6))
-    except KeyError:
+        logger.info('Residential other fuel prices updated')
+    except KeyError as e:
         if web:
-            print('\nDue to failed data retrieval from the API, residential '
-                  '"other fuel" prices were not updated.')
+            logger.warning(f'Failed to update residential other fuel prices: {e}')
 
     # Commercial other fuel price as energy use-weighted average of
     # propane, distillate (fuel oil), and residual (fuel oil) prices
@@ -766,10 +794,10 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         for idx, year in enumerate(yrs_foss):
             conv['other']['price']['data']['commercial'][year] = (
                 round(com_other_price[idx], 6))
-    except KeyError:
+        logger.info('Commercial other fuel prices updated')
+    except KeyError as e:
         if web:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  '"other fuel" prices were not updated.')
+            logger.warning(f'Failed to update commercial other fuel prices: {e}')
 
     return conv
 
@@ -782,8 +810,7 @@ def updater_gastrend(conv, api_key, aeo_yr, scen_gas):
 
     In case of data missing from the record dict 'z' not obtained from the API due to invalid
     series IDs, run each calculation and update in a try/except block to catch KeyErrors for
-    missing data and address them by not updating the original data and printing a warning to the
-    console for the user.
+    missing data and address them by not updating the original data and logging a warning.
 
     Args:
         conv (dict): Data structure for gas price information.
@@ -803,16 +830,17 @@ def updater_gastrend(conv, api_key, aeo_yr, scen_gas):
     try:
         for idx, year in enumerate(yrs):
             conv['residential'][year] = (round(z['ng_res_price'][idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, residential '
-              'natural gas prices were not updated.')
+        logger.info('Residential natural gas prices (gastrend) updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update residential natural gas prices (gastrend): {e}')
+    
     # Commercial natural gas prices [$/MMBtu source]
     try:
         for idx, year in enumerate(yrs):
             conv['commercial'][year] = (round(z['ng_com_price'][idx], 6))
-    except KeyError:
-        print('\nDue to failed data retrieval from the API, commercial '
-              'natural gas prices were not updated.')
+        logger.info('Commercial natural gas prices (gastrend) updated')
+    except KeyError as e:
+        logger.warning(f'Failed to update commercial natural gas prices (gastrend): {e}')
 
     return conv
 
@@ -827,7 +855,7 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
     the record dict 'z' not obtained from the API due to invalid series
     IDs, run each calculation and update in a try/except block to catch
     KeyErrors for missing data and address them by not updating the
-    original data and printing a warning to the console for the user.
+    original data and logging a warning.
 
     Args:
         conv (dict): Data structure from conversion JSON data file.
@@ -848,7 +876,7 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
     aeo_cost_yr = int(aeo_yr) - 1
 
     # Emissions conversion factor from short tons to metric tons
-    conv_factor = 0.90718474
+    conv_factor = ENERGY_CONVERSION_FACTORS['short_to_metric_tons']
 
     for key, value in ValidQueries().regions_dict.items():
 
@@ -865,10 +893,9 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
             conv['CO2 intensity of electricity']['data'][value] = (
                 OrderedDict(sorted(conv['CO2 intensity of electricity'][
                     'data'][value].items())))
-        except KeyError:
-            print('\nDue to failed data retrieval from the API, '
-                  'electricity CO2 emissions intensities were '
-                  'not updated.')
+            logger.info(f'EMM {value} CO2 intensities updated')
+        except KeyError as e:
+            logger.warning(f'Failed to update EMM {value} electricity CO2 intensities: {e}')
 
         # Residential electricity prices [$/kWh site]
         try:
@@ -880,10 +907,9 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
             conv['End-use electricity price']['data']['residential'][value] = (
                 OrderedDict(sorted(conv['End-use electricity price']['data'][
                     'residential'][value].items())))
-
-        except KeyError:
-            print('\nDue to failed data retrieval from the API, residential '
-                  'electricity prices were not updated.')
+            logger.info(f'EMM {value} residential electricity prices updated')
+        except KeyError as e:
+            logger.warning(f'Failed to update EMM {value} residential electricity prices: {e}')
 
         # Commercial electricity prices [$/kWh site]
         try:
@@ -895,10 +921,9 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
             conv['End-use electricity price']['data']['commercial'][value] = (
                 OrderedDict(sorted(conv['End-use electricity price']['data'][
                     'commercial'][value].items())))
-
-        except KeyError:
-            print('\nDue to failed data retrieval from the API, commercial '
-                  'electricity prices were not updated.')
+            logger.info(f'EMM {value} commercial electricity prices updated')
+        except KeyError as e:
+            logger.warning(f'Failed to update EMM {value} commercial electricity prices: {e}')
         # Reset cost units
         conv['End-use electricity price']['units'] = (str(aeo_cost_yr) + "$/kWh site")
 
@@ -933,27 +958,30 @@ def updater_state(conv_emm, aeo_min, conv_gas):
     # state_baseline_data_updater.py to create one
     # if multiple exist, ask user to specify year of data file
     if not UsefulVars().state_baseline_files:
-        print('\nNo state baseline data available. Please run '
-              'state_baseline_data_updater.py to create one.')
+        logger.error('No state baseline data available. Please run state_baseline_data_updater.py')
         sys.exit(1)
     elif len(UsefulVars().state_baseline_files) > 1:
+        logger.info("Multiple state baseline data files found")
         print("Multiple state baseline data files found:")
         for i, file in enumerate(UsefulVars().state_baseline_files, start=1):
             print(f"{i}: {file}")
         while True:
             try:
-                file_index = int(input("Enter the number of the file to "
-                                       "use: "))
+                file_index = int(input("Enter the number of the file to use: "))
                 if 1 <= file_index <= len(UsefulVars().state_baseline_files):
                     state_baseline_data = UsefulVars().state_baseline_files[
                         file_index - 1]
+                    logger.info(f"Selected state baseline data: {state_baseline_data}")
                     break
                 else:
+                    logger.warning("Invalid file index entered")
                     print("Invalid input. Please enter a valid number.")
             except ValueError:
+                logger.warning("Non-integer value entered for file index")
                 print("Invalid input. Please enter a valid number.")
     else:
         state_baseline_data = UsefulVars().state_baseline_files[0]
+        logger.info(f"Using state baseline data: {state_baseline_data}")
 
     # Load and clean state baselines data from CSV
     # Drop AK and HI and rename columns
@@ -1118,7 +1146,9 @@ def main():
     # Get API key from available environment variables
     if 'EIA_API_KEY' in os.environ:
         api_key = os.environ['EIA_API_KEY']
+        logger.info('EIA API key loaded from environment')
     else:
+        logger.error('EIA_API_KEY environment variable not set')
         print('\nExpected environment variable EIA_API_KEY not set.\n'
               'Obtain an API key from EIA at https://www.eia.gov/opendata/\n'
               'On a Mac, add the API key to your environment using the '
@@ -1264,8 +1294,11 @@ def main():
         # Output modified site-source and CO2 emissions conversion data
         with open(fp.CONVERT_DATA / opts.f, 'w') as js_out:
             json.dump(conv, js_out, indent=2)
+        logger.info(f"National conversion data written to {opts.f}")
 
         # Warn user that source fields need to be updated manually
+        logger.warning('Social cost of carbon and source/units fields in conversions JSON '
+                      'are NOT updated by this function. Please update manually.')
         print('\nWARNING: THE SOCIAL COST OF CARBON AND ALL "source" AND '
               '"units" FIELDS IN THE CONVERSIONS JSON ARE NOT UPDATED '
               'BY THIS FUNCTION. PLEASE UPDATE THOSE FIELDS MANUALLY.\n')
@@ -1303,8 +1336,7 @@ def main():
         conv.move_to_end('updated_to_aeo_case', last=False)
         conv.move_to_end('updated_to_aeo_year', last=False)
 
-        print('\nUpdating EMM region CO2 emissions and prices '
-              'conversion factors.')
+        logger.info('Updating EMM region CO2 emissions and prices conversion factors')
 
         # Update EMM region emissions and electricity price factors
         conv_emm = updater_emm(conv, api_key, year, scenario_elec)
@@ -1317,15 +1349,17 @@ def main():
         # Output updated EMM emissions/price projections data
         with open(fp.CONVERT_DATA / opts.f, 'w') as js_out:
             json.dump(conv_emm, js_out, indent=5)
+        logger.info(f"EMM conversion data written to {opts.f}")
 
         # Update state emissions data
-        print('\nUpdating state CO2 emissions and prices.')
+        logger.info('Updating state CO2 emissions and prices')
         # Fully replace state emissions and electricity prices
         conv_state = updater_state(conv_emm, str(aeo_min), conv_gas)
 
         # Output updated state emissions/price projections data
         with open(fp.CONVERT_DATA / state_conv_file, 'w') as js_out:
             json.dump(conv_state, js_out, indent=2)
+        logger.info(f"State conversion data written to {state_conv_file}")
 
 
 if __name__ == '__main__':

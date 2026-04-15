@@ -41,13 +41,22 @@ the latest available Cambium year when prompted.
 import os
 import sys
 import argparse
+import logging
 from pathlib import Path
 import pandas as pd
 import requests
 from urllib.parse import unquote
 from scout.config import FilePaths as fp
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Constants
+API_TIMEOUT_SECONDS = 30
 VALID_UPDATE_YEARS = ['2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015']
 DATA_SERIES_DICT = {
     'source-disposition': [
@@ -170,9 +179,27 @@ def generate_query_string(key, freq):
 
 def api_query(query_str, api_key):
     """Execute an EIA API query and return the response data."""
-    response = requests.get(unquote(query_str) + '&api_key=' + api_key)
-    response.raise_for_status()
-    return response.json()['response']['data']
+    try:
+        response = requests.get(
+            unquote(query_str) + '&api_key=' + api_key,
+            timeout=API_TIMEOUT_SECONDS
+        )
+        response.raise_for_status()
+        
+        # Validate response structure
+        resp_json = response.json()
+        if 'response' not in resp_json or 'data' not in resp_json.get('response', {}):
+            logger.warning(f'Unexpected response structure: {resp_json.keys()}')
+            return resp_json.get('response', {}).get('data', [])
+        
+        logger.info(f'Successfully retrieved data from EIA API')
+        return resp_json['response']['data']
+    except requests.exceptions.Timeout:
+        logger.error(f'API request timed out after {API_TIMEOUT_SECONDS} seconds')
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f'API request failed: {e}')
+        raise
 
 
 def clean_source_disposition_data(data):
@@ -310,7 +337,7 @@ def main():
             sys.exit(1)
     if args.overwrite:
         overwrite = 'y'
-        print(
+        logger.info(
             f'Existing state-level baseline data file found in the '
             f'convert_data directory: {baseline_data_path}'
         )
@@ -320,15 +347,21 @@ def main():
                 'Would you like to overwrite this file? (y/n)\n'
             )
             if overwrite.lower() != 'y':
-                print('Leaving existing baseline data file in place.')
+                logger.info('Leaving existing baseline data file in place.')
         else:
             overwrite = 'n'
 
     # Query EIA API for data
     data_dict = {}
     for key in DATA_SERIES_DICT.keys():
-        query_str = generate_query_string(key, ['annual', 'monthly'])
-        data_dict[key] = api_query(query_str, api_key)
+        try:
+            logger.info(f'Querying EIA API for {key}')
+            query_str = generate_query_string(key, ['annual', 'monthly'])
+            data_dict[key] = api_query(query_str, api_key)
+            logger.info(f'Successfully retrieved {key} data')
+        except Exception as e:
+            logger.error(f'Failed to retrieve {key} data: {e}')
+            raise
     # Clean and aggregate data
     df = clean_and_aggregate_data(data_dict, year)
 
@@ -347,9 +380,15 @@ def main():
     }
     # Loop through dict, pull and finalize data from queries
     for key in gas_prices.keys():
-        # Pull state/price pairs, restricted to current year of focus
-        gas_prices_init = ([(x["duoarea"], x["value"]) for x in api_query(gas_prices[key], api_key)
-                            if x['period'] == year])
+        try:
+            logger.info(f'Querying EIA API for {key}')
+            # Pull state/price pairs, restricted to current year of focus
+            gas_prices_init = ([(x["duoarea"], x["value"]) for x in api_query(gas_prices[key], api_key)
+                                if x['period'] == year])
+            logger.info(f'Successfully retrieved {key} data for {year}')
+        except Exception as e:
+            logger.error(f'Failed to retrieve {key} for {year}: {e}')
+            raise
         # Sort pairs alphabetically by state to ensure consistency with order of other data in CSV
         gas_prices_sorted = sorted(gas_prices_init, key=lambda row: row[0])
         # Overwrite initial queries with sorted values
@@ -363,7 +402,7 @@ def main():
         output_path = str(baseline_data_path.parent) + \
             f'/EIA_State_Emissions_Prices_Baselines_{year}.csv'
     else:
-        print(
+        logger.info(
                 'No existing state-level baseline data file found in the '
                 'convert_data directory. Creating new file.'
             )
@@ -371,9 +410,9 @@ def main():
                           f'EIA_State_Emissions_Prices_Baselines_{year}.csv')
     if overwrite == 'y':
         os.remove(baseline_data_path)
-        print('Existing state-level baseline data file overwritten.')
+        logger.info('Existing state-level baseline data file overwritten.')
     df.to_csv(output_path, index=False)
-    print(f'State-level baseline data updated for {year} and saved to {output_path}')
+    logger.info(f'State-level baseline data updated for {year} and saved to {output_path}')
 
 
 if __name__ == '__main__':
