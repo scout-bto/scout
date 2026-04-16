@@ -66,6 +66,13 @@ import gzip
 import re
 from pathlib import Path
 from scout.config import FilePaths as fp
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class UsefulInputFiles(object):
@@ -441,7 +448,7 @@ def annual_factors_updater(df, ss, geography):
         {ss['CO2 intensity of electricity']['data'][key].update(val)
          for key, val in co2_dict.items()}
     else:
-        print('Invalid geography entered.')
+        logger.warning('Invalid geography entered.')
 
     return ss
 
@@ -495,7 +502,7 @@ def generate_hourly_factors(df, geography):
         df_scaled = pd.merge(df, scaling, on=['state_abbrev', 'year'],
                              how='left')
     else:
-        print('Invalid geography entered.')
+        logger.warning('Invalid geography entered.')
     # Create new columns, where hourly values are multiplied by a scaling
     # factor that represents the ratio between the within-region annual
     # average and the national annual average in each year
@@ -521,7 +528,7 @@ def generate_hourly_factors(df, geography):
             ['year', 'month', 'day', 'hour',
              'state_abbrev'])[metrics_names].mean().reset_index()
     else:
-        print('Invalid geography entered.')
+        logger.warning('Invalid geography entered.')
     return df_reg
 
 
@@ -549,7 +556,7 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
         # Create vars to iterate over
         regions = df['state_abbrev'].unique()
     else:
-        print('Invalid geography entered.')
+        logger.warning('Invalid geography entered.')
     # Create vars to iterate over
     data_years = df['year'].unique()
     # Create dictionaries to store results
@@ -590,7 +597,7 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
                         (df['EMM_2020'] == r)][
                         'average carbon emissions rates'].to_list()
                 else:
-                    print('Invalid metric entered.')
+                    logger.warning('Invalid metric entered.')
             dict_results[y] = dict_regions
             dict_regions = dict.fromkeys(regions)
     elif geography == "State":
@@ -606,7 +613,7 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
                         (df['state_abbrev'] == r)][
                         'average carbon emissions rates'].to_list()
                 else:
-                    print('Invalid metric entered.')
+                    logger.warning('Invalid metric entered.')
             dict_results[y] = dict_regions
             dict_regions = dict.fromkeys(regions)
     dict_to_write['Source Data'] = {'Title': 'Cambium data for Standard '
@@ -624,75 +631,99 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
     elif metric == 'carbon':
         dict_to_write['average carbon emissions rates'] = dict_results
     else:
-        print('Invalid metric entered.')
+        logger.warning('Invalid metric entered.')
     return dict_to_write
+
+
+MAX_INPUT_ATTEMPTS = 10
+
+
+def validate_user_input(prompt, valid_options=None, validator=None,
+                        error_msg='Invalid entry.'):
+    """Prompt the user for input with validation and retry limits.
+
+    Args:
+        prompt (str): The input prompt to display.
+        valid_options (list): Optional list of valid string values.
+        validator (callable): Optional function returning True if
+            the input is acceptable. Used when valid_options is None.
+        error_msg (str): Message shown on invalid input.
+
+    Returns:
+        The validated user input string.
+
+    Raises:
+        SystemExit: If the user exceeds MAX_INPUT_ATTEMPTS.
+    """
+    for attempt in range(1, MAX_INPUT_ATTEMPTS + 1):
+        value = input(prompt)
+        if valid_options is not None and value in valid_options:
+            return value
+        if validator is not None and validator(value):
+            return value
+        print(error_msg)
+        logger.warning('%s (attempt %d/%d)', error_msg, attempt,
+                       MAX_INPUT_ATTEMPTS)
+    logger.error('Max input attempts (%d) exceeded. Exiting.',
+                 MAX_INPUT_ATTEMPTS)
+    raise SystemExit(1)
 
 
 def main():
     """Main function calls to generate updated supporting files"""
 
     # Ask the user to specify the file path to downloaded Cambium data
-    while True:
-        cambium_file_path = input('\nPlease provide the file path to '
-                                  'downloaded Cambium data. \n\n'
-                                  'Data directory should be structured as: \n'
-                                  './Cambium_data/year/scenario/csv_file \n\n '
-                                  'where ./Cambium_data is the file path '
-                                  'provided and year/scenario are subfolders '
-                                  'containing Cambium data files. \n\n'
-                                  'This module will subsequently ask you to '
-                                  'specify the year and scenario for which '
-                                  'to update supporting data files.\n')
-        if cambium_file_path == '':
-            print('Invalid file path entered.')
-        else:
-            break
+    cambium_file_path = validate_user_input(
+        '\nPlease provide the file path to '
+        'downloaded Cambium data. \n\n'
+        'Data directory should be structured as: \n'
+        './Cambium_data/year/scenario/csv_file \n\n '
+        'where ./Cambium_data is the file path '
+        'provided and year/scenario are subfolders '
+        'containing Cambium data files. \n\n'
+        'This module will subsequently ask you to '
+        'specify the year and scenario for which '
+        'to update supporting data files.\n',
+        validator=lambda x: x != '',
+        error_msg='Invalid file path entered.')
     # Ask the user to specify the desired temporal resolution
     # for which to update and generate factors from Cambium data.
-    while True:
-        full_update = input('Would you like to update all supporting '
-                            'data files for a given Cambium scenario '
-                            'and data year? '
-                            'Valid entries are: ' +
-                            ', '.join(['Yes', 'No']) + '.\n')
-        if full_update not in ['Yes', 'No']:
-            print('Invalid entry.')
-        else:
-            break
+    full_update = validate_user_input(
+        'Would you like to update all supporting '
+        'data files for a given Cambium scenario '
+        'and data year? '
+        'Valid entries are: Yes, No.\n',
+        valid_options=['Yes', 'No'])
     if full_update == 'Yes':
         # Ask the user to specify the desired Cambium scenario,
         # informing the user about the valid scenario options
-        while True:
-            scenario = input('Please specify the desired Cambium scenario. \n'
-                             'Valid entries are: ' +
-                             ', '.join(ValidQueries().scenarios) + '.\n')
-            if scenario not in ValidQueries().scenarios:
-                print('Invalid scenario entered.')
-            else:
-                break
+        scenario = validate_user_input(
+            'Please specify the desired Cambium scenario. \n'
+            'Valid entries are: ' +
+            ', '.join(ValidQueries().scenarios) + '.\n',
+            valid_options=ValidQueries().scenarios,
+            error_msg='Invalid scenario entered.')
         # Ask the user to specify the desired Cambium data year.
-        while True:
-            year = input('Please specify the desired Cambium data year. \n'
-                         'Valid entries are: ' +
-                         ', '.join(ValidQueries(scenario).years) + '.\n')
-            if year not in ValidQueries(scenario).years:
-                print('Invalid year entered.')
-            else:
-                break
+        year = validate_user_input(
+            'Please specify the desired Cambium data year. \n'
+            'Valid entries are: ' +
+            ', '.join(ValidQueries(scenario).years) + '.\n',
+            valid_options=ValidQueries(scenario).years,
+            error_msg='Invalid year entered.')
         # Load Ref Case National supporting data file
         with open(UsefulInputFiles().file_paths['ss']['Ref'], "r") as js:
             ss_nat = json.load(js)
         # Import mapping file to map Cambium BA regions to EMM regions
         ba_emm_map = import_ba_emm_mapping()
         # Notify user that Cambium data are importing
-        print('Importing Cambium scenario data...')
+        logger.info('Importing Cambium scenario data...')
         # Import Cambium data for the specified year and scenario
         cambium_df = cambium_data_import(cambium_file_path, year, scenario)
         # Join mapping file to cambium data
         df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
                       right_on='cambium_24_ba', how='left')
         # Notify user that national supporting factors are updating
-        print('Updating national annual emissions intensities data...')
+        logger.info('Updating national annual emissions intensities data...')
         # Update national annual CO2 emissions intensities for annual data for
         # a given Cambium scenario
         ss_updated = annual_factors_updater(df, ss_nat, 'National')
@@ -704,13 +735,13 @@ def main():
         ss_updated["electricity"]["CO2 intensity"]["source"] = \
             "AEO 2025 data through 2024 w/ Cambium projections"
         # Notify user that national supporting factors are writing to file
-        print('Writing national annual emissions intensities data to file...')
+        logger.info('Writing national annual emissions intensities data to file...')
         # Write national annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['ss'][scenario], 'w') as json_file:
             json.dump(ss_updated, json_file, sort_keys=False, indent=2)
         # Notify user that EMM region supporting factors are updating
-        print('Updating EMM region annual emissions intensities data...')
+        logger.info('Updating EMM region annual emissions intensities data...')
         # Load existing Ref Case EMM region supporting data file
         with open(UsefulInputFiles().file_paths['emm']['Ref'], "r") as js:
             ss_emm = json.load(js)
@@ -725,13 +756,13 @@ def main():
         ss_emm_updated["CO2 intensity of electricity"]["source"] = \
             "AEO 2025 data through 2024 w/ Cambium projections"
         # Notify user that EMM region supporting factors are writing to file
-        print('Writing EMM region annual emissions intensities data to file..')
+        logger.info('Writing EMM region annual emissions intensities data to file..')
         # Write EMM region annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
             json.dump(ss_emm_updated, json_file, sort_keys=False, indent=2)
         # Notify user that state supporting factors are updating
-        print('Updating state annual emissions intensities data...')
+        logger.info('Updating state annual emissions intensities data...')
         # Load existing Ref Case State supporting data file
         with open(UsefulInputFiles().file_paths['state']['Ref'], "r") as js:
             ss_state = json.load(js)
@@ -746,13 +777,13 @@ def main():
         ss_state_updated["CO2 intensity of electricity"]["source"] = \
             "AEO 2025 data through 2024 w/ Cambium projections"
         # Notify user that State supporting factors are writing to file
-        print('Writing state annual emissions intensities data to file..')
+        logger.info('Writing state annual emissions intensities data to file..')
         # Write State annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['state'][scenario], 'w') as json_file:
             json.dump(ss_state_updated, json_file, sort_keys=False, indent=2)
         # Notify user that EMM hourly supporting factors are updating
-        print('Updating EMM region hourly emissions and price factors...')
+        logger.info('Updating EMM region hourly emissions and price factors...')
         # Update EMM region hourly CO2 emissions and price scaling factors
         df_hour_emm = generate_hourly_factors(df, 'EMM')
         hourly_cost_json_emm = hourly_factors_updater(df_hour_emm, scenario, year,
@@ -762,20 +793,20 @@ def main():
                                                         metric='carbon',
                                                         geography='EMM')
         # Notify user that hourly supporting factors are writing to file
-        print('Writing EMM price scaling factors to file...')
+        logger.info('Writing EMM price scaling factors to file...')
         # # Write hourly price scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
                 'wt') as fp:
             json.dump(hourly_cost_json_emm, fp, sort_keys=True, indent=4)
-        print('Writing EMM CO2 emissions scaling factors to file...')
+        logger.info('Writing EMM CO2 emissions scaling factors to file...')
         # Write hourly CO2 emissions scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
                 'wt') as fp:
             json.dump(hourly_carbon_json_emm, fp, sort_keys=True, indent=4)
         # Notify user that State hourly supporting factors are updating
-        print('Updating state hourly emissions and price factors...')
+        logger.info('Updating state hourly emissions and price factors...')
         # Update state hourly CO2 emissions and price scaling factors
         df_hour_state = generate_hourly_factors(df, 'State')
         hourly_cost_json_state = hourly_factors_updater(df_hour_state, scenario, year,
@@ -785,75 +816,62 @@ def main():
                                                           metric='carbon',
                                                           geography='State')
         # Notify user that hourly supporting factors are writing to file
-        print('Writing state price scaling factors to file...')
+        logger.info('Writing state price scaling factors to file...')
         # Write State hourly price scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
                 'wt') as fp:
             json.dump(hourly_cost_json_state, fp, sort_keys=True, indent=4)
-        print('Writing state CO2 emissions scaling factors to file...')
+        logger.info('Writing state CO2 emissions scaling factors to file...')
         # Write State hourly CO2 emissions scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
                 'wt') as fp:
             json.dump(hourly_carbon_json_state, fp, sort_keys=True, indent=4)
-        print('Update complete.')
+        logger.info('Update complete.')
     elif full_update == "No":
-        while True:
-            temporal_res = input('You have selected to update specific '
-                                 'supporting files. Please specify which '
-                                 'temporal resolution of supporting data '
-                                 'to update. '
-                                 'Valid entries are: ' +
-                                 ', '.join(['Annual', 'Hourly']) + '.\n')
-            if temporal_res not in ['Annual', 'Hourly']:
-                print('Invalid temporal resolution entered.')
-            else:
-                break
+        temporal_res = validate_user_input(
+            'You have selected to update specific '
+            'supporting files. Please specify which '
+            'temporal resolution of supporting data '
+            'to update. '
+            'Valid entries are: Annual, Hourly.\n',
+            valid_options=['Annual', 'Hourly'],
+            error_msg='Invalid temporal resolution entered.')
         if temporal_res == 'Annual':
             # Ask the user to specify the desired update to make, whether
             # to the site_to_source conversions json or EMM region
             # emissions/price projections json or State emissions/price
             # projections.
-            while True:
-                geography = input('Please specify the desired file type to update. '
-                                  'Valid entries are: ' +
-                                  ', '.join(['National', 'EMM', 'State']) + '.\n')
-                if geography not in ['National', 'EMM', 'State']:
-                    print('Invalid file type entered.')
-                else:
-                    break
+            geography = validate_user_input(
+                'Please specify the desired file type to update. '
+                'Valid entries are: National, EMM, State.\n',
+                valid_options=['National', 'EMM', 'State'],
+                error_msg='Invalid file type entered.')
         else:
             # Ask the user to specify the desired update to make, whether
             # to the EMM region hourly emissions/price projections json or
             # State emissions/price projections.
-            while True:
-                geography = input('Please specify the desired file type to update. '
-                                  'Valid entries are: ' +
-                                  ', '.join(['EMM', 'State']) + '.\n')
-                if geography not in ['EMM', 'State']:
-                    print('Invalid file type entered.')
-                else:
-                    break
+            geography = validate_user_input(
+                'Please specify the desired file type to update. '
+                'Valid entries are: EMM, State.\n',
+                valid_options=['EMM', 'State'],
+                error_msg='Invalid file type entered.')
         # Ask the user to specify the desired Cambium scenario,
         # informing the user about the valid scenario options
-        while True:
-            scenario = input('Please specify the desired Cambium scenario. '
-                             'Valid entries are: ' +
-                             ', '.join(ValidQueries().scenarios) + '.\n')
-            if scenario not in ValidQueries().scenarios:
-                print('Invalid scenario entered.')
-            else:
-                break
+        scenario = validate_user_input(
+            'Please specify the desired Cambium scenario. '
+            'Valid entries are: ' +
+            ', '.join(ValidQueries().scenarios) + '.\n',
+            valid_options=ValidQueries().scenarios,
+            error_msg='Invalid scenario entered.')
         # Ask the user to specify the desired Cambium data year.
-        while True:
-            year = input('Please specify the desired Cambium data year. '
-                         'Valid entries are: ' +
-                         ', '.join(ValidQueries(scenario).years) + '.\n')
-            if year not in ValidQueries(scenario).years:
-                print('Invalid year entered.')
-            else:
-                break
+        year = validate_user_input(
+            'Please specify the desired Cambium data year. '
+            'Valid entries are: ' +
+            ', '.join(ValidQueries(scenario).years) + '.\n',
+            valid_options=ValidQueries(scenario).years,
+            error_msg='Invalid year entered.')
         # Update annual CO2 emissions intensities for annual data for a given
         # Cambium scenario
         if temporal_res == "Annual":
@@ -864,7 +882,7 @@ def main():
             # Import mapping file to map Cambium BA regions to EMM regions
             ba_emm_map = import_ba_emm_mapping()
             # Notify user that Cambium data are importing
-            print('Importing Cambium scenario data...')
+            logger.info('Importing Cambium scenario data...')
             # Import Cambium data for the specified year and scenario
             cambium_df = cambium_data_import(cambium_file_path, year, scenario)
             # Join mapping file to cambium data
@@ -881,17 +899,17 @@ def main():
                 ss_updated['updated_to_cambium_year'] = year
                 # Notify user that national supporting factors are writing to
                 # file
-                print(
+                logger.info(
                     'Writing national annual emissions intensities to file...')
                 # Write national annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario to file
                 with open(UsefulInputFiles().file_paths['ss'][scenario], 'w') as json_file:
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
-                print('Update complete.')
+                logger.info('Update complete.')
             elif geography == "EMM":
                 # Notify user that EMM region supporting factors are updating
-                print(
+                logger.info(
                     'Updating EMM region annual emissions intensities data...')
                 # Load Ref case EMM region supporting data file for specified
                 # scenario
@@ -906,7 +924,7 @@ def main():
                 ss_updated['updated_to_cambium_case'] = scenario
                 ss_updated['updated_to_cambium_year'] = year
                 # Notify user that EMM region factors are writing to file
-                print(
+                logger.info(
                     'Writing EMM region annual emissions intensities to \
                     file...')
                 # Write EMM region annual CO2 emissions intensities for annual
@@ -914,10 +932,10 @@ def main():
                 with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
-                print('Update complete.')
+                logger.info('Update complete.')
             elif geography == "State":
                 # Notify user that State supporting factors are updating
-                print(
+                logger.info(
                     'Updating state annual emissions intensities data...')
                 # Load Reference case State supporting data file for specified
                 # scenario
@@ -932,7 +950,7 @@ def main():
                 ss_updated['updated_to_cambium_case'] = scenario
                 ss_updated['updated_to_cambium_year'] = year
                 # Notify user that EMM region factors are writing to file
-                print(
+                logger.info(
                     'Writing state annual emissions intensities to \
                     file...')
                 # Write EMM region annual CO2 emissions intensities for annual
@@ -940,13 +958,13 @@ def main():
                 with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
-                print('Update complete.')
+                logger.info('Update complete.')
         else:
             if geography == "EMM":
                 # Import mapping file to map Cambium BA regions to EMM regions
                 ba_emm_map = import_ba_emm_mapping()
                 # Notify user that Cambium data are importing
-                print('Importing Cambium scenario data...')
+                logger.info('Importing Cambium scenario data...')
                 # Import Cambium data for the specified year and scenario
                 cambium_df = cambium_data_import(cambium_file_path, year,
                                                  scenario)
@@ -954,7 +972,7 @@ def main():
                 df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
                               right_on='cambium_24_ba', how='left')
                 # Notify user that hourly supporting factors are updating
-                print('Updating EMM region hourly emissions and price \
+                logger.info('Updating EMM region hourly emissions and price \
                       factors...')
                 # Update hourly CO2 emissions and price scaling factors
                 df_hour = generate_hourly_factors(df, geography='EMM')
@@ -966,25 +984,25 @@ def main():
                                                             geography='EMM')
                 # Notify user that hourly supporting factors are writing to
                 # file
-                print('Writing EMM region price scaling factors to file...')
+                logger.info('Writing EMM region price scaling factors to file...')
                 # Write hourly price scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
                         'wt') as fp:
                     json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
-                print('Writing EMM region CO2 emissions scaling factors \
+                logger.info('Writing EMM region CO2 emissions scaling factors \
                       to file...')
                 # Write hourly CO2 emissions scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
                         'wt') as fp:
                     json.dump(hourly_carbon_json, fp, sort_keys=True, indent=4)
-                print('Update complete.')
+                logger.info('Update complete.')
             elif geography == "State":
                 # Import mapping file to map Cambium BA regions to States
                 ba_emm_map = import_ba_emm_mapping()
                 # Notify user that Cambium data are importing
-                print('Importing Cambium scenario data...')
+                logger.info('Importing Cambium scenario data...')
                 # Import Cambium data for the specified year and scenario
                 cambium_df = cambium_data_import(cambium_file_path, year,
                                                  scenario)
@@ -992,7 +1010,7 @@ def main():
                 df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
                               right_on='cambium_24_ba', how='left')
                 # Notify user that hourly supporting factors are updating
-                print('Updating hourly emissions and price scaling factors...')
+                logger.info('Updating hourly emissions and price scaling factors...')
                 # Update hourly CO2 emissions and price scaling factors
                 df_hour = generate_hourly_factors(df, 'State')
                 hourly_cost_json = hourly_factors_updater(df_hour, scenario, year,
@@ -1003,21 +1021,21 @@ def main():
                                                             geography='State')
                 # Notify user that hourly supporting factors are writing to
                 # file
-                print('Writing state price scaling factors to file...')
+                logger.info('Writing state price scaling factors to file...')
                 # Write hourly price scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
                         'wt') as fp:
                     json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
-                print('Writing state CO2 emissions scaling factors to file...')
+                logger.info('Writing state CO2 emissions scaling factors to file...')
                 # Write hourly CO2 emissions scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
                         'wt') as fp:
                     json.dump(hourly_carbon_json, fp, sort_keys=True, indent=4)
-                print('Update complete.')
+                logger.info('Update complete.')
     else:
-        print('Invalid entry.')
+        logger.warning('Invalid entry.')
 
 
 if __name__ == '__main__':
@@ -1026,5 +1044,5 @@ if __name__ == '__main__':
     main()
     hours, rem = divmod(time.time() - start_time, 3600)
     minutes, seconds = divmod(rem, 60)
-    print("--- Runtime: %s (HH:MM:SS.mm) ---" %
-          "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
+    logger.info("--- Runtime: %s (HH:MM:SS.mm) ---" %
+                "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))

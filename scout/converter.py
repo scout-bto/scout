@@ -84,8 +84,8 @@ CO2_INTENSITIES = {'propane': 62.88, 'distillate': 74.14}
 
 # Energy conversion factors
 ENERGY_CONVERSION_FACTORS = {
-    'renewable_factor_btu': 3412,
-    'standard_btu': 9510,
+    'kwh_to_btu': 3412,
+    'fossil_heat_rate_btu_per_kwh': 9510,
     'short_to_metric_tons': 0.90718474,
 }
 
@@ -377,7 +377,7 @@ class EIAQueries(object):
 # https://stackoverflow.com/questions/22786068/
 # how-to-avoid-http-error-429-too-many-requests-python
 @on_exception(expo, Exception, max_tries=5)
-def api_query(api_key, query_str, expect_table_id):
+def api_query(api_key: str, query_str: str, expect_table_id: int) -> list[list[str | float]]:
     """Execute an EIA API query and extract the data returned
 
     Execute a query of the EIA API and extract the data from the
@@ -429,7 +429,7 @@ def api_query(api_key, query_str, expect_table_id):
     return data
 
 
-def data_processor(data):
+def data_processor(data: list[list[str | float]]) -> tuple[np.ndarray, np.ndarray]:
     """Restructure the data obtained from the API into numpy arrays
 
     Args:
@@ -575,7 +575,9 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
                          z_elec['elec_renew_solar_pv']) /
                         (z_elec['elec_tot_energy_site'] +
                             z_elec['elec_tot_energy_loss']))
-        capnrg = 1 - renew_factor + renew_factor*3412/9510
+        kwh_to_btu = ENERGY_CONVERSION_FACTORS['kwh_to_btu']
+        fossil_heat_rate = ENERGY_CONVERSION_FACTORS['fossil_heat_rate_btu_per_kwh']
+        capnrg = 1 - renew_factor + renew_factor*kwh_to_btu/fossil_heat_rate
         # Since proceeding without this conversion factor would yield
         # results that are not as expected, the possible KeyError exception
         # due to missing data is intentionally not caught
