@@ -669,6 +669,95 @@ def validate_user_input(prompt, valid_options=None, validator=None,
     raise SystemExit(1)
 
 
+# Expected hours per year for hourly scaling factor data
+EXPECTED_HOURS_PER_YEAR = 8760
+
+
+def validate_annual_data(data, geography):
+    """Validate annual emissions/price JSON before writing to file.
+
+    Checks that CO2 intensity data contains expected regions
+    and that year-keyed values are numeric and non-negative.
+
+    Args:
+        data (dict): The annual conversion data dict to validate.
+        geography (str): One of 'National', 'EMM', or 'State'.
+
+    Raises:
+        ValueError: If any validation check fails.
+    """
+    errors = []
+    if geography == 'National':
+        for bldg in ['residential', 'commercial']:
+            co2 = (data.get('electricity', {})
+                   .get('CO2 intensity', {})
+                   .get('data', {}).get(bldg, {}))
+            if not co2:
+                errors.append(
+                    f'Missing CO2 intensity data for {bldg}')
+            for yr, val in co2.items():
+                if not isinstance(val, (int, float)):
+                    errors.append(
+                        f'Non-numeric CO2 value for {bldg}/{yr}: {val}')
+    else:
+        co2_data = (data.get('CO2 intensity of electricity', {})
+                    .get('data', {}))
+        if not co2_data:
+            errors.append('Missing CO2 intensity of electricity data')
+        for region, years in co2_data.items():
+            if not years:
+                errors.append(f'No year data for region {region}')
+            for yr, val in years.items():
+                if not isinstance(val, (int, float)):
+                    errors.append(
+                        f'Non-numeric value for {region}/{yr}: {val}')
+    if errors:
+        msg = 'Annual data validation failed:\n  ' + '\n  '.join(errors)
+        logger.error(msg)
+        raise ValueError(msg)
+
+
+def validate_hourly_data(data, metric):
+    """Validate hourly scaling factor JSON before writing to file.
+
+    Checks that the expected metric key exists, each region has
+    EXPECTED_HOURS_PER_YEAR values per year, and values are numeric.
+
+    Args:
+        data (dict): The hourly scaling factor dict to validate.
+        metric (str): 'cost' or 'carbon'.
+
+    Raises:
+        ValueError: If any validation check fails.
+    """
+    errors = []
+    key_map = {'cost': 'electricity price shapes',
+               'carbon': 'average carbon emissions rates'}
+    metric_key = key_map.get(metric)
+    if metric_key not in data:
+        errors.append(f'Missing top-level key {metric_key!r}')
+    else:
+        year_data = data[metric_key]
+        for yr, regions in year_data.items():
+            if not regions:
+                errors.append(f'No region data for year {yr}')
+                continue
+            for region, values in regions.items():
+                if not isinstance(values, list):
+                    errors.append(
+                        f'{region}/{yr}: expected list, got '
+                        f'{type(values).__name__}')
+                elif len(values) != EXPECTED_HOURS_PER_YEAR:
+                    errors.append(
+                        f'{region}/{yr}: expected '
+                        f'{EXPECTED_HOURS_PER_YEAR} hours, '
+                        f'got {len(values)}')
+    if errors:
+        msg = 'Hourly data validation failed:\n  ' + '\n  '.join(errors)
+        logger.error(msg)
+        raise ValueError(msg)
+
+
 def main():
     """Main function calls to generate updated supporting files"""
 
@@ -736,6 +825,7 @@ def main():
             "AEO 2025 data through 2024 w/ Cambium projections"
         # Notify user that national supporting factors are writing to file
         logger.info('Writing national annual emissions intensities data to file...')
+        validate_annual_data(ss_updated, 'National')
         # Write national annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['ss'][scenario], 'w') as json_file:
@@ -757,6 +847,7 @@ def main():
             "AEO 2025 data through 2024 w/ Cambium projections"
         # Notify user that EMM region supporting factors are writing to file
         logger.info('Writing EMM region annual emissions intensities data to file..')
+        validate_annual_data(ss_emm_updated, 'EMM')
         # Write EMM region annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
@@ -778,6 +869,7 @@ def main():
             "AEO 2025 data through 2024 w/ Cambium projections"
         # Notify user that State supporting factors are writing to file
         logger.info('Writing state annual emissions intensities data to file..')
+        validate_annual_data(ss_state_updated, 'State')
         # Write State annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['state'][scenario], 'w') as json_file:
@@ -794,12 +886,14 @@ def main():
                                                         geography='EMM')
         # Notify user that hourly supporting factors are writing to file
         logger.info('Writing EMM price scaling factors to file...')
+        validate_hourly_data(hourly_cost_json_emm, 'cost')
         # # Write hourly price scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
                 'wt') as fp:
             json.dump(hourly_cost_json_emm, fp, sort_keys=True, indent=4)
         logger.info('Writing EMM CO2 emissions scaling factors to file...')
+        validate_hourly_data(hourly_carbon_json_emm, 'carbon')
         # Write hourly CO2 emissions scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
@@ -817,12 +911,14 @@ def main():
                                                           geography='State')
         # Notify user that hourly supporting factors are writing to file
         logger.info('Writing state price scaling factors to file...')
+        validate_hourly_data(hourly_cost_json_state, 'cost')
         # Write State hourly price scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
                 'wt') as fp:
             json.dump(hourly_cost_json_state, fp, sort_keys=True, indent=4)
         logger.info('Writing state CO2 emissions scaling factors to file...')
+        validate_hourly_data(hourly_carbon_json_state, 'carbon')
         # Write State hourly CO2 emissions scaling factors to file
         with gzip.open(
             UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
@@ -901,6 +997,7 @@ def main():
                 # file
                 logger.info(
                     'Writing national annual emissions intensities to file...')
+                validate_annual_data(ss_updated, 'National')
                 # Write national annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario to file
                 with open(UsefulInputFiles().file_paths['ss'][scenario], 'w') as json_file:
@@ -927,6 +1024,7 @@ def main():
                 logger.info(
                     'Writing EMM region annual emissions intensities to \
                     file...')
+                validate_annual_data(ss_updated, 'EMM')
                 # Write EMM region annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario to file
                 with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
@@ -953,6 +1051,7 @@ def main():
                 logger.info(
                     'Writing state annual emissions intensities to \
                     file...')
+                validate_annual_data(ss_updated, 'State')
                 # Write EMM region annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario to file
                 with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
@@ -985,6 +1084,7 @@ def main():
                 # Notify user that hourly supporting factors are writing to
                 # file
                 logger.info('Writing EMM region price scaling factors to file...')
+                validate_hourly_data(hourly_cost_json, 'cost')
                 # Write hourly price scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
@@ -992,6 +1092,7 @@ def main():
                     json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
                 logger.info('Writing EMM region CO2 emissions scaling factors \
                       to file...')
+                validate_hourly_data(hourly_carbon_json, 'carbon')
                 # Write hourly CO2 emissions scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
@@ -1022,12 +1123,14 @@ def main():
                 # Notify user that hourly supporting factors are writing to
                 # file
                 logger.info('Writing state price scaling factors to file...')
+                validate_hourly_data(hourly_cost_json, 'cost')
                 # Write hourly price scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
                         'wt') as fp:
                     json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
                 logger.info('Writing state CO2 emissions scaling factors to file...')
+                validate_hourly_data(hourly_carbon_json, 'carbon')
                 # Write hourly CO2 emissions scaling factors to file
                 with gzip.open(
                     UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],

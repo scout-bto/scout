@@ -107,6 +107,62 @@ STATE_QUERY_STRING_GAS = (
     '&facets[duoarea][]=SWY'
 )
 
+EXPECTED_COLUMNS = [
+    'Year', 'State', 'Generation (TWh)', 'CO2 Emissions (MMT)',
+    'Residential Electricity Price ($/kWh)',
+    'Commercial Electricity Price ($/kWh)', 'Total Disposition (MWh)',
+    'Direct Use (MWh)', 'Estimated Losses (MWh)',
+    'T&D Loss Fraction', 'Emissions Rate (Mt/TWh)',
+    'Residential Gas Price ($/MCF)', 'Commercial Gas Price ($/MCF)']
+
+# 48 contiguous states + DC = 49
+EXPECTED_NUM_STATES = 49
+
+
+def validate_baseline_dataframe(df):
+    """Validate the state baseline DataFrame before writing to CSV.
+
+    Checks column presence, state count, no all-null columns,
+    and that numeric values are within plausible ranges.
+
+    Args:
+        df (DataFrame): The cleaned and aggregated baseline data.
+
+    Raises:
+        ValueError: If any validation check fails.
+    """
+    errors = []
+    # Check required columns
+    missing_cols = set(EXPECTED_COLUMNS) - set(df.columns)
+    if missing_cols:
+        errors.append(f'Missing columns: {missing_cols}')
+    # Check state count
+    n_states = df['State'].nunique()
+    if n_states != EXPECTED_NUM_STATES:
+        errors.append(
+            f'Expected {EXPECTED_NUM_STATES} states, got {n_states}')
+    # Check for all-null numeric columns
+    for col in df.select_dtypes(include='number').columns:
+        if df[col].isna().all():
+            errors.append(f'Column {col!r} is entirely null')
+    # Check price ranges ($/kWh should be positive and < $1)
+    for price_col in ['Residential Electricity Price ($/kWh)',
+                      'Commercial Electricity Price ($/kWh)']:
+        if price_col in df.columns:
+            vals = df[price_col].dropna()
+            if (vals <= 0).any() or (vals > 1).any():
+                errors.append(
+                    f'{price_col} has values outside (0, 1] $/kWh')
+    # Check emissions rate is non-negative
+    if 'Emissions Rate (Mt/TWh)' in df.columns:
+        vals = df['Emissions Rate (Mt/TWh)'].dropna()
+        if (vals < 0).any():
+            errors.append('Emissions Rate (Mt/TWh) has negative values')
+    if errors:
+        msg = 'Data validation failed:\n  ' + '\n  '.join(errors)
+        logger.error(msg)
+        raise ValueError(msg)
+
 
 def get_baseline_data_path():
     """Get the path to the existing state-level baseline data file."""
@@ -398,6 +454,9 @@ def main():
     # Append gas price columns and values to dataframe
     for key in gas_prices:
         df[key] = gas_prices[key]
+
+    # Validate data before writing
+    validate_baseline_dataframe(df)
 
     # Save data to CSV
     if baseline_data_path:
