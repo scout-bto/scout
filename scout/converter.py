@@ -525,6 +525,23 @@ def data_getter(api_key, series_names, api_urls, series_table):
     return mstr_data_dict, years
 
 
+def safe_update(label, update_fn, warn=True):
+    """Execute a conversion data update with standardized error handling.
+
+    Args:
+        label (str): Description of the update for logging.
+        update_fn (callable): Function that performs the computation
+            and dict update. May raise KeyError if API data is missing.
+        warn (bool): Whether to log a warning on KeyError.
+    """
+    try:
+        update_fn()
+        logger.info(f'{label} updated')
+    except KeyError as e:
+        if warn:
+            logger.warning(f'Failed to update {label}: {e}')
+
+
 def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
     """Perform calculations using EIA data to update conversion factors JSON
 
@@ -585,231 +602,165 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         # Use the existing calculations for the fossil fuel equivalence method
         capnrg = np.ones(np.shape(z_elec['elec_renew_hydro']))
 
-    # Electricity site-source conversion factors
-    try:
-        ss_conv = ((z_elec['elec_tot_energy_site'] + z_elec['elec_tot_energy_loss']) /
-                   z_elec['elec_tot_energy_site'])
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['site to source conversion']['data'][year] = (
-                round(ss_conv[idx]*capnrg[idx], 6))
-        logger.info('Electricity site-source conversion factors updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update electricity site-source conversion factors: {e}')
+    # Helper to write rounded values into a target dict by year
+    def _write_yearly(target, years, values):
+        for idx, year in enumerate(years):
+            target[year] = round(float(values[idx]), 6)
 
-    # Update electricity CO2 intensities
+    # Electricity site-source conversion factors
+    ss_conv = None
+
+    def _update_ss():
+        nonlocal ss_conv
+        ss_conv = ((z_elec['elec_tot_energy_site'] +
+                    z_elec['elec_tot_energy_loss']) /
+                    z_elec['elec_tot_energy_site'])
+        _write_yearly(conv['electricity']['site to source conversion']['data'],
+                      yrs_elec, ss_conv * capnrg)
+    safe_update(
+        'Electricity site-source conversion factors',
+        _update_ss
+        )
+
     # Residential electricity CO2 intensities [Mt CO2/quads]
-    try:
-        co2_res_ints = (z_elec['elec_res_co2'] /
-                        (z_elec['elec_res_energy_site'] +
-                         z_elec['elec_res_energy_loss']))
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['CO2 intensity']['data']['residential'][
-                 year] = (round(co2_res_ints[idx]/capnrg[idx], 6))
-        logger.info('Residential electricity CO2 intensities updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update residential electricity CO2 intensities: {e}')
+    safe_update('Residential electricity CO2 intensities', lambda:
+                _write_yearly(conv['electricity']['CO2 intensity']['data']['residential'],
+                              yrs_elec,
+                              (z_elec['elec_res_co2'] /
+                               (z_elec['elec_res_energy_site'] +
+                                z_elec['elec_res_energy_loss'])) / capnrg))
 
     # Commercial electricity CO2 intensities [Mt CO2/quads]
-    try:
-        co2_com_ints = (z_elec['elec_com_co2'] /
-                        (z_elec['elec_com_energy_site'] +
-                         z_elec['elec_com_energy_loss']))
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['CO2 intensity']['data']['commercial'][
-                 year] = (round(co2_com_ints[idx]/capnrg[idx], 6))
-        logger.info('Commercial electricity CO2 intensities updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update commercial electricity CO2 intensities: {e}')
+    safe_update('Commercial electricity CO2 intensities', lambda:
+                _write_yearly(conv['electricity']['CO2 intensity']['data']['commercial'],
+                              yrs_elec,
+                              (z_elec['elec_com_co2'] /
+                               (z_elec['elec_com_energy_site'] +
+                                z_elec['elec_com_energy_loss'])) / capnrg))
 
     # Residential natural gas CO2 intensities [Mt CO2/quads]
-    try:
-        co2_res_ng_ints = z_foss['ng_res_co2']/z_foss['ng_res_energy']
-        for idx, year in enumerate(yrs_foss):
-            conv['natural gas']['CO2 intensity']['data']['residential'][
-                 year] = (round(co2_res_ng_ints[idx], 6))
-        logger.info('Residential natural gas CO2 intensities updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update residential natural gas CO2 intensities: {e}')
+    safe_update('Residential natural gas CO2 intensities', lambda:
+                _write_yearly(conv['natural gas']['CO2 intensity']['data']['residential'],
+                              yrs_foss,
+                              z_foss['ng_res_co2'] / z_foss['ng_res_energy']))
 
     # Commercial natural gas CO2 intensities [Mt CO2/quads]
-    try:
-        co2_com_ng_ints = z_foss['ng_com_co2']/z_foss['ng_com_energy']
-        for idx, year in enumerate(yrs_foss):
-            conv['natural gas']['CO2 intensity']['data']['commercial'][
-                 year] = (round(co2_com_ng_ints[idx], 6))
-        logger.info('Commercial natural gas CO2 intensities updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update commercial natural gas CO2 intensities: {e}')
+    safe_update('Commercial natural gas CO2 intensities', lambda:
+                _write_yearly(conv['natural gas']['CO2 intensity']['data']['commercial'],
+                              yrs_foss,
+                              z_foss['ng_com_co2'] / z_foss['ng_com_energy']))
 
     # Residential propane CO2 intensities [Mt CO2/quads]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['propane']['CO2 intensity']['data']['residential'][year] = (
-                CO2_INTENSITIES['propane'])
-        logger.info('Residential propane CO2 intensities updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update residential propane CO2 intensities: {e}')
+    safe_update('Residential propane CO2 intensities', lambda:
+                _write_yearly(conv['propane']['CO2 intensity']['data']['residential'],
+                              yrs_foss,
+                              np.full(len(yrs_foss), CO2_INTENSITIES['propane'])),
+                              warn=not web)
 
     # Commercial propane CO2 intensities [Mt CO2/quads]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['propane']['CO2 intensity']['data']['commercial'][year] = (
-                CO2_INTENSITIES['propane'])
-        logger.info('Commercial propane CO2 intensities updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update commercial propane CO2 intensities: {e}')
+    safe_update('Commercial propane CO2 intensities', lambda:
+                _write_yearly(conv['propane']['CO2 intensity']['data']['commercial'],
+                              yrs_foss,
+                              np.full(len(yrs_foss), CO2_INTENSITIES['propane'])),
+                              warn=not web)
 
     # Residential distillate CO2 intensities [Mt CO2/quads]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['distillate']['CO2 intensity']['data']['residential'][
-                year] = (CO2_INTENSITIES['distillate'])
-        logger.info('Residential distillate CO2 intensities updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update residential distillate CO2 intensities: {e}')
+    safe_update('Residential distillate CO2 intensities', lambda:
+                _write_yearly(conv['distillate']['CO2 intensity']['data']['residential'],
+                              yrs_foss,
+                              np.full(len(yrs_foss), CO2_INTENSITIES['distillate'])),
+                              warn=not web)
 
     # Commercial distillate CO2 intensities [Mt CO2/quads]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['distillate']['CO2 intensity']['data']['commercial'][
-                 year] = (CO2_INTENSITIES['distillate'])
-        logger.info('Commercial distillate CO2 intensities updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update commercial distillate CO2 intensities: {e}')
+    safe_update('Commercial distillate CO2 intensities', lambda:
+                _write_yearly(conv['distillate']['CO2 intensity']['data']['commercial'],
+                              yrs_foss,
+                              np.full(len(yrs_foss), CO2_INTENSITIES['distillate'])),
+                              warn=not web)
 
     # Residential other fuel CO2 intensities [Mt CO2/quads]
-    try:
-        co2_res_ot_ints = z_foss['petro_res_co2']/z_foss['petro_res_energy']
-        for idx, year in enumerate(yrs_foss):
-            conv['other']['CO2 intensity']['data']['residential'][year] = (
-                round(co2_res_ot_ints[idx], 6))
-        logger.info('Residential other fuel CO2 intensities updated')
-    except KeyError as e:
-        if web:
-            logger.warning(f'Failed to update residential other fuel CO2 intensities: {e}')
+    safe_update('Residential other fuel CO2 intensities', lambda:
+                _write_yearly(conv['other']['CO2 intensity']['data']['residential'],
+                              yrs_foss,
+                              z_foss['petro_res_co2'] / z_foss['petro_res_energy']),
+                              warn=web)
 
     # Commercial other fuel CO2 intensities [Mt CO2/quads]
-    try:
-        co2_com_ot_ints = ((z_foss['petro_com_co2'] + z_foss['coal_com_co2']) /
-                           (z_foss['petro_com_energy'] + z_foss['coal_com_energy']))
-        for idx, year in enumerate(yrs_foss):
-            conv['other']['CO2 intensity']['data']['commercial'][year] = (
-                round(co2_com_ot_ints[idx], 6))
-        logger.info('Commercial other fuel CO2 intensities updated')
-    except KeyError as e:
-        if web:
-            logger.warning(f'Failed to update commercial other fuel CO2 intensities: {e}')
+    safe_update('Commercial other fuel CO2 intensities', lambda:
+                _write_yearly(conv['other']['CO2 intensity']['data']['commercial'],
+                              yrs_foss,
+                              (z_foss['petro_com_co2'] + z_foss['coal_com_co2']) /
+                              (z_foss['petro_com_energy'] + z_foss['coal_com_energy'])),
+                              warn=web)
 
     # Residential electricity prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['price']['data']['residential'][year] = (
-                round(z_elec['elec_res_price'][idx]/(ss_conv[idx]*capnrg[idx]), 6))
-        logger.info('Residential electricity prices updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update residential electricity prices: {e}')
+    safe_update('Residential electricity prices', lambda:
+                _write_yearly(conv['electricity']['price']['data']['residential'],
+                              yrs_elec,
+                              z_elec['elec_res_price'] / (ss_conv * capnrg)))
 
     # Commercial electricity prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['price']['data']['commercial'][year] = (
-                round(z_elec['elec_com_price'][idx]/(ss_conv[idx]*capnrg[idx]), 6))
-        logger.info('Commercial electricity prices updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update commercial electricity prices: {e}')
+    safe_update('Commercial electricity prices', lambda:
+                _write_yearly(conv['electricity']['price']['data']['commercial'],
+                              yrs_elec,
+                              z_elec['elec_com_price'] / (ss_conv * capnrg)))
 
     # Residential natural gas prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['natural gas']['price']['data']['residential'][year] = (
-                round(z_foss['ng_res_price'][idx], 6))
-        logger.info('Residential natural gas prices updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update residential natural gas prices: {e}')
+    safe_update('Residential natural gas prices', lambda:
+                _write_yearly(conv['natural gas']['price']['data']['residential'],
+                              yrs_foss, z_foss['ng_res_price']))
 
     # Commercial natural gas prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['natural gas']['price']['data']['commercial'][year] = (
-                round(z_foss['ng_com_price'][idx], 6))
-        logger.info('Commercial natural gas prices updated')
-    except KeyError as e:
-        logger.warning(f'Failed to update commercial natural gas prices: {e}')
+    safe_update('Commercial natural gas prices', lambda:
+                _write_yearly(conv['natural gas']['price']['data']['commercial'],
+                              yrs_foss, z_foss['ng_com_price']))
 
     # Residential propane prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['propane']['price']['data']['residential'][year] = (
-                round(z_foss['lpg_res_price'][idx], 6))
-        logger.info('Residential propane prices updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update residential propane prices: {e}')
+    safe_update('Residential propane prices', lambda:
+                _write_yearly(conv['propane']['price']['data']['residential'],
+                              yrs_foss, z_foss['lpg_res_price']),
+                              warn=not web)
 
     # Commercial propane prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['propane']['price']['data']['commercial'][year] = (
-                round(z_foss['lpg_com_price'][idx], 6))
-        logger.info('Commercial propane prices updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update commercial propane prices: {e}')
+    safe_update('Commercial propane prices', lambda:
+                _write_yearly(conv['propane']['price']['data']['commercial'],
+                              yrs_foss, z_foss['lpg_com_price']),
+                              warn=not web)
 
     # Residential distillate prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['distillate']['price']['data']['residential'][year] = (
-                round(z_foss['distl_res_price'][idx], 6))
-        logger.info('Residential distillate prices updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update residential distillate prices: {e}')
+    safe_update('Residential distillate prices', lambda:
+                _write_yearly(conv['distillate']['price']['data']['residential'],
+                              yrs_foss, z_foss['distl_res_price']),
+                              warn=not web)
 
     # Commercial distillate prices [$/MMBtu source]
-    try:
-        for idx, year in enumerate(yrs_foss):
-            conv['distillate']['price']['data']['commercial'][year] = (
-                round(z_foss['distl_com_price'][idx], 6))
-        logger.info('Commercial distillate prices updated')
-    except KeyError as e:
-        if not web:
-            logger.warning(f'Failed to update commercial distillate prices: {e}')
+    safe_update('Commercial distillate prices', lambda:
+                _write_yearly(conv['distillate']['price']['data']['commercial'],
+                              yrs_foss, z_foss['distl_com_price']),
+                              warn=not web)
 
     # Residential other fuel price as energy use-weighted average
     # of propane and distillate (fuel oil) prices [$/MMBtu source]
-    try:
-        res_other_price = (z_foss['lpg_res_price']*z_foss['lpg_res_energy']/(
-                            z_foss['lpg_res_energy'] + z_foss['distl_res_energy']) +
-                           z_foss['distl_res_price']*z_foss['distl_res_energy']/(
-                            z_foss['lpg_res_energy'] + z_foss['distl_res_energy']))
-        for idx, year in enumerate(yrs_foss):
-            conv['other']['price']['data']['residential'][year] = (
-                round(res_other_price[idx], 6))
-        logger.info('Residential other fuel prices updated')
-    except KeyError as e:
-        if web:
-            logger.warning(f'Failed to update residential other fuel prices: {e}')
+    safe_update('Residential other fuel prices', lambda:
+                _write_yearly(conv['other']['price']['data']['residential'],
+                              yrs_foss,
+                              (z_foss['lpg_res_price'] * z_foss['lpg_res_energy'] +
+                               z_foss['distl_res_price'] * z_foss['distl_res_energy']) /
+                               (z_foss['lpg_res_energy'] + z_foss['distl_res_energy'])),
+                               warn=web)
 
     # Commercial other fuel price as energy use-weighted average of
     # propane, distillate (fuel oil), and residual (fuel oil) prices
     # [$/MMBtu source]
-    try:
-        denom = z_foss['lpg_com_energy']+z_foss['distl_com_energy']+z_foss['rsid_com_energy']
-        com_other_price = (z_foss['lpg_com_price']*z_foss['lpg_com_energy']/denom +
-                           z_foss['distl_com_price']*z_foss['distl_com_energy']/denom +
-                           z_foss['rsid_com_price']*z_foss['rsid_com_energy']/denom)
-        for idx, year in enumerate(yrs_foss):
-            conv['other']['price']['data']['commercial'][year] = (
-                round(com_other_price[idx], 6))
-        logger.info('Commercial other fuel prices updated')
-    except KeyError as e:
-        if web:
-            logger.warning(f'Failed to update commercial other fuel prices: {e}')
+    def _update_com_other_price():
+        denom = (z_foss['lpg_com_energy'] + z_foss['distl_com_energy'] +
+                 z_foss['rsid_com_energy'])
+        values = (z_foss['lpg_com_price'] * z_foss['lpg_com_energy'] / denom +
+                  z_foss['distl_com_price'] * z_foss['distl_com_energy'] / denom +
+                  z_foss['rsid_com_price'] * z_foss['rsid_com_energy'] / denom)
+        _write_yearly(conv['other']['price']['data']['commercial'],
+                      yrs_foss, values)
+    safe_update('Commercial other fuel prices', _update_com_other_price, warn=web)
 
     return conv
 
