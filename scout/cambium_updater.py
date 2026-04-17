@@ -532,7 +532,7 @@ def generate_hourly_factors(df, geography):
     return df_reg
 
 
-def hourly_factors_updater(df, scenario, year, metric, geography):
+def (df, scenario, year, metric, geography):
     """
     Update existing hourly cost/carbon tsv files with scaling fractions
     from Cambium data for a given scenario.
@@ -758,6 +758,75 @@ def validate_hourly_data(data, metric):
         raise ValueError(msg)
 
 
+def _update_annual_regional(df, scenario, year, geography):
+    """Update annual CO2 emissions intensities for a regional geography.
+
+    Loads the reference JSON for the given geography, runs the annual
+    factors updater, sets metadata, validates, and writes the result.
+
+    Args:
+        df (DataFrame): Cambium data merged with BA-to-region mapping.
+        scenario (str): Cambium scenario name.
+        year (str): Cambium data year.
+        geography (str): 'EMM' or 'State'.
+    """
+    file_paths = UsefulInputFiles().file_paths
+    geo_key = geography.lower()
+    logger.info(
+        f'Updating {geo_key} annual emissions intensities data...')
+    with open(file_paths[geo_key]['Ref'], 'r') as js:
+        ss_ref = json.load(js)
+    ss_updated = annual_factors_updater(df, ss_ref, geography)
+    ss_updated['updated_to_cambium_case'] = scenario
+    ss_updated['updated_to_cambium_year'] = year
+    ss_updated['CO2 intensity of electricity']['source'] = \
+        'AEO 2025 data through 2024 w/ Cambium projections'
+    logger.info(
+        f'Writing {geo_key} annual emissions intensities to file...')
+    validate_annual_data(ss_updated, geography)
+    with open(file_paths[geo_key][scenario], 'w') as json_file:
+        json.dump(ss_updated, json_file, sort_keys=False, indent=2)
+
+
+def _update_hourly_regional(df, scenario, year, geography):
+    """Update hourly cost and carbon scaling factors for a geography.
+
+    Generates hourly factors, validates, and writes both cost and
+    carbon gzip JSON files.
+
+    Args:
+        df (DataFrame): Cambium data merged with BA-to-region mapping.
+        scenario (str): Cambium scenario name.
+        year (str): Cambium data year.
+        geography (str): 'EMM' or 'State'.
+    """
+    file_paths = UsefulInputFiles().file_paths
+    geo_key = geography.lower()
+    tsv_key = 'emm' if geography == 'EMM' else 'state'
+    logger.info(
+        f'Updating {geo_key} hourly emissions and price factors...')
+    df_hour = generate_hourly_factors(df, geography)
+    hourly_cost = hourly_factors_updater(
+        df_hour, scenario, year, metric='cost',
+        geography=geography)
+    hourly_carbon = hourly_factors_updater(
+        df_hour, scenario, year, metric='carbon',
+        geography=geography)
+    logger.info(f'Writing {geo_key} price scaling factors to file...')
+    validate_hourly_data(hourly_cost, 'cost')
+    with gzip.open(
+            file_paths['tsv'][tsv_key]['cost'][scenario],
+            'wt') as fp:
+        json.dump(hourly_cost, fp, sort_keys=True, indent=4)
+    logger.info(
+        f'Writing {geo_key} CO2 emissions scaling factors to file...')
+    validate_hourly_data(hourly_carbon, 'carbon')
+    with gzip.open(
+            file_paths['tsv'][tsv_key]['carbon'][scenario],
+            'wt') as fp:
+        json.dump(hourly_carbon, fp, sort_keys=True, indent=4)
+
+
 def main():
     """Main function calls to generate updated supporting files"""
 
@@ -830,100 +899,12 @@ def main():
         # a given Cambium scenario to file
         with open(UsefulInputFiles().file_paths['ss'][scenario], 'w') as json_file:
             json.dump(ss_updated, json_file, sort_keys=False, indent=2)
-        # Notify user that EMM region supporting factors are updating
-        logger.info('Updating EMM region annual emissions intensities data...')
-        # Load existing Ref Case EMM region supporting data file
-        with open(UsefulInputFiles().file_paths['emm']['Ref'], "r") as js:
-            ss_emm = json.load(js)
-        # Update EMM region annual CO2 emissions intensities for annual data
-        # for a given Cambium scenario
-        ss_emm_updated = annual_factors_updater(df, ss_emm, 'EMM')
-        # Update year and Cambium case keys in dictionary to reflect
-        # data updates
-        ss_emm_updated['updated_to_cambium_case'] = scenario
-        ss_emm_updated['updated_to_cambium_year'] = year
-        # Update emissions source notes
-        ss_emm_updated["CO2 intensity of electricity"]["source"] = \
-            "AEO 2025 data through 2024 w/ Cambium projections"
-        # Notify user that EMM region supporting factors are writing to file
-        logger.info('Writing EMM region annual emissions intensities data to file..')
-        validate_annual_data(ss_emm_updated, 'EMM')
-        # Write EMM region annual CO2 emissions intensities for annual data for
-        # a given Cambium scenario to file
-        with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
-            json.dump(ss_emm_updated, json_file, sort_keys=False, indent=2)
-        # Notify user that state supporting factors are updating
-        logger.info('Updating state annual emissions intensities data...')
-        # Load existing Ref Case State supporting data file
-        with open(UsefulInputFiles().file_paths['state']['Ref'], "r") as js:
-            ss_state = json.load(js)
-        # Update State CO2 emissions intensities for annual data
-        # for a given Cambium scenario
-        ss_state_updated = annual_factors_updater(df, ss_state, 'State')
-        # Update year and Cambium case keys in dictionary to reflect
-        # data updates
-        ss_state_updated['updated_to_cambium_case'] = scenario
-        ss_state_updated['updated_to_cambium_year'] = year
-        # Update emissions source notes
-        ss_state_updated["CO2 intensity of electricity"]["source"] = \
-            "AEO 2025 data through 2024 w/ Cambium projections"
-        # Notify user that State supporting factors are writing to file
-        logger.info('Writing state annual emissions intensities data to file..')
-        validate_annual_data(ss_state_updated, 'State')
-        # Write State annual CO2 emissions intensities for annual data for
-        # a given Cambium scenario to file
-        with open(UsefulInputFiles().file_paths['state'][scenario], 'w') as json_file:
-            json.dump(ss_state_updated, json_file, sort_keys=False, indent=2)
-        # Notify user that EMM hourly supporting factors are updating
-        logger.info('Updating EMM region hourly emissions and price factors...')
-        # Update EMM region hourly CO2 emissions and price scaling factors
-        df_hour_emm = generate_hourly_factors(df, 'EMM')
-        hourly_cost_json_emm = hourly_factors_updater(df_hour_emm, scenario, year,
-                                                      metric='cost',
-                                                      geography='EMM')
-        hourly_carbon_json_emm = hourly_factors_updater(df_hour_emm, scenario, year,
-                                                        metric='carbon',
-                                                        geography='EMM')
-        # Notify user that hourly supporting factors are writing to file
-        logger.info('Writing EMM price scaling factors to file...')
-        validate_hourly_data(hourly_cost_json_emm, 'cost')
-        # # Write hourly price scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
-                'wt') as fp:
-            json.dump(hourly_cost_json_emm, fp, sort_keys=True, indent=4)
-        logger.info('Writing EMM CO2 emissions scaling factors to file...')
-        validate_hourly_data(hourly_carbon_json_emm, 'carbon')
-        # Write hourly CO2 emissions scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
-                'wt') as fp:
-            json.dump(hourly_carbon_json_emm, fp, sort_keys=True, indent=4)
-        # Notify user that State hourly supporting factors are updating
-        logger.info('Updating state hourly emissions and price factors...')
-        # Update state hourly CO2 emissions and price scaling factors
-        df_hour_state = generate_hourly_factors(df, 'State')
-        hourly_cost_json_state = hourly_factors_updater(df_hour_state, scenario, year,
-                                                        metric='cost',
-                                                        geography='State')
-        hourly_carbon_json_state = hourly_factors_updater(df_hour_state, scenario, year,
-                                                          metric='carbon',
-                                                          geography='State')
-        # Notify user that hourly supporting factors are writing to file
-        logger.info('Writing state price scaling factors to file...')
-        validate_hourly_data(hourly_cost_json_state, 'cost')
-        # Write State hourly price scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
-                'wt') as fp:
-            json.dump(hourly_cost_json_state, fp, sort_keys=True, indent=4)
-        logger.info('Writing state CO2 emissions scaling factors to file...')
-        validate_hourly_data(hourly_carbon_json_state, 'carbon')
-        # Write State hourly CO2 emissions scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
-                'wt') as fp:
-            json.dump(hourly_carbon_json_state, fp, sort_keys=True, indent=4)
+        # Update EMM and State annual emissions intensities
+        _update_annual_regional(df, scenario, year, 'EMM')
+        _update_annual_regional(df, scenario, year, 'State')
+        # Update EMM and State hourly emissions and price factors
+        _update_hourly_regional(df, scenario, year, 'EMM')
+        _update_hourly_regional(df, scenario, year, 'State')
         logger.info('Update complete.')
     elif full_update == "No":
         temporal_res = validate_user_input(
@@ -1004,139 +985,19 @@ def main():
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
                 logger.info('Update complete.')
-            elif geography == "EMM":
-                # Notify user that EMM region supporting factors are updating
-                logger.info(
-                    'Updating EMM region annual emissions intensities data...')
-                # Load Ref case EMM region supporting data file for specified
-                # scenario
-                with open(UsefulInputFiles().file_paths['emm']['Ref'], "r") as js:
-                    ss_reg = json.load(js)
-                # Update EMM region annual CO2 emissions intensities for annual
-                # data for a given Cambium scenario
-                ss_updated = annual_factors_updater(df, ss_reg,
-                                                    'EMM')
-                # Update year and Cambium case keys in dictionary to reflect
-                # data updates
-                ss_updated['updated_to_cambium_case'] = scenario
-                ss_updated['updated_to_cambium_year'] = year
-                # Notify user that EMM region factors are writing to file
-                logger.info(
-                    'Writing EMM region annual emissions intensities to \
-                    file...')
-                validate_annual_data(ss_updated, 'EMM')
-                # Write EMM region annual CO2 emissions intensities for annual
-                # data for a given Cambium scenario to file
-                with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
-                    json.dump(ss_updated, json_file, sort_keys=False, indent=2)
-                # Notify user that update is complete.
-                logger.info('Update complete.')
-            elif geography == "State":
-                # Notify user that State supporting factors are updating
-                logger.info(
-                    'Updating state annual emissions intensities data...')
-                # Load Reference case State supporting data file for specified
-                # scenario
-                with open(UsefulInputFiles().file_paths['state']['Ref'], "r") as js:
-                    ss_reg = json.load(js)
-                # Update State annual CO2 emissions intensities for annual
-                # data for a given Cambium scenario
-                ss_updated = annual_factors_updater(df, ss_reg,
-                                                    'State')
-                # Update year and Cambium case keys in dictionary to reflect
-                # data updates
-                ss_updated['updated_to_cambium_case'] = scenario
-                ss_updated['updated_to_cambium_year'] = year
-                # Notify user that EMM region factors are writing to file
-                logger.info(
-                    'Writing state annual emissions intensities to \
-                    file...')
-                validate_annual_data(ss_updated, 'State')
-                # Write EMM region annual CO2 emissions intensities for annual
-                # data for a given Cambium scenario to file
-                with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
-                    json.dump(ss_updated, json_file, sort_keys=False, indent=2)
-                # Notify user that update is complete.
+            elif geography in ("EMM", "State"):
+                _update_annual_regional(df, scenario, year, geography)
                 logger.info('Update complete.')
         else:
-            if geography == "EMM":
-                # Import mapping file to map Cambium BA regions to EMM regions
-                ba_emm_map = import_ba_emm_mapping()
-                # Notify user that Cambium data are importing
-                logger.info('Importing Cambium scenario data...')
-                # Import Cambium data for the specified year and scenario
-                cambium_df = cambium_data_import(cambium_file_path, year,
-                                                 scenario)
-                # Join mapping file to cambium data
-                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                              right_on='cambium_24_ba', how='left')
-                # Notify user that hourly supporting factors are updating
-                logger.info('Updating EMM region hourly emissions and price \
-                      factors...')
-                # Update hourly CO2 emissions and price scaling factors
-                df_hour = generate_hourly_factors(df, geography='EMM')
-                hourly_cost_json = hourly_factors_updater(df_hour, scenario, year,
-                                                          metric='cost',
-                                                          geography='EMM')
-                hourly_carbon_json = hourly_factors_updater(df_hour, scenario, year,
-                                                            metric='carbon',
-                                                            geography='EMM')
-                # Notify user that hourly supporting factors are writing to
-                # file
-                logger.info('Writing EMM region price scaling factors to file...')
-                validate_hourly_data(hourly_cost_json, 'cost')
-                # Write hourly price scaling factors to file
-                with gzip.open(
-                    UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
-                        'wt') as fp:
-                    json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
-                logger.info('Writing EMM region CO2 emissions scaling factors \
-                      to file...')
-                validate_hourly_data(hourly_carbon_json, 'carbon')
-                # Write hourly CO2 emissions scaling factors to file
-                with gzip.open(
-                    UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
-                        'wt') as fp:
-                    json.dump(hourly_carbon_json, fp, sort_keys=True, indent=4)
-                logger.info('Update complete.')
-            elif geography == "State":
-                # Import mapping file to map Cambium BA regions to States
-                ba_emm_map = import_ba_emm_mapping()
-                # Notify user that Cambium data are importing
-                logger.info('Importing Cambium scenario data...')
-                # Import Cambium data for the specified year and scenario
-                cambium_df = cambium_data_import(cambium_file_path, year,
-                                                 scenario)
-                # Join mapping file to cambium data
-                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                              right_on='cambium_24_ba', how='left')
-                # Notify user that hourly supporting factors are updating
-                logger.info('Updating hourly emissions and price scaling factors...')
-                # Update hourly CO2 emissions and price scaling factors
-                df_hour = generate_hourly_factors(df, 'State')
-                hourly_cost_json = hourly_factors_updater(df_hour, scenario, year,
-                                                          metric='cost',
-                                                          geography='State')
-                hourly_carbon_json = hourly_factors_updater(df_hour, scenario, year,
-                                                            metric='carbon',
-                                                            geography='State')
-                # Notify user that hourly supporting factors are writing to
-                # file
-                logger.info('Writing state price scaling factors to file...')
-                validate_hourly_data(hourly_cost_json, 'cost')
-                # Write hourly price scaling factors to file
-                with gzip.open(
-                    UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
-                        'wt') as fp:
-                    json.dump(hourly_cost_json, fp, sort_keys=True, indent=4)
-                logger.info('Writing state CO2 emissions scaling factors to file...')
-                validate_hourly_data(hourly_carbon_json, 'carbon')
-                # Write hourly CO2 emissions scaling factors to file
-                with gzip.open(
-                    UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
-                        'wt') as fp:
-                    json.dump(hourly_carbon_json, fp, sort_keys=True, indent=4)
-                logger.info('Update complete.')
+            # Import mapping file and Cambium data for hourly update
+            ba_emm_map = import_ba_emm_mapping()
+            logger.info('Importing Cambium scenario data...')
+            cambium_df = cambium_data_import(cambium_file_path, year,
+                                             scenario)
+            df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
+                          right_on='cambium_24_ba', how='left')
+            _update_hourly_regional(df, scenario, year, geography)
+            logger.info('Update complete.')
     else:
         logger.warning('Invalid entry.')
 
