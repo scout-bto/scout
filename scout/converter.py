@@ -613,10 +613,10 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
     def _update_ss():
         nonlocal ss_conv
         ss_conv = ((z_elec['elec_tot_energy_site'] +
-                    z_elec['elec_tot_energy_loss']) /
-                    z_elec['elec_tot_energy_site'])
+            z_elec['elec_tot_energy_loss']) /
+            z_elec['elec_tot_energy_site'])
         _write_yearly(conv['electricity']['site to source conversion']['data'],
-                      yrs_elec, ss_conv * capnrg)
+            yrs_elec, ss_conv * capnrg)
     safe_update(
         'Electricity site-source conversion factors',
         _update_ss
@@ -624,130 +624,131 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
 
     # Residential electricity CO2 intensities [Mt CO2/quads]
     safe_update('Residential electricity CO2 intensities', lambda:
-                _write_yearly(conv['electricity']['CO2 intensity']['data']['residential'],
-                              yrs_elec,
-                              (z_elec['elec_res_co2'] /
-                               (z_elec['elec_res_energy_site'] +
-                                z_elec['elec_res_energy_loss'])) / capnrg))
+        _write_yearly(conv['electricity']['CO2 intensity']['data']['residential'],
+            yrs_elec,
+            (z_elec['elec_res_co2'] /
+            (z_elec['elec_res_energy_site'] +
+            z_elec['elec_res_energy_loss'])) / capnrg))
 
     # Commercial electricity CO2 intensities [Mt CO2/quads]
     safe_update('Commercial electricity CO2 intensities', lambda:
-                _write_yearly(conv['electricity']['CO2 intensity']['data']['commercial'],
-                              yrs_elec,
-                              (z_elec['elec_com_co2'] /
-                               (z_elec['elec_com_energy_site'] +
-                                z_elec['elec_com_energy_loss'])) / capnrg))
+        _write_yearly(conv['electricity']['CO2 intensity']['data']['commercial'],
+            yrs_elec,
+            (z_elec['elec_com_co2'] /
+            (z_elec['elec_com_energy_site'] +
+            z_elec['elec_com_energy_loss'])) / capnrg))
 
     # Residential natural gas CO2 intensities [Mt CO2/quads]
     safe_update('Residential natural gas CO2 intensities', lambda:
-                _write_yearly(conv['natural gas']['CO2 intensity']['data']['residential'],
-                              yrs_foss,
-                              z_foss['ng_res_co2'] / z_foss['ng_res_energy']))
+        _write_yearly(conv['natural gas']['CO2 intensity']['data']['residential'],
+            yrs_foss,
+            z_foss['ng_res_co2'] / z_foss['ng_res_energy']))
 
     # Commercial natural gas CO2 intensities [Mt CO2/quads]
     safe_update('Commercial natural gas CO2 intensities', lambda:
-                _write_yearly(conv['natural gas']['CO2 intensity']['data']['commercial'],
-                              yrs_foss,
-                              z_foss['ng_com_co2'] / z_foss['ng_com_energy']))
+        _write_yearly(conv['natural gas']['CO2 intensity']['data']['commercial'],
+            yrs_foss,
+            z_foss['ng_com_co2'] / z_foss['ng_com_energy']))
 
     # Residential propane CO2 intensities [Mt CO2/quads]
     safe_update('Residential propane CO2 intensities', lambda:
-                _write_yearly(conv['propane']['CO2 intensity']['data']['residential'],
-                              yrs_foss,
-                              np.full(len(yrs_foss), CO2_INTENSITIES['propane'])),
-                              warn=not web)
+        _write_yearly(conv['propane']['CO2 intensity']['data']['residential'],
+            yrs_foss,
+            np.full(len(yrs_foss), CO2_INTENSITIES['propane'])),
+        warn=not web)
 
     # Commercial propane CO2 intensities [Mt CO2/quads]
     safe_update('Commercial propane CO2 intensities', lambda:
-                _write_yearly(conv['propane']['CO2 intensity']['data']['commercial'],
-                              yrs_foss,
-                              np.full(len(yrs_foss), CO2_INTENSITIES['propane'])),
-                              warn=not web)
+        _write_yearly(conv['propane']['CO2 intensity']['data']['commercial'],
+            yrs_foss,
+            np.full(len(yrs_foss), CO2_INTENSITIES['propane'])),
+        warn=not web)
 
     # Residential distillate CO2 intensities [Mt CO2/quads]
     safe_update('Residential distillate CO2 intensities', lambda:
-                _write_yearly(conv['distillate']['CO2 intensity']['data']['residential'],
-                              yrs_foss,
-                              np.full(len(yrs_foss), CO2_INTENSITIES['distillate'])),
-                              warn=not web)
+        _write_yearly(conv['distillate']['CO2 intensity']['data']['residential'],
+            yrs_foss,
+            np.full(len(yrs_foss), CO2_INTENSITIES['distillate'])),
+        warn=not web)
 
     # Commercial distillate CO2 intensities [Mt CO2/quads]
     safe_update('Commercial distillate CO2 intensities', lambda:
-                _write_yearly(conv['distillate']['CO2 intensity']['data']['commercial'],
-                              yrs_foss,
-                              np.full(len(yrs_foss), CO2_INTENSITIES['distillate'])),
-                              warn=not web)
+        _write_yearly(conv['distillate']['CO2 intensity']['data']['commercial'],
+            yrs_foss,
+            np.full(len(yrs_foss), CO2_INTENSITIES['distillate'])),
+        warn=not web)
 
     # Residential other fuel CO2 intensities [Mt CO2/quads]
     safe_update('Residential other fuel CO2 intensities', lambda:
-                _write_yearly(conv['other']['CO2 intensity']['data']['residential'],
-                              yrs_foss,
-                              z_foss['petro_res_co2'] / z_foss['petro_res_energy']),
-                              warn=web)
+        _write_yearly(conv['other']['CO2 intensity']['data']['residential'],
+            yrs_foss,
+            z_foss['petro_res_co2'] / z_foss['petro_res_energy']),
+        warn=web)
 
     # Commercial other fuel CO2 intensities [Mt CO2/quads]
     safe_update('Commercial other fuel CO2 intensities', lambda:
-                _write_yearly(conv['other']['CO2 intensity']['data']['commercial'],
-                              yrs_foss,
-                              (z_foss['petro_com_co2'] + z_foss['coal_com_co2']) /
-                              (z_foss['petro_com_energy'] + z_foss['coal_com_energy'])),
-                              warn=web)
+        _write_yearly(conv['other']['CO2 intensity']['data']['commercial'],
+            yrs_foss,
+                (z_foss['petro_com_co2'] + z_foss['coal_com_co2']) /
+                (z_foss['petro_com_energy'] + z_foss['coal_com_energy'])),
+        warn=web)
 
     # Residential electricity prices [$/MMBtu source]
     safe_update('Residential electricity prices', lambda:
-                _write_yearly(conv['electricity']['price']['data']['residential'],
-                              yrs_elec,
-                              z_elec['elec_res_price'] / (ss_conv * capnrg)))
+        _write_yearly(conv['electricity']['price']['data']['residential'],
+            yrs_elec,
+            z_elec['elec_res_price'] / (ss_conv * capnrg)))
 
     # Commercial electricity prices [$/MMBtu source]
     safe_update('Commercial electricity prices', lambda:
-                _write_yearly(conv['electricity']['price']['data']['commercial'],
-                              yrs_elec,
-                              z_elec['elec_com_price'] / (ss_conv * capnrg)))
+        _write_yearly(conv['electricity']['price']['data']['commercial'],
+            yrs_elec,
+            z_elec['elec_com_price'] / (ss_conv * capnrg)))
 
     # Residential natural gas prices [$/MMBtu source]
     safe_update('Residential natural gas prices', lambda:
-                _write_yearly(conv['natural gas']['price']['data']['residential'],
-                              yrs_foss, z_foss['ng_res_price']))
+        _write_yearly(conv['natural gas']['price']['data']['residential'],
+            yrs_foss, z_foss['ng_res_price']))
 
     # Commercial natural gas prices [$/MMBtu source]
     safe_update('Commercial natural gas prices', lambda:
-                _write_yearly(conv['natural gas']['price']['data']['commercial'],
-                              yrs_foss, z_foss['ng_com_price']))
+        _write_yearly(conv['natural gas']['price']['data']['commercial'],
+            yrs_foss, z_foss['ng_com_price']))
 
     # Residential propane prices [$/MMBtu source]
     safe_update('Residential propane prices', lambda:
-                _write_yearly(conv['propane']['price']['data']['residential'],
-                              yrs_foss, z_foss['lpg_res_price']),
-                              warn=not web)
+        _write_yearly(conv['propane']['price']['data']['residential'],
+            yrs_foss, z_foss['lpg_res_price']),
+        warn=not web)
 
     # Commercial propane prices [$/MMBtu source]
     safe_update('Commercial propane prices', lambda:
-                _write_yearly(conv['propane']['price']['data']['commercial'],
-                              yrs_foss, z_foss['lpg_com_price']),
-                              warn=not web)
+        _write_yearly(conv['propane']['price']['data']['commercial'],
+            yrs_foss, z_foss['lpg_com_price']),
+        warn=not web)
 
     # Residential distillate prices [$/MMBtu source]
     safe_update('Residential distillate prices', lambda:
-                _write_yearly(conv['distillate']['price']['data']['residential'],
-                              yrs_foss, z_foss['distl_res_price']),
-                              warn=not web)
+        _write_yearly(conv['distillate']['price']['data']['residential'],
+            yrs_foss, z_foss['distl_res_price']),
+        warn=not web)
 
     # Commercial distillate prices [$/MMBtu source]
     safe_update('Commercial distillate prices', lambda:
-                _write_yearly(conv['distillate']['price']['data']['commercial'],
-                              yrs_foss, z_foss['distl_com_price']),
-                              warn=not web)
+        _write_yearly(conv['distillate']['price']['data']['commercial'],
+            yrs_foss, z_foss['distl_com_price']),
+        warn=not web)
 
     # Residential other fuel price as energy use-weighted average
     # of propane and distillate (fuel oil) prices [$/MMBtu source]
     safe_update('Residential other fuel prices', lambda:
-                _write_yearly(conv['other']['price']['data']['residential'],
-                              yrs_foss,
-                              (z_foss['lpg_res_price'] * z_foss['lpg_res_energy'] +
-                               z_foss['distl_res_price'] * z_foss['distl_res_energy']) /
-                               (z_foss['lpg_res_energy'] + z_foss['distl_res_energy'])),
-                               warn=web)
+        _write_yearly(
+            conv['other']['price']['data']['residential'],
+            yrs_foss,
+            (z_foss['lpg_res_price'] * z_foss['lpg_res_energy'] +
+             z_foss['distl_res_price'] * z_foss['distl_res_energy']) /
+            (z_foss['lpg_res_energy'] + z_foss['distl_res_energy'])),
+        warn=web)
 
     # Commercial other fuel price as energy use-weighted average of
     # propane, distillate (fuel oil), and residual (fuel oil) prices
