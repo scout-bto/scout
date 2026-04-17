@@ -532,7 +532,7 @@ def generate_hourly_factors(df, geography):
     return df_reg
 
 
-def (df, scenario, year, metric, geography):
+def hourly_factors_updater(df, scenario, year, metric, geography):
     """
     Update existing hourly cost/carbon tsv files with scaling fractions
     from Cambium data for a given scenario.
