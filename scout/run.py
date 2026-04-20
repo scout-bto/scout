@@ -1902,9 +1902,9 @@ class Engine(object):
         mkt_fracs = [{} for meas in range(0, len(measures_adj))]
         mkt_fracs_tot = dict.fromkeys(self.handyvars.aeo_years, 0)
 
-        # Find mseg key to use in pulling stock and cost data (in some cases, like cooling
-        # msegs for heat pump tech,stock turnover and cost information for the current
-        # msegs should be linked to another microsegment – heating msegs, in the HP case)
+        # Find mseg key to use in pulling stock, cost, and consumer choice weight data (in some
+        # cases, like cooling msegs for heat pump tech,stock turnover and cost information
+        # for current msegs should be linked to another mseg – heating msegs, in the HP case)
         stk_cost_dat_keys = [self.find_join_keys(m, mseg_key) for m in measures_adj]
 
         # Calculate the total annualized cost (capital + operating) needed to
@@ -1921,9 +1921,10 @@ class Engine(object):
             # Unit annual operating cost dictionary (calculated across all measure segments)
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "residential"] for m in measures_adj]
+            # Shorthand for mseg information to use in pulling consumer choice weights later
             choice_mseg = [mseg_key for m in measures_adj]
         else:
-            # Shorthand for mseg-specific stock/cost data
+            # Shorthand for mseg-specific stock/cost data; use mseg info. pulled above
             try:
                 markets_uc_stk = [
                     m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
@@ -1949,7 +1950,6 @@ class Engine(object):
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
                     # Shorthand for mseg information to use in pulling consumer choice weights later
                     choice_mseg = [mseg_key for m in measures_adj]
-
             # Shorthand for linked stock and energy costs, to be added to unit costs below
             lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                             "linked mseg values"] for m in measures_adj]
@@ -2179,9 +2179,9 @@ class Engine(object):
         mkt_fracs = [{} for meas in range(0, len(measures_adj))]
         tot_cost = [{} for meas in range(0, len(measures_adj))]
 
-        # Find mseg key to use in pulling stock and stock cost data (in some cases, like cooling
-        # msegs for heat pump tech, stock cost and stock turnover information for the current
-        # msegs should be linked to another microsegment – heating msegs, in the HP case)
+        # Find mseg key to use in pulling stock, cost, and consumer choice weight data (in some
+        # cases, like cooling msegs for heat pump tech,stock turnover and cost information
+        # for current msegs should be linked to another mseg – heating msegs, in the HP case)
         stk_cost_dat_keys = [self.find_join_keys(m, mseg_key) for m in measures_adj]
 
         # Calculate the total annualized cost (capital + operating) needed to
@@ -2205,7 +2205,7 @@ class Engine(object):
             # Shorthand for mseg information to use in pulling consumer choice weights later
             choice_mseg = [mseg_key for m in measures_adj]
         else:
-            # Shorthand for mseg-specific stock/stock cost data
+            # Shorthand for mseg-specific stock/stock cost data; use mseg info. pulled above
             try:
                 markets_uc_stk, markets_uc_capfact = [[
                     m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][x][
