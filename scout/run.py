@@ -1922,7 +1922,7 @@ class Engine(object):
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "residential"] for m in measures_adj]
             # Shorthand for mseg information to use in pulling consumer choice weights later
-            choice_mseg = [mseg_key for m in measures_adj]
+            choice_mseg = [mseg_key] * len(measures_adj)
         else:
             # Shorthand for mseg-specific stock/cost data; use mseg info. pulled above
             try:
@@ -1949,7 +1949,7 @@ class Engine(object):
                         "mseg_adjust"]["contributing mseg keys and values"][
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
                     # Shorthand for mseg information to use in pulling consumer choice weights later
-                    choice_mseg = [mseg_key for m in measures_adj]
+                    choice_mseg = [mseg_key] * len(measures_adj)
             # Shorthand for linked stock and energy costs, to be added to unit costs below
             lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                             "linked mseg values"] for m in measures_adj]
@@ -2007,10 +2007,6 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
-        # Pre-compute str(mseg_key) once – it is used inside every
-        # (ind × yr) iteration of the choice-parameter lookup below.
-        mseg_key_str = str(mseg_key)
-
         # Loop through competing measures and calculate market shares for
         # each based on their annualized capital and operating costs
         for ind, m in enumerate(measures_adj):
@@ -2020,7 +2016,7 @@ class Engine(object):
             # (avoids re-traversing the full dict on every year iteration).
             try:
                 _choice_params = m.markets[adopt_scheme]["competed"][
-                    "mseg_adjust"]["competed choice parameters"][mseg_key_str]
+                    "mseg_adjust"]["competed choice parameters"][str(choice_mseg[ind])]
             except KeyError:
                 _choice_params = None
 
@@ -2203,7 +2199,7 @@ class Engine(object):
             # rate bins; flag for handling below
             op_cost_rate_bins = True
             # Shorthand for mseg information to use in pulling consumer choice weights later
-            choice_mseg = [mseg_key for m in measures_adj]
+            choice_mseg = [mseg_key] * len(measures_adj)
         else:
             # Shorthand for mseg-specific stock/stock cost data; use mseg info. pulled above
             try:
@@ -2231,6 +2227,8 @@ class Engine(object):
                         "Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             mseg_key] for m_ind, m in enumerate(measures_adj)] for x in [
                         "contributing mseg keys and values", "capacity factor"]]
+                    # Shorthand for mseg information to use in pulling consumer choice weights later
+                    choice_mseg = [mseg_key] * len(measures_adj)
 
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
@@ -2483,9 +2481,6 @@ class Engine(object):
                 list(zip(result[c_l], counts_arr[c_l]))
                 for c_l in range(n_samples)]
 
-        # Pre-compute str(mseg_key) once – used in every (ind × yr) iteration.
-        mseg_key_str = str(mseg_key)
-
         # Loop through competing measures and use total annualized capital
         # + operating costs to determine the overall share of the market
         # that is captured by each measure; use market shares to make
@@ -2499,7 +2494,7 @@ class Engine(object):
             try:
                 _rate_dist_all = m.markets[adopt_scheme]["competed"][
                     "mseg_adjust"]["competed choice parameters"][
-                        mseg_key_str]["rate distribution"]
+                        str(choice_mseg[ind])]["rate distribution"]
             except KeyError:
                 _rate_dist_all = None
 
@@ -4775,10 +4770,10 @@ class Engine(object):
                     try:
                         # Efficient-captured energy all with switched to fuel
                         if var_sub == "efficient-captured":
-                            fs_splt = adj_out_break["captured fuel splits"]
+                            fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                         # Efficient energy may be split across base/switched to fuel
                         else:
-                            fs_splt = adj_out_break["fuel splits"]
+                            fs_splt = adj_out_break["fuel splits"][var_sub]
                         # Ensure baseline result is not already zero before adjusting; if zero, no
                         # further adjustment required
                         _cur_val = adj_out_break["base fuel"][var][var_sub][yr]
@@ -4790,7 +4785,7 @@ class Engine(object):
                         adj_out_break["base fuel"][var][var_sub][yr] = \
                             _cur_val - (
                             adj[var]["total"][adj_key][yr]) * (
-                                1 - adj_t[var]) * fs_splt[var_sub][var][yr]
+                                1 - adj_t[var]) * fs_splt[var][yr]
                     except KeyError:
                         continue
 
