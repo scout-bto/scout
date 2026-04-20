@@ -2062,19 +2062,11 @@ class Measure(object):
             # appropriate terminal value is reached
             for i in range(0, len(mskeys)):
                 # Handle case where heating equipment key has been further modified
-                # to enable assessment of panel upgrade sub-segments and/or commercial technology
-                # key has been modified to flag the isolation of ComStock gap segments;
-                # for the purposes of pulling stock/energy data from AEO, strip any of this
-                # additional information and use the original key information
-                if mskeys[i] is not None and (
-                        any([x in mskeys[i] for x in self.handyvars.alt_panel_names])):
-                    key_item = mskeys[i].split("-")[0]
-                elif mskeys[i] is not None and "(gap)" in mskeys[i]:
-                    key_item = mskeys[i].split(" (")[0]
-                elif mskeys[i] is not None and mskeys[i] == "gap":
-                    key_item = None
-                else:
-                    key_item = mskeys[i]
+                # to enable assessment of panel upgrade sub-segments; for the purposes of pulling
+                # stock/energy data from AEO, strip any of this additional information and use the
+                # original key information
+                key_item, key_item_swtch = [
+                    self.scrub_panel_info(x[i]) if x else None for x in [mskeys, mskeys_swtch]]
 
                 # For use of state regions, cost/performance/lifetime data
                 # are broken out by census division; map the state of the
@@ -2129,15 +2121,15 @@ class Measure(object):
                             if key_item is not None:  # Handle 'None' tech.
                                 base_cpl = base_cpl[key_item]
                             # Do the same for "switched to" data if applicable
-                            if base_cpl_swtch and mskeys_swtch[i] is not None:
+                            if base_cpl_swtch and key_item_swtch is not None:
                                 try:
                                     base_cpl_swtch = \
-                                        base_cpl_swtch[mskeys_swtch[i]]
+                                        base_cpl_swtch[key_item_swtch]
                                 except KeyError:
                                     raise KeyError(
                                         "Provided microsegment keys for "
                                         "measure '" + self.name + "'' of " +
-                                        str(mskeys_swtch) +
+                                        str(key_item_swtch) +
                                         " invalid for pulling switched to "
                                         "tech data. Check 'fuel_switch_to' "
                                         "and 'tech_switch_to' fields in "
@@ -5156,6 +5148,27 @@ class Measure(object):
                   bstk_msg + bcpl_msg + bcc_msg + cc_msg)
         else:
             print("Success" + bstk_msg + bcpl_msg + bcc_msg + cc_msg)
+
+    def scrub_panel_info(self, key_in):
+        """Scrub extraneous tech. info related to assessing electrical panel costs.
+
+        Args:
+            key_in (tuple): Mseg key list item (reg, bldg, fuel, eu, tech type, tech, vintage) for
+                base mseg or mseg being switched to by measure.
+
+        Returns:
+            Microsegment technology key scrubbed of any panel upgrade flags.
+
+        """
+        # Check for panel information in the mseg item; if there, scrub the panel information
+        if key_in is not None and (
+                any([x in key_in for x in self.handyvars.alt_panel_names])):
+            key_out = key_in.split("-")[0]
+        # Otherwise use the mseg item as-is
+        else:
+            key_out = key_in
+
+        return key_out
 
     def use_deflt_res_choice(self, mskeys, consume_warn, opts):
         """Assign default res. tech. choice coefficients for segments without AEO coefficients.
