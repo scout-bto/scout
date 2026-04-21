@@ -1900,9 +1900,9 @@ class Engine(object):
         mkt_fracs = [{} for meas in range(0, len(measures_adj))]
         mkt_fracs_tot = dict.fromkeys(self.handyvars.aeo_years, 0)
 
-        # Find mseg key to use in pulling stock and cost data (in some cases, like cooling
-        # msegs for heat pump tech,stock turnover and cost information for the current
-        # msegs should be linked to another microsegment – heating msegs, in the HP case)
+        # Find mseg key to use in pulling stock, cost, and consumer choice weight data (in some
+        # cases, like cooling msegs for heat pump tech,stock turnover and cost information
+        # for current msegs should be linked to another mseg – heating msegs, in the HP case)
         stk_cost_dat_keys = [self.find_join_keys(m, mseg_key) for m in measures_adj]
 
         # Calculate the total annualized cost (capital + operating) needed to
@@ -1919,19 +1919,26 @@ class Engine(object):
             # Unit annual operating cost dictionary (calculated across all measure segments)
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "residential"] for m in measures_adj]
+            # Shorthand for mseg information to use in pulling consumer choice weights later
+            choice_mseg = [mseg_key for m in measures_adj]
         else:
-            # Shorthand for mseg-specific stock/cost data
+            # Shorthand for mseg-specific stock/cost data; use mseg info. pulled above
             try:
                 markets_uc_stk = [
                     m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                         "contributing mseg keys and values"][
                         stk_cost_dat_keys[m_ind][0]] for m_ind, m in enumerate(measures_adj)]
+                # Shorthand for mseg information to use in pulling consumer choice weights later
+                choice_mseg = [stk_cost_dat_keys[m_ind][0] for m_ind, m in enumerate(measures_adj)]
             except KeyError:
                 try:
                     markets_uc_stk = [
                         m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                             "contributing mseg keys and values"][
                             stk_cost_dat_keys[m_ind][1]] for m_ind, m in enumerate(measures_adj)]
+                    # Shorthand for mseg information to use in pulling consumer choice weights later
+                    choice_mseg = [stk_cost_dat_keys[m_ind][1] for
+                                   m_ind, m in enumerate(measures_adj)]
                 except KeyError:
                     # Handle case where expected microsegment stock data to be linked to the stock
                     # data for the current microsegment is not available; key in stock data with
@@ -1939,6 +1946,8 @@ class Engine(object):
                     markets_uc_stk = [m.markets["Technical potential"]["uncompeted"][
                         "mseg_adjust"]["contributing mseg keys and values"][
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
+                    # Shorthand for mseg information to use in pulling consumer choice weights later
+                    choice_mseg = [mseg_key for m in measures_adj]
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
                        for m_ind, m in enumerate(measures_adj)]
@@ -2012,10 +2021,10 @@ class Engine(object):
                         sum_wt = cap_cost * \
                             m.markets[adopt_scheme]["competed"][
                                 "mseg_adjust"]["competed choice parameters"][
-                                str(mseg_key)]["b1"][yr] + op_cost * \
+                                str(choice_mseg[ind])]["b1"][yr] + op_cost * \
                             m.markets[adopt_scheme]["competed"]["mseg_adjust"][
                                 "competed choice parameters"][
-                                str(mseg_key)]["b2"][yr]
+                                str(choice_mseg[ind])]["b2"][yr]
 
                         # Guard against cases with very low weighted sums of
                         # incremental capital and operating costs
@@ -2113,9 +2122,9 @@ class Engine(object):
         mkt_fracs = [{} for meas in range(0, len(measures_adj))]
         tot_cost = [{} for meas in range(0, len(measures_adj))]
 
-        # Find mseg key to use in pulling stock and stock cost data (in some cases, like cooling
-        # msegs for heat pump tech, stock cost and stock turnover information for the current
-        # msegs should be linked to another microsegment – heating msegs, in the HP case)
+        # Find mseg key to use in pulling stock, cost, and consumer choice weight data (in some
+        # cases, like cooling msegs for heat pump tech,stock turnover and cost information
+        # for current msegs should be linked to another mseg – heating msegs, in the HP case)
         stk_cost_dat_keys = [self.find_join_keys(m, mseg_key) for m in measures_adj]
 
         # Calculate the total annualized cost (capital + operating) needed to
@@ -2136,19 +2145,27 @@ class Engine(object):
             # high-resolution competition option) summarize energy costs across all discount
             # rate bins; flag for handling below
             op_cost_rate_bins = True
+            # Shorthand for mseg information to use in pulling consumer choice weights later
+            choice_mseg = [mseg_key for m in measures_adj]
         else:
-            # Shorthand for mseg-specific stock/stock cost data
+            # Shorthand for mseg-specific stock/stock cost data; use mseg info. pulled above
             try:
                 markets_uc_stk, markets_uc_capfact = [[
                     m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][x][
                         stk_cost_dat_keys[m_ind][0]] for m_ind, m in enumerate(measures_adj)]
                     for x in ["contributing mseg keys and values", "capacity factor"]]
+                # Shorthand for mseg information to use in pulling consumer choice weights later
+                choice_mseg = [stk_cost_dat_keys[m_ind][0] for
+                               m_ind, m in enumerate(measures_adj)]
             except KeyError:
                 try:
                     markets_uc_stk, markets_uc_capfact = [[
                         m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             stk_cost_dat_keys[m_ind][1]] for m_ind, m in enumerate(measures_adj)]
                         for x in ["contributing mseg keys and values", "capacity factor"]]
+                    # Shorthand for mseg information to use in pulling consumer choice weights later
+                    choice_mseg = [stk_cost_dat_keys[m_ind][1] for
+                                   m_ind, m in enumerate(measures_adj)]
                 except KeyError:
                     # Handle case where expected microsegment stock data to be linked to the stock
                     # data for the current microsegment is not available; key in stock data with
@@ -2157,6 +2174,7 @@ class Engine(object):
                         "Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             mseg_key] for m_ind, m in enumerate(measures_adj)] for x in [
                             "contributing mseg keys and values", "capacity factor"]]
+                    choice_mseg = [mseg_key for m in measures_adj]
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
                        for m_ind, m in enumerate(measures_adj)]
@@ -2334,7 +2352,7 @@ class Engine(object):
                     # microsegment
                     mkt_dists = m.markets[adopt_scheme]["competed"][
                         "mseg_adjust"]["competed choice parameters"][
-                            str(mseg_key)]["rate distribution"][yr]
+                            str(choice_mseg[ind])]["rate distribution"][yr]
                     # For each discount rate category, find which measure has
                     # the lowest annualized cost and assign that measure the
                     # share of commercial market adopters defined for that
@@ -4588,10 +4606,10 @@ class Engine(object):
                     try:
                         # Efficient-captured energy all with switched to fuel
                         if var_sub == "efficient-captured":
-                            fs_splt = adj_out_break["captured fuel splits"]
+                            fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                         # Efficient energy may be split across base/switched to fuel
                         else:
-                            fs_splt = adj_out_break["fuel splits"]
+                            fs_splt = adj_out_break["fuel splits"][var_sub]
                         # Ensure baseline result is not already zero before adjusting; if zero, no
                         # further adjustment required
                         if (not isinstance(
@@ -4603,7 +4621,7 @@ class Engine(object):
                                 adj_out_break["base fuel"][var][
                                     var_sub][yr] - (
                                 adj[var]["total"][adj_key][yr]) * (
-                                    1 - adj_t[var]) * fs_splt[var_sub][var][yr]
+                                    1 - adj_t[var]) * fs_splt[var][yr]
                         else:
                             continue
                     except KeyError:
