@@ -340,7 +340,7 @@ class UsefulVars(object):
             # Separate conversion data as portion of the total and competed stock (e.g., total
             # conversion percentage vs. converted sales percentage)
             self.conversion_fracs = {
-                x: json.loads(json.dumps(conversion_struct)) for x in ["total", "competed"]}
+                x: copy.deepcopy(conversion_struct) for x in ["total", "competed"]}
         else:
             self.conversion_fracs, self.conversion_fuels, self.conversion_eus = (
                 None for n in range(3))
@@ -3630,8 +3630,9 @@ class Engine(object):
                     if any([x in mseg_key for x in [
                             "rooftop_AC", "pkg_terminal_AC-cool", "reciprocating_chiller",
                             "scroll_chiller", "centrifugal_chiller", "screw_chiller",
-                            "res_type_central_AC", "gas_eng-driven_RTAC", "gas_chiller",
-                            "wall-window_room_AC"]]) or "cooling" not in mseg_key:
+                            "res_type_central_AC", "comm_GSHP-cool", "gas_eng-driven_RTAC",
+                            "gas_chiller"]]) or \
+                            "cooling" not in mseg_key:
                         # Set tech. to first in list of heating
                         # technologies that the measure applies to, and set
                         # the fuel as appropriate to the selected tech.
@@ -3770,7 +3771,7 @@ class Engine(object):
             # to distinguish such considerations; develop alternate stock data
             # keys to switch to to handle this case
             if tch_apnd:
-                key_list_alt1 = json.loads(json.dumps(key_list))
+                key_list_alt1 = copy.deepcopy(key_list)
                 key_list_alt1[-2] = (key_list_alt1[-2] + tch_apnd)
                 stk_cost_dat_key_alt = str(tuple(key_list_alt1))
             else:
@@ -4017,8 +4018,8 @@ class Engine(object):
                              {yr: 0 for yr in self.handyvars.aeo_years}]
         # Finalize shorthand dict
         adj_out_break = {
-            "base fuel": json.loads(json.dumps(results_brk_vars)),
-            "switched fuel": json.loads(json.dumps(results_brk_vars)),
+            "base fuel": copy.deepcopy(results_brk_vars),
+            "switched fuel": copy.deepcopy(results_brk_vars),
             # This is the fuel splits for all stock
             "fuel splits": {
                 "baseline": {var: all_fuel.copy() for var in self.handyvars.brk_vars},
@@ -5514,8 +5515,8 @@ class Engine(object):
                 # measure stock totals to avoid manipulation via "frac_eff_stk"
                 # calculation
                 if all([x for x in [self.opts.mkt_fracs, report_stk_units]]):
-                    eff_stk = json.loads(json.dumps(m.markets[adopt_scheme][
-                        "competed"]["mseg_out_break"]["stock"]["efficient"]))
+                    eff_stk = copy.deepcopy(m.markets[adopt_scheme][
+                        "competed"]["mseg_out_break"]["stock"]["efficient"])
                 else:
                     eff_stk = m.markets[adopt_scheme][
                         "competed"]["mseg_out_break"]["stock"]["efficient"]
@@ -5541,11 +5542,36 @@ class Engine(object):
                     m.markets[adopt_scheme]["competed"]["mseg_out_break"][
                         "capital cost"]["baseline"], stk_base_cost_avg, focus_yrs,
                     divide=True)
+            # Case with market penetration fractions/breakouts; copy
+            # measure stock totals to avoid manipulation via "frac_eff_stk"
+            # calculation
+            if all([x for x in [self.opts.mkt_fracs, report_stk_units]]):
+                eff_stk = copy.deepcopy(m.markets[adopt_scheme][
+                    "competed"]["mseg_out_break"]["stock"]["efficient"])
+            else:
+                eff_stk = m.markets[adopt_scheme][
+                    "competed"]["mseg_out_break"]["stock"]["efficient"]
+            if report_stk_units:
+                # Calculate efficient stock fractions by breakout category
+                frac_eff_stk = self.out_break_walk(
+                    m.markets[adopt_scheme]["competed"][
+                        "mseg_out_break"]["stock"]["efficient"],
+                    stk_eff_avg, focus_yrs, divide=True)
+            if report_stk_costs:
                 # Calculate efficient stock cost fractions by breakout category
                 frac_eff_stk_cost = self.out_break_walk(
                     m.markets[adopt_scheme]["competed"][
                         "mseg_out_break"]["capital cost"]["efficient"],
                     stk_eff_cost_avg, focus_yrs, divide=True)
+            if self.opts.mkt_fracs is True:
+                # Calculate market penetration percentages for the current
+                # measure and scenario by output breakout category; divide
+                # post-competition measure stock by the total stock that
+                # the measure could possibly affect (before competition)
+                frac_mkt_stk = self.out_break_walk(
+                    eff_stk, m.markets[adopt_scheme]["uncompeted"][
+                        "master_mseg"]["stock"]["total"]["all"],
+                    focus_yrs, divide=True, mkt_frac=True)
 
             # Create shorthand variable for results by breakout category
             mkt_save_brk = self.output_ecms[m.name][
@@ -5561,68 +5587,68 @@ class Engine(object):
                     # Stock results
                     if "Stock" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_base_stk)), mkt_save_brk[k],
+                            copy.deepcopy(frac_base_stk), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Capital cost results
                     elif "Capital" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_base_stk_cost)), mkt_save_brk[k],
+                            copy.deepcopy(frac_base_stk_cost), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy results
                     elif "Energy Use" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_base_energy)), mkt_save_brk[k],
+                            copy.deepcopy(frac_base_energy), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy cost results
                     elif "Energy Cost" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_base_cost)), mkt_save_brk[k],
+                            copy.deepcopy(frac_base_cost), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Carbon results
                     else:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_base_carb)), mkt_save_brk[k],
+                            copy.deepcopy(frac_base_carb), mkt_save_brk[k],
                             focus_yrs, divide=False)
                 # Apply efficient partitioning fractions to efficient values
                 elif any([x in k for x in ["Efficient", "Measure"]]):
                     # Stock results
                     if "Stock" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_eff_stk)), mkt_save_brk[k],
+                            copy.deepcopy(frac_eff_stk), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Capital cost results
                     elif "Capital" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_eff_stk_cost)), mkt_save_brk[k],
+                            copy.deepcopy(frac_eff_stk_cost), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy results excluding efficient captured
                     elif "Energy Use" in k and "Measure" not in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_eff_energy)), mkt_save_brk[k],
+                            copy.deepcopy(frac_eff_energy), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Efficient captured energy results
                     elif eff_capt and "Energy Use" in k and "Measure" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_eff_energy_capt)),
+                            copy.deepcopy(frac_eff_energy_capt),
                             mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy cost results
                     elif "Energy Cost" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_eff_cost)), mkt_save_brk[k],
+                            copy.deepcopy(frac_eff_cost), mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Carbon results
                     else:
                         mkt_save_brk[k] = self.out_break_walk(
-                            json.loads(json.dumps(frac_eff_carb)), mkt_save_brk[k],
+                            copy.deepcopy(frac_eff_carb), mkt_save_brk[k],
                             focus_yrs, divide=False)
             # Assess final output breakouts of savings as the difference
             # between finalized baseline and efficient breakouts from above
             for ind_k, k in enumerate(save_keys):
                 # Copy baseline breakouts dict to use in establishing the
                 # structure of the final savings output breakouts dict
-                orig_dict_struct = json.loads(json.dumps(
-                    mkt_save_brk[mkt_base_keys[ind_k]]))
+                orig_dict_struct = copy.deepcopy(
+                    mkt_save_brk[mkt_base_keys[ind_k]])
                 # Loop through all nested levels of the dict above; when
                 # reaching terminal nodes, finalize savings values as
                 # difference between finalized baseline and efficient results
@@ -7798,8 +7824,8 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 m.markets[adopt_scheme]["uncompeted"]["mseg_adjust"] = \
                     meas_comp_data[adopt_scheme]
                 m.markets[adopt_scheme]["competed"]["mseg_adjust"] = \
-                    json.loads(json.dumps(
-                        m.markets[adopt_scheme]["uncompeted"]["mseg_adjust"]))
+                    copy.deepcopy(
+                        m.markets[adopt_scheme]["uncompeted"]["mseg_adjust"])
                 # Reset measure fuel split attribute to imported values
                 m.eff_fs_splt = meas_eff_fs_data
             # Add in technical potential data needed to support mseg-specific cost/competition
