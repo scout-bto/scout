@@ -9971,10 +9971,11 @@ class Measure(object):
             # Format measure end use attribute as numpy array
             eu = numpy.array(self.end_use[mseg_type])
             # Set a list of heating and/or cooling end uses
-            eu_hc = list(eu[numpy.where([x in ht_cl_euses for x in eu])])
+            # Convert to plain str to avoid np.str_ leaking into mskeys tuples
+            eu_hc = [str(x) for x in eu[numpy.where([x in ht_cl_euses for x in eu])]]
             # Set a list of all other end uses
-            eu_non_hc = list(eu[numpy.where([
-                x not in ht_cl_euses for x in eu])])
+            eu_non_hc = [str(x) for x in eu[numpy.where([
+                x not in ht_cl_euses for x in eu])]]
             # Set a list including all measure microsegment attributes,
             # constraining the 'end_use' attribute to only heating/cooling
             # end uses
@@ -10695,7 +10696,7 @@ class Measure(object):
                                         "efficient"][out_cz][out_bldg][out_eu][
                                         out_fuel_save][yr] += \
                                         (eff_data_fs_base[ind][yr] +
-                                         eff_data_fs_switch[(ind-1)][yr])
+                                         eff_data_fs_switch[ind][yr])
                                     # Note that no baseline fuel, baseline technology
                                     # consumption (e.g., not in backup service to
                                     # measure) remains for captured stock by
@@ -10705,14 +10706,14 @@ class Measure(object):
                                         self.markets[adopt_scheme]["mseg_out_break"][
                                             key]["efficient-captured"][out_cz][
                                             out_bldg][out_eu][out_fuel_save][yr] += \
-                                            eff_data_fs_switch[(ind-1)][yr]
+                                            eff_data_fs_switch[ind][yr]
                                     if key != "stock":  # no stk save
                                         self.markets[adopt_scheme]["mseg_out_break"][
                                             key]["savings"][out_cz][out_bldg][out_eu][
                                             out_fuel_save][yr] += (
                                                 base_data[ind][yr] -
                                                 (eff_data_fs_base[ind][yr] +
-                                                 eff_data_fs_switch[(ind-1)][yr]))
+                                                 eff_data_fs_switch[ind][yr]))
                     except KeyError:
                         for ind, key in enumerate(breakout_vars):
                             # Baseline; add in baseline data as-is
@@ -10748,7 +10749,7 @@ class Measure(object):
                                     "efficient"][out_cz][out_bldg][out_eu][
                                     out_fuel_save] = {
                                         yr: (eff_data_fs_base[ind][yr] +
-                                             eff_data_fs_switch[(ind-1)][yr]) for
+                                             eff_data_fs_switch[ind][yr]) for
                                         yr in _aeo_years}
                                 # Note that no baseline fuel, baseline technology
                                 # consumption (e.g., not in backup service to
@@ -10759,7 +10760,7 @@ class Measure(object):
                                     self.markets[adopt_scheme]["mseg_out_break"][key][
                                         "efficient-captured"][out_cz][out_bldg][
                                         out_eu][out_fuel_save] = {
-                                        yr: eff_data_fs_switch[(ind-1)][yr] for
+                                        yr: eff_data_fs_switch[ind][yr] for
                                         yr in _aeo_years}
                                 if key != "stock":  # no stk save
                                     self.markets[adopt_scheme]["mseg_out_break"][key][
@@ -10767,7 +10768,7 @@ class Measure(object):
                                         out_fuel_save] = {yr: (
                                             base_data[ind][yr] - (
                                                 eff_data_fs_base[ind][yr] +
-                                                eff_data_fs_switch[(ind - 1)][yr]))
+                                                eff_data_fs_switch[ind][yr]))
                                             for yr in _aeo_years}
                 except KeyError:
                     for ind, key in enumerate(breakout_vars):
@@ -10895,7 +10896,7 @@ class Measure(object):
                                         out_fuel_gain] = {
                                         yr: (eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                            eff_data_fs_switch[ind][yr]))
                                         for yr in _aeo_years}
                                 # All captured efficient energy
                                 # goes to switched to fuel, except in the case
@@ -10916,7 +10917,7 @@ class Measure(object):
                                         out_bldg][out_eu][out_fuel_gain] = {
                                         yr: -(eff_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
-                                            eff_data_fs_switch[(ind - 1)][yr]))
+                                            eff_data_fs_switch[ind][yr]))
                                         for yr in _aeo_years}
                             else:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
