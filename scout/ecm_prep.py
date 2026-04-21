@@ -1025,44 +1025,44 @@ class Measure(object):
                     "fugitive emissions"] = {
                         "methane": {
                             "total": {
-                                "baseline": json.loads(json.dumps(init_meth)),
-                                "efficient": json.loads(json.dumps(init_meth))},
+                                "baseline": copy.deepcopy(init_meth),
+                                "efficient": copy.deepcopy(init_meth)},
                             "competed": {
-                                "baseline": json.loads(json.dumps(init_meth)),
-                                "efficient": json.loads(json.dumps(init_meth))}},
+                                "baseline": copy.deepcopy(init_meth),
+                                "efficient": copy.deepcopy(init_meth)}},
                         "refrigerants": {
                             "total": {
-                                "baseline": json.loads(json.dumps(init_refr)),
-                                "efficient": json.loads(json.dumps(init_refr))},
+                                "baseline": copy.deepcopy(init_refr),
+                                "efficient": copy.deepcopy(init_refr)},
                             "competed": {
-                                "baseline": json.loads(json.dumps(init_refr)),
-                                "efficient": json.loads(json.dumps(init_refr))}}}
+                                "baseline": copy.deepcopy(init_refr),
+                                "efficient": copy.deepcopy(init_refr)}}}
 
             # Add market breakout information
 
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": json.loads(json.dumps(self.handyvars.out_break_in)),
-                "efficient": json.loads(json.dumps(self.handyvars.out_break_in)),
-                "savings": json.loads(json.dumps(self.handyvars.out_break_in))} for
+                "baseline": copy.deepcopy(self.handyvars.out_break_in),
+                "efficient": copy.deepcopy(self.handyvars.out_break_in),
+                "savings": copy.deepcopy(self.handyvars.out_break_in)} for
                 key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
-                    key: json.loads(json.dumps(self.handyvars.out_break_in)) for key in
+                    key: copy.deepcopy(self.handyvars.out_break_in) for key in
                     ["baseline", "efficient"]}
             # Add stock cost (capital investment) breakouts
             if self.usr_opts["cap_invest"]:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["capital cost"] = {
-                        key: json.loads(json.dumps(self.handyvars.out_break_in)) for key in
+                        key: copy.deepcopy(self.handyvars.out_break_in) for key in
                         ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this variable
             if self.usr_opts["no_eff_capt"] is not True:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"]["efficient-captured"] = \
-                    json.loads(json.dumps(self.handyvars.out_break_in))
+                    copy.deepcopy(self.handyvars.out_break_in)
             # Set ComStock gap weights by building type, if applicable
             if self.usr_opts["comstock_gap"]:
                 self.gap_wts = {
@@ -1190,9 +1190,9 @@ class Measure(object):
                 a_s: {} for a_s in self.handyvars.adopt_schemes_run}
             # Find applicable region list (ensure it is in list format)s
             if type(self.climate_zone) is str:
-                grid_regions = [self.climate_zone]
+                grid_regions = copy.deepcopy([self.climate_zone])
             else:
-                grid_regions = self.climate_zone.copy()
+                grid_regions = copy.deepcopy(self.climate_zone)
             for a_s in self.handyvars.adopt_schemes_run:
                 self.sector_shapes[a_s] = {reg: {yr: {
                     "baseline": [0 for x in range(8760)],
@@ -2267,8 +2267,8 @@ class Measure(object):
                                     # the second element is the portion of
                                     # each alternate region that falls in the
                                     # current mseg region
-                                    perf_meas = ([
-                                        perf_meas.copy(),
+                                    perf_meas = copy.deepcopy([
+                                        perf_meas,
                                         self.handyvars.alt_attr_brk_map[
                                             alt_key_reg_typ][mskeys[1]]])
                                 # If unexpected keys are present, yield error
@@ -2348,8 +2348,8 @@ class Measure(object):
                                     # the second element is the portion of
                                     # each alternate region that falls in the
                                     # current mseg region
-                                    cost_meas = ([
-                                        cost_meas.copy(),
+                                    cost_meas = copy.deepcopy([
+                                        cost_meas,
                                         self.handyvars.alt_attr_brk_map[
                                             alt_key_reg_typ][mskeys[1]]])
                                 # If unexpected keys are present, yield error
@@ -2469,8 +2469,8 @@ class Measure(object):
                                     # the second element is the portion of
                                     # each alternate region that falls in the
                                     # current mseg region
-                                    mkt_scale_frac = ([
-                                        mkt_scale_frac.copy(),
+                                    mkt_scale_frac = copy.deepcopy([
+                                        mkt_scale_frac,
                                         self.handyvars.alt_attr_brk_map[
                                             alt_key_reg_typ][mskeys[1]]])
                                 # If unexpected keys are present, yield error
@@ -3142,10 +3142,9 @@ class Measure(object):
                         # necessary to ensure that subsequent modification of base costs
                         # for incentives does not change original data (before incentives)
                         if mskeys[-1] in cost_base_init["typical"].keys():
-                            cost_base = json.loads(
-                                json.dumps(cost_base_init["typical"][mskeys[-1]]))
+                            cost_base = copy.deepcopy(cost_base_init["typical"][mskeys[-1]])
                         else:
-                            cost_base = json.loads(json.dumps(cost_base_init["typical"]))
+                            cost_base = copy.deepcopy(cost_base_init["typical"])
                         # Set baseline cost units
                         cost_base_units = cost_base_init["units"]
 
@@ -4333,11 +4332,11 @@ class Measure(object):
                     # a baseline case with methane leakage to a non-gas tech.
                     # without such leakage
                     if self.fuel_switch_to is not None:
-                        lkg_fmeth_base = lkg_rate
+                        lkg_fmeth_base = copy.deepcopy(lkg_rate)
                         lkg_fmeth_meas = 0
                     else:
                         lkg_fmeth_base, lkg_fmeth_meas = (
-                            lkg_rate for n in range(2))
+                            copy.deepcopy(lkg_rate) for n in range(2))
                 # State region setting requires no further mapping
                 elif opts.fugitive_emissions is not False and \
                     opts.fugitive_emissions[0] in ['1', '3'] and \
@@ -4350,11 +4349,11 @@ class Measure(object):
                     # a baseline case with methane leakage to a non-gas tech.
                     # without such leakage
                     if self.fuel_switch_to is not None:
-                        lkg_fmeth_base = lkg_rate
+                        lkg_fmeth_base = copy.deepcopy(lkg_rate)
                         lkg_fmeth_meas = 0
                     else:
                         lkg_fmeth_base, lkg_fmeth_meas = (
-                            lkg_rate for n in range(2))
+                            copy.deepcopy(lkg_rate) for n in range(2))
                 else:
                     lkg_rate, lkg_fmeth_base, lkg_fmeth_meas = (
                         None for n in range(3))
@@ -4366,7 +4365,7 @@ class Measure(object):
                         opts.fugitive_emissions[0] in ['2', '3']:
                     # Set building type name (residential/commercial) to key
                     # refrigerant data
-                    bldg_name_chk = bldg_sect
+                    bldg_name_chk = copy.deepcopy(bldg_sect)
 
                     # Set technology names to key baseline and efficient case
                     # refrigerant data for the current mseg; set name
@@ -4417,7 +4416,8 @@ class Measure(object):
                             if (mskeys[-2] is not None and
                                 "HP" in mskeys[-2]) \
                                     or "cooling" not in mskeys:
-                                tech_name_chk_b = tech_name_chk_e
+                                tech_name_chk_b = copy.deepcopy(
+                                    tech_name_chk_e)
                                 # Given like-for-like HP replacement, anchor
                                 # baseline and measure refrigerant emissions
                                 # on the cooling end use and set flag to zero
@@ -4468,13 +4468,14 @@ class Measure(object):
                             # pump WH replacement or the case of switching to
                             # a HPWH from another baseline WH technology (e.g.,
                             # in all possible cases)
-                            tech_name_chk_b = tech_name_chk_e
+                            tech_name_chk_b = copy.deepcopy(tech_name_chk_e)
                             # Given like-for-like HPWH replacement, do not
                             # set flag to zero out baseline refrigerant
                             # emissions (since they occur in baseline too)
                             if (mskeys[-2] is not None and
                                     "HP" in mskeys[-2]):
-                                tech_name_chk_b = tech_name_chk_e
+                                tech_name_chk_b = copy.deepcopy(
+                                    tech_name_chk_e)
                                 zero_b_r_flag, zero_m_r_flag = (
                                         False for n in range(2))
                             # Given switch to HPWH from another baseline
@@ -6006,12 +6007,12 @@ class Measure(object):
             # subsequent technology microsegments
             self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
                 mskeys[2]][eu] = {
-                    "annual adjustment fractions": json.loads(json.dumps(
-                        updated_tsv_fracs)),
-                    "hourly shapes": json.loads(json.dumps(updated_tsv_shapes))}
+                    "annual adjustment fractions": copy.deepcopy(
+                        updated_tsv_fracs),
+                    "hourly shapes": copy.deepcopy(updated_tsv_shapes)}
         elif self.handyvars.tsv_hourly_lafs is not None:
             updated_tsv_fracs, updated_tsv_shapes = [
-                json.loads(json.dumps(x)) for x in [
+                copy.deepcopy(x) for x in [
                     self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
                         mskeys[2]][eu]["annual adjustment fractions"],
                     self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
@@ -6295,7 +6296,7 @@ class Measure(object):
                     base_load_hourly = [0] * 8760
 
                 # Initialize efficient load shape as equal to base load
-                eff_load_hourly = base_load_hourly.copy()
+                eff_load_hourly = copy.deepcopy(base_load_hourly)
 
                 # Loop through all time-varying efficiency features in sorted
                 # order, applying each successively to the base load shape
@@ -8868,12 +8869,13 @@ class Measure(object):
             # market entry
             if int(yr) <= self.market_entry_year:
                 # Update overall and previously captured measure stock RP
-                rel_perf_overall, rel_perf_capt = (rel_perf[yr] for n in range(2))
+                rel_perf_overall, rel_perf_capt = (
+                    copy.deepcopy(rel_perf[yr]) for n in range(2))
                 # Update overall and previously captured measure unit
                 # refrigerant emissions, if needed
                 if f_refr_assess:
                     rel_frefr_overall, rel_frefr_capt = (
-                        rel_frefr_yr for n in range(2))
+                        copy.deepcopy(rel_frefr_yr) for n in range(2))
             # Set a measure stock turnover weight to use in balancing
             # current measure year's relative performance and fugitive
             # refrigerant emissions per unit (if applicable) with values
@@ -10167,7 +10169,7 @@ class Measure(object):
             # Initialize lists of segments with no panel/management outcomes to append to
             # segments with panel upgrade requirements
             segs_to_subset_no_panel, segs_to_subset_mgmt = (
-                json.loads(json.dumps(segs_to_subset)) for n in range(2))
+                copy.deepcopy(segs_to_subset) for n in range(2))
             # Update technology name in the segments to append relevant information about the
             # alternate to panel upgrade case
             for i_orig, i_np, i_mgmt in zip(
@@ -10260,10 +10262,7 @@ class Measure(object):
                     self.add_keyvals(i, i2)
                 else:
                     if dict1[k] is None:
-                        if isinstance(dict2[k2], (list, dict)):
-                            dict1[k] = dict2[k2].copy()
-                        else:
-                            dict1[k] = dict2[k2]
+                        dict1[k] = copy.deepcopy(dict2[k2])
                     else:
                         dict1[k] = dict1[k] + dict2[k]
             else:
@@ -10304,10 +10303,7 @@ class Measure(object):
                     self.add_keyvals(i, i2)
                 else:
                     if dict1[k] is None:
-                        if isinstance(dict2[k2], (list, dict)):
-                            dict1[k] = dict2[k2].copy()
-                        else:
-                            dict1[k] = dict2[k2]
+                        dict1[k] = copy.deepcopy(dict2[k2])
                     else:
                         dict1[k] = dict1[k] + dict2[k]
             else:
@@ -11107,7 +11103,7 @@ class MeasurePackage(Measure):
                  opts, convert_data):
         self.name = p
         self.handyvars = handyvars
-        self.contributing_ECMs = measure_list_package
+        self.contributing_ECMs = copy.deepcopy(measure_list_package)
         # Check to ensure energy output settings for all measures that
         # contribute to the package are identical
         if not all([all([m.usr_opts[x] ==
@@ -11319,37 +11315,37 @@ class MeasurePackage(Measure):
                     "fugitive emissions"] = {
                         "methane": {
                             "total": {
-                                "baseline": json.loads(json.dumps(init_meth)),
-                                "efficient": json.loads(json.dumps(init_meth))},
+                                "baseline": copy.deepcopy(init_meth),
+                                "efficient": copy.deepcopy(init_meth)},
                             "competed": {
-                                "baseline": json.loads(json.dumps(init_meth)),
-                                "efficient": json.loads(json.dumps(init_meth))}},
+                                "baseline": copy.deepcopy(init_meth),
+                                "efficient": copy.deepcopy(init_meth)}},
                         "refrigerants": {
                             "total": {
-                                "baseline": json.loads(json.dumps(init_refr)),
-                                "efficient": json.loads(json.dumps(init_refr))},
+                                "baseline": copy.deepcopy(init_refr),
+                                "efficient": copy.deepcopy(init_refr)},
                             "competed": {
-                                "baseline": json.loads(json.dumps(init_refr)),
-                                "efficient": json.loads(json.dumps(init_refr))}}}
+                                "baseline": copy.deepcopy(init_refr),
+                                "efficient": copy.deepcopy(init_refr)}}}
 
             # Add market breakout information
 
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": json.loads(json.dumps(self.handyvars.out_break_in)),
-                "efficient": json.loads(json.dumps(self.handyvars.out_break_in)),
-                "savings": json.loads(json.dumps(self.handyvars.out_break_in))} for
+                "baseline": copy.deepcopy(self.handyvars.out_break_in),
+                "efficient": copy.deepcopy(self.handyvars.out_break_in),
+                "savings": copy.deepcopy(self.handyvars.out_break_in)} for
                 key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
-                    key: json.loads(json.dumps(self.handyvars.out_break_in)) for
+                    key: copy.deepcopy(self.handyvars.out_break_in) for
                     key in ["baseline", "efficient"]}
             # Add stock cost breakouts, contingent on user selecting these
             if self.usr_opts["cap_invest"]:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["capital cost"] = {
-                        key: json.loads(json.dumps(self.handyvars.out_break_in)) for
+                        key: copy.deepcopy(self.handyvars.out_break_in) for
                         key in ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this additional
@@ -11360,7 +11356,7 @@ class MeasurePackage(Measure):
                     self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"][
                     "efficient-captured-envelope"] = \
-                    (json.loads(json.dumps(self.handyvars.out_break_in)) for n in
+                    (copy.deepcopy(self.handyvars.out_break_in) for n in
                      range(2))
 
     def merge_measures(self, opts):
@@ -11395,8 +11391,8 @@ class MeasurePackage(Measure):
                 # Loop through all adoption scenarios
                 for a_s in self.handyvars.adopt_schemes_prep:
                     # Shorthand deep copy of measure stock data
-                    stk_cpy = json.loads(json.dumps(m.markets[a_s]["mseg_adjust"][
-                        "contributing mseg keys and values"]))
+                    stk_cpy = copy.deepcopy(m.markets[a_s]["mseg_adjust"][
+                        "contributing mseg keys and values"])
                     # Loop through all contributing msegs for measure
                     for cm in stk_cpy.keys():
                         # If contributing mseg is not already
@@ -11474,16 +11470,16 @@ class MeasurePackage(Measure):
                 # Set contributing microsegment data for individual measure;
                 # deep copy to ensure that initial measure data are retained
                 # throughout the updates
-                msegs_meas_init = json.loads(json.dumps(
-                    m.markets[adopt_scheme]["mseg_adjust"]))
+                msegs_meas_init = copy.deepcopy(
+                    m.markets[adopt_scheme]["mseg_adjust"])
 
                 # Set output breakout data for individual measure (used to
                 # break out results by climate, building, and end use) if
                 # full data reporting is required for the current adoption
                 # scenario
                 if self.handyvars.full_dat_out[adopt_scheme]:
-                    mseg_out_break_init = json.loads(json.dumps(
-                        m.markets[adopt_scheme]["mseg_out_break"]))
+                    mseg_out_break_init = copy.deepcopy(
+                        m.markets[adopt_scheme]["mseg_out_break"])
                     # Initialize variables to track adjustments to sector load
                     # shapes for each individual measure to support packaging,
                     # if sector-level load shapes are being generated for the
@@ -11524,7 +11520,7 @@ class MeasurePackage(Measure):
                                 if cm not in self.eff_fs_splt[
                                         adopt_scheme].keys():
                                     self.eff_fs_splt[adopt_scheme][cm] = \
-                                        json.loads(json.dumps(fs_eff_splt))
+                                        copy.deepcopy(fs_eff_splt)
                             else:
                                 fs_eff_splt = None
                             # Convert mseg string to list for further calcs.
@@ -11606,8 +11602,8 @@ class MeasurePackage(Measure):
                         self.markets[adopt_scheme]["mseg_out_break"][
                             "energy"].keys():
                         mseg_out_break_fin["energy"][
-                            "efficient-captured-envelope"] = \
-                            mseg_out_break_fin["energy"]["efficient-captured"].copy()
+                            "efficient-captured-envelope"] = copy.deepcopy(
+                            mseg_out_break_fin["energy"]["efficient-captured"])
                     # Set shorthand for data used to track annual electricity
                     # use that concerns the measure's sector shape after
                     # package adjustments
@@ -11825,8 +11821,8 @@ class MeasurePackage(Measure):
                 # Record unique data for each adoption scheme
                 for adopt_scheme in self.handyvars.adopt_schemes_prep:
                     # Use shorthand for measure contributing microsegment data
-                    msegs_meas = json.loads(json.dumps(m.markets[adopt_scheme][
-                        "mseg_adjust"]["contributing mseg keys and values"]))
+                    msegs_meas = copy.deepcopy(m.markets[adopt_scheme][
+                        "mseg_adjust"]["contributing mseg keys and values"])
                     # Loop through all contributing microsegment keys for the
                     # equipment measure that apply to heating/cooling end uses
                     # and have not previously been parsed for overlapping data
@@ -12033,7 +12029,7 @@ class MeasurePackage(Measure):
         if len(overlap_meas) != 0:
             # Make a copy of the mseg info. that is unaffected by subsequent
             # operations in the loop
-            msegs_meas_init = json.loads(json.dumps(msegs_meas))
+            msegs_meas_init = copy.deepcopy(msegs_meas)
             # Find base and efficient adjustment fractions
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
                 self.find_base_eff_adj_fracs(
@@ -12245,7 +12241,7 @@ class MeasurePackage(Measure):
                 adopt_scheme]["data"].keys():
             # Make a copy of the mseg info. that is unaffected by subsequent
             # operations in the loop
-            msegs_meas_init = json.loads(json.dumps(msegs_meas))
+            msegs_meas_init = copy.deepcopy(msegs_meas)
             # Find base and efficient adjustment fractions; directly
             # overlapping measures are none in this case
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
@@ -12903,9 +12899,9 @@ class MeasurePackage(Measure):
             else:
                 mseg_cost_adj = False
             # Total baseline stock
-            tot_base_orig = mseg_adj["total"]["all"].copy()
+            tot_base_orig = copy.deepcopy(mseg_adj["total"]["all"])
             # Total efficient stock
-            tot_eff_orig = mseg_adj["total"]["measure"].copy()
+            tot_eff_orig = copy.deepcopy(mseg_adj["total"]["measure"])
             # Total efficient-captured stock is not relevant
             tot_eff_capt_orig = ""
             # Efficient-captured data only relevant for energy
@@ -12914,29 +12910,32 @@ class MeasurePackage(Measure):
             # Create shorthand for energy/carbon cost data
             mseg_cost_adj = msegs_meas["cost"][k]
             # Total baseline stock
-            tot_base_orig = mseg_adj["total"]["baseline"].copy()
+            tot_base_orig = copy.deepcopy(mseg_adj["total"]["baseline"])
             # Total efficient energy/carbon
-            tot_eff_orig = mseg_adj["total"]["efficient"].copy()
+            tot_eff_orig = copy.deepcopy(mseg_adj["total"]["efficient"])
             # Total efficient captured energy if not suppressed by user
             if k == "energy" and self.usr_opts["no_eff_capt"] is not True:
-                tot_eff_capt_orig = mseg_adj["total"]["efficient-captured"].copy()
+                tot_eff_capt_orig = copy.deepcopy(
+                    mseg_adj["total"]["efficient-captured"])
             else:
                 tot_eff_capt_orig = ""
             # Total energy/carbon savings
             tot_save_orig = {yr: (
-                mseg_adj["total"]["baseline"][yr] -
-                mseg_adj["total"]["efficient"][yr])
+                copy.deepcopy(mseg_adj["total"]["baseline"][yr]) -
+                copy.deepcopy(mseg_adj["total"]["efficient"][yr]))
                 for yr in self.handyvars.aeo_years}
         # Record total stock or energy cost data before adjustment
         if k in ["stock",  "energy"] and mseg_cost_adj:
             # Total baseline stock or energy cost
-            tot_base_orig_cost = mseg_cost_adj["total"]["baseline"].copy()
+            tot_base_orig_cost = copy.deepcopy(
+                mseg_cost_adj["total"]["baseline"])
             # Total efficient stock or energy cost
-            tot_eff_orig_cost = mseg_cost_adj["total"]["efficient"].copy()
+            tot_eff_orig_cost = copy.deepcopy(
+                mseg_cost_adj["total"]["efficient"])
             # Total stock or energy cost savings
             tot_save_orig_cost = {yr: (
-                mseg_cost_adj["total"]["baseline"][yr] -
-                mseg_cost_adj["total"]["efficient"][yr])
+                copy.deepcopy(mseg_cost_adj["total"]["baseline"][yr]) -
+                copy.deepcopy(mseg_cost_adj["total"]["efficient"][yr]))
                 for yr in self.handyvars.aeo_years}
         # Adjust msegs using base/efficient adjustment fractions
         if k == "stock":
@@ -14121,7 +14120,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                             # Determine unique measure copy name
                             new_name = meas_dict["name"] + "-" + scn[0]
                             # Copy the measure
-                            new_meas = json.loads(json.dumps(meas_dict))
+                            new_meas = copy.deepcopy(meas_dict)
                             # Set the copied measure name to the name above
                             new_meas["name"] = new_name
                             # Append the copied measure to list of measure
@@ -14164,7 +14163,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                     # Determine unique measure copy name
                     new_name = meas_dict["name"] + " (Ref. Analogue)"
                     # Copy the measure
-                    new_meas = json.loads(json.dumps(meas_dict))
+                    new_meas = copy.deepcopy(meas_dict)
                     # Set the copied measure name to the name above
                     new_meas["name"] = new_name
                     opts.ecm_files.append(new_meas["name"])
@@ -14211,7 +14210,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                     # Determine measure copy name, CF for counterfactual
                     new_name = meas_dict["name"] + " (CF)"
                     # Copy the measure
-                    new_meas = json.loads(json.dumps(meas_dict))
+                    new_meas = copy.deepcopy(meas_dict)
                     # Set the copied measure name to the name above
                     new_meas["name"] = new_name
                     # Append the copied measure to list of measure
@@ -14350,7 +14349,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 # Determine unique package copy name
                 new_pkg_name = pkg_item[0][1]
                 # Copy the package
-                new_pkg = json.loads(json.dumps(m))
+                new_pkg = copy.deepcopy(m)
                 # Set the copied package name to the name above
                 new_pkg["name"] = new_pkg_name
                 # Parse new package data to find information about revised
