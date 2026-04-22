@@ -3,6 +3,25 @@ import numpy
 import logging
 from pathlib import Path, PurePath
 
+try:
+    import orjson as _orjson
+    _ORJSON_AVAILABLE = True
+except ImportError:
+    _ORJSON_AVAILABLE = False
+
+
+def _orjson_default(obj):
+    """Fallback serializer for orjson: handles PurePath, numpy arrays, and numpy scalars."""
+    if isinstance(obj, PurePath):
+        return str(obj)
+    if isinstance(obj, numpy.ndarray):
+        return obj.tolist()
+    if isinstance(obj, numpy.integer):
+        return int(obj)
+    if isinstance(obj, numpy.floating):
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
 
 class JsonIO:
     @staticmethod
@@ -30,8 +49,21 @@ class JsonIO:
             data: data to write to .json file
             filepath (pathlib.Path): filepath of .json file
         """
-        with open(filepath, "w") as handle:
-            json.dump(data, handle, indent=2, cls=MyEncoder)
+        if _ORJSON_AVAILABLE:
+            # orjson is 5-10x faster than stdlib json for numeric-heavy data.
+            # It natively serialises numpy scalars/arrays and does not require
+            # a custom encoder.  We request non-string keys (e.g. integer year
+            # keys) to be serialised and pretty-print with 2-space indent to
+            # stay consistent with the previous output format.
+            raw = _orjson.dumps(
+                data,
+                option=_orjson.OPT_NON_STR_KEYS | _orjson.OPT_INDENT_2,
+                default=_orjson_default,
+            )
+            Path(filepath).write_bytes(raw)
+        else:
+            with open(filepath, "w") as handle:
+                json.dump(data, handle, indent=2, cls=MyEncoder)
 
 
 class MyEncoder(json.JSONEncoder):
