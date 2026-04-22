@@ -13017,6 +13017,11 @@ class MeasurePackage(Measure):
                 case measure energy/carb/cost (used to adj. output breakouts).
             eff_capt_env_frac (dict): Efficient-captured portion of efficient
                 energy total across all envelope measures in HVAC/envelope pkg.
+            out_cz (string): Climate zone output breakout category for current mseg.
+            out_bldg (string): Building type/vintage output breakout category for current mseg.
+            out_eu (string): End-use output breakout category for current mseg.
+            out_fuel_save (string): Fuel type (baseline) output breakout category for current mseg.
+            out_fuel_gain (string): Fuel type (switched to) output breakout cat. for current mseg.
 
         Returns:
             Updated stock, energy, carbon, and energy cost output breakouts adjusted
@@ -13039,95 +13044,6 @@ class MeasurePackage(Measure):
 
         # Cache aeo_years locally to avoid repeated attribute lookups
         aeo_years = self.handyvars.aeo_years
-
-        # Establish applicable climate zone breakout
-        out_cz = self.handyvars.out_break_czones_rev[key_list[1]]
-        # Establish applicable building type breakout
-        out_bldg = self.handyvars.out_break_bldgtypes_rev[
-            (key_list[2], key_list[-1])]
-        # Establish applicable end use breakout
-        # Special cases first: 'other' end use and 'lighting gain' signals
-        if key_list[4] == "other":
-            if key_list[5] == "freezers":
-                out_eu = "Refrigeration"
-            else:
-                out_eu = "Other"
-        elif "lighting gain" in key_list:
-            out_eu = "Lighting"
-        else:
-            # Look up via (eu, supply_or_demand) for HVAC end uses, plain eu otherwise
-            eu_sd_key = (key_list[4], key_list[5])
-            if eu_sd_key in self.handyvars.out_break_enduses_rev:
-                out_eu = self.handyvars.out_break_enduses_rev[eu_sd_key]
-            elif key_list[4] in self.handyvars.out_break_enduses_rev:
-                out_eu = self.handyvars.out_break_enduses_rev[key_list[4]]
-            # Also handle the demand/primary restriction for Heating/Cooling (Env.)
-            # If a (eu, "demand") key was resolved but key_list[0] != "primary",
-            # it is not a valid env. match — fall through to supply lookup
-            if out_eu in ["Heating (Env.)", "Cooling (Env.)"] and \
-                    key_list[0] != "primary":
-                supply_key = (key_list[4], "supply")
-                if supply_key in self.handyvars.out_break_enduses_rev:
-                    out_eu = self.handyvars.out_break_enduses_rev[supply_key]
-        # If applicable, establish fuel type breakout (electric vs.
-        # non-electric); note – only applicable to end uses that
-        # are at least in part fossil-fired
-        if len(self.handyvars.out_break_fuels.keys()) != 0 and (
-                out_eu in self.handyvars.out_break_eus_w_fsplits):
-            # Flag for detailed fuel type breakout
-            detail = len(self.handyvars.out_break_fuels.keys()) > 2
-            # Establish breakout of fuel type that is being reduced (e.g.,
-            # through efficiency or fuel switching away from the fuel).
-            # Special handling for 'other fuel' under detailed breakouts
-            # (may fit multiple categories); otherwise use O(1) reverse lookup.
-            if detail and key_list[3] == "other fuel":
-                out_fuel_save = "Propane"  # default; overridden below if more specific match
-                if key_list[-2] is not None and any(
-                        x in key_list[-2] for x in ["coal", "kerosene"]):
-                    out_fuel_save = "Distillate/Other"
-                elif key_list[2] in self.handyvars.in_all_map[
-                        'bldg_type']['commercial']:
-                    out_fuel_save = "Distillate/Other"
-                elif key_list[-2] is not None and "wood" in key_list[-2]:
-                    out_fuel_save = "Biomass"
-            else:
-                out_fuel_save = self.handyvars.out_break_fuels_rev.get(
-                    key_list[3], "")
-            # Establish breakout of fuel type that is being added
-            # to via fuel switching, if applicable
-            if fuel_switch_to == "electricity" and out_fuel_save != "Electric":
-                out_fuel_gain = "Electric"
-            elif fuel_switch_to not in [None, "electricity"] and \
-                    out_fuel_save == "Electric":
-                # Check for detailed fuel types
-                if detail:
-                    if self.fuel_switch_to == "other fuel" and \
-                            key_list[3] == "other fuel":
-                        # Assign coal/kerosene tech.
-                        if key_list[-2] is not None and any(
-                                x in key_list[-2] for x in [
-                                "coal", "kerosene"]):
-                            out_fuel_gain = "Distillate/Other"
-                        # Assign commercial other fuel to Distillate/Other
-                        elif key_list[2] in self.handyvars.in_all_map[
-                                'bldg_type']['commercial']:
-                            out_fuel_gain = "Distillate/Other"
-                        # Assign wood tech.
-                        elif key_list[-2] is not None and "wood" in \
-                                key_list[-2]:
-                            out_fuel_gain = "Biomass"
-                        # Assign all other tech. to propane
-                        else:
-                            out_fuel_gain = "Propane"
-                    else:
-                        out_fuel_gain = self.handyvars.out_break_fuels_rev.get(
-                            self.fuel_switch_to, "")
-                else:
-                    out_fuel_gain = "Non-Electric"
-            else:
-                out_fuel_gain = ""
-        else:
-            out_fuel_save, out_fuel_gain = ("" for n in range(2))
 
         # Shorthands for data used to adjust original output breakouts
         base_orig, eff_orig, save_orig = tot_base_orig, tot_eff_orig, tot_save_orig
