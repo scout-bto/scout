@@ -10578,7 +10578,7 @@ class Measure(object):
             brk_fs_energy_cost_eff_remain_base, brk_fs_carb_eff_remain_base, \
             brk_fs_energy_eff_remain_switch, brk_fs_energy_cost_eff_remain_switch, \
             brk_fs_carb_eff_remain_switch = [
-                {yr: x[yr] for yr in self.handyvars.aeo_years} if x else None for x in brk_in_dat]
+                x.copy() if x else None for x in brk_in_dat]
 
         # Pull out stock cost reporting variables to use in developing breakout values
         brk_stock_cost_total, brk_stock_cost_total_meas, brk_fs_stk_cost_eff_remain = \
