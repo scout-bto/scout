@@ -184,6 +184,7 @@ class UsefulVars(object):
         # Derive time horizon from min/max years
         self.aeo_years = [
             str(i) for i in range(aeo_min, aeo_max + 1)]
+        self.aeo_years_set = set(self.aeo_years)
         self.aeo_years_summary = ["2030", "2050"]
         # Set early retrofit rate assumptions
 
@@ -276,6 +277,16 @@ class UsefulVars(object):
         except ValueError as e:
             raise ValueError(
                 f"Error reading in '{handyfiles.cpi_data}': {str(e)}") from None
+        # Pre-build a year->mean CPI value dict so cpi_converter can do O(1)
+        # lookups instead of scanning all rows on every call (called ~40k times)
+        _cpi_by_year = {}
+        for row in self.consumer_price_ind:
+            yr = row['DATE'][:4]  # extract YYYY from YYYY-MM-DD
+            _cpi_by_year.setdefault(yr, []).append(row['VALUE'])
+        self._cpi_year_means = {
+            yr: numpy.mean(vals) for yr, vals in _cpi_by_year.items()}
+        # Fallback value: last row's VALUE (matches existing behaviour)
+        self._cpi_latest_value = float(self.consumer_price_ind[-1][1])
         # If states are used, read in state-level cost adjustment data
         if self.regions == "State":
             # Read in adjustment factors
@@ -1211,6 +1222,51 @@ class UsefulVars(object):
                 self.out_break_fuels = self.simple_fuel_map
         else:
             self.out_break_fuels = {}
+
+        # Pre-compute reverse lookups for fast O(1) breakout category resolution
+        # in find_adj_out_break_cats (MeasurePackage). Built once at init time;
+        # used instead of linear scans on every call.
+
+        # Climate zone: region_string -> label
+        # Note: out_break_czones values may be a plain string (e.g. 'AIA_CZ1')
+        # or a list of strings (e.g. ['TRE']). Normalise to list before iterating
+        # so we don't accidentally iterate over individual characters.
+        self.out_break_czones_rev = {
+            region: label
+            for label, regions in self.out_break_czones.items()
+            for region in (
+                [regions] if isinstance(regions, str) else regions)}
+
+        # Building type: (bldg_type_string, vintage_string) -> label
+        # Values in out_break_bldgtypes are lists like ['new', 'single family home', ...]
+        # where the first element is always the vintage ('new' or 'existing').
+        self.out_break_bldgtypes_rev = {}
+        for label, vals in self.out_break_bldgtypes.items():
+            vintage = vals[0]  # first element is always the vintage
+            for bldg in vals[1:]:  # remaining elements are building type strings
+                self.out_break_bldgtypes_rev[(bldg, vintage)] = label
+
+        # End use: a mapping used in find_adj_out_break_cats.
+        # The end-use lookup has conditional logic (supply/demand, 'other' special cases),
+        # so we store a flat mapping from (eu_string, supply_demand) -> label for the
+        # supply/demand-sensitive end uses, and eu_string -> label for the rest.
+        self.out_break_enduses_rev = {}
+        for label, eus in self.out_break_enduses.items():
+            for eu in eus:
+                if label in ["Heating (Equip.)", "Cooling (Equip.)"]:
+                    self.out_break_enduses_rev[(eu, "supply")] = label
+                elif label in ["Heating (Env.)", "Cooling (Env.)"]:
+                    self.out_break_enduses_rev[(eu, "demand")] = label
+                else:
+                    # Non-HVAC end uses: no supply/demand distinction
+                    self.out_break_enduses_rev[eu] = label
+
+        # Fuel type: fuel_string -> label
+        self.out_break_fuels_rev = {
+            fuel: label
+            for label, fuels in self.out_break_fuels.items()
+            for fuel in fuels}
+
         # Use the above output categories to establish a dictionary with blank
         # values at terminal leaf nodes; this dict will eventually store
         # partitioning fractions needed to breakout the measure results
@@ -2033,6 +2089,20 @@ class UsefulVars(object):
 
         return keyval_list
 
+    def _rebuild_cpi_cache(self):
+        """Build year->mean CPI lookup dict from self.consumer_price_ind."""
+        cpi = self.consumer_price_ind
+        by_year = {}
+        for row in cpi:
+            yr = row['DATE'][:4]
+            by_year.setdefault(yr, []).append(row['VALUE'])
+        self._cpi_year_means = {
+            yr: numpy.mean(vals) for yr, vals in by_year.items()}
+        self._cpi_latest_value = float(cpi[-1][1])
+        # Use both id and length to detect array replacement reliably
+        self._cpi_cache_id = id(cpi)
+        self._cpi_cache_len = len(cpi)
+
     def cpi_converter(self, convert_from, convert_to):
         """Use consumer price index to convert costs between two years.
 
@@ -2044,33 +2114,23 @@ class UsefulVars(object):
             Multiplier for translating cost units between the years.
         """
         # If either convert from or convert to is None, assume current year
-        convert_from, convert_to = [
-            x if x is not None else str(self.current_yr) for x in [
-                convert_from, convert_to]]
-        # Set full CPI dataset
+        cur_yr = str(self.current_yr)
+        if convert_from is None:
+            convert_from = cur_yr
+        if convert_to is None:
+            convert_to = cur_yr
+        # Rebuild the year->mean cache if consumer_price_ind has been replaced
+        # (e.g. by tests that swap in custom CPI data after __init__).
+        # Check both id and length to guard against id reuse by Python's allocator.
         cpi = self.consumer_price_ind
-        # Find array of rows in CPI dataset associated with the input
-        # cost year
-        cpi_row_in = [x[1] for x in cpi if convert_from in x['DATE']]
-        # Average across all rows for a year, or if year wasn't found,
-        # choose the latest available row in the data
-        if len(cpi_row_in) == 0:
-            cpi_row_in = cpi[-1][1]
-        else:
-            cpi_row_in = numpy.mean(cpi_row_in)
-        # Find array of rows in CPI dataset associated with the output
-        # cost year
-        cpi_row_out = [x[1] for x in cpi if convert_to in x['DATE']]
-        # Average across all rows for a year, or if year wasn't found,
-        # choose the latest available row in the data
-        if len(cpi_row_out) == 0:
-            cpi_row_out = cpi[-1][1]
-        else:
-            cpi_row_out = numpy.mean(cpi_row_out)
-        # Calculate year conversion ratio
-        convert_fact = cpi_row_out / cpi_row_in
-
-        return convert_fact
+        if (id(cpi) != getattr(self, '_cpi_cache_id', None) or
+                len(cpi) != getattr(self, '_cpi_cache_len', None)):
+            self._rebuild_cpi_cache()
+        cpi_row_in = self._cpi_year_means.get(convert_from,
+                                              self._cpi_latest_value)
+        cpi_row_out = self._cpi_year_means.get(convert_to,
+                                               self._cpi_latest_value)
+        return cpi_row_out / cpi_row_in
 
 
 class UsefulInputFiles(object):
