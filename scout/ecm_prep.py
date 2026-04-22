@@ -10665,118 +10665,61 @@ class Measure(object):
                 # for the current region, bldg., end use, and fuel have not yet
                 # been initialized
                 try:
-                    try:
-                        for yr in _aeo_years:
-                            for ind, key in enumerate(breakout_vars):
-                                self.markets[adopt_scheme]["mseg_out_break"][key][
-                                    "baseline"][out_cz][out_bldg][out_eu][
-                                    out_fuel_save][yr] += base_data[ind][yr]
-                                # Efficient and savings; if there is fuel switching,
-                                # only the portion of the efficient case results that
-                                # have not yet switched (due to stock turnover
-                                # limitations or dual fuel settings) remain, and
-                                # savings are the delta between what remains
-                                # unswitched in the efficient case and the baseline
-                                if not out_fuel_gain:
-                                    self.markets[adopt_scheme]["mseg_out_break"][key][
-                                        "efficient"][out_cz][out_bldg][out_eu][
-                                        out_fuel_save][yr] += eff_data[ind][yr]
-                                    if key == "energy" and capt_e:
-                                        self.markets[adopt_scheme]["mseg_out_break"][
-                                            key]["efficient-captured"][out_cz][
-                                            out_bldg][out_eu][out_fuel_save][yr] += \
-                                            capt_e[yr]
-                                    if key != "stock":  # no stk save
-                                        self.markets[adopt_scheme]["mseg_out_break"][
-                                            key]["savings"][out_cz][out_bldg][out_eu][
-                                            out_fuel_save][yr] += (
-                                                base_data[ind][yr] - eff_data[ind][yr])
-                                else:
-                                    self.markets[adopt_scheme]["mseg_out_break"][key][
-                                        "efficient"][out_cz][out_bldg][out_eu][
-                                        out_fuel_save][yr] += \
-                                        (eff_data_fs_base[ind][yr] +
-                                         eff_data_fs_switch[ind][yr])
-                                    # Note that no baseline fuel, baseline technology
-                                    # consumption (e.g., not in backup service to
-                                    # measure) remains for captured stock by
-                                    # definition (all captured stock has been switched
-                                    # to measure)
-                                    if key == "energy" and capt_e:
-                                        self.markets[adopt_scheme]["mseg_out_break"][
-                                            key]["efficient-captured"][out_cz][
-                                            out_bldg][out_eu][out_fuel_save][yr] += \
-                                            eff_data_fs_switch[ind][yr]
-                                    if key != "stock":  # no stk save
-                                        self.markets[adopt_scheme]["mseg_out_break"][
-                                            key]["savings"][out_cz][out_bldg][out_eu][
-                                            out_fuel_save][yr] += (
-                                                base_data[ind][yr] -
-                                                (eff_data_fs_base[ind][yr] +
-                                                 eff_data_fs_switch[ind][yr]))
-                    except KeyError:
+                    for yr in _aeo_years:
                         for ind, key in enumerate(breakout_vars):
-                            # Baseline; add in baseline data as-is
                             self.markets[adopt_scheme]["mseg_out_break"][key][
                                 "baseline"][out_cz][out_bldg][out_eu][
-                                out_fuel_save] = {yr: base_data[ind][yr] for
-                                                  yr in _aeo_years}
-                            # Efficient and savings; if there is fuel switching, only
-                            # the portion of the efficient case results that have not
-                            # yet switched (due to stock turnover limitations) remain,
-                            # and savings are the delta between what remains
+                                out_fuel_save][yr] += base_data[ind][yr]
+                            # Efficient and savings; if there is fuel switching,
+                            # only the portion of the efficient case results that
+                            # have not yet switched (due to stock turnover
+                            # limitations or dual fuel settings) remain, and
+                            # savings are the delta between what remains
                             # unswitched in the efficient case and the baseline
                             if not out_fuel_gain:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient"][out_cz][out_bldg][out_eu][
-                                    out_fuel_save] = {
-                                        yr: eff_data[ind][yr] for
-                                        yr in _aeo_years}
+                                    out_fuel_save][yr] += eff_data[ind][yr]
                                 if key == "energy" and capt_e:
-                                    self.markets[adopt_scheme]["mseg_out_break"][key][
-                                        "efficient-captured"][out_cz][out_bldg][
-                                        out_eu][out_fuel_save] = {
-                                            yr: capt_e[yr] for yr in
-                                            _aeo_years}
+                                    self.markets[adopt_scheme]["mseg_out_break"][
+                                        key]["efficient-captured"][out_cz][
+                                        out_bldg][out_eu][out_fuel_save][yr] += \
+                                        capt_e[yr]
                                 if key != "stock":  # no stk save
-                                    self.markets[adopt_scheme]["mseg_out_break"][key][
-                                        "savings"][out_cz][out_bldg][out_eu][
-                                        out_fuel_save] = {yr: (
-                                            base_data[ind][yr] - eff_data[ind][yr]) for
-                                            yr in _aeo_years}
+                                    self.markets[adopt_scheme]["mseg_out_break"][
+                                        key]["savings"][out_cz][out_bldg][out_eu][
+                                        out_fuel_save][yr] += (
+                                            base_data[ind][yr] - eff_data[ind][yr])
                             else:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient"][out_cz][out_bldg][out_eu][
-                                    out_fuel_save] = {
-                                        yr: (eff_data_fs_base[ind][yr] +
-                                             eff_data_fs_switch[ind][yr]) for
-                                        yr in _aeo_years}
+                                    out_fuel_save][yr] += \
+                                    (eff_data_fs_base[ind][yr] +
+                                     eff_data_fs_switch[ind][yr])
                                 # Note that no baseline fuel, baseline technology
                                 # consumption (e.g., not in backup service to
                                 # measure) remains for captured stock by
                                 # definition (all captured stock has been switched
                                 # to measure)
                                 if key == "energy" and capt_e:
-                                    self.markets[adopt_scheme]["mseg_out_break"][key][
-                                        "efficient-captured"][out_cz][out_bldg][
-                                        out_eu][out_fuel_save] = {
-                                        yr: eff_data_fs_switch[ind][yr] for
-                                        yr in _aeo_years}
+                                    self.markets[adopt_scheme]["mseg_out_break"][
+                                        key]["efficient-captured"][out_cz][
+                                        out_bldg][out_eu][out_fuel_save][yr] += \
+                                        eff_data_fs_switch[ind][yr]
                                 if key != "stock":  # no stk save
-                                    self.markets[adopt_scheme]["mseg_out_break"][key][
-                                        "savings"][out_cz][out_bldg][out_eu][
-                                        out_fuel_save] = {yr: (
-                                            base_data[ind][yr] - (
-                                                eff_data_fs_base[ind][yr] +
-                                                eff_data_fs_switch[ind][yr]))
-                                            for yr in _aeo_years}
+                                    self.markets[adopt_scheme]["mseg_out_break"][
+                                        key]["savings"][out_cz][out_bldg][out_eu][
+                                        out_fuel_save][yr] += (
+                                            base_data[ind][yr] -
+                                            (eff_data_fs_base[ind][yr] +
+                                             eff_data_fs_switch[ind][yr]))
                 except KeyError:
                     for ind, key in enumerate(breakout_vars):
                         # Baseline; add in baseline data as-is
                         self.markets[adopt_scheme]["mseg_out_break"][key][
                             "baseline"][out_cz][out_bldg][out_eu][
                             out_fuel_save] = {yr: base_data[ind][yr] for
-                                              yr in self.handyvars.aeo_years}
+                                              yr in _aeo_years}
                         # Efficient and savings; if there is fuel switching, only
                         # the portion of the efficient case results that have not
                         # yet switched (due to stock turnover limitations) remain,
@@ -10787,26 +10730,26 @@ class Measure(object):
                                 "efficient"][out_cz][out_bldg][out_eu][
                                 out_fuel_save] = {
                                     yr: eff_data[ind][yr] for
-                                    yr in self.handyvars.aeo_years}
+                                    yr in _aeo_years}
                             if key == "energy" and capt_e:
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "efficient-captured"][out_cz][out_bldg][
                                     out_eu][out_fuel_save] = {
                                         yr: capt_e[yr] for yr in
-                                        self.handyvars.aeo_years}
+                                        _aeo_years}
                             if key != "stock":  # no stk save
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "savings"][out_cz][out_bldg][out_eu][
                                     out_fuel_save] = {yr: (
                                         base_data[ind][yr] - eff_data[ind][yr]) for
-                                        yr in self.handyvars.aeo_years}
+                                        yr in _aeo_years}
                         else:
                             self.markets[adopt_scheme]["mseg_out_break"][key][
                                 "efficient"][out_cz][out_bldg][out_eu][
                                 out_fuel_save] = {
                                     yr: (eff_data_fs_base[ind][yr] +
                                          eff_data_fs_switch[ind][yr]) for
-                                    yr in self.handyvars.aeo_years}
+                                    yr in _aeo_years}
                             # Note that no baseline fuel, baseline technology
                             # consumption (e.g., not in backup service to
                             # measure) remains for captured stock by
@@ -10817,7 +10760,7 @@ class Measure(object):
                                     "efficient-captured"][out_cz][out_bldg][
                                     out_eu][out_fuel_save] = {
                                     yr: eff_data_fs_switch[ind][yr] for
-                                    yr in self.handyvars.aeo_years}
+                                    yr in _aeo_years}
                             if key != "stock":  # no stk save
                                 self.markets[adopt_scheme]["mseg_out_break"][key][
                                     "savings"][out_cz][out_bldg][out_eu][
@@ -10825,7 +10768,7 @@ class Measure(object):
                                         base_data[ind][yr] - (
                                             eff_data_fs_base[ind][yr] +
                                             eff_data_fs_switch[ind][yr]))
-                                        for yr in self.handyvars.aeo_years}
+                                        for yr in _aeo_years}
                 # In a fuel switching case, update results for the fuel being
                 # switched/added to
                 if out_fuel_gain:
