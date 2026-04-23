@@ -11,6 +11,11 @@ from ast import literal_eval
 import math
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy_financial as npf
+import threading
+# Use the Agg (non-interactive) backend so that matplotlib can safely be used
+# from background threads without touching the macOS main-thread UI context.
+import matplotlib
+matplotlib.use("Agg")
 from scout.plots import run_plot
 from scout.config import Config, FilePaths as fp
 from scout.utils import PrintFormat as fmt
@@ -1912,10 +1917,22 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
+        # Pre-compute str(mseg_key) once – it is used inside every
+        # (ind × yr) iteration of the choice-parameter lookup below.
+        mseg_key_str = str(mseg_key)
+
         # Loop through competing measures and calculate market shares for
         # each based on their annualized capital and operating costs
         for ind, m in enumerate(measures_adj):
             # Set measure markets and market adjustment information
+
+            # Pre-compute the choice-parameter sub-dict for this measure once
+            # (avoids re-traversing the full dict on every year iteration).
+            try:
+                _choice_params = m.markets[adopt_scheme]["competed"][
+                    "mseg_adjust"]["competed choice parameters"][mseg_key_str]
+            except KeyError:
+                _choice_params = None
 
             # Loop through all years in time horizon
             for yr in self.handyvars.aeo_years:
@@ -1949,12 +1966,8 @@ class Engine(object):
                         # Calculate weighted sum of incremental capital and
                         # operating costs
                         sum_wt = cap_cost * \
-                            m.markets[adopt_scheme]["competed"][
-                                "mseg_adjust"]["competed choice parameters"][
-                                str(mseg_key)]["b1"][yr] + op_cost * \
-                            m.markets[adopt_scheme]["competed"]["mseg_adjust"][
-                                "competed choice parameters"][
-                                str(mseg_key)]["b2"][yr]
+                            _choice_params["b1"][yr] + op_cost * \
+                            _choice_params["b2"][yr]
 
                         # Guard against cases with very low weighted sums of
                         # incremental capital and operating costs
@@ -2295,6 +2308,9 @@ class Engine(object):
                 len(tot_cost[x][yr]) != 0)]
             for yr in self.handyvars.aeo_years}
 
+        # Pre-compute str(mseg_key) once – used in every (ind × yr) iteration.
+        mseg_key_str = str(mseg_key)
+
         # Loop through competing measures and use total annualized capital
         # + operating costs to determine the overall share of the market
         # that is captured by each measure; use market shares to make
@@ -2302,6 +2318,15 @@ class Engine(object):
         for ind, m in enumerate(measures_adj):
             # Calculate annual market share fraction for the measure and
             # adjust measure's master microsegment values accordingly
+
+            # Pre-compute the rate-distribution dict for this measure once
+            # (avoids repeated deep dict traversal on every year iteration).
+            try:
+                _rate_dist_all = m.markets[adopt_scheme]["competed"][
+                    "mseg_adjust"]["competed choice parameters"][
+                        mseg_key_str]["rate distribution"]
+            except KeyError:
+                _rate_dist_all = None
 
             # Loop through all years in time horizon
             for ind_l, yr in enumerate(self.handyvars.aeo_years):
@@ -2313,9 +2338,7 @@ class Engine(object):
                     # Set the fractions of commericial adopters who fall into
                     # each discount rate category for this particular
                     # microsegment
-                    mkt_dists = m.markets[adopt_scheme]["competed"][
-                        "mseg_adjust"]["competed choice parameters"][
-                            str(mseg_key)]["rate distribution"][yr]
+                    mkt_dists = _rate_dist_all[yr] if _rate_dist_all is not None else {}
                     # For each discount rate category, find which measure has
                     # the lowest annualized cost and assign that measure the
                     # share of commercial market adopters defined for that
@@ -8094,9 +8117,14 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     if all([x is False for x in [trim_out, trim_yrs]]):
         # Notify user that the output data are being plotted
         print("Plotting output data...", end="", flush=True)
-        # Execute plots
-        run_plot(meas_summary, a_run, handyvars, measures_objlist, regions, cbpslist, trim_out)
-        print("Plotting complete")
+        # Execute plots in a background thread so main() can return while
+        # matplotlib renders/saves PDFs (plotting has no downstream callers).
+        # The Agg backend (set at module import time) is thread-safe.
+        def _run_plot_bg():
+            run_plot(meas_summary, a_run, handyvars, measures_objlist, regions, cbpslist, trim_out)
+            print("Plotting complete")
+        plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
+        plot_thread.start()
 
 
 def parse_args(args: list = None) -> argparse.NameSpace:  # noqa: F821
