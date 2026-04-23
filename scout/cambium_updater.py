@@ -60,7 +60,6 @@ the latest available Cambium year when prompted.
 
 """
 
-import os
 import pandas as pd
 import json
 import gzip

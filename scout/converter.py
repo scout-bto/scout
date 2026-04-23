@@ -126,7 +126,7 @@ class ValidQueries(object):
             '2023': ['ref2023', 'lowogs', 'lowZTC', 'highogs', 'highZTC',
                      'lowmaclowZTC', 'highmachighZTC'],
             '2025': ['ref2025', 'lowogs', 'lowZTC', 'highogs', 'highZTC'],
-            '2026': ['cb2026', 'lowogs', 'lowZTC', 'highogs', 'highZTC', 'altelec', 'alttrnp', 'electrnp', 'higheldmd', 'hm2026', 'lm2026']}
+            '2026': ['cb2026', 'lowogs', 'lowZTC', 'highogs', 'highZTC']}
         self.regions_dict = OrderedDict({'WECCB': 'BASN',
                                          'WECCCAN': 'CANO',
                                          'WECCCAS': 'CASO',
