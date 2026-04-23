@@ -2446,8 +2446,8 @@ class Engine(object):
                 v if (_energy_brk[v] is not None and all(
                     (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
                      any([_energy_brk[v][_yr] != 0])) or (
-                    isinstance(_energy_brk[v][_yr], numpy.ndarray) and
-                    any([any([_energy_brk[v][_yr] != 0])]))
+                        isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                        any([any([_energy_brk[v][_yr] != 0])]))
                     for _yr in _energy_brk[v].keys()))
                 else "" for v in ["baseline", "efficient"]]
             for yr in self.handyvars.aeo_years:
