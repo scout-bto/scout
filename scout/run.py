@@ -1983,6 +1983,12 @@ class Engine(object):
             measures_adj, mseg_key, adopt_scheme, years_on_mkt_all, mkt_fracs,
             noapply_sbmkt_fracs_regs)
 
+        # Precompute min market entry year and per-year weighting_yrs prefix
+        # lists once for each measure (avoids re-sorting inside compete_adj
+        # on every year × measure call — a significant hot-spot).
+        min_mkt_entry_yr = min(mkt_entry_yrs)
+        all_adj_keys_sorted = sorted(mkt_fracs[0].keys(), key=int)
+
         # Loop through competing measures and apply competed market shares
         # and gains from sub-market fractions to each ECM's total energy,
         # carbon, and cost impacts
@@ -1994,6 +2000,14 @@ class Engine(object):
             mast, adj_out_break, adj, mast_list_base, mast_list_eff, \
                 adj_list_eff, adj_list_base, adj_stk_trk = \
                 self.compete_adj_dicts(m, mseg_key, adopt_scheme, stk_cost_dat_keys[m_ind])
+            # Build a mapping yr -> weighting_yrs prefix once per measure so
+            # compete_adj doesn't need to recompute it for every year call.
+            weighting_yrs_map = {}
+            prefix = []
+            for _wy in all_adj_keys_sorted:
+                if int(_wy) >= min_mkt_entry_yr:
+                    prefix = prefix + [_wy]
+                    weighting_yrs_map[_wy] = prefix[:]
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
@@ -2002,7 +2016,7 @@ class Engine(object):
                     mkt_fracs[m_ind], added_sbmkt_fracs[m_ind], mast,
                     adj_out_break, adj, mast_list_base, mast_list_eff,
                     adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
-                    mkt_entry_yrs, adj_stk_trk)
+                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map)
 
     def compete_com_primary(self, measures_adj, mseg_key, adopt_scheme, opts):
         """Apportion stock/energy/carbon/cost across commercial measures.
@@ -2229,6 +2243,23 @@ class Engine(object):
                         except AttributeError:
                             pass
 
+        # Precompute, for each year, which measure indices have valid cost data.
+        # This avoids repeating the same `yr in tot_cost[x].keys() and len(...)`
+        # check inside the inner-most discount-rate loops (hot-spot lines ~2311/2319).
+        n_measures = len(measures_adj)
+        valid_inds_array = {  # yr -> list of valid measure indices (array case)
+            yr: [x for x in range(n_measures) if (
+                yr in tot_cost[x] and isinstance(tot_cost[x][yr], list) and
+                len(tot_cost[x][yr]) != 0 and
+                isinstance(tot_cost[x][yr][0], list) and
+                len(tot_cost[x][yr][0]) != 0)]
+            for yr in self.handyvars.aeo_years}
+        valid_inds_point = {  # yr -> list of valid measure indices (point case)
+            yr: [x for x in range(n_measures) if (
+                yr in tot_cost[x] and isinstance(tot_cost[x][yr], list) and
+                len(tot_cost[x][yr]) != 0)]
+            for yr in self.handyvars.aeo_years}
+
         # Loop through competing measures and use total annualized capital
         # + operating costs to determine the overall share of the market
         # that is captured by each measure; use market shares to make
@@ -2262,24 +2293,21 @@ class Engine(object):
                             tot_cost[ind][yr][0]) != 0:
                         mkt_fracs[ind][yr] = [
                             [] for n in range(length_array[ind_l])]
+                        _valid_arr = valid_inds_array[yr]
                         for c_l in range(length_array[ind_l]):
                             for ind2, dr in enumerate(
                                     tot_cost[ind][yr][c_l]):
                                 # Find the lowest annualized cost for the
                                 # set of competing measures/discount bin
                                 min_val = min([
-                                    tot_cost[x][yr][c_l][ind2] for x in
-                                    range(0, len(measures_adj)) if
-                                    (yr in tot_cost[x].keys() and
-                                     len(tot_cost[x][yr][0]) != 0)])
+                                    tot_cost[x][yr][c_l][ind2]
+                                    for x in _valid_arr])
                                 # Determine how many competing measures
                                 # have the lowest annualized cost under
                                 # the given discount rate bin
                                 min_val_ecms = [
-                                    x for x in range(0, len(measures_adj)) if
-                                    (yr in tot_cost[x].keys() and
-                                     len(tot_cost[x][yr][0]) != 0) and
-                                    tot_cost[x][yr][c_l][ind2] == min_val]
+                                    x for x in _valid_arr
+                                    if tot_cost[x][yr][c_l][ind2] == min_val]
                                 # If the current measure has the lowest
                                 # annualized cost, assign it appropriate
                                 # market share for current discount rate
@@ -2305,22 +2333,19 @@ class Engine(object):
                     elif length_array[ind_l] == 0:
                         if len(tot_cost[ind][yr]) != 0:
                             mkt_fracs[ind][yr] = []
+                            _valid_pt = valid_inds_point[yr]
                             for ind2, dr in enumerate(tot_cost[ind][yr]):
                                 # Find the lowest annualized cost for the given
                                 # set of competing measures and discount bin
                                 min_val = min([
-                                    tot_cost[x][yr][ind2] for x in
-                                    range(0, len(measures_adj)) if (
-                                        yr in tot_cost[x].keys() and
-                                        len(tot_cost[x][yr]) != 0)])
+                                    tot_cost[x][yr][ind2]
+                                    for x in _valid_pt])
                                 # Determine how many of the competing measures
                                 # have the lowest annualized cost under
                                 # the given discount rate bin
                                 min_val_ecms = [
-                                    x for x in range(0, len(measures_adj)) if
-                                    (yr in tot_cost[x].keys() and
-                                     len(tot_cost[x][yr]) != 0) and
-                                    tot_cost[x][yr][ind2] == min_val]
+                                    x for x in _valid_pt
+                                    if tot_cost[x][yr][ind2] == min_val]
                                 # If the current measure has the lowest
                                 # annualized cost, assign it the appropriate
                                 # market share for the current discount rate
@@ -2354,6 +2379,12 @@ class Engine(object):
             measures_adj, mseg_key, adopt_scheme, years_on_mkt_all, mkt_fracs,
             noapply_sbmkt_fracs_regs)
 
+        # Precompute min market entry year and per-year weighting_yrs prefix
+        # lists once for each measure (mirrors the same optimisation in
+        # compete_res_primary — avoids repeated sorting in compete_adj).
+        min_mkt_entry_yr = min(mkt_entry_yrs)
+        all_adj_keys_sorted = sorted(mkt_fracs[0].keys(), key=int)
+
         # Loop through competing measures and apply competed market shares
         # and gains from sub-market fractions to each ECM's total energy,
         # carbon, and cost impacts
@@ -2365,6 +2396,14 @@ class Engine(object):
             mast, adj_out_break, adj, mast_list_base, mast_list_eff, \
                 adj_list_eff, adj_list_base, adj_stk_trk = \
                 self.compete_adj_dicts(m, mseg_key, adopt_scheme, stk_cost_dat_keys[m_ind])
+            # Build a mapping yr -> weighting_yrs prefix once per measure so
+            # compete_adj doesn't need to recompute it for every year call.
+            weighting_yrs_map = {}
+            prefix = []
+            for _wy in all_adj_keys_sorted:
+                if int(_wy) >= min_mkt_entry_yr:
+                    prefix = prefix + [_wy]
+                    weighting_yrs_map[_wy] = prefix[:]
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
@@ -2373,7 +2412,7 @@ class Engine(object):
                     mkt_fracs[m_ind], added_sbmkt_fracs[m_ind], mast,
                     adj_out_break, adj, mast_list_base, mast_list_eff,
                     adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
-                    mkt_entry_yrs, adj_stk_trk)
+                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map)
 
     def state_app_reg_screen(self, measures_adj, stk_cost_dat_keys):
         """Determine whether appliance restrictions apply to competed measure mseg.
@@ -2564,6 +2603,8 @@ class Engine(object):
         yrs_on_mkt = [m.yrs_on_mkt for m in measures_adj]
         # Set the total number of ECMs being competed
         len_compete = len(noapply_sbmkt_fracs)
+        # Use a set for O(1) year membership checks
+        years_on_mkt_all_set = set(years_on_mkt_all)
 
         # If all of the competing ECMs apply to the full competed segment,
         # added market shares due to sub-market scaling are set to zero
@@ -2597,12 +2638,14 @@ class Engine(object):
                     # portion. NOTE: it is assumed that competing ECMs that
                     # also do not apply to the entire segment are ineligible,
                     # as are ECMs that are not on the market in a year where
-                    # at least one other competing ECM is on the market
-                    distrib_inds = [1 if (noapply_sbmkt_fracs[mc][yr] == 0 and
-                                          (yr not in years_on_mkt_all or (
-                                           yr in years_on_mkt_all and
-                                           yr in yrs_on_mkt[mc])))
-                                    else 0 for mc in range(0, len_compete)]
+                    # at least one other competing ECM is on the market.
+                    # Simplified: `yr not in years_on_mkt_all or yr in yrs_on_mkt[mc]`
+                    # is logically equivalent to the original nested condition.
+                    distrib_inds = [
+                        1 if (noapply_sbmkt_fracs[mc][yr] == 0 and
+                              (yr not in years_on_mkt_all_set or
+                               yr in yrs_on_mkt[mc]))
+                        else 0 for mc in range(len_compete)]
 
                     # Case where one or more competing ECMs applies to the full
                     # competed segment, but the market shares for these ECMs
@@ -4143,8 +4186,8 @@ class Engine(object):
     def compete_adj(
             self, adj_fracs, added_sbmkt_fracs, mast,
             adj_out_break, adj, mast_list_base, mast_list_eff, adj_list_eff,
-            adj_list_base, yr, mseg_key, measure, adopt_scheme, mkt_entry_yrs,
-            adj_stk_trk):
+            adj_list_base, yr, mseg_key, measure, adopt_scheme, min_mkt_entry_yr,
+            adj_stk_trk, weighting_yrs_map=None):
         """Scale down measure totals to reflect competition.
 
         Notes:
@@ -4179,9 +4222,13 @@ class Engine(object):
             mseg_key (string): Key for competed market microsegment.
             measure (object): Measure needing competition adjustments.
             adopt_scheme (string): Assumed consumer adoption scenario.
-            mkt_entry_yrs (list): Mkt. entry years for all competing measures.
+            min_mkt_entry_yr (int): Minimum market entry year across competing measures
+                (pre-computed by the caller to avoid repeated min() calls).
             adj_stk_trk (dict): Stock data used to calculate baseline turnover
                 rates and stock-weighted market shares in the given year.
+            weighting_yrs_map (dict): Pre-computed mapping of yr -> sorted list of
+                weighting years up to and including yr (avoids repeated sorted()
+                listcomp inside the hot inner loop).
         """
         # Set market shares for the competed stock in the current year, and
         # for the weighted combination of the competed stock for the current
@@ -4203,7 +4250,7 @@ class Engine(object):
         # performance of the captured stock after applying market shares is consistent with that
         # of the captured stock before the market share scaling was applied
         if adopt_scheme != "Technical potential" and int(
-                measure.market_entry_year) > min(mkt_entry_yrs):
+                measure.market_entry_year) > min_mkt_entry_yr:
             # Add flag
             delay_entry_adj = True
             # Initialize dicts used to make the required adjustment to the
@@ -4227,14 +4274,17 @@ class Engine(object):
         # measure in the current year against that of the stock captured
         # by the measure in all previous years, yielding a total weighted
         # market share adjustment
-        if int(yr) < min(mkt_entry_yrs):
+        if int(yr) < min_mkt_entry_yr:
             adj_frac_t = adj_fracs[yr] + added_sbmkt_fracs[yr]
         else:
-            # Determine the subset of all years leading up to current year in
-            # the modeling time horizon
-            weighting_yrs = sorted([
-                x for x in adj_fracs.keys() if
-                (int(x) <= int(yr) and int(x) >= min(mkt_entry_yrs))])
+            # Use pre-computed weighting years for this yr when available,
+            # otherwise fall back to computing them (e.g. secondary mseg path).
+            if weighting_yrs_map is not None and yr in weighting_yrs_map:
+                weighting_yrs = weighting_yrs_map[yr]
+            else:
+                weighting_yrs = sorted([
+                    x for x in adj_fracs.keys() if
+                    (int(x) <= int(yr) and int(x) >= min_mkt_entry_yr)])
 
             # Loop through the above set of years, successively updating the
             # weighted market share using a simple moving average
@@ -5465,68 +5515,99 @@ class Engine(object):
             # Create combined list of baseline and efficient variables to
             # loop through below in finalizing baseline/efficient breakouts
             mkt_keys = mkt_base_keys + mkt_eff_keys
+            # Pre-build per-key copies of the frac_* dicts so out_break_walk
+            # (which mutates its first argument) gets a fresh copy each time
+            # without redundant deepcopy inside the loop.
+            _frac_copies = {}
+            for k in mkt_keys:
+                if "Baseline" in k:
+                    if "Stock" in k and report_stk_units:
+                        _frac_copies[k] = copy.deepcopy(frac_base_stk)
+                    elif "Capital" in k and report_stk_costs:
+                        _frac_copies[k] = copy.deepcopy(frac_base_stk_cost)
+                    elif "Energy Use" in k:
+                        _frac_copies[k] = copy.deepcopy(frac_base_energy)
+                    elif "Energy Cost" in k:
+                        _frac_copies[k] = copy.deepcopy(frac_base_cost)
+                    else:
+                        _frac_copies[k] = copy.deepcopy(frac_base_carb)
+                elif any([x in k for x in ["Efficient", "Measure"]]):
+                    if "Stock" in k and report_stk_units:
+                        _frac_copies[k] = copy.deepcopy(frac_eff_stk)
+                    elif "Capital" in k and report_stk_costs:
+                        _frac_copies[k] = copy.deepcopy(frac_eff_stk_cost)
+                    elif "Energy Use" in k and "Measure" not in k:
+                        _frac_copies[k] = copy.deepcopy(frac_eff_energy)
+                    elif eff_capt and "Energy Use" in k and "Measure" in k:
+                        _frac_copies[k] = copy.deepcopy(frac_eff_energy_capt)
+                    elif "Energy Cost" in k:
+                        _frac_copies[k] = copy.deepcopy(frac_eff_cost)
+                    else:
+                        _frac_copies[k] = copy.deepcopy(frac_eff_carb)
             # Apply output breakout fractions to total baseline and efficient
             # stock, energy, carbon, and cost results initialized above
             for k in mkt_keys:
+                if k not in _frac_copies:
+                    continue
                 # Apply baseline partitioning fractions to baseline values
                 if "Baseline" in k:
                     # Stock results
                     if "Stock" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_base_stk), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Capital cost results
                     elif "Capital" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_base_stk_cost), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy results
                     elif "Energy Use" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_base_energy), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy cost results
                     elif "Energy Cost" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_base_cost), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Carbon results
                     else:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_base_carb), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                 # Apply efficient partitioning fractions to efficient values
                 elif any([x in k for x in ["Efficient", "Measure"]]):
                     # Stock results
                     if "Stock" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_eff_stk), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Capital cost results
                     elif "Capital" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_eff_stk_cost), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy results excluding efficient captured
                     elif "Energy Use" in k and "Measure" not in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_eff_energy), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Efficient captured energy results
                     elif eff_capt and "Energy Use" in k and "Measure" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_eff_energy_capt),
+                            _frac_copies[k],
                             mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Energy cost results
                     elif "Energy Cost" in k:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_eff_cost), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
                     # Carbon results
                     else:
                         mkt_save_brk[k] = self.out_break_walk(
-                            copy.deepcopy(frac_eff_carb), mkt_save_brk[k],
+                            _frac_copies[k], mkt_save_brk[k],
                             focus_yrs, divide=False)
             # Assess final output breakouts of savings as the difference
             # between finalized baseline and efficient breakouts from above
