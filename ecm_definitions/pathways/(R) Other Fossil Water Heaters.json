@@ -1,0 +1,39 @@
+{
+  "name": "(R) Other Fossil Water Heaters",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": ["water heating"],
+  "fuel_type": ["distillate", "other fuel"],
+  "technology": [null],
+  "market_entry_year": 2023,
+  "market_entry_year_source": null,
+  "market_exit_year": null,
+  "market_exit_year_source": null,
+  "energy_efficiency": 1,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": null,
+  "installed_cost": 0,
+  "cost_units": "2023$/ft^2 floor",
+  "installed_cost_source": null,
+  "product_lifetime": 50,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": null,
+  "measure_type": "add-on",
+  "fuel_switch_to": null,
+  "market_scaling_fractions": {
+    "single family home": 0.74,
+    "multi family home": 0.15,
+    "mobile home": 0.70
+  },
+  "market_scaling_fractions_source": "RECS 2020, restrict to non-NG fossil WH fuel and map to NEMS building type, fraction of WH consumption that is not shared and 40 gal or more",
+  "_description": "Measure for segmentation analysis - individual large WH",
+  "_notes": null,
+  "_added_by": {
+    "name": "Jared Langevin",
+    "organization": "Lawrence Berkeley National Lab",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "Mon Jun 12 10:07:30 EDT 2023"
+  },
+  "_updated_by": null
+}
