@@ -189,8 +189,16 @@ class UsefulVars(object):
         self.aeo_years = gvars["aeo_years"]
         self.discount_rate = gvars["discount_rate"]
         self.adj_vars = ["stock", "energy", "carbon", "energy cost", "capital cost"]
+        # Pre-compute the subset of adj_vars used in delay_entry_adj dicts
+        # (avoid rebuilding on every compete_adj call where delay_entry_adj is True)
+        self.delay_adj_vars = [x for x in ["stock", "energy", "carbon", "energy cost",
+                                           "capital cost"] if x not in ["stock", "capital cost"]]
         self.mast_vars = ["stock", "energy", "carbon", "cost"]
         self.brk_vars = brk_vars
+        # Pre-compute filtered subsets used in hot inner loops to avoid
+        # repeated list comprehensions on every compete_adj call
+        self.cost_brk_vars = [x for x in brk_vars if "cost" in x]
+        self.non_stock_brk_vars = [x for x in brk_vars if x != "stock"]
         self.brk_mast_map = {"stock": "stock", "energy": "energy", "carbon": "carbon",
                              "energy cost": ["cost", "energy"], "capital cost": ["cost", "stock"]}
         self.out_break_czones = gvars["out_break_czones"]
@@ -344,6 +352,18 @@ class UsefulVars(object):
         else:
             self.conversion_fracs, self.conversion_fuels, self.conversion_eus = (
                 None for n in range(3))
+
+        # Pre-build the all_fuel / no_fuel year dicts that compete_adj_dicts
+        # reconstructs on every call (they are the same for every call once the
+        # AEO year list is known).
+        self.all_fuel_tpl = {yr: 1 for yr in self.aeo_years}
+        self.no_fuel_tpl = {yr: 0 for yr in self.aeo_years}
+        # Pre-build the blank results_brk_vars template used in compete_adj_dicts;
+        # all values are None so no deepcopy is needed – dict.copy() is sufficient.
+        self.results_brk_vars_tpl = {
+            var: ({"baseline": None, "efficient": None} if var == "stock" else
+                  {"baseline": None, "efficient": None, "savings": None})
+            for var in self.brk_vars}
 
     def import_state_data(self, handyfiles, state_vars, state_vars_vals):
         """Import and further prepare sub-federal adoption driver data.
@@ -809,6 +829,10 @@ class Engine(object):
         self.opts = opts
         self.measures = measure_objects
         self.output_ecms, self.output_all = (OrderedDict() for n in range(2))
+        # Cache for mseg_key metadata (out_cz, out_bldg, out_eu, out_fuel_save,
+        # out_fuel_gain) computed in compete_adj_dicts; the same key is parsed
+        # once per microsegment but referenced for each competing measure.
+        self._mseg_key_meta_cache = {}
         self.output_all["All ECMs"] = OrderedDict([
             ("Markets and Savings (Overall)", OrderedDict())])
         self.output_all["Energy Output Type"] = energy_out
@@ -2008,6 +2032,17 @@ class Engine(object):
                 if int(_wy) >= min_mkt_entry_yr:
                     prefix = prefix + [_wy]
                     weighting_yrs_map[_wy] = prefix[:]
+            # Pre-compute vs_list_init once per measure/mseg (depends on all
+            # years but is constant across year iterations).
+            _energy_brk = adj_out_break["base fuel"]["energy"]
+            vs_list_init = [
+                v if (_energy_brk[v] is not None and all(
+                    (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                     any([_energy_brk[v][_yr] != 0])) or (
+                    isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                    any([any([_energy_brk[v][_yr] != 0])]))
+                    for _yr in _energy_brk[v].keys()))
+                else "" for v in ["baseline", "efficient"]]
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
@@ -2016,7 +2051,7 @@ class Engine(object):
                     mkt_fracs[m_ind], added_sbmkt_fracs[m_ind], mast,
                     adj_out_break, adj, mast_list_base, mast_list_eff,
                     adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
-                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map)
+                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map, vs_list_init)
 
     def compete_com_primary(self, measures_adj, mseg_key, adopt_scheme, opts):
         """Apportion stock/energy/carbon/cost across commercial measures.
@@ -2404,6 +2439,17 @@ class Engine(object):
                 if int(_wy) >= min_mkt_entry_yr:
                     prefix = prefix + [_wy]
                     weighting_yrs_map[_wy] = prefix[:]
+            # Pre-compute vs_list_init once per measure/mseg (depends on all
+            # years but is constant across year iterations).
+            _energy_brk = adj_out_break["base fuel"]["energy"]
+            vs_list_init = [
+                v if (_energy_brk[v] is not None and all(
+                    (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                     any([_energy_brk[v][_yr] != 0])) or (
+                    isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                    any([any([_energy_brk[v][_yr] != 0])]))
+                    for _yr in _energy_brk[v].keys()))
+                else "" for v in ["baseline", "efficient"]]
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
@@ -2412,7 +2458,7 @@ class Engine(object):
                     mkt_fracs[m_ind], added_sbmkt_fracs[m_ind], mast,
                     adj_out_break, adj, mast_list_base, mast_list_eff,
                     adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
-                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map)
+                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map, vs_list_init)
 
     def state_app_reg_screen(self, measures_adj, stk_cost_dat_keys):
         """Determine whether appliance restrictions apply to competed measure mseg.
@@ -2628,11 +2674,22 @@ class Engine(object):
             # the portion of the competed segment that the ECM does not apply
             # to (if any) across other competing ECMs in the analysis
             for m in range(len_compete):
+                # Skip measures that don't withhold any segment in any year
+                if all(
+                    (v == 0 if not isinstance(v, numpy.ndarray) else numpy.all(v == 0))
+                    for v in (noapply_sbsbmkt_distrib_fracs_yr[m][yr]
+                              for yr in self.handyvars.aeo_years)):
+                    continue
                 # Loop through all years in the analysis
                 for yr in self.handyvars.aeo_years:
                     # Set the current measure's unused portion of the segment
                     # to redistribute in the current year
                     seg_redist = noapply_sbsbmkt_distrib_fracs_yr[m][yr]
+                    # Fast-path: nothing to redistribute this year
+                    if not isinstance(seg_redist, numpy.ndarray) and seg_redist == 0:
+                        continue
+                    elif isinstance(seg_redist, numpy.ndarray) and numpy.all(seg_redist == 0):
+                        continue
                     # Determine which of the other competing ECMs is eligible
                     # to receive the current ECM's inapplicable segment
                     # portion. NOTE: it is assumed that competing ECMs that
@@ -2834,7 +2891,7 @@ class Engine(object):
                         # for the cost variables ("energy")
                         if var == "cost":
                             # Loop through all potential cost keys in the breakout data
-                            for cost_brk_key in [x for x in self.handyvars.brk_vars if "cost" in x]:
+                            for cost_brk_key in self.handyvars.cost_brk_vars:
                                 cost_mast_key = ("energy" if "energy" in cost_brk_key else (
                                     "stock" if "capital" in cost_brk_key else None))
                                 adj_out_break["base fuel"][cost_brk_key][var_sub][yr] = \
@@ -2868,7 +2925,7 @@ class Engine(object):
                     if non_zero_savings:
                         if var == "cost":
                             # Loop through all potential cost keys in the breakout data
-                            for cost_brk_key in [x for x in self.handyvars.brk_vars if "cost" in x]:
+                            for cost_brk_key in self.handyvars.cost_brk_vars:
                                 cost_mast_key = ("energy" if "energy" in cost_brk_key else (
                                     "stock" if "capital" in cost_brk_key else None))
                                 adj_out_break["base fuel"][cost_brk_key]["savings"][yr] = \
@@ -2897,7 +2954,7 @@ class Engine(object):
                         # data for the cost variables ("energy")
                         if var == "cost":
                             # Loop through all potential cost keys in the breakout data
-                            for cost_brk_key in [x for x in self.handyvars.brk_vars if "cost" in x]:
+                            for cost_brk_key in self.handyvars.cost_brk_vars:
                                 cost_mast_key = ("energy" if "energy" in cost_brk_key else (
                                     "stock" if "capital" in cost_brk_key else None))
                                 # Update efficient result
@@ -3767,119 +3824,114 @@ class Engine(object):
         # to which the current microsegment applies (uncompeted data in this
         # combination of categories will be adjusted to reflect competition)
 
-        # Convert microsegment string to a list
-        key_list = literal_eval(mseg_key)
-        # Establish applicable climate zone breakout
-        for cz in self.handyvars.out_break_czones.items():
-            if key_list[1] in cz[1]:
-                out_cz = cz[0]
-        # Establish applicable building type breakout
-        for bldg in self.handyvars.out_break_bldgtypes.items():
-            if all([x in bldg[1] for x in [
-                    key_list[2], key_list[-1]]]):
-                out_bldg = bldg[0]
-        # Establish applicable end use breakout
-        for eu in self.handyvars.out_break_enduses.items():
-            # * Note: The 'other' microsegment end
-            # use may map to either the 'Refrigeration' output
-            # breakout or the 'Other' output breakout, depending on
-            # the technology type specified in the measure
-            # definition. Also note that 'supply' side
-            # heating/cooling microsegments map to the
-            # 'Heating (Equip.)'/'Cooling (Equip.)' end uses, while
-            # 'demand' side heating/cooling microsegments map to
-            # the 'Envelope' end use, with the exception of
-            # 'demand' side heating/cooling microsegments that
-            # represent waste heat from lights - these are
-            # categorized as part of the 'Lighting' end use
-            if key_list[4] == "other":
-                if key_list[5] == "freezers":
-                    out_eu = "Refrigeration"
-                else:
-                    out_eu = "Other"
-            elif key_list[4] in eu[1]:
-                if (eu[0] in ["Heating (Equip.)",
-                              "Cooling (Equip.)"] and
-                    key_list[5] == "supply") or (
-                    eu[0] in ["Heating (Env.)",
-                              "Cooling (Env.)"] and
-                    key_list[5] == "demand" and
-                    key_list[0] == "primary") or (
-                    eu[0] not in ["Heating (Equip.)",
-                                  "Cooling (Equip.)",
-                                  "Heating (Env.)",
-                                  "Cooling (Env.)"]):
-                    out_eu = eu[0]
-            elif "lighting gain" in key_list:
-                out_eu = "Lighting"
-
-        # If applicable, establish fuel type breakout
-        if len(self.handyvars.out_break_fuels.keys()) != 0 and out_eu in \
-                self.handyvars.out_break_eus_w_fsplits:
-            # Flag for detailed fuel type breakout
-            detail = len(self.handyvars.out_break_fuels.keys()) > 2
-            # Establish breakout of fuel type that is being
-            # reduced (e.g., through efficiency or fuel switching
-            # away from the fuel)
-            for f in self.handyvars.out_break_fuels.items():
-                if key_list[3] in f[1]:
-                    # Special handling for other fuel tech.,
-                    # under detailed fuel type breakouts; this
-                    # tech. may fit into multiple fuel cats.
-                    if detail and key_list[3] == "other fuel":
-                        # Assign coal/kerosene tech.
-                        if f[0] == "Distillate/Other" and (
-                            key_list[-2] is not None and any([
-                                x in key_list[-2] for x in [
-                                "coal", "kerosene"]])):
-                            out_fuel_save = f[0]
-                        # Assign commercial unspecified other fuel to
-                        # Distillate/Other
-                        elif f[0] == "Distillate/Other" and (
-                                key_list[2] == "unspecified"):
-                            out_fuel_save = f[0]
-                        # Assign wood tech.
-                        elif f[0] == "Biomass" and (
-                            key_list[-2] is not None and "wood" in
-                                key_list[-2]):
-                            out_fuel_save = f[0]
-                        # All other tech. goes to propane
-                        elif f[0] == "Propane":
-                            out_fuel_save = f[0]
+        # Look up cached mseg key metadata; these are independent of the
+        # measure (m) so we only compute them once per unique mseg_key string.
+        _cache = self._mseg_key_meta_cache
+        if mseg_key not in _cache:
+            # Convert microsegment string to a list
+            key_list = literal_eval(mseg_key)
+            # Establish applicable climate zone breakout
+            for cz in self.handyvars.out_break_czones.items():
+                if key_list[1] in cz[1]:
+                    _out_cz = cz[0]
+            # Establish applicable building type breakout
+            for bldg in self.handyvars.out_break_bldgtypes.items():
+                if all([x in bldg[1] for x in [
+                        key_list[2], key_list[-1]]]):
+                    _out_bldg = bldg[0]
+            # Establish applicable end use breakout
+            for eu in self.handyvars.out_break_enduses.items():
+                # * Note: The 'other' microsegment end
+                # use may map to either the 'Refrigeration' output
+                # breakout or the 'Other' output breakout, depending on
+                # the technology type specified in the measure
+                # definition. Also note that 'supply' side
+                # heating/cooling microsegments map to the
+                # 'Heating (Equip.)'/'Cooling (Equip.)' end uses, while
+                # 'demand' side heating/cooling microsegments map to
+                # the 'Envelope' end use, with the exception of
+                # 'demand' side heating/cooling microsegments that
+                # represent waste heat from lights - these are
+                # categorized as part of the 'Lighting' end use
+                if key_list[4] == "other":
+                    if key_list[5] == "freezers":
+                        _out_eu = "Refrigeration"
                     else:
-                        out_fuel_save = f[0]
-            # Establish breakout of fuel type that is being added
-            # to via fuel switching, if applicable
-            if m.fuel_switch_to == "electricity" and \
-                    out_fuel_save != "Electric":
+                        _out_eu = "Other"
+                elif key_list[4] in eu[1]:
+                    if (eu[0] in ["Heating (Equip.)",
+                                  "Cooling (Equip.)"] and
+                        key_list[5] == "supply") or (
+                        eu[0] in ["Heating (Env.)",
+                                  "Cooling (Env.)"] and
+                        key_list[5] == "demand" and
+                        key_list[0] == "primary") or (
+                        eu[0] not in ["Heating (Equip.)",
+                                      "Cooling (Equip.)",
+                                      "Heating (Env.)",
+                                      "Cooling (Env.)"]):
+                        _out_eu = eu[0]
+                elif "lighting gain" in key_list:
+                    _out_eu = "Lighting"
+
+            # If applicable, establish fuel type breakout
+            if len(self.handyvars.out_break_fuels.keys()) != 0 and _out_eu in \
+                    self.handyvars.out_break_eus_w_fsplits:
+                # Flag for detailed fuel type breakout
+                _detail = len(self.handyvars.out_break_fuels.keys()) > 2
+                # Establish breakout of fuel type that is being reduced
+                for f in self.handyvars.out_break_fuels.items():
+                    if key_list[3] in f[1]:
+                        if _detail and key_list[3] == "other fuel":
+                            if f[0] == "Distillate/Other" and (
+                                key_list[-2] is not None and any([
+                                    x in key_list[-2] for x in [
+                                    "coal", "kerosene"]])):
+                                _out_fuel_save = f[0]
+                            elif f[0] == "Distillate/Other" and (
+                                    key_list[2] == "unspecified"):
+                                _out_fuel_save = f[0]
+                            elif f[0] == "Biomass" and (
+                                key_list[-2] is not None and "wood" in
+                                    key_list[-2]):
+                                _out_fuel_save = f[0]
+                            elif f[0] == "Propane":
+                                _out_fuel_save = f[0]
+                        else:
+                            _out_fuel_save = f[0]
+            else:
+                _out_fuel_save = ""
+                _detail = False
+            # Store key-level (measure-independent) metadata in cache
+            _cache[mseg_key] = (key_list, _out_cz, _out_bldg, _out_eu,
+                                _out_fuel_save, _detail)
+
+        key_list, out_cz, out_bldg, out_eu, out_fuel_save, detail = _cache[mseg_key]
+
+        # Establish the fuel being switched to (measure-dependent, not cached)
+        if out_fuel_save and out_fuel_save != "":
+            if m.fuel_switch_to == "electricity" and out_fuel_save != "Electric":
                 out_fuel_gain = "Electric"
             elif m.fuel_switch_to not in [None, "electricity"] and \
                     out_fuel_save == "Electric":
                 # Check for detailed fuel types
                 if detail:
+                    out_fuel_gain = ""
                     for f in self.handyvars.out_break_fuels.items():
-                        # Special handling for other fuel tech.,
-                        # under detailed fuel type breakouts; this
-                        # tech. may fit into multiple fuel cats.
                         if self.fuel_switch_to in f[1] and \
                                 key_list[3] == "other fuel":
-                            # Assign coal/kerosene tech.
                             if f[0] == "Distillate/Other" and (
                                 key_list[-2] is not None and any([
                                     x in key_list[-2] for x in [
                                     "coal", "kerosene"]])):
                                 out_fuel_gain = f[0]
-                            # Assign commercial unspecified other fuel to
-                            # Distillate/Other
                             elif f[0] == "Distillate/Other" and (
                                     key_list[2] == "unspecified"):
                                 out_fuel_gain = f[0]
-                            # Assign wood tech.
                             elif f[0] == "Biomass" and (
                                 key_list[-2] is not None and "wood" in
                                     key_list[-2]):
                                 out_fuel_gain = f[0]
-                            # All other tech. goes to propane
                             elif f[0] == "Propane":
                                 out_fuel_gain = f[0]
                         elif self.fuel_switch_to in f[1]:
@@ -3889,7 +3941,7 @@ class Engine(object):
             else:
                 out_fuel_gain = ""
         else:
-            out_fuel_save, out_fuel_gain = ("" for n in range(2))
+            out_fuel_gain = ""
 
         # Organize relevant starting master microsegment values into a list
         mast = m.markets[adopt_scheme]["competed"]["master_mseg"]
@@ -3964,27 +4016,31 @@ class Engine(object):
         # zone, building type, end use, and (if applicable) fuel type
         # categories of the currently competed microsegment
 
-        # Initialize results differently for stock variable vs. all other variables (stock
-        # breakouts do not include savings totals)
-        results_brk_vars = {
-            var: ({"baseline": None, "efficient": None} if var == "stock" else
-                  {"baseline": None, "efficient": None, "savings": None})
-            for var in self.handyvars.brk_vars}
-        # Set dicts indicating all or no fuel remains with baseline fuel type for use below
-        all_fuel, no_fuel = [{yr: 1 for yr in self.handyvars.aeo_years},
-                             {yr: 0 for yr in self.handyvars.aeo_years}]
+        # Use pre-built templates to avoid deepcopy overhead; since all values
+        # are None a shallow dict copy is equivalent to a deepcopy here.
+        _tpl = self.handyvars.results_brk_vars_tpl
+        _brk_vars = self.handyvars.brk_vars
+        _all_fuel_tpl = self.handyvars.all_fuel_tpl
+        _no_fuel_tpl = self.handyvars.no_fuel_tpl
+
+        def _copy_brk(tpl):
+            """Fast shallow copy of the results_brk_vars template."""
+            return {var: dict(tpl[var]) for var in tpl}
+
         # Finalize shorthand dict
         adj_out_break = {
-            "base fuel": copy.deepcopy(results_brk_vars),
-            "switched fuel": copy.deepcopy(results_brk_vars),
+            "base fuel": _copy_brk(_tpl),
+            "switched fuel": _copy_brk(_tpl),
             # This is the fuel splits for all stock
             "fuel splits": {
-                "baseline": {var: all_fuel.copy() for var in self.handyvars.brk_vars},
-                "efficient": {var: all_fuel.copy() for var in self.handyvars.brk_vars}},
+                "baseline": {var: _all_fuel_tpl.copy() for var in _brk_vars},
+                "efficient": {var: _all_fuel_tpl.copy() for var in _brk_vars}},
             # This is the fuel splits for only captured stock, and is only tracked for energy use
             "captured fuel splits": {
-                "baseline": {var: all_fuel.copy() for var in ["energy"]},
-                "efficient": {var: all_fuel.copy() for var in ["energy"]}}}
+                "baseline": {"energy": _all_fuel_tpl.copy()},
+                "efficient": {"energy": _all_fuel_tpl.copy()}}}
+        # Keep no_fuel available for later assignments
+        no_fuel = _no_fuel_tpl
 
         # Breakout data may include reporting of efficient-captured energy;
         # initialize if needed
@@ -4187,7 +4243,7 @@ class Engine(object):
             self, adj_fracs, added_sbmkt_fracs, mast,
             adj_out_break, adj, mast_list_base, mast_list_eff, adj_list_eff,
             adj_list_base, yr, mseg_key, measure, adopt_scheme, min_mkt_entry_yr,
-            adj_stk_trk, weighting_yrs_map=None):
+            adj_stk_trk, weighting_yrs_map=None, vs_list_init=None):
         """Scale down measure totals to reflect competition.
 
         Notes:
@@ -4229,6 +4285,9 @@ class Engine(object):
             weighting_yrs_map (dict): Pre-computed mapping of yr -> sorted list of
                 weighting years up to and including yr (avoids repeated sorted()
                 listcomp inside the hot inner loop).
+            vs_list_init (list): Pre-computed list flagging non-empty baseline/efficient
+                breakout results; computed once per measure/mseg by the caller to avoid
+                redundant full-dict scans on every year iteration.
         """
         # Set market shares for the competed stock in the current year, and
         # for the weighted combination of the competed stock for the current
@@ -4255,9 +4314,8 @@ class Engine(object):
             delay_entry_adj = True
             # Initialize dicts used to make the required adjustment to the
             # measure's efficient energy, carbon, and energy cost data
-            rp_adj, save_c, tot_c = ({v: 0 for v in [
-                x for x in self.handyvars.adj_vars if x not in ["stock", "capital cost"]]}
-                for n in range(3))
+            rp_adj, save_c, tot_c = ({v: 0 for v in self.handyvars.delay_adj_vars}
+                                     for n in range(3))
             # Initialize tracker of cumulative competed stock (including
             # in years before measure entered market) for use in subsequent
             # measure-captured stock adjustment for measures that enter the
@@ -4381,8 +4439,11 @@ class Engine(object):
                         adj_frac_t[numpy.where(adj_frac_t > 1)] = 1
 
         # Initialize variable-specific baseline and efficient data market share adjustment
-        # fractions using the overall adjustment fraction calculated above
-        adj_t_b, adj_t_e = ({v: adj_frac_t for v in self.handyvars.adj_vars} for n in range(2))
+        # fractions using the overall adjustment fraction calculated above.
+        # Use dict.fromkeys + manual value setting to avoid repeated generator overhead.
+        _adj_vars = self.handyvars.adj_vars
+        adj_t_b = dict.fromkeys(_adj_vars, adj_frac_t)
+        adj_t_e = dict.fromkeys(_adj_vars, adj_frac_t)
 
         # If necessary, implement adjustment to ensure that measure-captured
         # portion of total stock and relative performance of measure
@@ -4491,17 +4552,18 @@ class Engine(object):
                         adj["energy"]["competed"]["efficient"][yr] * adj_c)
 
         # Flag empty baseline and/or efficient results in the breakout dict for all variables on
-        # the basis of the "energy" variable data (results are None or all zeros)
-        vs_list_init = [
-            # Not None
-            v if (adj_out_break["base fuel"]["energy"][v] is not None and (
-                # Not all zeros (handle numpy arrays)
-                (not isinstance(adj_out_break["base fuel"]["energy"][v][yr], numpy.ndarray) and any(
-                    [adj_out_break["base fuel"]["energy"][v][yr] != 0])) or (
-                    isinstance(adj_out_break["base fuel"]["energy"][v][yr], numpy.ndarray) and any([
-                        any([adj_out_break["base fuel"]["energy"][v][yr] != 0])]))
-                for yr in adj_out_break["base fuel"]["energy"][v].keys()))
-            else "" for v in ["baseline", "efficient"]]
+        # the basis of the "energy" variable data (results are None or all zeros).
+        # This is pre-computed once per measure/mseg by the caller and passed in; fall back to
+        # computing it here only for secondary microsegment paths that do not pass the value.
+        if vs_list_init is None:
+            vs_list_init = [
+                v if (adj_out_break["base fuel"]["energy"][v] is not None and (
+                    (not isinstance(adj_out_break["base fuel"]["energy"][v][yr], numpy.ndarray) and any(
+                        [adj_out_break["base fuel"]["energy"][v][yr] != 0])) or (
+                        isinstance(adj_out_break["base fuel"]["energy"][v][yr], numpy.ndarray) and any([
+                            any([adj_out_break["base fuel"]["energy"][v][yr] != 0])]))
+                    for yr in adj_out_break["base fuel"]["energy"][v].keys()))
+                else "" for v in ["baseline", "efficient"]]
 
         # Adjust baseline stock/energy/cost/carbon, efficient
         # stock/energy/cost/carbon, and energy/cost/carbon savings totals
@@ -4528,7 +4590,7 @@ class Engine(object):
                 # Handle extra key on the adjusted mseg data for cost vars ("energy" or "stock")
                 if var == "cost":
                     # Loop through all potential cost keys in the breakout data
-                    for cost_brk_key in [x for x in self.handyvars.brk_vars if "cost" in x]:
+                    for cost_brk_key in self.handyvars.cost_brk_vars:
                         cost_mast_key = ("energy" if "energy" in cost_brk_key else (
                             "stock" if "capital" in cost_brk_key else None))
                         adj_out_break["base fuel"][cost_brk_key][var_sub][yr] = \
@@ -4582,7 +4644,7 @@ class Engine(object):
                 # Handle extra key on the adjusted mseg data for cost vars ("energy" or "stock")
                 if "cost" in var:
                     # Loop through all potential cost keys in the breakout data
-                    for cost_brk_key in [x for x in self.handyvars.brk_vars if "cost" in x]:
+                    for cost_brk_key in self.handyvars.cost_brk_vars:
                         cost_mast_key = ("energy" if "energy" in cost_brk_key else (
                             "stock" if "capital" in cost_brk_key else None))
                         adj_out_break["base fuel"][cost_brk_key]["savings"][yr] = \
@@ -4612,7 +4674,7 @@ class Engine(object):
                 # the cost variables ("energy" or "stock")
                 if var == "cost":
                     # Loop through all potential cost keys in the breakout data
-                    for cost_brk_key in [x for x in self.handyvars.brk_vars if "cost" in x]:
+                    for cost_brk_key in self.handyvars.cost_brk_vars:
                         cost_mast_key = ("energy" if "energy" in cost_brk_key else (
                             "stock" if "capital" in cost_brk_key else None))
                         # Update efficient result
