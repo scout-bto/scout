@@ -3648,9 +3648,8 @@ class Engine(object):
                     if any([x in mseg_key for x in [
                             "rooftop_AC", "pkg_terminal_AC-cool", "reciprocating_chiller",
                             "scroll_chiller", "centrifugal_chiller", "screw_chiller",
-                            "res_type_central_AC", "comm_GSHP-cool", "gas_eng-driven_RTAC",
-                            "gas_chiller"]]) or \
-                            "cooling" not in mseg_key:
+                            "res_type_central_AC", "gas_eng-driven_RTAC", "gas_chiller",
+                            "wall-window_room_AC"]]) or "cooling" not in mseg_key:
                         # Set tech. to first in list of heating
                         # technologies that the measure applies to, and set
                         # the fuel as appropriate to the selected tech.
