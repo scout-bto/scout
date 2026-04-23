@@ -25,6 +25,7 @@ from operator import itemgetter
 import os
 matplotlib.use("Agg")
 
+
 class UsefulInputFiles(object):
     """Class of input files to be opened by this routine.
 
@@ -8119,6 +8120,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         # Execute plots in a background thread so main() can return while
         # matplotlib renders/saves PDFs (plotting has no downstream callers).
         # The Agg backend (set at module import time) is thread-safe.
+
         def _run_plot_bg():
 
             run_plot(meas_summary, a_run, handyvars, measures_objlist, regions, cbpslist, trim_out)
