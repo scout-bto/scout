@@ -4374,17 +4374,18 @@ class Measure(object):
                                 # air source heat pump
                                 if bldg_sect == "residential":
                                     tech_name_chk_e = "ASHP"
-                                # Commercial case; assume switching to
-                                # air source heat pump for small
-                                # commercial HVAC, and water/ground
-                                # source HP for large
+                                # Commercial case; assume switching to packaged/window units,
+                                # rooftop units, or water/ground source HPs depending on baseline
+                                # tech. being switched from
                                 else:
-                                    # Small commercial
-                                    if mskeys[-2] in \
-                                            self.handyvars.com_RTU_fs_tech:
-                                        tech_name_chk_e = \
-                                            "rooftop_ASHP-cool"
-                                    # Large commercial
+                                    # Packaged terminal and/or window units
+                                    if any([x in mskeys[-2] for x in ["pkg", "wall", "res_type"]]):
+                                        tech_name_chk_e = "wall-window_room_AC"
+                                    # RTUs (assume fuel-fired or resistance furnaces are integrated)
+                                    elif any([x in mskeys[-2] for x in [
+                                            "rooftop", "furnace", "res-heat"]]):
+                                        tech_name_chk_e = "rooftop_ASHP-cool"
+                                    # All other larger commercial tech.
                                     else:
                                         tech_name_chk_e = "comm_GSHP-cool"
                             # Set baseline refrigerant data to that of the
@@ -4424,7 +4425,13 @@ class Measure(object):
                             # baseline technology name in the case of a
                             # switch to HP from another baseline cooling tech.
                             else:
-                                tech_name_chk_b = mskeys[-2]
+                                # Package terminal HP units use wall/window data;
+                                # in all other cases the baseline tech. name should
+                                # be in the refrigerants data file
+                                if "pkg" in mskeys[-2]:
+                                    tech_name_chk_b = "wall-window_room_AC"
+                                else:
+                                    tech_name_chk_b = mskeys[-2]
                                 # Given switch to HP from another baseline
                                 # cooling technology, set flag to zero out
                                 # measure refrigerant emissions (since they
