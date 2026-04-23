@@ -15,7 +15,6 @@ import threading
 # Use the Agg (non-interactive) backend so that matplotlib can safely be used
 # from background threads without touching the macOS main-thread UI context.
 import matplotlib
-matplotlib.use("Agg")
 from scout.plots import run_plot
 from scout.config import Config, FilePaths as fp
 from scout.utils import PrintFormat as fmt
@@ -24,7 +23,7 @@ import itertools
 import pandas as pd
 from operator import itemgetter
 import os
-
+matplotlib.use("Agg")
 
 class UsefulInputFiles(object):
     """Class of input files to be opened by this routine.
@@ -8121,6 +8120,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         # matplotlib renders/saves PDFs (plotting has no downstream callers).
         # The Agg backend (set at module import time) is thread-safe.
         def _run_plot_bg():
+
             run_plot(meas_summary, a_run, handyvars, measures_objlist, regions, cbpslist, trim_out)
             print("Plotting complete")
         plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
