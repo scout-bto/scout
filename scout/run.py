@@ -2039,8 +2039,8 @@ class Engine(object):
                 v if (_energy_brk[v] is not None and all(
                     (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
                      any([_energy_brk[v][_yr] != 0])) or (
-                    isinstance(_energy_brk[v][_yr], numpy.ndarray) and
-                    any([any([_energy_brk[v][_yr] != 0])]))
+                        isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                        any([any([_energy_brk[v][_yr] != 0])]))
                     for _yr in _energy_brk[v].keys()))
                 else "" for v in ["baseline", "efficient"]]
             for yr in self.handyvars.aeo_years:
@@ -2048,10 +2048,10 @@ class Engine(object):
                 # cost totals and breakouts based on its updated competed
                 # market share and stock turnover rates
                 self.compete_adj(
-                    mkt_fracs[m_ind], added_sbmkt_fracs[m_ind], mast,
-                    adj_out_break, adj, mast_list_base, mast_list_eff,
-                    adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
-                    min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map, vs_list_init)
+                        mkt_fracs[m_ind], added_sbmkt_fracs[m_ind], mast,
+                        adj_out_break, adj, mast_list_base, mast_list_eff,
+                        adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
+                        min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map, vs_list_init)
 
     def compete_com_primary(self, measures_adj, mseg_key, adopt_scheme, opts):
         """Apportion stock/energy/carbon/cost across commercial measures.
@@ -4556,13 +4556,14 @@ class Engine(object):
         # This is pre-computed once per measure/mseg by the caller and passed in; fall back to
         # computing it here only for secondary microsegment paths that do not pass the value.
         if vs_list_init is None:
+            _energy_brk = adj_out_break["base fuel"]["energy"]
             vs_list_init = [
-                v if (adj_out_break["base fuel"]["energy"][v] is not None and (
-                    (not isinstance(adj_out_break["base fuel"]["energy"][v][yr], numpy.ndarray) and any(
-                        [adj_out_break["base fuel"]["energy"][v][yr] != 0])) or (
-                        isinstance(adj_out_break["base fuel"]["energy"][v][yr], numpy.ndarray) and any([
-                            any([adj_out_break["base fuel"]["energy"][v][yr] != 0])]))
-                    for yr in adj_out_break["base fuel"]["energy"][v].keys()))
+                v if (_energy_brk[v] is not None and (
+                    (not isinstance(_energy_brk[v][yr], numpy.ndarray) and any(
+                        [_energy_brk[v][yr] != 0])) or (
+                        isinstance(_energy_brk[v][yr], numpy.ndarray) and any([
+                            any([_energy_brk[v][yr] != 0])]))
+                    for yr in _energy_brk[v].keys()))
                 else "" for v in ["baseline", "efficient"]]
 
         # Adjust baseline stock/energy/cost/carbon, efficient
