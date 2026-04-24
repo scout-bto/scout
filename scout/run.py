@@ -5145,6 +5145,7 @@ class Engine(object):
             # will be the same). Compute all three stats in a single pass
             # to avoid iterating summary_vals three times and calling
             # numpy.percentile twice per scalar value.
+
             def _stats(z):
                 """Return (mean, p5, p95) dicts for a year-keyed dict z."""
                 avg, low, high = {}, {}, {}
