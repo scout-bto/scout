@@ -6,7 +6,7 @@
   },
   "CO2 intensity of electricity": {
     "units": "Mt/TWh",
-    "source": "AEO 2025 data through 2024 w/ Cambium projections",
+    "source": "AEO 2026 data through 2024 w/ Cambium projections",
     "data": {
       "BASN": {
         "2016": 0.539088,
@@ -937,7 +937,7 @@
   },
   "End-use electricity price": {
     "units": "2025$/kWh site",
-    "source": "Calculated using converter.py, from Table 54, 'End-use Prices' for each building sector and EMM region, from the 2023 EIA Annual Energy Outlook (2022-2050); previous years (2016-2021) backfilled based on 2022 value from AEO 2023",
+    "source": "Calculated using converter.py, from Table 54, 'End-use Prices' for each building sector and EMM region, from the 2026 EIA Annual Energy Outlook (2025-2050); previous years (2016-2024) backfilled based on 2025 value from AEO 2026",
     "data": {
       "residential": {
         "BASN": {
