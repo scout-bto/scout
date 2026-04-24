@@ -817,6 +817,19 @@ class Measure(object):
                     markets[k] = numpy.array(markets[k])
 
 
+def _fast_copy_nested_dict(d):
+    """Fast recursive copy of a nested dict with numeric (non-dict) leaf values.
+
+    Significantly faster than copy.deepcopy for dicts whose leaf values are
+    plain Python floats/ints or numpy scalars, as is the case for the
+    output-breakout fraction dicts used in finalize_outputs.
+    """
+    out = {}
+    for k, v in d.items():
+        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+    return out
+
+
 class Engine(object):
     """Class representing a collection of efficiency measures.
 
@@ -2357,15 +2370,16 @@ class Engine(object):
                                     tot_cost[ind][yr][c_l]):
                                 # Find the lowest annualized cost for the
                                 # set of competing measures/discount bin
-                                min_val = min([
+                                min_val = min(
                                     tot_cost[x][yr][c_l][ind2]
-                                    for x in _valid_arr])
+                                    for x in _valid_arr)
                                 # Determine how many competing measures
                                 # have the lowest annualized cost under
-                                # the given discount rate bin
-                                min_val_ecms = [
-                                    x for x in _valid_arr
-                                    if tot_cost[x][yr][c_l][ind2] == min_val]
+                                # the given discount rate bin (count only,
+                                # avoid building a temporary list)
+                                n_min_val_ecms = sum(
+                                    1 for x in _valid_arr
+                                    if tot_cost[x][yr][c_l][ind2] == min_val)
                                 # If the current measure has the lowest
                                 # annualized cost, assign it appropriate
                                 # market share for current discount rate
@@ -2375,7 +2389,7 @@ class Engine(object):
                                 if tot_cost[ind][yr][c_l][ind2] == min_val:
                                     mkt_fracs[ind][yr][c_l].append(
                                         mkt_dists[ind2] /
-                                        len(min_val_ecms))
+                                        n_min_val_ecms)
                                 # Otherwise, set its market share for that
                                 # discount rate bin to zero
                                 else:
@@ -2395,15 +2409,16 @@ class Engine(object):
                             for ind2, dr in enumerate(tot_cost[ind][yr]):
                                 # Find the lowest annualized cost for the given
                                 # set of competing measures and discount bin
-                                min_val = min([
+                                min_val = min(
                                     tot_cost[x][yr][ind2]
-                                    for x in _valid_pt])
+                                    for x in _valid_pt)
                                 # Determine how many of the competing measures
                                 # have the lowest annualized cost under
-                                # the given discount rate bin
-                                min_val_ecms = [
-                                    x for x in _valid_pt
-                                    if tot_cost[x][yr][ind2] == min_val]
+                                # the given discount rate bin (count only,
+                                # avoid building a temporary list)
+                                n_min_val_ecms = sum(
+                                    1 for x in _valid_pt
+                                    if tot_cost[x][yr][ind2] == min_val)
                                 # If the current measure has the lowest
                                 # annualized cost, assign it the appropriate
                                 # market share for the current discount rate
@@ -2412,7 +2427,7 @@ class Engine(object):
                                 # the lowest annualized cost
                                 if tot_cost[ind][yr][ind2] == min_val:
                                     mkt_fracs[ind][yr].append(
-                                        mkt_dists[ind2] / len(min_val_ecms))
+                                        mkt_dists[ind2] / n_min_val_ecms)
                                 # Otherwise, set its market share for that
                                 # discount rate bin to zero
                                 else:
@@ -2625,16 +2640,25 @@ class Engine(object):
             self.find_added_sbmkt_fracs(
                 mkt_fracs, measures_adj, mseg_key, adopt_scheme, years_on_mkt_all, x)
             for x in [noapply_sbmkt_fracs_scale, noapply_sbmkt_fracs_regs]]
-        # Sum both types of market addition fractions
-        added_sbmkt_fracs = [
-            {yr: (added_sbmkt_fracs_scale[m_ind][yr] + added_sbmkt_fracs_regs[m_ind][yr])
-             for yr in self.handyvars.aeo_years} for m_ind, m in enumerate(measures_adj)]
+        # Sum both types of market addition fractions (mutate scale in-place
+        # to avoid allocating extra dicts on every call)
+        added_sbmkt_fracs = added_sbmkt_fracs_scale
+        for m_ind in range(len(measures_adj)):
+            regs = added_sbmkt_fracs_regs[m_ind]
+            for yr in self.handyvars.aeo_years:
+                added_sbmkt_fracs[m_ind][yr] += regs[yr]
         # After additions have been calculated, adjust measure market fractions downward to
         # account for effects of market removals from appliance restrictions, as applicable
         # (note that downward adjustments for sub-market scaling are applied earlier in measure
         # preparation in ecm_prep and thus do not need to be reflected again here.)
-        mkt_fracs = [{yr: mkt_fracs[m_ind][yr] * (1 - noapply_sbmkt_fracs_regs[m_ind][yr])
-                      for yr in self.handyvars.aeo_years} for m_ind, m in enumerate(measures_adj)]
+        # Mutate mkt_fracs in-place to avoid allocating new dicts.
+        for m_ind in range(len(measures_adj)):
+            regs = noapply_sbmkt_fracs_regs[m_ind]
+            mf = mkt_fracs[m_ind]
+            for yr in self.handyvars.aeo_years:
+                r = regs[yr]
+                if r != 0:
+                    mf[yr] = mf[yr] * (1 - r)
 
         return added_sbmkt_fracs, mkt_fracs
 
@@ -3808,7 +3832,7 @@ class Engine(object):
             # to distinguish such considerations; develop alternate stock data
             # keys to switch to to handle this case
             if tch_apnd:
-                key_list_alt1 = copy.deepcopy(key_list)
+                key_list_alt1 = key_list[:]  # shallow copy is sufficient (list of primitives)
                 key_list_alt1[-2] = (key_list_alt1[-2] + tch_apnd)
                 stk_cost_dat_key_alt = str(tuple(key_list_alt1))
             else:
@@ -4904,17 +4928,15 @@ class Engine(object):
                         "competed"][x][yr] = adjlist[-1][yr] * adj_c
 
             # Adjust competed energy/carbon and energy/carbon costs
-            mast["cost"]["energy"]["competed"][x][yr], \
-                mast["cost"]["carbon"]["competed"][x][yr], \
-                mast["energy"]["competed"][x][yr], \
-                mast["carbon"]["competed"][x][yr] = [
-                    x[yr] - (y[yr] * (1 - adj_c)) for x, y in
-                    zip(mastlist[6:10], adjlist[6:10])]
-            adj["cost"]["energy"]["competed"][x][yr], \
-                adj["cost"]["carbon"]["competed"][x][yr], \
-                adj["energy"]["competed"][x][yr], \
-                adj["carbon"]["competed"][x][yr] = [
-                    (x[yr] * adj_c) for x in adjlist[6:10]]
+            _ac1 = 1 - adj_c
+            mast["cost"]["energy"]["competed"][x][yr] = mastlist[6][yr] - adjlist[6][yr] * _ac1
+            mast["cost"]["carbon"]["competed"][x][yr] = mastlist[7][yr] - adjlist[7][yr] * _ac1
+            mast["energy"]["competed"][x][yr] = mastlist[8][yr] - adjlist[8][yr] * _ac1
+            mast["carbon"]["competed"][x][yr] = mastlist[9][yr] - adjlist[9][yr] * _ac1
+            adj["cost"]["energy"]["competed"][x][yr] = adjlist[6][yr] * adj_c
+            adj["cost"]["carbon"]["competed"][x][yr] = adjlist[7][yr] * adj_c
+            adj["energy"]["competed"][x][yr] = adjlist[8][yr] * adj_c
+            adj["carbon"]["competed"][x][yr] = adjlist[9][yr] * adj_c
 
         # If applicable, update fuel/tech conversions shares after competition
         if self.opts.write_elec_conv_fracs and adopt_scheme == "Max adoption potential" and any([
@@ -5061,9 +5083,12 @@ class Engine(object):
                 for yr in focus_yrs}
                 for v in range(len(summary_vals))]
             # Add ECM markets and savings totals to totals across all ECMs
-            summary_vals_all_ecms = [{
-                yr: summary_vals_all_ecms[v][yr] + summary_vals[v][yr] for
-                yr in focus_yrs} for v in range(0, n_vars_all)]
+            # (mutate in-place to avoid allocating new dicts on each iteration)
+            for v in range(n_vars_all):
+                sv = summary_vals[v]
+                sae = summary_vals_all_ecms[v]
+                for yr in focus_yrs:
+                    sae[yr] += sv[yr]
 
             # If fugitive emissions are being assessed for the measure,
             # initialize a summary list for those data
@@ -5117,29 +5142,41 @@ class Engine(object):
                                 yr in focus_yrs}
             # Find mean and 5th/95th percentile values of each output
             # (note: if output is point value, all three of these values
-            # will be the same)
+            # will be the same). Compute all three stats in a single pass
+            # to avoid iterating summary_vals three times and calling
+            # numpy.percentile twice per scalar value.
+            def _stats(z):
+                """Return (mean, p5, p95) dicts for a year-keyed dict z."""
+                avg, low, high = {}, {}, {}
+                for k, v in z.items():
+                    if v is None:
+                        avg[k] = low[k] = high[k] = None
+                    elif isinstance(v, numpy.ndarray):
+                        avg[k] = float(numpy.mean(v))
+                        low[k] = float(numpy.percentile(v, 5))
+                        high[k] = float(numpy.percentile(v, 95))
+                    else:
+                        # Scalar – mean == p5 == p95
+                        avg[k] = low[k] = high[k] = v
+                return avg, low, high
 
-            # Mean of outputs
+            _stats_results = [_stats(z) for z in summary_vals]
             stk_base_avg, energy_base_avg, carb_base_avg, stk_base_cost_avg, \
                 energy_cost_base_avg, carb_cost_base_avg, stk_eff_avg, \
                 energy_eff_avg, energy_eff_capt_avg, energy_eff_capt_avg_env, \
                 carb_eff_avg, stk_eff_cost_avg, energy_cost_eff_avg, carb_cost_eff_avg, \
                 energy_save_avg, energy_costsave_avg, carb_save_avg, \
                 carb_costsave_avg, cce_avg, cce_c_avg, ccc_avg, ccc_e_avg, \
-                irr_e_avg, irr_ec_avg, payback_e_avg, payback_ec_avg = [{
-                    k: numpy.mean(v) if v is not None else None
-                    for k, v in z.items()} for z in summary_vals]
-            # 5th percentile of outputs
+                irr_e_avg, irr_ec_avg, payback_e_avg, payback_ec_avg = [
+                    s[0] for s in _stats_results]
             stk_base_low, energy_base_low, carb_base_low, stk_base_cost_low, \
                 energy_cost_base_low, carb_cost_base_low, stk_eff_low, \
                 energy_eff_low, energy_eff_capt_low, energy_eff_capt_low_env, \
                 carb_eff_low, stk_eff_cost_low, energy_cost_eff_low, carb_cost_eff_low, \
                 energy_save_low, energy_costsave_low, carb_save_low, \
                 carb_costsave_low, cce_low, cce_c_low, ccc_low, ccc_e_low, \
-                irr_e_low, irr_ec_low, payback_e_low, payback_ec_low = [{
-                    k: numpy.percentile(v, 5) if v is not None else None
-                    for k, v in z.items()} for z in summary_vals]
-            # 95th percentile of outputs
+                irr_e_low, irr_ec_low, payback_e_low, payback_ec_low = [
+                    s[1] for s in _stats_results]
             stk_base_high, energy_base_high, carb_base_high, stk_base_cost_high, \
                 energy_cost_base_high, carb_cost_base_high, stk_eff_high, \
                 energy_eff_high, energy_eff_capt_high, \
@@ -5148,9 +5185,8 @@ class Engine(object):
                 energy_costsave_high, carb_save_high, \
                 carb_costsave_high, cce_high, cce_c_high, \
                 ccc_high, ccc_e_high, irr_e_high, irr_ec_high, \
-                payback_e_high, payback_ec_high = [{
-                    k: numpy.percentile(v, 95) if v is not None else None
-                    for k, v in z.items()} for z in summary_vals]
+                payback_e_high, payback_ec_high = [
+                    s[2] for s in _stats_results]
 
             # Record updated markets and savings in Engine 'output'
             # attribute; initialize markets/savings breakouts by category as
@@ -5562,7 +5598,7 @@ class Engine(object):
                 # measure stock totals to avoid manipulation via "frac_eff_stk"
                 # calculation
                 if all([x for x in [self.opts.mkt_fracs, report_stk_units]]):
-                    eff_stk = copy.deepcopy(m.markets[adopt_scheme][
+                    eff_stk = _fast_copy_nested_dict(m.markets[adopt_scheme][
                         "competed"]["mseg_out_break"]["stock"]["efficient"])
                 else:
                     eff_stk = m.markets[adopt_scheme][
@@ -5601,6 +5637,10 @@ class Engine(object):
             # Create combined list of baseline and efficient variables to
             # loop through below in finalizing baseline/efficient breakouts
             mkt_keys = mkt_base_keys + mkt_eff_keys
+
+            def _fast_copy_frac(d):
+                return _fast_copy_nested_dict(d)
+
             # Pre-build per-key copies of the frac_* dicts so out_break_walk
             # (which mutates its first argument) gets a fresh copy each time
             # without redundant deepcopy inside the loop.
@@ -5608,28 +5648,28 @@ class Engine(object):
             for k in mkt_keys:
                 if "Baseline" in k:
                     if "Stock" in k and report_stk_units:
-                        _frac_copies[k] = copy.deepcopy(frac_base_stk)
+                        _frac_copies[k] = _fast_copy_frac(frac_base_stk)
                     elif "Capital" in k and report_stk_costs:
-                        _frac_copies[k] = copy.deepcopy(frac_base_stk_cost)
+                        _frac_copies[k] = _fast_copy_frac(frac_base_stk_cost)
                     elif "Energy Use" in k:
-                        _frac_copies[k] = copy.deepcopy(frac_base_energy)
+                        _frac_copies[k] = _fast_copy_frac(frac_base_energy)
                     elif "Energy Cost" in k:
-                        _frac_copies[k] = copy.deepcopy(frac_base_cost)
+                        _frac_copies[k] = _fast_copy_frac(frac_base_cost)
                     else:
-                        _frac_copies[k] = copy.deepcopy(frac_base_carb)
+                        _frac_copies[k] = _fast_copy_frac(frac_base_carb)
                 elif any([x in k for x in ["Efficient", "Measure"]]):
                     if "Stock" in k and report_stk_units:
-                        _frac_copies[k] = copy.deepcopy(frac_eff_stk)
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk)
                     elif "Capital" in k and report_stk_costs:
-                        _frac_copies[k] = copy.deepcopy(frac_eff_stk_cost)
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk_cost)
                     elif "Energy Use" in k and "Measure" not in k:
-                        _frac_copies[k] = copy.deepcopy(frac_eff_energy)
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy)
                     elif eff_capt and "Energy Use" in k and "Measure" in k:
-                        _frac_copies[k] = copy.deepcopy(frac_eff_energy_capt)
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy_capt)
                     elif "Energy Cost" in k:
-                        _frac_copies[k] = copy.deepcopy(frac_eff_cost)
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_cost)
                     else:
-                        _frac_copies[k] = copy.deepcopy(frac_eff_carb)
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_carb)
             # Apply output breakout fractions to total baseline and efficient
             # stock, energy, carbon, and cost results initialized above
             for k in mkt_keys:
@@ -5700,7 +5740,7 @@ class Engine(object):
             for ind_k, k in enumerate(save_keys):
                 # Copy baseline breakouts dict to use in establishing the
                 # structure of the final savings output breakouts dict
-                orig_dict_struct = copy.deepcopy(
+                orig_dict_struct = _fast_copy_frac(
                     mkt_save_brk[mkt_base_keys[ind_k]])
                 # Loop through all nested levels of the dict above; when
                 # reaching terminal nodes, finalize savings values as
