@@ -320,12 +320,16 @@ def api_query(
     verbose : bool
         If True, print the URL and any error messages.
     """
+    
+    # Scenario naming convention changed: 2025 and earlier use ref{year},
+    # 2026+ use cb{year} (consistent with converter.py naming)
+    scenario = f"cb{year}" if int(year) >= 2026 else f"ref{year}"
 
     url = (
         f"https://api.eia.gov/v2/aeo/{year}/data/"
         "?frequency=annual"
         "&data[0]=value"
-        f"&facets[scenario][]=ref{year}"
+        f"&facets[scenario][]={scenario}"
         f"&facets[seriesId][]={series_id}"
         "&sort[0][column]=period&sort[0][direction]=desc"
         "&offset=0&length=5000"
