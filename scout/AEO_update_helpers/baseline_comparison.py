@@ -320,7 +320,7 @@ def api_query(
     verbose : bool
         If True, print the URL and any error messages.
     """
-    
+
     # Scenario naming convention changed: 2025 and earlier use ref{year},
     # 2026+ use cb{year} (consistent with converter.py naming)
     scenario = f"cb{year}" if int(year) >= 2026 else f"ref{year}"
