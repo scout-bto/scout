@@ -2663,17 +2663,16 @@ class Engine(object):
         # apportioned across the other competing ECMs), as specified in the measure's original
         # definition; this fraction is broken out by year, and draws from sub-market scaling
         # information for competing measures that may or may not also already be broken out by year
-        noapply_sbmkt_fracs_scale = [
-            {yr: 1 - m.markets[adopt_scheme]["competed"]["mseg_adjust"][
-                "contributing mseg keys and values"][mseg_key][
-                "sub-market scaling"] for yr in self.handyvars.aeo_years}
-            if not isinstance(m.markets[adopt_scheme]["competed"][
-                "mseg_adjust"]["contributing mseg keys and values"][mseg_key][
-                "sub-market scaling"], dict)
-            else {yr: 1 - m.markets[adopt_scheme]["competed"]["mseg_adjust"][
-                "contributing mseg keys and values"][mseg_key][
-                "sub-market scaling"][yr] for yr in self.handyvars.aeo_years}
-            for m in measures_adj]
+        aeo_years = self.handyvars.aeo_years
+        noapply_sbmkt_fracs_scale = []
+        for m in measures_adj:
+            sbmkt = m.markets[adopt_scheme]["competed"]["mseg_adjust"][
+                "contributing mseg keys and values"][mseg_key]["sub-market scaling"]
+            if isinstance(sbmkt, dict):
+                noapply_sbmkt_fracs_scale.append({yr: 1 - sbmkt[yr] for yr in aeo_years})
+            else:
+                _val = 1 - sbmkt
+                noapply_sbmkt_fracs_scale.append({yr: _val for yr in aeo_years})
         # Check for competing ECMs that apply to but a fraction of the competed market – either
         # because their market was restricted via sub-market scaling fractions in the measure
         # definition, or they are subject to regulations that restrict a portion of their market.
@@ -4655,22 +4654,29 @@ class Engine(object):
                     for yr in _energy_brk[v].keys()))
                 else "" for v in ["baseline", "efficient"]]
 
+        # Pre-compute filtered vs_list once per compete_adj call (avoids
+        # repeated .copy() + list-comprehension filter on every mast_vars
+        # iteration – 8.4M calls in the profile).
+        _vs_filtered = [x for x in vs_list_init if x]
+        _has_efficient = "efficient" in vs_list_init
+        _energy_brk_keys = adj_out_break["base fuel"]["energy"].keys()
+        _has_eff_captured = _has_efficient and "efficient-captured" in _energy_brk_keys
+        _vs_filtered_energy = (_vs_filtered + ["efficient-captured"]) if _has_eff_captured \
+            else _vs_filtered
+
         # Adjust baseline stock/energy/cost/carbon, efficient
         # stock/energy/cost/carbon, and energy/cost/carbon savings totals
         # grouped by climate zone, building type, end use, and (if applicable)
         # fuel type by the appropriate fraction; adjust based on segment of
         # current microsegment that was removed from competition
         for var in self.handyvars.mast_vars:
-            # Re-initialize the results (baseline and/or efficient) to cycle through for each
-            # variable; for energy, efficient-captured results may be added to this
-            vs_list = vs_list_init.copy()
-            # Energy data may include unique efficient captured tracking
-            # if efficient breakout data are present
-            if "efficient" in vs_list and var == "energy" and \
-                    "efficient-captured" in adj_out_break[
-                    "base fuel"]["energy"].keys():
-                vs_list.append("efficient-captured")
-            for var_sub in [x for x in vs_list if x]:
+            # Select the right vs_list for this variable: energy gets the
+            # efficient-captured extension, all others use the base filtered list.
+            if var == "energy":
+                _cur_vs = _vs_filtered_energy
+            else:
+                _cur_vs = _vs_filtered
+            for var_sub in _cur_vs:
                 # Adjustment fraction unique to baseline/efficient results
                 if var_sub == "baseline":
                     adj_t = adj_t_b
@@ -4894,91 +4900,100 @@ class Engine(object):
             adj["cost"]["stock"]["competed"]["efficient"][yr] * adj_c
 
         # Adjust total and competed baseline and efficient energy, carbon,
-        # and cost data by measure market share
-        for x in ["baseline", "efficient"]:
-            # Determine appropriate adjustment data to use
-            # for baseline or efficient case
-            if x == "baseline":
-                mastlist, adjlist = [mast_list_base, adj_list_base]
-                adj_t = adj_t_b
-            else:
-                mastlist, adjlist = [mast_list_eff, adj_list_eff]
-                adj_t = adj_t_e
+        # and cost data by measure market share.
+        # Loop unrolled (was `for x in ["baseline", "efficient"]`) to eliminate
+        # the per-iteration branch and temporary list, saving ~2.1M branches.
 
-            # Adjust the total and competed energy, carbon, and associated cost
-            # savings by the appropriate measure market share, both overall
-            # and for the current contributing microsegment
+        # --- baseline ---
+        _ec_adj_b = adj_t_b["energy cost"]
+        _ec_1m_b = 1 - _ec_adj_b
+        _e_adj_b  = adj_t_b["energy"]
+        _c_adj_b  = adj_t_b["carbon"]
+        _ac1 = 1 - adj_c
+        mast["cost"]["energy"]["total"]["baseline"][yr] = mast_list_base[1][yr] - adj_list_base[1][yr] * _ec_1m_b
+        mast["cost"]["carbon"]["total"]["baseline"][yr] = mast_list_base[2][yr] - adj_list_base[2][yr] * _ec_1m_b
+        adj["cost"]["energy"]["total"]["baseline"][yr]  = adj_list_base[1][yr] * _ec_adj_b
+        adj["cost"]["carbon"]["total"]["baseline"][yr]  = adj_list_base[2][yr] * _ec_adj_b
+        mast["energy"]["total"]["baseline"][yr] = mast_list_base[3][yr] - adj_list_base[3][yr] * (1 - _e_adj_b)
+        mast["carbon"]["total"]["baseline"][yr] = mast_list_base[4][yr] - adj_list_base[4][yr] * (1 - _c_adj_b)
+        adj["energy"]["total"]["baseline"][yr]  = adj_list_base[3][yr] * _e_adj_b
+        adj["carbon"]["total"]["baseline"][yr]  = adj_list_base[4][yr] * _c_adj_b
+        if measure.fug_e:
+            if "methane" in measure.fug_e:
+                mast["fugitive emissions"]["methane"]["total"]["baseline"][yr] = \
+                    mast_list_base[-4][yr] - (adj_list_base[-4][yr] * (1 - _e_adj_b))
+                adj["fugitive emissions"]["methane"]["total"]["baseline"][yr] = \
+                    adj_list_base[-4][yr] * _e_adj_b
+                mast["fugitive emissions"]["methane"]["competed"]["baseline"][yr] = \
+                    mast_list_base[-3][yr] - (adj_list_base[-3][yr] * _ac1)
+                adj["fugitive emissions"]["methane"]["competed"]["baseline"][yr] = \
+                    adj_list_base[-3][yr] * adj_c
+            if "refrigerants" in measure.fug_e:
+                mast["fugitive emissions"]["refrigerants"]["total"]["baseline"][yr] = \
+                    mast_list_base[-2][yr] - (adj_list_base[-2][yr] * (1 - adj_t_b["stock"]))
+                adj["fugitive emissions"]["refrigerants"]["total"]["baseline"][yr] = \
+                    adj_list_base[-2][yr] * adj_t_b["stock"]
+                mast["fugitive emissions"]["refrigerants"]["competed"]["baseline"][yr] = \
+                    mast_list_base[-1][yr] - (adj_list_base[-1][yr] * _ac1)
+                adj["fugitive emissions"]["refrigerants"]["competed"]["baseline"][yr] = \
+                    adj_list_base[-1][yr] * adj_c
+        mast["cost"]["energy"]["competed"]["baseline"][yr] = mast_list_base[6][yr] - adj_list_base[6][yr] * _ac1
+        mast["cost"]["carbon"]["competed"]["baseline"][yr] = mast_list_base[7][yr] - adj_list_base[7][yr] * _ac1
+        mast["energy"]["competed"]["baseline"][yr] = mast_list_base[8][yr] - adj_list_base[8][yr] * _ac1
+        mast["carbon"]["competed"]["baseline"][yr] = mast_list_base[9][yr] - adj_list_base[9][yr] * _ac1
+        adj["cost"]["energy"]["competed"]["baseline"][yr] = adj_list_base[6][yr] * adj_c
+        adj["cost"]["carbon"]["competed"]["baseline"][yr] = adj_list_base[7][yr] * adj_c
+        adj["energy"]["competed"]["baseline"][yr]         = adj_list_base[8][yr] * adj_c
+        adj["carbon"]["competed"]["baseline"][yr]         = adj_list_base[9][yr] * adj_c
 
-            # Adjust total energy/carbon costs using energy cost adj factors
-            mast["cost"]["energy"]["total"][x][yr], \
-                mast["cost"]["carbon"]["total"][x][yr] = [
-                x[yr] - (y[yr] * (1 - adj_t["energy cost"])) for x, y in
-                zip(mastlist[1:3], adjlist[1:3])]
-            adj["cost"]["energy"]["total"][x][yr], \
-                adj["cost"]["carbon"]["total"][x][yr] = [
-                (x[yr] * adj_t["energy cost"]) for x in adjlist[1:3]]
-            # Adjust energy/carbon
-            mast["energy"]["total"][x][yr], \
-                mast["carbon"]["total"][x][yr] = [
-                x[yr] - (y[yr] * (1 - adj_t[v])) for x, y, v in
-                zip(mastlist[3:5], adjlist[3:5], ["energy", "carbon"])]
-            adj["energy"]["total"][x][yr], \
-                adj["carbon"]["total"][x][yr] = [
-                (x[yr] * adj_t[v]) for x, v in zip(
-                    adjlist[3:5], ["energy", "carbon"])]
-            # Adjust efficient-captured energy if these data are present
-            if x == "efficient":
-                try:
-                    mast["energy"]["total"]["efficient-captured"][yr] = \
-                        mastlist[10][yr] - (
-                        adjlist[10][yr] * (1 - adj_t["energy"]))
-                    adj["energy"]["total"]["efficient-captured"][yr] = (
-                        adjlist[10][yr] * adj_t["energy"])
-                except (KeyError, IndexError):
-                    pass
-
-            # Adjust total emissions from fugitive emissions if applicable
-            if measure.fug_e:
-                # Adjust fugitive methane emissions results if applicable
-                if measure.fug_e and "methane" in measure.fug_e:
-                    # Total
-                    mast["fugitive emissions"]["methane"][
-                        "total"][x][yr] = mastlist[-4][yr] - (
-                            adjlist[-4][yr] * (1 - adj_t["energy"]))
-                    adj["fugitive emissions"]["methane"][
-                        "total"][x][yr] = adjlist[-4][yr] * adj_t["energy"]
-                    # Competed
-                    mast["fugitive emissions"]["methane"][
-                        "competed"][x][yr] = mastlist[-3][yr] - (
-                            adjlist[-3][yr] * (1 - adj_c))
-                    adj["fugitive emissions"]["methane"]["competed"][x][yr] = \
-                        adjlist[-3][yr] * adj_c
-                # Adjust fugitive refrigerant emissions results if
-                # applicable
-                if measure.fug_e and "refrigerants" in measure.fug_e:
-                    # Total
-                    mast["fugitive emissions"]["refrigerants"][
-                        "total"][x][yr] = mastlist[-2][yr] - (
-                            adjlist[-2][yr] * (1 - adj_t_b["stock"]))
-                    adj["fugitive emissions"]["refrigerants"][
-                        "total"][x][yr] = adjlist[-2][yr] * adj_t_b["stock"]
-                    # Competed
-                    mast["fugitive emissions"]["refrigerants"][
-                        "competed"][x][yr] = mastlist[-1][yr] - (
-                            adjlist[-1][yr] * (1 - adj_c))
-                    adj["fugitive emissions"]["refrigerants"][
-                        "competed"][x][yr] = adjlist[-1][yr] * adj_c
-
-            # Adjust competed energy/carbon and energy/carbon costs
-            _ac1 = 1 - adj_c
-            mast["cost"]["energy"]["competed"][x][yr] = mastlist[6][yr] - adjlist[6][yr] * _ac1
-            mast["cost"]["carbon"]["competed"][x][yr] = mastlist[7][yr] - adjlist[7][yr] * _ac1
-            mast["energy"]["competed"][x][yr] = mastlist[8][yr] - adjlist[8][yr] * _ac1
-            mast["carbon"]["competed"][x][yr] = mastlist[9][yr] - adjlist[9][yr] * _ac1
-            adj["cost"]["energy"]["competed"][x][yr] = adjlist[6][yr] * adj_c
-            adj["cost"]["carbon"]["competed"][x][yr] = adjlist[7][yr] * adj_c
-            adj["energy"]["competed"][x][yr] = adjlist[8][yr] * adj_c
-            adj["carbon"]["competed"][x][yr] = adjlist[9][yr] * adj_c
+        # --- efficient ---
+        _ec_adj_e = adj_t_e["energy cost"]
+        _ec_1m_e  = 1 - _ec_adj_e
+        _e_adj_e  = adj_t_e["energy"]
+        _c_adj_e  = adj_t_e["carbon"]
+        mast["cost"]["energy"]["total"]["efficient"][yr] = mast_list_eff[1][yr] - adj_list_eff[1][yr] * _ec_1m_e
+        mast["cost"]["carbon"]["total"]["efficient"][yr] = mast_list_eff[2][yr] - adj_list_eff[2][yr] * _ec_1m_e
+        adj["cost"]["energy"]["total"]["efficient"][yr]  = adj_list_eff[1][yr] * _ec_adj_e
+        adj["cost"]["carbon"]["total"]["efficient"][yr]  = adj_list_eff[2][yr] * _ec_adj_e
+        mast["energy"]["total"]["efficient"][yr] = mast_list_eff[3][yr] - adj_list_eff[3][yr] * (1 - _e_adj_e)
+        mast["carbon"]["total"]["efficient"][yr] = mast_list_eff[4][yr] - adj_list_eff[4][yr] * (1 - _c_adj_e)
+        adj["energy"]["total"]["efficient"][yr]  = adj_list_eff[3][yr] * _e_adj_e
+        adj["carbon"]["total"]["efficient"][yr]  = adj_list_eff[4][yr] * _c_adj_e
+        # Adjust efficient-captured energy if these data are present
+        try:
+            mast["energy"]["total"]["efficient-captured"][yr] = \
+                mast_list_eff[10][yr] - (adj_list_eff[10][yr] * (1 - _e_adj_e))
+            adj["energy"]["total"]["efficient-captured"][yr] = \
+                adj_list_eff[10][yr] * _e_adj_e
+        except (KeyError, IndexError):
+            pass
+        if measure.fug_e:
+            if "methane" in measure.fug_e:
+                mast["fugitive emissions"]["methane"]["total"]["efficient"][yr] = \
+                    mast_list_eff[-4][yr] - (adj_list_eff[-4][yr] * (1 - _e_adj_e))
+                adj["fugitive emissions"]["methane"]["total"]["efficient"][yr] = \
+                    adj_list_eff[-4][yr] * _e_adj_e
+                mast["fugitive emissions"]["methane"]["competed"]["efficient"][yr] = \
+                    mast_list_eff[-3][yr] - (adj_list_eff[-3][yr] * _ac1)
+                adj["fugitive emissions"]["methane"]["competed"]["efficient"][yr] = \
+                    adj_list_eff[-3][yr] * adj_c
+            if "refrigerants" in measure.fug_e:
+                mast["fugitive emissions"]["refrigerants"]["total"]["efficient"][yr] = \
+                    mast_list_eff[-2][yr] - (adj_list_eff[-2][yr] * (1 - adj_t_b["stock"]))
+                adj["fugitive emissions"]["refrigerants"]["total"]["efficient"][yr] = \
+                    adj_list_eff[-2][yr] * adj_t_b["stock"]
+                mast["fugitive emissions"]["refrigerants"]["competed"]["efficient"][yr] = \
+                    mast_list_eff[-1][yr] - (adj_list_eff[-1][yr] * _ac1)
+                adj["fugitive emissions"]["refrigerants"]["competed"]["efficient"][yr] = \
+                    adj_list_eff[-1][yr] * adj_c
+        mast["cost"]["energy"]["competed"]["efficient"][yr] = mast_list_eff[6][yr] - adj_list_eff[6][yr] * _ac1
+        mast["cost"]["carbon"]["competed"]["efficient"][yr] = mast_list_eff[7][yr] - adj_list_eff[7][yr] * _ac1
+        mast["energy"]["competed"]["efficient"][yr] = mast_list_eff[8][yr] - adj_list_eff[8][yr] * _ac1
+        mast["carbon"]["competed"]["efficient"][yr] = mast_list_eff[9][yr] - adj_list_eff[9][yr] * _ac1
+        adj["cost"]["energy"]["competed"]["efficient"][yr] = adj_list_eff[6][yr] * adj_c
+        adj["cost"]["carbon"]["competed"]["efficient"][yr] = adj_list_eff[7][yr] * adj_c
+        adj["energy"]["competed"]["efficient"][yr]         = adj_list_eff[8][yr] * adj_c
+        adj["carbon"]["competed"]["efficient"][yr]         = adj_list_eff[9][yr] * adj_c
 
         # If applicable, update fuel/tech conversions shares after competition
         if self.opts.write_elec_conv_fracs and adopt_scheme == "Max adoption potential" and any([
@@ -7933,7 +7948,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 m.markets[adopt_scheme]["uncompeted"]["mseg_adjust"] = \
                     meas_comp_data[adopt_scheme]
                 m.markets[adopt_scheme]["competed"]["mseg_adjust"] = \
-                    copy.deepcopy(
+                    _fast_copy_markets(
                         m.markets[adopt_scheme]["uncompeted"]["mseg_adjust"])
                 # Reset measure fuel split attribute to imported values
                 m.eff_fs_splt = meas_eff_fs_data
@@ -8176,8 +8191,11 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         if isinstance(data, dict):
             for k, v in data.items():
                 data[k] = round_values(v, precision)
-        elif isinstance(data, float):
+        elif type(data) is float:
             data = round(data, precision)
+        elif isinstance(data, float):
+            # catches numpy floating types
+            data = round(float(data), precision)
         return data
 
     a_run.output_ecms = round_values(a_run.output_ecms, 6)
