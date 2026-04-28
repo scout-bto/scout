@@ -85,6 +85,7 @@ jobs:
 
             # --- Checkout master ---
             git fetch --depth=1 origin master
+            git stash  # stash any result files to avoid conflicts
             git checkout origin/master -- .
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
