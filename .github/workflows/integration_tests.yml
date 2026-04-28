@@ -41,11 +41,43 @@ jobs:
         run: |
           if [[ "$ENABLE_PROFILER" == 'true' ]]; then
             steps=("ecm_prep" "run")
+
+            # --- Profile the feature branch first ---
             for step in "${steps[@]}"; do
               psrecord --log memory_log_${step}.txt --include-children --interval 1 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
               (echo -e; echo "# Elapsed time,CPU (%),Peak Real (MB),Peak Virtual (MB)"; grep -v "time" memory_log_${step}.txt | sort -k3 -n -r | head -n 1 | column -t | tr -s '[:blank:]' ',') >> results/profile_${step}.csv
               mv memory_log_${step}.txt ./results/
             done
+
+            # --- Checkout master and profile it for baseline comparison ---
+            git fetch --depth=1 origin master
+            git stash  # stash any result files to avoid conflicts
+            git checkout origin/master -- .
+            pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
+
+            mkdir -p results_master
+            for step in "${steps[@]}"; do
+              psrecord --log memory_log_master_${step}.txt --include-children --interval 1 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
+              (echo -e; echo "# Elapsed time,CPU (%),Peak Real (MB),Peak Virtual (MB)"; grep -v "time" memory_log_master_${step}.txt | sort -k3 -n -r | head -n 1 | column -t | tr -s '[:blank:]' ',') >> results_master/profile_${step}.csv
+              mv memory_log_master_${step}.txt ./results_master/
+            done
+
+            # --- Restore feature branch code ---
+            git checkout ${{ github.event.pull_request.head.sha || github.sha }} -- .
+            pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
+
+            # --- Write comparison summary ---
+            echo "=== Profiling Comparison ===" | tee results/profile_comparison.txt
+            for step in "${steps[@]}"; do
+              echo "--- Step: $step ---" | tee -a results/profile_comparison.txt
+              echo "Master:  $(tail -1 results_master/profile_${step}.csv)" | tee -a results/profile_comparison.txt
+              echo "Feature: $(tail -1 results/profile_${step}.csv)" | tee -a results/profile_comparison.txt
+            done
+
+            # Move master profiling logs into results so they get uploaded as artifacts
+            mv results_master/memory_log_master_*.txt ./results/ 2>/dev/null || true
+            mv results_master/profile_*.csv ./results/profile_master_ecm_prep.csv 2>/dev/null || true
+
           else
             python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
           fi
