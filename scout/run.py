@@ -353,7 +353,7 @@ class UsefulVars(object):
             # Separate conversion data as portion of the total and competed stock (e.g., total
             # conversion percentage vs. converted sales percentage)
             self.conversion_fracs = {
-                x: copy.deepcopy(conversion_struct) for x in ["total", "competed"]}
+                x: _fast_copy_nested_dict(conversion_struct) for x in ["total", "competed"]}
         else:
             self.conversion_fracs, self.conversion_fuels, self.conversion_eus = (
                 None for n in range(3))
@@ -672,9 +672,13 @@ class Codes_BPS_Measure(object):
         # Loop through adoption schemes and initialize measure breakouts
         for adopt_scheme in handyvars.adopt_schemes:
             # Add energy, carbon, energy cost and possibly stock/stock cost breakouts
+            # Use _fast_copy_nested_dict: out_break_in has only empty-dict leaf nodes
+            # so no numpy arrays are present and this is safe and fast.
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": copy.deepcopy(out_break_in), "efficient": copy.deepcopy(out_break_in),
-                "savings": copy.deepcopy(out_break_in)} for key in handyvars.brk_vars}
+                "baseline": _fast_copy_nested_dict(out_break_in),
+                "efficient": _fast_copy_nested_dict(out_break_in),
+                "savings": _fast_copy_nested_dict(out_break_in)}
+                for key in handyvars.brk_vars}
 
 
 class Measure(object):
@@ -744,10 +748,15 @@ class Measure(object):
             adopt_schemes_highlvl_mkts = handyvars.adopt_schemes
         for adopt_scheme in adopt_schemes_highlvl_mkts:
             # Initialize 'uncompeted' and 'competed' versions of
-            # Measure markets (initially, they are identical)
+            # Measure markets (initially, they are identical).
+            # Use _fast_copy_markets instead of copy.deepcopy: it is
+            # significantly faster because it handles only the three value
+            # types that actually appear here (nested dicts, numpy arrays,
+            # and immutable scalars/None) without the general copy dispatch.
+            _orig = self.markets[adopt_scheme]
             self.markets[adopt_scheme] = {
-                "uncompeted": copy.deepcopy(self.markets[adopt_scheme]),
-                "competed": copy.deepcopy(self.markets[adopt_scheme])}
+                "uncompeted": _fast_copy_markets(_orig),
+                "competed": _fast_copy_markets(_orig)}
             self.update_results["savings"][
                 adopt_scheme] = {"uncompeted": True, "competed": True}
             self.savings[adopt_scheme] = {
@@ -827,6 +836,28 @@ def _fast_copy_nested_dict(d):
     out = {}
     for k, v in d.items():
         out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+    return out
+
+
+def _fast_copy_markets(d):
+    """Fast recursive deep-copy of a nested markets dict.
+
+    Handles the three value types that appear in measure market dicts:
+      - nested dicts  → recurse
+      - numpy.ndarray → copy via .copy()
+      - scalars / None / str / bool → shared reference (immutable, safe)
+
+    Significantly faster than copy.deepcopy because it avoids the general
+    dispatch machinery and uses numpy's own optimised copy for arrays.
+    """
+    if not isinstance(d, dict):
+        # Leaf: numpy array gets a real copy; everything else is immutable
+        if isinstance(d, numpy.ndarray):
+            return d.copy()
+        return d
+    out = d.__class__()          # preserves OrderedDict vs plain dict
+    for k, v in d.items():
+        out[k] = _fast_copy_markets(v)
     return out
 
 
@@ -2321,6 +2352,59 @@ class Engine(object):
                 len(tot_cost[x][yr]) != 0)]
             for yr in self.handyvars.aeo_years}
 
+        # ---------------------------------------------------------------------------
+        # Precompute per-(yr, discount-bin) the minimum cost and the number of
+        # measures sharing that minimum.  This turns the O(n_measures²) inner
+        # loops that recompute min/sum for every (ind, yr, c_l, ind2) combination
+        # into a single O(n_measures) pass, dramatically cutting the work done in
+        # the hottest section of compete_com_primary.
+        # ---------------------------------------------------------------------------
+        # point case: precomp_pt[yr][ind2] = (min_val, n_min)
+        precomp_pt = {}
+        for yr, valid in valid_inds_point.items():
+            if not valid:
+                precomp_pt[yr] = None
+                continue
+            # Number of discount bins for this year/case
+            n_bins = len(tot_cost[valid[0]][yr])
+            mins = [None] * n_bins
+            counts = [0] * n_bins
+            for x in valid:
+                row = tot_cost[x][yr]
+                for ind2 in range(n_bins):
+                    v = row[ind2]
+                    if mins[ind2] is None or v < mins[ind2]:
+                        mins[ind2] = v
+                        counts[ind2] = 1
+                    elif v == mins[ind2]:
+                        counts[ind2] += 1
+            precomp_pt[yr] = list(zip(mins, counts))
+
+        # array case: precomp_arr[yr][c_l][ind2] = (min_val, n_min)
+        precomp_arr = {}
+        for yr, valid in valid_inds_array.items():
+            if not valid:
+                precomp_arr[yr] = None
+                continue
+            n_samples = len(tot_cost[valid[0]][yr])
+            n_bins = len(tot_cost[valid[0]][yr][0])
+            result = [[None] * n_bins for _ in range(n_samples)]
+            counts_arr = [[0] * n_bins for _ in range(n_samples)]
+            for x in valid:
+                samples = tot_cost[x][yr]
+                for c_l in range(n_samples):
+                    row = samples[c_l]
+                    for ind2 in range(n_bins):
+                        v = row[ind2]
+                        if result[c_l][ind2] is None or v < result[c_l][ind2]:
+                            result[c_l][ind2] = v
+                            counts_arr[c_l][ind2] = 1
+                        elif v == result[c_l][ind2]:
+                            counts_arr[c_l][ind2] += 1
+            precomp_arr[yr] = [
+                list(zip(result[c_l], counts_arr[c_l]))
+                for c_l in range(n_samples)]
+
         # Pre-compute str(mseg_key) once – used in every (ind × yr) iteration.
         mseg_key_str = str(mseg_key)
 
@@ -2362,40 +2446,19 @@ class Engine(object):
                     # measures.
                     if length_array[ind_l] > 0 and len(
                             tot_cost[ind][yr][0]) != 0:
-                        mkt_fracs[ind][yr] = [
-                            [] for n in range(length_array[ind_l])]
-                        _valid_arr = valid_inds_array[yr]
-                        for c_l in range(length_array[ind_l]):
-                            for ind2, dr in enumerate(
-                                    tot_cost[ind][yr][c_l]):
-                                # Find the lowest annualized cost for the
-                                # set of competing measures/discount bin
-                                min_val = min(
-                                    tot_cost[x][yr][c_l][ind2]
-                                    for x in _valid_arr)
-                                # Determine how many competing measures
-                                # have the lowest annualized cost under
-                                # the given discount rate bin (count only,
-                                # avoid building a temporary list)
-                                n_min_val_ecms = sum(
-                                    1 for x in _valid_arr
-                                    if tot_cost[x][yr][c_l][ind2] == min_val)
-                                # If the current measure has the lowest
-                                # annualized cost, assign it appropriate
-                                # market share for current discount rate
-                                # category being looped through, divided by
-                                # total number of competing measures that
-                                # share the lowest annualized cost
-                                if tot_cost[ind][yr][c_l][ind2] == min_val:
-                                    mkt_fracs[ind][yr][c_l].append(
-                                        mkt_dists[ind2] /
-                                        n_min_val_ecms)
-                                # Otherwise, set its market share for that
-                                # discount rate bin to zero
-                                else:
-                                    mkt_fracs[ind][yr][c_l].append(0)
-                            mkt_fracs[ind][yr][c_l] = sum(
-                                mkt_fracs[ind][yr][c_l])
+                        n_samples = length_array[ind_l]
+                        mkt_fracs[ind][yr] = [0.0] * n_samples
+                        _pc_arr = precomp_arr[yr]   # list[c_l] of list[(min_val, n_min)]
+                        _tc_ind = tot_cost[ind][yr]
+                        for c_l in range(n_samples):
+                            _row = _tc_ind[c_l]
+                            _pc_row = _pc_arr[c_l]
+                            frac_sum = 0.0
+                            for ind2 in range(len(_row)):
+                                min_val, n_min_val_ecms = _pc_row[ind2]
+                                if _row[ind2] == min_val:
+                                    frac_sum += mkt_dists[ind2] / n_min_val_ecms
+                            mkt_fracs[ind][yr][c_l] = frac_sum
                         # Convert market fractions list to numpy array for
                         # use in compete_adj function below
                         mkt_fracs[ind][yr] = numpy.array(
@@ -2404,35 +2467,14 @@ class Engine(object):
                     # are specified as point values for all competing measures
                     elif length_array[ind_l] == 0:
                         if len(tot_cost[ind][yr]) != 0:
-                            mkt_fracs[ind][yr] = []
-                            _valid_pt = valid_inds_point[yr]
-                            for ind2, dr in enumerate(tot_cost[ind][yr]):
-                                # Find the lowest annualized cost for the given
-                                # set of competing measures and discount bin
-                                min_val = min(
-                                    tot_cost[x][yr][ind2]
-                                    for x in _valid_pt)
-                                # Determine how many of the competing measures
-                                # have the lowest annualized cost under
-                                # the given discount rate bin (count only,
-                                # avoid building a temporary list)
-                                n_min_val_ecms = sum(
-                                    1 for x in _valid_pt
-                                    if tot_cost[x][yr][ind2] == min_val)
-                                # If the current measure has the lowest
-                                # annualized cost, assign it the appropriate
-                                # market share for the current discount rate
-                                # category being looped through, divided by the
-                                # total number of competing measures that share
-                                # the lowest annualized cost
-                                if tot_cost[ind][yr][ind2] == min_val:
-                                    mkt_fracs[ind][yr].append(
-                                        mkt_dists[ind2] / n_min_val_ecms)
-                                # Otherwise, set its market share for that
-                                # discount rate bin to zero
-                                else:
-                                    mkt_fracs[ind][yr].append(0)
-                            mkt_fracs[ind][yr] = sum(mkt_fracs[ind][yr])
+                            _pc_pt = precomp_pt[yr]   # list[(min_val, n_min)]
+                            _tc_ind_yr = tot_cost[ind][yr]
+                            frac_sum = 0.0
+                            for ind2 in range(len(_tc_ind_yr)):
+                                min_val, n_min_val_ecms = _pc_pt[ind2]
+                                if _tc_ind_yr[ind2] == min_val:
+                                    frac_sum += mkt_dists[ind2] / n_min_val_ecms
+                            mkt_fracs[ind][yr] = frac_sum
                         else:
                             mkt_fracs[ind][yr] = 0
                     else:
