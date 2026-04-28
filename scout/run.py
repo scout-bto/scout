@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 import numpy
-import copy
+import copy  # noqa: F401
 from numpy.linalg import LinAlgError
 from collections import OrderedDict, defaultdict
 import gzip
@@ -639,9 +639,9 @@ class Codes_BPS_Measure(object):
                             "total": {
                                 "baseline": {}, "efficient": {}}}})]))])
             self.savings[adopt_scheme] = {
-                    "stock": {"cost savings": {}},
-                    "energy": {"savings": {}, "cost savings": {}},
-                    "carbon": {"savings": {}}}
+                "stock": {"cost savings": {}},
+                "energy": {"savings": {}, "cost savings": {}},
+                "carbon": {"savings": {}}}
 
         # Establish a dictionary nested by output breakout categories (region, building type/
         # vintage, end use) with blank values at terminal leaf nodes; this dict will
@@ -769,7 +769,7 @@ class Measure(object):
                     "carbon": {
                         "savings": None,
                         "cost savings": None}
-                    },
+                },
                 "competed": {
                     "stock": {
                         "cost savings": None},
@@ -779,7 +779,7 @@ class Measure(object):
                     "carbon": {
                         "savings": None,
                         "cost savings": None}
-                    }}
+                }}
             # Append a key to the savings dict for fugitive emissions data in
             # the case where those data are being assessed for the measure
             if self.fug_e:
@@ -809,7 +809,7 @@ class Measure(object):
                 "cce (w/ carbon cost benefits)": None,
                 "ccc": None,
                 "ccc (w/ energy cost benefits)": None
-                }
+            }
 
     def convert_to_numpy(self, markets):
         """Convert terminal/leaf node lists in a dict to numpy arrays.
@@ -1069,15 +1069,15 @@ class Engine(object):
                 scostsave_tot[yr] = (
                     markets_save["cost"]["stock"]["total"]["baseline"][yr] -
                     markets_save["cost"]["stock"]["total"]["efficient"][yr]
-                    ) * self.handyvars.cost_convert["stock"]
+                ) * self.handyvars.cost_convert["stock"]
                 ecostsave_tot[yr] = (
                     markets_save["cost"]["energy"]["total"]["baseline"][yr] -
                     markets_save["cost"]["energy"]["total"]["efficient"][yr]
-                    ) * self.handyvars.cost_convert["energy"]
+                ) * self.handyvars.cost_convert["energy"]
                 ccostsave_tot[yr] = (
                     markets_save["cost"]["carbon"]["total"]["baseline"][yr] -
                     markets_save["cost"]["carbon"]["total"]["efficient"][yr]
-                    ) * self.handyvars.cost_convert["carbon"]
+                ) * self.handyvars.cost_convert["carbon"]
                 # Calculate fugitive methane emissions savings if applicable
                 if meth_save_tot:
                     meth_save_tot[yr] = \
@@ -2149,7 +2149,7 @@ class Engine(object):
 
             # Unit stock cost dictionary
             unit_cost_s_in = [m.financial_metrics["unit cost"]["stock cost"][
-                         "commercial"] for m in measures_adj]
+                "commercial"] for m in measures_adj]
             # Unit operating cost dictionary
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "commercial"] for m in measures_adj]
@@ -2177,7 +2177,7 @@ class Engine(object):
                     markets_uc_stk, markets_uc_capfact = [[m.markets[
                         "Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             mseg_key] for m_ind, m in enumerate(measures_adj)] for x in [
-                            "contributing mseg keys and values", "capacity factor"]]
+                        "contributing mseg keys and values", "capacity factor"]]
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
                        for m_ind, m in enumerate(measures_adj)]
@@ -2751,7 +2751,7 @@ class Engine(object):
             noapply_sbsbmkt_distrib_fracs_yr = [{
                 yr: noapply_sbmkt_fracs[ind][yr] * mkt_fracs[ind][yr] for
                 yr in self.handyvars.aeo_years} for
-                     ind in range(len(measures_adj))]
+                ind in range(len(measures_adj))]
 
             # Initialize a list of dicts where each dict represents the
             # additional market fraction an ECM should receive to reflect the
@@ -3020,8 +3020,8 @@ class Engine(object):
                                     adj_out_break["base fuel"][cost_brk_key]["savings"][yr] - ((
                                         adj[var][cost_mast_key]["total"]["baseline"][yr] -
                                         adj[var][cost_mast_key]["total"]["efficient"][yr]
-                                        ) * (1 - adj_frac_t) * adj_out_break[
-                                            "fuel splits"]["efficient"][cost_brk_key][yr])
+                                    ) * (1 - adj_frac_t) * adj_out_break[
+                                        "fuel splits"]["efficient"][cost_brk_key][yr])
                         else:
                             adj_out_break["base fuel"][var]["savings"][yr] = \
                                 adj_out_break["base fuel"][var]["savings"][yr] - ((
@@ -3834,13 +3834,13 @@ class Engine(object):
                     # the fuel as appropriate to the selected tech. Note: should match order of
                     # com cooling techs in "htcl_anchor_tech_opts" var from ecm_prep_vars module.
                     tech_search = [x for x in [
-                         "rooftop_AC", "rooftop_ASHP-cool", "pkg_terminal_AC-cool",
-                         "reciprocating_chiller", "scroll_chiller",
-                         "centrifugal_chiller", "screw_chiller",
-                         "res_type_central_AC", "comm_GSHP-cool",
-                         "gas_eng-driven_RTAC", "gas_chiller",
-                         "res_type_gasHP-cool", "gas_eng-driven_RTHP-cool",
-                         "wall-window_room_AC"] if x in
+                        "rooftop_AC", "rooftop_ASHP-cool", "pkg_terminal_AC-cool",
+                        "reciprocating_chiller", "scroll_chiller",
+                        "centrifugal_chiller", "screw_chiller",
+                        "res_type_central_AC", "comm_GSHP-cool",
+                        "gas_eng-driven_RTAC", "gas_chiller",
+                        "res_type_gasHP-cool", "gas_eng-driven_RTHP-cool",
+                        "wall-window_room_AC"] if x in
                         m.technology["primary"]]
                     if len(tech_search) == 0:
                         raise ValueError(
@@ -5567,7 +5567,7 @@ class Engine(object):
                                 yr for yr in self.output_ecms_cfs[
                                     m.name][k][mt][reg].keys()
                                 if (self.output_ecms_cfs[
-                                        m.name][k][mt][reg][yr] > 1 or
+                                    m.name][k][mt][reg][yr] > 1 or
                                     self.output_ecms_cfs[
                                         m.name][k][mt][reg][yr] < 0)]
                             for yva in yrs_v_adj:
@@ -5875,36 +5875,36 @@ class Engine(object):
             # yield low and high estimates on the metrics if available
             if trim_out is False and cce_avg != cce_low:
                 self.output_ecms[m.name]["Financial Metrics"] = OrderedDict([
-                        ("Cost of Conserved Energy ($/MMBtu saved)",
-                            cce_avg),
-                        ("Cost of Conserved Energy (low) ($/MMBtu saved)",
-                            cce_low),
-                        ("Cost of Conserved Energy (high) ($/MMBtu saved)",
-                            cce_high),
-                        (("Cost of Conserved CO2 "
-                          "($/MTon CO2 avoided)").
-                         translate(sub), ccc_avg),
-                        (("Cost of Conserved CO2 (low) "
-                          "($/MTon CO2 avoided)").
-                         translate(sub), ccc_low),
-                        (("Cost of Conserved CO2 (high) "
-                          "($/MTon CO2 avoided)").
-                         translate(sub), ccc_high),
-                        ("IRR (%)", irr_e_avg),
-                        ("IRR (low) (%)", irr_e_low),
-                        ("IRR (high) (%)", irr_e_high),
-                        ("Payback (years)", payback_e_avg),
-                        ("Payback (low) (years)", payback_e_low),
-                        ("Payback (high) (years)", payback_e_high)])
+                    ("Cost of Conserved Energy ($/MMBtu saved)",
+                     cce_avg),
+                    ("Cost of Conserved Energy (low) ($/MMBtu saved)",
+                     cce_low),
+                    ("Cost of Conserved Energy (high) ($/MMBtu saved)",
+                     cce_high),
+                    (("Cost of Conserved CO2 "
+                      "($/MTon CO2 avoided)").
+                     translate(sub), ccc_avg),
+                    (("Cost of Conserved CO2 (low) "
+                      "($/MTon CO2 avoided)").
+                     translate(sub), ccc_low),
+                    (("Cost of Conserved CO2 (high) "
+                      "($/MTon CO2 avoided)").
+                     translate(sub), ccc_high),
+                    ("IRR (%)", irr_e_avg),
+                    ("IRR (low) (%)", irr_e_low),
+                    ("IRR (high) (%)", irr_e_high),
+                    ("Payback (years)", payback_e_avg),
+                    ("Payback (low) (years)", payback_e_low),
+                    ("Payback (high) (years)", payback_e_high)])
             elif trim_out is False:
                 self.output_ecms[m.name]["Financial Metrics"] = OrderedDict([
-                         ("Cost of Conserved Energy ($/MMBtu saved)",
-                             cce_avg),
-                         (("Cost of Conserved CO2 "
-                           "($/MTon CO2 avoided)").
-                          translate(sub), ccc_avg),
-                         ("IRR (%)", irr_e_avg),
-                         ("Payback (years)", payback_e_avg)])
+                    ("Cost of Conserved Energy ($/MMBtu saved)",
+                     cce_avg),
+                    (("Cost of Conserved CO2 "
+                      "($/MTon CO2 avoided)").
+                     translate(sub), ccc_avg),
+                    ("IRR (%)", irr_e_avg),
+                    ("Payback (years)", payback_e_avg)])
             else:
                 self.output_ecms[m.name]["Financial Metrics"] = OrderedDict([
                     ("Payback (years)", payback_e_avg)])
@@ -5919,8 +5919,8 @@ class Engine(object):
                     ((mkts["stock"]["total"]["measure"][yr] / m.markets[
                       adopt_scheme]["uncompeted"]["master_mseg"]["stock"][
                       "total"]["all"][yr]) * 100), 1) if m.markets[
-                      adopt_scheme]["uncompeted"]["master_mseg"]["stock"][
-                      "total"]["all"][yr] != 0 else 0 for
+                    adopt_scheme]["uncompeted"]["master_mseg"]["stock"][
+                    "total"]["all"][yr] != 0 else 0 for
                     yr in focus_yrs}
                 # Calculate average and low/high penetration fractions
                 mkt_fracs_avg = {
@@ -7088,7 +7088,7 @@ class Engine(object):
                                 brk_dat_eff_capt_env_eu_fuel = None
                         except TypeError:
                             brk_dat_eff_capt_eu_fuel, brk_dat_eff_capt_env_eu_fuel = (
-                                    None for n in range(2))
+                                None for n in range(2))
                         # Update energy data to reflect policy
                         self.adjust_data(
                             brk_dat_eff[reg][bldg][eu][fuel],
@@ -7650,9 +7650,9 @@ class Engine(object):
                     adopt_scheme].keys():
                 codes_bps_dict_out["Markets and Savings (Overall)"], \
                     codes_bps_dict_out["Markets and Savings (by Category)"] = [
-                            self.trim_code_bps_yrs(codes_bps_dict_out[x], focus_yrs) for x in [
-                                "Markets and Savings (Overall)",
-                                "Markets and Savings (by Category)"]]
+                    self.trim_code_bps_yrs(codes_bps_dict_out[x], focus_yrs) for x in [
+                        "Markets and Savings (Overall)",
+                        "Markets and Savings (by Category)"]]
 
 
 def measure_opts_match(option_dicts: list[dict]) -> bool:
