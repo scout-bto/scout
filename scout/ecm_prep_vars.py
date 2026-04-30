@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse
 import copy
 import itertools
+import json
 import numpy
 import pandas as pd
 from collections import OrderedDict
@@ -1270,9 +1271,9 @@ class UsefulVars(object):
             self.out_break_enduses.keys()]
         out_levels_keys = list(itertools.product(*out_levels))
         # Create dictionary using outcome category combinations as key chains
-        self.out_break_in = OrderedDict()
+        _out_break_in = OrderedDict()
         for kc in out_levels_keys:
-            current_level = self.out_break_in
+            current_level = _out_break_in
             for ind, elem in enumerate(kc):
                 # If fuel splits are desired and applicable for the current
                 # end use breakout, add the fuel splits to the dict vals
@@ -1286,6 +1287,9 @@ class UsefulVars(object):
                 elif elem not in current_level:
                     current_level[elem] = OrderedDict()
                 current_level = current_level[elem]
+        # Use the property setter so that out_break_in_json is also initialized
+        # (see the property definition below the class __init__).
+        self.out_break_in = _out_break_in
         self.cconv_bybldg_units = [
             "$/ft^2 glazing", "$/ft^2 roof", "$/ft^2 wall",
             "$/ft^2 footprint", "$/ft^2 floor", "$/occupant", "$/node"]
@@ -2035,6 +2039,40 @@ class UsefulVars(object):
                     "for ECM '" + self.name + "'")
 
         return keyval_list
+
+    @property
+    def out_break_in(self):
+        """Return the out_break_in template dict."""
+        return self._out_break_in
+
+    @out_break_in.setter
+    def out_break_in(self, value):
+        """Store the template and invalidate the cached JSON string.
+
+        The JSON is rebuilt lazily on the next access of ``out_break_in_json``
+        so that incremental mutations via ``.setdefault()`` or ``[]``-assignment
+        on the stored dict are captured before the first serialisation.
+        """
+        self._out_break_in = value
+        # Invalidate cache so the next out_break_in_json access re-serialises.
+        self._out_break_in_json = None
+
+    @property
+    def out_break_in_json(self):
+        """Return a pre-serialised JSON string of out_break_in.
+
+        Built lazily and cached until ``out_break_in`` is reassigned.
+        Using json.loads() on this string is ~10x faster than copy.deepcopy()
+        for the pure-string-key / empty-dict structure of out_break_in.
+        """
+        if self._out_break_in_json is None:
+            self._out_break_in_json = json.dumps(self._out_break_in)
+        return self._out_break_in_json
+
+    @out_break_in_json.setter
+    def out_break_in_json(self, value):
+        """Allow direct assignment (e.g. for testing or manual cache priming)."""
+        self._out_break_in_json = value
 
     def _rebuild_cpi_cache(self):
         """Build year->mean CPI lookup dict from self.consumer_price_ind."""
