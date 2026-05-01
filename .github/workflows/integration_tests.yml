@@ -111,6 +111,23 @@ jobs:
 
             # --- Comparison ---
             echo "=== Profiling Comparison ===" | tee results/profile_comparison.txt
+            for step in "${steps[@]}"; do
+              echo "" | tee -a results/profile_comparison.txt
+              echo "--- Step: $step ---" | tee -a results/profile_comparison.txt
+
+              # Elapsed time = col 1 of the last data row of each psrecord memory log
+              m_time=$(grep -v "^#" "results/memory_log_master_${step}.txt" | grep -v "^$" | tail -n 1 | awk '{print $1}')
+              f_time=$(grep -v "^#" "results/memory_log_${step}.txt"        | grep -v "^$" | tail -n 1 | awk '{print $1}')
+
+              echo "Master  elapsed time: ${m_time}s" | tee -a results/profile_comparison.txt
+              echo "Feature elapsed time: ${f_time}s" | tee -a results/profile_comparison.txt
+
+              if [[ -n "$m_time" && -n "$f_time" ]]; then
+                abs_diff=$(awk "BEGIN {printf \"%.2f\", $m_time - $f_time}")
+                pct=$(awk "BEGIN {printf \"%.2f\", ($m_time - $f_time) / $m_time * 100}")
+                printf "Δ Time: %ss (%.2f%% improvement in feature vs master)\n" "$abs_diff" "$pct" | tee -a results/profile_comparison.txt
+              fi
+            done
 
             for step in "${steps[@]}"; do
               echo "" | tee -a results/profile_comparison.txt
@@ -136,7 +153,11 @@ jobs:
 
           rm -rf ./tests/integration_testing/results/*
           mv ./results/* ./tests/integration_testing/results/
+<<<<<<< HEAD
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
+=======
+          mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null
+>>>>>>> 233ea60c (add profiling comparison to github comment)
       - name: Capture profiler comparison output
         id: profile_comparison
         run: |
@@ -523,7 +544,11 @@ jobs:
                 const fTime = fMatch ? fMatch[1] : 'N/A';
                 const absDiff = dMatch ? dMatch[1] : 'N/A';
                 const pct = dMatch ? dMatch[2] : 'N/A';
+<<<<<<< HEAD
                 const icon = dMatch ? (parseFloat(dMatch[2]) > 0.005 ? '✅' : '⚠️') : '';
+=======
+                const icon = dMatch ? (parseFloat(dMatch[2]) >= 0 ? '✅' : '⚠️') : '';
+>>>>>>> 233ea60c (add profiling comparison to github comment)
                 body += `| \`${stepName}\` | ${mTime} | ${fTime} | ${absDiff} | ${icon} ${pct}% |\n`;
               }
               body += `\n<details><summary>Full profiler output</summary>\n\n`;
