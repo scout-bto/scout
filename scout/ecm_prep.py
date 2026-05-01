@@ -5784,7 +5784,7 @@ class Measure(object):
             elif bldg_sect == "commercial":
                 # For commercial data center/office equipment and MELs,
                 # use the load shape for plug loads
-                if mskeys[4] in [ "data center", "office equipment",
+                if mskeys[4] in ["data center", "office equipment", 
                                  "MELs", "cooking", "unspecified"]:
                     eu = "plug loads"
                 # In all other cases, error
@@ -5798,9 +5798,10 @@ class Measure(object):
         # re-weighting and load shape information does not already exist for
         # the current combination of region, building type, and end use, set
         # energy load shapes for given climate, building type, and end use
-        if self.handyvars.tsv_hourly_lafs is not None and \
-            eu not in self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
-                mskeys[2]].keys():
+        if (
+                self.handyvars.tsv_hourly_lafs is not None and
+                eu not in self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
+                    mskeys[2]].keys()):
             # Key in the appropriate load shape data if it wasn't successfully
             # keyed in above via the current end use name
             if not load_fact:
