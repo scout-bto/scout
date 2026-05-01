@@ -865,7 +865,7 @@ class UsefulVars(object):
                     "electricity": [
                         'ventilation', 'water heating', 'cooling',
                         'heating', 'refrigeration', 'MELs',
-                        'non-PC office equipment', 'PCs', 'lighting',
+                        'office equipment', 'data center', 'lighting',
                         'cooking', "unspecified"],
                     "natural gas": [
                         'cooling', 'water heating', 'cooking', 'heating',
@@ -1013,8 +1013,8 @@ class UsefulVars(object):
                             ],
                             'cooking': [
                                 'elec_range-combined'],
-                            'PCs': [None],
-                            'non-PC office equipment': [None],
+                            'data center': [None],
+                            'office equipment': [None],
                             'unspecified': [None]},
                         "natural gas": {
                             'cooling': [
@@ -1177,7 +1177,7 @@ class UsefulVars(object):
             ('Refrigeration', ["refrigeration", "other"]),
             ('Cooking', ["cooking"]),
             ('Computers and Electronics', [
-                "PCs", "non-PC office equipment", "TVs", "computers"]),
+                "data center", "office equipment", "TVs", "computers"]),
             ('Other', [
                 "drying", "ceiling fan", "fans and pumps",
                 "MELs", "other", "unspecified"])])
@@ -1256,8 +1256,7 @@ class UsefulVars(object):
             "SEF": {"UEF": 1}}
         self.sf_to_house = {}
         self.com_eqp_eus_nostk = [
-            "PCs", "non-PC office equipment", "MELs", "other",
-            "unspecified"]
+            "data center", "office equipment", "MELs", "other", "unspecified"]
         # For lighting, take the upper bound on each bin of # of lights in the RECS HC5.1 data
         # and do a weighted sum of portion of homes reporting that bin. For heating, use the
         # AEO23 residential microtables to find number of primary heating units by building type

@@ -110,8 +110,8 @@ class CommercialTranslationDicts(object):
                            'cooking': 5,
                            'lighting': 6,
                            'refrigeration': 7,
-                           'PCs': 8,
-                           'non-PC office equipment': 9,
+                           'data center': 8,
+                           'office equipment': 9,
                            'other': 10,
                            'MELs': 10,
                            'unspecified': 11

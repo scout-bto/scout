@@ -91,6 +91,12 @@ class SkipLines(object):
             self.nlt_l_skip_header = 2
             self.lt_skip_header = 37
             self.lt_skip_footer = 51
+        elif self.aeo_import_year == 2026:
+            self.nlt_cp_skip_header = 2
+            self.nlt_l_skip_header = 2
+            # AEO 2026 rsmlgt.txt includes two extra header rows before data.
+            self.lt_skip_header = 40
+            self.lt_skip_footer = 51
 
 # Define a series of dicts that will translate imported JSON
 # microsegment names to AEO microsegment(s)
@@ -899,6 +905,17 @@ def lighting_eff_prep(lt_cpl_data, n_years, n_lt_types):
             # appear in the 1D numpy array, truncate the initial values
             bulb_perf_lm_watts, bulb_perf_watts = [
               bulb_perf_lm_watts[-n_years:], bulb_perf_watts[-n_years:]]
+
+            # If fewer than the expected number of values are present (e.g.,
+            # when lighting data begin after the metadata min year), pad the
+            # front of the array with the earliest available value.
+            if len(bulb_perf_lm_watts) < n_years:
+                pad_n = n_years - len(bulb_perf_lm_watts)
+                bulb_perf_lm_watts = numpy.pad(
+                    bulb_perf_lm_watts, (pad_n, 0), mode='edge')
+                bulb_perf_watts = numpy.pad(
+                    bulb_perf_watts, (pad_n, 0), mode='edge')
+
             # Find and remove spurious performance changes in lm/W
             # performance over time, yielding a final performance array
             bulb_perf = chk_false_eff(bulb_perf_lm_watts, bulb_perf_watts)
@@ -1074,7 +1091,14 @@ def calc_lighting_factors(nrg_stock_data, lt_eff, n_yrs, n_lt_types):
                     # Obtain the stock for the current bulb type
                     # as a 1-D numpy array (vector with value for each year)
                     x = lt_nrgst[lt_nrgst['BULBTYPE'] == bulb]
-                    x = x['EQSTOCK']
+                    x = numpy.sort(x, order='YEAR')['EQSTOCK']
+
+                    # Ensure stock vectors align to the expected year count.
+                    if len(x) > n_yrs:
+                        x = x[-n_yrs:]
+                    elif len(x) < n_yrs:
+                        x = numpy.pad(
+                            x, (n_yrs - len(x), 0), mode='constant')
 
                     # Obtain the efficiency factors for the current
                     # bulb type though as a numpy structured array
@@ -1446,7 +1470,7 @@ def main():
     # Set up to support user option to specify the year for the
     # AEO data being imported (default if the option is not used
     # should be current year)
-    aeo_versions = [2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025]
+    aeo_versions = [2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025, 2026]
     parser = argparse.ArgumentParser()
     help_string = 'Specify year of AEO data to be imported'
     parser.add_argument('-y', '--year',
@@ -1479,7 +1503,7 @@ def main():
         ns_dtypes = dtype_array(eiadata.res_energy, '\t')
         ns_data = data_import(eiadata.res_energy, ns_dtypes, '\t',
                               ['SF', 'ST', 'FP'])
-    elif aeo_import_year in [2025, None]:
+    elif aeo_import_year in [2025, 2026, None]:
         yrs_range = metajson['max year'] - metajson['min year'] + 1
         update_lighting_dict()
 
@@ -1498,6 +1522,11 @@ def main():
     ns_data = str_cleaner(ns_data, 'ENDUSE')
     ns_data = str_cleaner(ns_data, 'EQPCLASS')
     ns_data = str_cleaner(ns_data, 'BULBTYPE')
+
+    # For recent AEO formats, derive the year count from imported data
+    # to keep all extracted vectors aligned.
+    if aeo_import_year in [2025, 2026, None]:
+        yrs_range = len(set(ns_data['YEAR']))
 
     # Import residential thermal load components data
     tl_dtypes = dtype_array(handyvars.res_tloads, '\t')

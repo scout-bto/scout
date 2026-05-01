@@ -5782,9 +5782,9 @@ class Measure(object):
                         "mapped to any baseline load shape in the "
                         "Scout database: " + str(mskeys))
             elif bldg_sect == "commercial":
-                # For commercial PCs/non-PC office equipment and MELs,
+                # For commercial data center/office equipment and MELs,
                 # use the load shape for plug loads
-                if mskeys[4] in ["PCs", "non-PC office equipment",
+                if mskeys[4] in [ "data center", "office equipment",
                                  "MELs", "cooking", "unspecified"]:
                     eu = "plug loads"
                 # In all other cases, error

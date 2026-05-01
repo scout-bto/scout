@@ -275,7 +275,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
         # National-level variables (AIA regions)
         handyfiles = UsefulInputFiles(cls.opts)
         handyvars = UsefulVars(base_dir, handyfiles, cls.opts)
-        handyvars.com_eqp_eus_nostk = ["lighting", "PCs", "MELs"]
+        handyvars.com_eqp_eus_nostk = ["lighting", "data center", "MELs"]
         # Site energy assessment settings
         cls.opts_site_energy, opts_site_energy_dict = [
             copy.deepcopy(x) for x in [cls.opts, opts_dict]]
@@ -1696,7 +1696,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                                 "stock": "NA",
                                 "energy": {
                                     "2009": 11, "2010": 11}}},
-                        "PCs": {
+                        "data center": {
                             "stock": "NA",
                             "energy": {"2009": 12, "2010": 12}},
                         "MELs": {
@@ -2223,7 +2223,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
                                             "parameters": {
                                                 "p": "NA",
                                                 "q": "NA"}}}}},
-                        "PCs": 0,
+                        "data center": 0,
                         "MELs": {
                             "distribution transformers": 0
                         }}},
@@ -6747,7 +6747,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             "climate_zone": "AIA_CZ1",
             "fuel_type": "electricity",
             "fuel_switch_to": None,
-            "end_use": ["PCs", "MELs"],
+            "end_use": ["data center", "MELs"],
             "market_entry_year": None,
             "market_exit_year": None,
             "technology": [None, "distribution transformers"]},
@@ -7356,7 +7356,7 @@ class MarketUpdatesTest(unittest.TestCase, CommonMethods):
             "climate_zone": "AIA_CZ1",
             "fuel_type": "electricity",
             "fuel_switch_to": None,
-            "end_use": ["PCs", "MELs"],
+            "end_use": ["data center", "MELs"],
             "market_entry_year": None,
             "market_exit_year": None,
             "technology": [None, "distribution transformers"]}]
@@ -69108,7 +69108,7 @@ class FillParametersTest(unittest.TestCase, CommonMethods):
              'cooling', 'cooking', 'computers', 'lighting',
              'secondary heating', 'TVs', 'heating', 'refrigeration',
              'fans and pumps', 'ceiling fan', 'ventilation', 'MELs',
-             'non-PC office equipment', 'PCs', "unspecified"],
+             'office equipment', 'data center', "unspecified"],
             ['dishwasher', 'electric other',
              'rechargeables', 'coffee maker', 'dehumidifier',
              'microwave', 'pool heaters', 'point-of-sale systems',
@@ -69203,7 +69203,7 @@ class FillParametersTest(unittest.TestCase, CommonMethods):
              'cooling', 'cooking', 'computers', 'lighting',
              'secondary heating', 'TVs', 'heating', 'refrigeration',
              'fans and pumps', 'ceiling fan', 'ventilation', 'MELs',
-             'non-PC office equipment', 'PCs', "unspecified"],
+             'office equipment', 'data center', "unspecified"],
             ['dishwasher', 'electric other',
              'clothes washing', 'freezers',
              'rechargeables', 'coffee maker', 'dehumidifier',
@@ -69999,7 +69999,7 @@ class AppendKeyValsTest(unittest.TestCase):
             'cooling', 'cooking', 'computers', 'lighting',
             'secondary heating', 'TVs', 'heating', 'refrigeration',
             'fans and pumps', 'ceiling fan',
-            'ventilation', 'MELs', 'non-PC office equipment', 'PCs',
+            'ventilation', 'MELs', 'office equipment', 'data center',
             'dishwasher', 'electric other', 'rechargeables', 'coffee maker',
             'dehumidifier', 'microwave', 'pool heaters',
             'point-of-sale systems', 'pool pumps',
@@ -70075,7 +70075,7 @@ class AppendKeyValsTest(unittest.TestCase):
             'all computers', 'all lighting', 'all secondary heating',
             'all TVs', 'all refrigeration', 'all fans and pumps',
             'all ceiling fan', 'all unspecified', 'all ventilation',
-            'all MELs', 'all non-PC office equipment', 'all PCs']
+            'all MELs', 'all office equipment', 'all data center']
 
     def test_ok_append(self):
         """Test 'append_keyvals' function given valid inputs.
@@ -70597,7 +70597,7 @@ class CostConversionTest(unittest.TestCase, CommonMethods):
         cls.sample_mskeys_fail_in = [
             ('primary', 'marine', 'single family home', 'electricity',
              'cooling', 'demand', 'windows conduction', 'existing'),
-            ('primary', 'marine', 'assembly', 'electricity', 'PCs',
+            ('primary', 'marine', 'assembly', 'electricity', 'data center',
              None, 'new'),
             ('primary', 'marine', 'assembly', 'electricity', 'heating',
              'supply', 'rooftop_ASHP-heat', 'new'),
@@ -72099,7 +72099,7 @@ class UpdateMeasuresTest(unittest.TestCase, CommonMethods):
                                 "stock": "NA",
                                 "energy": {
                                     "2009": 11, "2010": 11}}},
-                        "PCs": {
+                        "data center": {
                             "stock": "NA",
                             "energy": {"2009": 12, "2010": 12}},
                         "MELs": {
@@ -72174,7 +72174,7 @@ class UpdateMeasuresTest(unittest.TestCase, CommonMethods):
                                 "stock": "NA",
                                 "energy": {
                                     "2009": 11, "2010": 11}}},
-                        "PCs": {
+                        "data center": {
                             "stock": "NA",
                             "energy": {"2009": 12, "2010": 12}},
                         "MELs": {
@@ -72389,7 +72389,7 @@ class UpdateMeasuresTest(unittest.TestCase, CommonMethods):
                                             "parameters": {
                                                 "p": "NA",
                                                 "q": "NA"}}}}},
-                        "PCs": 0,
+                        "data center": 0,
                         "MELs": {
                             "distribution transformers": 0
                         }
@@ -72711,7 +72711,7 @@ class UpdateMeasuresTest(unittest.TestCase, CommonMethods):
                                             "parameters": {
                                                 "p": "NA",
                                                 "q": "NA"}}}}},
-                        "PCs": 0,
+                        "data center": 0,
                         "MELs": {
                             "distribution transformers": 0
                         }

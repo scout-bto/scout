@@ -318,7 +318,7 @@
 				"value": 0.035,
 				"source": "U.S. Energy Information Administration, Annual Energy Outlook 2020 Microtables, Sheets 'SDPivotTable' and 'FloorSpacePivot'",
 				"notes": "Per AEO 2020 commercial microtables, food service annual service demand, divided by 1333 million sf of food service buildings in the U.S. * 2000 hours of use per year (8 h/day, 250 days/y per lower-end assumption of FEMP guidance: https://www.energy.gov/eere/femp/purchasing-energy-efficient-commercial-ovens; ovens are assumed to operate 2000-4200 hours per year"}},
-		"PCs": {
+		"data center": {
 			"original units": "$/computer",
 			"revised units": "$/ft^2 floor",
 			"conversion factor": {

@@ -226,7 +226,7 @@ class CommonUnitTest(unittest.TestCase):
                    ['west north central', 'large office', 'electricity',
                     'lighting'],
                    ['east north central', 'large office', 'electricity',
-                    'non-PC office equipment'],
+                    'office equipment'],
                    ['west south central', 'food service', 'natural gas',
                     'cooking'],
                    ['east south central', 'food sales', 'new square footage'],
