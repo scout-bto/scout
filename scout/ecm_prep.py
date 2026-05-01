@@ -5784,7 +5784,7 @@ class Measure(object):
             elif bldg_sect == "commercial":
                 # For commercial data center/office equipment and MELs,
                 # use the load shape for plug loads
-                if mskeys[4] in ["data center", "office equipment", 
+                if mskeys[4] in ["data center", "office equipment",
                                  "MELs", "cooking", "unspecified"]:
                     eu = "plug loads"
                 # In all other cases, error
