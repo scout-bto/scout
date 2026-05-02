@@ -40,44 +40,61 @@ jobs:
           ENABLE_PROFILER: ${{ inputs.enable_profiler || (github.ref == 'refs/heads/master') }}
           SOURCE_DATE_EPOCH: '0'
         run: |
+          mkdir -p results
           if [[ "$ENABLE_PROFILER" == 'true' ]]; then
             steps=("ecm_prep" "run")
 
-            # --- Profile the feature branch first ---
+            # --- Profile FEATURE branch ---
+            # Clear ecm_prep cache so the feature branch starts from a cold cache
+            rm -rf generated/ecm_competition_data/*.pkl.gz
+            rm -f  generated/ecm_prep.json
+
             for step in "${steps[@]}"; do
-              psrecord --log memory_log_${step}.txt --include-children --interval 1 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
-              (echo -e; echo "# Elapsed time,CPU (%),Peak Real (MB),Peak Virtual (MB)"; grep -v "time" memory_log_${step}.txt | sort -k3 -n -r | head -n 1 | column -t | tr -s '[:blank:]' ',') >> results/profile_${step}.csv
-              mv memory_log_${step}.txt ./results/
-              # Save feature profile before master run overwrites results/
-              cp results/profile_${step}.csv results/profile_feature_${step}.csv
+              log_file="memory_log_feature_${step}.txt"
+
+              psrecord --log "$log_file" --include-children --interval 1 \
+                "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
+
+              # run_workflow.py writes cProfile stats to results/profile_${step}.csv — rename with branch suffix
+              mv "results/profile_${step}.csv" "results/profile_${step}_feature.csv"
+              mv "$log_file" "results/memory_log_${step}_feature.txt"
             done
 
-            # --- Checkout master and profile it for baseline comparison ---
+            # --- Checkout master ---
             git fetch --depth=1 origin master
-            git stash  # stash any result files to avoid conflicts
             git checkout origin/master -- .
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
-            mkdir -p results_master
+            # --- Profile MASTER branch ---
+            # Clear cache so master also starts from a cold cache
+            rm -rf generated/ecm_competition_data/*.pkl.gz
+            rm -f  generated/ecm_prep.json
+
             for step in "${steps[@]}"; do
-              psrecord --log memory_log_master_${step}.txt --include-children --interval 1 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
-              (echo -e; echo "# Elapsed time,CPU (%),Peak Real (MB),Peak Virtual (MB)"; grep -v "time" memory_log_master_${step}.txt | sort -k3 -n -r | head -n 1 | column -t | tr -s '[:blank:]' ',') >> results_master/profile_${step}.csv
-              mv memory_log_master_${step}.txt ./results_master/
+              log_file="memory_log_master_${step}.txt"
+
+              psrecord --log "$log_file" --include-children --interval 1 \
+                "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
+
+              # Rename cProfile CSV and memory log with branch suffix
+              mv "results/profile_${step}.csv" "results/profile_${step}_master.csv"
+              mv "$log_file" "results/memory_log_${step}_master.txt"
             done
 
-            # --- Restore feature branch code ---
+            # --- Restore feature branch ---
             git checkout ${{ github.event.pull_request.head.sha || github.sha }} -- .
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
-            # --- Write comparison summary ---
+            # --- Comparison ---
             echo "=== Profiling Comparison ===" | tee results/profile_comparison.txt
+
             for step in "${steps[@]}"; do
               echo "" | tee -a results/profile_comparison.txt
               echo "--- Step: $step ---" | tee -a results/profile_comparison.txt
 
               # Elapsed time = col 1 of the last data row of each psrecord memory log
-              m_time=$(grep -v "^#" "results/memory_log_master_${step}.txt" | grep -v "^$" | tail -n 1 | awk '{print $1}')
-              f_time=$(grep -v "^#" "results/memory_log_${step}.txt"        | grep -v "^$" | tail -n 1 | awk '{print $1}')
+              m_time=$(grep -v "^#" "results/memory_log_${step}_master.txt"  | grep -v "^$" | tail -n 1 | awk '{print $1}')
+              f_time=$(grep -v "^#" "results/memory_log_${step}_feature.txt" | grep -v "^$" | tail -n 1 | awk '{print $1}')
 
               echo "Master  elapsed time: ${m_time}s" | tee -a results/profile_comparison.txt
               echo "Feature elapsed time: ${f_time}s" | tee -a results/profile_comparison.txt
@@ -89,18 +106,13 @@ jobs:
               fi
             done
 
-            # Move master profiling logs into results so they get uploaded as artifacts
-            mv results_master/memory_log_master_*.txt ./results/ 2>/dev/null || true
-            for step in "${steps[@]}"; do
-              mv results_master/profile_${step}.csv ./results/profile_master_${step}.csv 2>/dev/null || true
-            done
-
           else
             python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
           fi
+
           rm -rf ./tests/integration_testing/results/*
           mv ./results/* ./tests/integration_testing/results/
-          mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null
+          mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
       - name: Capture profiler comparison output
         id: profile_comparison
         run: |
