@@ -840,25 +840,34 @@ def _fast_copy_nested_dict(d):
 
 
 def _fast_copy_markets(d):
-    """Fast recursive deep-copy of a nested markets dict.
+    """Iterative deep-copy of a nested markets dict.
 
     Handles the three value types that appear in measure market dicts:
-      - nested dicts  → recurse
+      - nested dicts  → recurse (via explicit stack — no Python call overhead)
       - numpy.ndarray → copy via .copy()
       - scalars / None / str / bool → shared reference (immutable, safe)
 
-    Significantly faster than copy.deepcopy because it avoids the general
-    dispatch machinery and uses numpy's own optimised copy for arrays.
+    Uses an explicit stack instead of recursion to eliminate the ~91 M
+    Python function-call frames that the recursive version incurs, which
+    is the dominant cost at this call volume.
     """
     if not isinstance(d, dict):
-        # Leaf: numpy array gets a real copy; everything else is immutable
-        if isinstance(d, numpy.ndarray):
-            return d.copy()
-        return d
-    out = d.__class__()          # preserves OrderedDict vs plain dict
-    for k, v in d.items():
-        out[k] = _fast_copy_markets(v)
-    return out
+        return d.copy() if isinstance(d, numpy.ndarray) else d
+    result = d.__class__()
+    # Stack entries: (source_dict, destination_dict)
+    stack = [(d, result)]
+    while stack:
+        src, dst = stack.pop()
+        for k, v in src.items():
+            if isinstance(v, dict):
+                child = v.__class__()
+                dst[k] = child
+                stack.append((v, child))
+            elif isinstance(v, numpy.ndarray):
+                dst[k] = v.copy()
+            else:
+                dst[k] = v
+    return result
 
 
 class Engine(object):
@@ -4433,7 +4442,13 @@ class Engine(object):
                     (int(x) <= int(yr) and int(x) >= min_mkt_entry_yr)])
 
             # Loop through the above set of years, successively updating the
-            # weighted market share using a simple moving average
+            # weighted market share using a simple moving average.
+            # Pre-flag whether the market share value will be a numpy array
+            # so the isinstance check inside the hot inner loop is avoided.
+            _first_wyr = weighting_yrs[0]
+            _adj_frac_is_array = isinstance(
+                adj_fracs[_first_wyr] + added_sbmkt_fracs[_first_wyr],
+                numpy.ndarray)
             for ind, wyr in enumerate(weighting_yrs):
                 # For non-technical potential cases, calculate the market
                 # share weight based on competed stock turnover in the given
@@ -4519,12 +4534,13 @@ class Engine(object):
                     # captured in previous years
                     adj_frac_t = (1 - wt_comp_wyr) * adj_frac_t + \
                         wt_comp_wyr * mms_lr
-                    # Ensure that total weighted market share is never above 1
-                    if not isinstance(adj_frac_t, numpy.ndarray) and \
-                            adj_frac_t > 1:
-                        adj_frac_t = 1
-                    elif isinstance(adj_frac_t, numpy.ndarray):
+                    # Ensure that total weighted market share is never above 1.
+                    # Check type once via a pre-set flag rather than two
+                    # isinstance() calls on every iteration of the hot loop.
+                    if _adj_frac_is_array:
                         adj_frac_t[numpy.where(adj_frac_t > 1)] = 1
+                    elif adj_frac_t > 1:
+                        adj_frac_t = 1
 
         # Initialize variable-specific baseline and efficient data market share adjustment
         # fractions using the overall adjustment fraction calculated above.
@@ -4716,18 +4732,16 @@ class Engine(object):
                             fs_splt = adj_out_break["fuel splits"]
                         # Ensure baseline result is not already zero before adjusting; if zero, no
                         # further adjustment required
-                        if (not isinstance(
-                                adj_out_break["base fuel"][var][var_sub][yr], numpy.ndarray)
-                            and adj_out_break["base fuel"][var][var_sub][yr] != 0) or (
-                            isinstance(adj_out_break["base fuel"][var][var_sub][yr], numpy.ndarray)
-                                and all(adj_out_break["base fuel"][var][var_sub][yr]) != 0):
-                            adj_out_break["base fuel"][var][var_sub][yr] = \
-                                adj_out_break["base fuel"][var][
-                                    var_sub][yr] - (
-                                adj[var]["total"][adj_key][yr]) * (
-                                    1 - adj_t[var]) * fs_splt[var_sub][var][yr]
-                        else:
+                        _cur_val = adj_out_break["base fuel"][var][var_sub][yr]
+                        if isinstance(_cur_val, numpy.ndarray):
+                            if not all(_cur_val != 0):
+                                continue
+                        elif _cur_val == 0:
                             continue
+                        adj_out_break["base fuel"][var][var_sub][yr] = \
+                            _cur_val - (
+                            adj[var]["total"][adj_key][yr]) * (
+                                1 - adj_t[var]) * fs_splt[var_sub][var][yr]
                     except KeyError:
                         continue
 
