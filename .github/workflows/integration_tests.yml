@@ -499,7 +499,7 @@ jobs:
                 const fTime = fMatch ? fMatch[1] : 'N/A';
                 const absDiff = dMatch ? dMatch[1] : 'N/A';
                 const pct = dMatch ? dMatch[2] : 'N/A';
-                const icon = dMatch ? (parseFloat(dMatch[2]) >= 0 ? '✅' : '⚠️') : '';
+                const icon = dMatch ? (parseFloat(dMatch[2]) > 0.005 ? '✅' : '⚠️') : '';
                 body += `| \`${stepName}\` | ${mTime} | ${fTime} | ${absDiff} | ${icon} ${pct}% |\n`;
               }
               body += `\n<details><summary>Full profiler output</summary>\n\n`;
