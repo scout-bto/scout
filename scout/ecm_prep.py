@@ -4322,11 +4322,9 @@ class Measure(object):
                 # the current mseg region to the regionality of the
                 # fugitive emissions methane leakage data (state breakouts)
 
-                # Non-state region setting must be mapped to state
+                # Set leakage rate scenario for methane
                 if opts.fugitive_emissions is not False and \
-                    opts.fugitive_emissions[0] in ['1', '3'] and (
-                        opts.alt_regions != "State" and
-                        mskeys[3] == "natural gas"):
+                        opts.fugitive_emissions[0] in ['1', '3']:
                     # Prepare leakage rate sensitivity variable based on
                     # input options
                     if opts.fugitive_emissions[2] == '1':
@@ -4335,6 +4333,13 @@ class Measure(object):
                         lkg_rate_scenario = "Mid"
                     else:
                         lkg_rate_scenario = "High"
+
+                # Non-state region setting must be mapped to state
+                if opts.fugitive_emissions is not False and \
+                    opts.fugitive_emissions[0] in ['1', '3'] and (
+                        opts.alt_regions != "State" and
+                        mskeys[3] == "natural gas"):
+
                     # Prepare fractions needed to map state-resolved
                     # fugitive methane data to current region
                     try:
