@@ -372,7 +372,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
     # Y axis labels for cost effectiveness plots
     plot_axis_labels_finmets_y = \
         ["IRR (%)", "Payback (years)", "CCE ($/MMBtu saved)",
-         r"CCC (\$/t CO$_2$ avoided)"]
+         r"CCC ($/t CO$_2$ avoided)"]
     # Financial metric titles
     plot_title_labels_finmets = \
         ["Internal Rate of Return (IRR)", "Simple Payback",
