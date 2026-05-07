@@ -50,9 +50,18 @@ def run_workflow(config: str = "", run_step: str = None, with_profiler: bool = F
             # to finish so that output files (Summary_Data-TP.xlsx, etc.) are
             # fully written before the process exits or results are compared.
             main_thread = threading.main_thread()
-            for t in threading.enumerate():
-                if t is not main_thread and not t.daemon:
-                    t.join()
+            plot_threads = [t for t in threading.enumerate()
+                            if t is not main_thread and not t.daemon]
+            for t in plot_threads:
+                t.join()
+            # Re-raise any exception captured by the plot thread so the CI job
+            # fails with the real error rather than a downstream FileNotFoundError.
+            for t in plot_threads:
+                exc_list = getattr(t, "_plot_exc", [])
+                if exc_list:
+                    raise RuntimeError(
+                        f"Plotting thread {t.name!r} failed"
+                    ) from exc_list[0]
 
 
 def run_with_profiler(
