@@ -39,11 +39,20 @@ def run_workflow(config: str = "", run_step: str = None, with_profiler: bool = F
 
     # Run run.py
     if run_step == "run" or run_step is None:
+        import threading
         opts = run.parse_args(["-y", config])
         if with_profiler:
             run_with_profiler(run.main, opts, fp.RESULTS / "profile_run.csv")
         else:
             run.main(opts)
+            # run.main() launches plotting in a background thread and returns
+            # immediately. Wait for all non-daemon threads (e.g. the plot thread)
+            # to finish so that output files (Summary_Data-TP.xlsx, etc.) are
+            # fully written before the process exits or results are compared.
+            main_thread = threading.main_thread()
+            for t in threading.enumerate():
+                if t is not main_thread and not t.daemon:
+                    t.join()
 
 
 def run_with_profiler(
