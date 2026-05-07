@@ -8252,11 +8252,18 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         # matplotlib renders/saves PDFs (plotting has no downstream callers).
         # The Agg backend (set at module import time) is thread-safe.
 
-        def _run_plot_bg():
+        _plot_exc: list = []
 
-            run_plot(meas_summary, a_run, handyvars, measures_objlist, regions, cbpslist, trim_out)
-            print("Plotting complete")
+        def _run_plot_bg():
+            try:
+                run_plot(meas_summary, a_run, handyvars, measures_objlist,
+                         regions, cbpslist, trim_out)
+                print("Plotting complete")
+            except Exception as exc:
+                _plot_exc.append(exc)
+
         plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
+        plot_thread._plot_exc = _plot_exc
         plot_thread.start()
 
 
