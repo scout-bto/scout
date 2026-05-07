@@ -400,9 +400,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
     # Loop through all adoption scenarios.
     # The two scenarios are independent (different output dirs, colors, XLSX
-    # files) so we run them concurrently.  All pyplot global-state operations
-    # inside the helper are serialised with _pyplot_lock so that the Agg
-    # backend's Python wrapper is never accessed from two threads at once.
+    # files) so we run them concurrently.  plt.subplots() calls are serialised
+    # with _pyplot_lock to avoid races on pyplot's figure registry; all other
+    # matplotlib operations use the object-level API (fig.savefig, etc.) so
+    # they never touch pyplot global state and need no lock.
     def _plot_one_scenario(a):
         # a = 1 # Max adoption potential
         # Set plot colors for competed baseline, efficient, and low/high
@@ -533,7 +534,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
             # Determine number of rows for individual ECM plots
             row = math.ceil(len(meas_names) / 4)
-            # Initialize individual ECM plots (lock covers pyplot global state)
+            # Initialize individual ECM plots
             with _pyplot_lock:
                 fig, axas = plt.subplots(row, 4, figsize=(20, row * 4.5))
 
@@ -1194,10 +1195,9 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axa.set_axis_on()
 
             # Generate individual ECM plot figure
-            with _pyplot_lock:
-                plt.tight_layout()
-                plt.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
-                plt.close()
+            fig.tight_layout()
+            fig.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
+            plt.close(fig)
             ###################################################################
 
             # Plot annual and cumulative energy, carbon, and cost savings
@@ -1433,10 +1433,9 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axb.set_axis_on()
 
             # Generate aggregate savings figure
-            with _pyplot_lock:
-                plt.tight_layout()
-                plt.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
-                plt.close()
+            fig.tight_layout()
+            fig.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
+            plt.close(fig)
 
             with _pyplot_lock:
                 fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
@@ -1651,24 +1650,22 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                               loc='lower left',
                               frameon=False,
                               bbox_to_anchor=(0.1, -0.335, 1, 1),
-                              bbox_transform=plt.gcf().transFigure,
+                              bbox_transform=fig.transFigure,
                               title='Building Type')
             # End use legend
-            with _pyplot_lock:
-                leg2 = axc.legend(plots2, euses_lgnd,
-                                  loc='lower left',
-                                  frameon=False,
-                                  bbox_to_anchor=(0.25, -0.335, 1, 1),
-                                  bbox_transform=plt.gcf().transFigure,
-                                  title='End Use')
+            leg2 = axc.legend(plots2, euses_lgnd,
+                              loc='lower left',
+                              frameon=False,
+                              bbox_to_anchor=(0.25, -0.335, 1, 1),
+                              bbox_transform=fig.transFigure,
+                              title='End Use')
             # Add plot legends
             axc.add_artist(leg1)
             axc.add_artist(leg2)
             # Generate cost effectiveness figure
-            with _pyplot_lock:
-                plt.tight_layout()
-                plt.savefig(plot_file_name_finmets, bbox_inches='tight')
-                plt.close()
+            fig.tight_layout()
+            fig.savefig(plot_file_name_finmets, bbox_inches='tight')
+            plt.close(fig)
 
             # Append Excel data, excluding the first two rows (uncompeted
             # 'All ECMs' results, which are not meaningful)
@@ -1684,8 +1681,8 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
     # Run both adoption scenarios concurrently.  Each scenario writes to its
     # own output directory and XLSX file so there are no write conflicts.
-    # pyplot global state is serialised inside _plot_one_scenario via
-    # _pyplot_lock, so the two threads never race on matplotlib internals.
+    # plt.subplots() is serialised via _pyplot_lock; all save/close operations
+    # use the object-level API so no pyplot global state is touched.
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=len(adopt_scenarios)) as pool:
         futures = [pool.submit(_plot_one_scenario, a)
