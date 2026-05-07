@@ -59,9 +59,18 @@ def run_with_profiler(
         output_file (pathlib.Path): .csv filepath to write profiling stats
     """
 
+    import threading
+
     pr = cProfile.Profile()
     pr.enable()
     func(args)
+    # run.main() launches plotting in a background thread and returns
+    # immediately. Wait for all non-daemon threads (i.e. the plot thread) to
+    # finish before disabling the profiler so that plotting time is captured.
+    main_thread = threading.main_thread()
+    for t in threading.enumerate():
+        if t is not main_thread and not t.daemon:
+            t.join()
     pr.disable()
     write_profile_stats(pr, output_file)
 

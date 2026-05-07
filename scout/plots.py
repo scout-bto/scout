@@ -5,6 +5,14 @@ import pandas as pd
 from scout.config import FilePaths as fp
 import numpy
 import math
+import threading
+import concurrent.futures
+
+# Lock that serialises all pyplot global-state operations (subplots / savefig /
+# close).  The Agg backend is thread-safe at the C level but pyplot's Python
+# wrapper maintains global figure state, so concurrent threads must take this
+# lock for each figure's full create→build→save→close lifecycle.
+_pyplot_lock = threading.Lock()
 
 
 def nicenumber(x, round):
@@ -390,8 +398,12 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                           snap_yr, "CCE ($/MMBtu saved)," +
                           snap_yr, "CCC ($/tCO2 avoided)," + snap_yr]
 
-    # Loop through all adoption scenarios
-    for a in range(len(adopt_scenarios)):
+    # Loop through all adoption scenarios.
+    # The two scenarios are independent (different output dirs, colors, XLSX
+    # files) so we run them concurrently.  All pyplot global-state operations
+    # inside the helper are serialised with _pyplot_lock so that the Agg
+    # backend's Python wrapper is never accessed from two threads at once.
+    def _plot_one_scenario(a):
         # a = 1 # Max adoption potential
         # Set plot colors for competed baseline, efficient, and low/high
         # results (varies by adoption scenario); also set Excel summary data
@@ -521,8 +533,9 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
             # Determine number of rows for individual ECM plots
             row = math.ceil(len(meas_names) / 4)
-            # Initialize individual ECM plots
-            fig, axas = plt.subplots(row, 4, figsize=(20, row * 4.5))
+            # Initialize individual ECM plots (lock covers pyplot global state)
+            with _pyplot_lock:
+                fig, axas = plt.subplots(row, 4, figsize=(20, row * 4.5))
 
             # Remove plots for any unused cells in the plotting matrix
             # Find number of blank plots in last row
@@ -708,19 +721,25 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
                         # Order competed ECM energy, carbon, or cost totals by
                         # year and determine low/high bounds
-                        # on each total value (if applicable)`
+                        # on each total value (if applicable).
+                        # Hoist the uncertainty-flag checks out of the year
+                        # loop: results_database.keys() is constant across
+                        # years, so computing column_stack once is sufficient.
+                        _rdb_keys = list(results_database.keys())
+                        base_uncertain_check = numpy.column_stack(
+                            ([any(b in s for b in ['Baseline']) for s in _rdb_keys],
+                             [any(b in s for b in ['low']) for s in _rdb_keys]))
+                        eff_uncertain_check = numpy.column_stack(
+                            ([any(b in s for b in ['Efficient']) for s in _rdb_keys],
+                             [any(b in s for b in ['low']) for s in _rdb_keys]))
+                        _base_has_uncertainty = (numpy.array(numpy.where(
+                            base_uncertain_check[:, 0] &
+                            base_uncertain_check[:, 1] is True)).size) > 0
+                        _eff_has_uncertainty = (numpy.array(numpy.where(
+                            eff_uncertain_check[:, 0] &
+                            eff_uncertain_check[:, 1:2] is True)).size) > 0
                         for yr in range(len(years)):
-                            base_uncertain_check = numpy.column_stack(
-                                ([any(b in s for b in ['Baseline'])
-                                    for s in list(results_database.keys())],
-                                    [any(b in s for b in ['low'])
-                                        for s in list(results_database.keys())]
-                                 )
-                            )
-                            if (numpy.array((numpy.where(
-                                    base_uncertain_check[:, 0] &
-                                    base_uncertain_check[:, 1] is True))
-                                            ).size) > 0:
+                            if _base_has_uncertainty:
                                 # Take mean value output directly from competed
                                 # results
                                 r_temp[1, yr] = results_database[
@@ -750,15 +769,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
                             # Set mean, low, and high values for case with ECM
                             # input/output uncertainty
-                            eff_uncertain_check = numpy.column_stack(
-                                ([any(b in s for b in ['Efficient'])
-                                    for s in list(results_database.keys())],
-                                    [any(b in s for b in ['low'])
-                                     for s in list(results_database.keys())]))
-                            if (numpy.array((numpy.where(
-                               eff_uncertain_check[:, 0] &
-                               eff_uncertain_check[:, 1:2] is True))
-                                        ).size) > 0:
+                            if _eff_has_uncertainty:
                                 # Take mean value output directly from competed
                                 # results
                                 r_temp[4, yr] = results_database[
@@ -1183,8 +1194,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axa.set_axis_on()
 
             # Generate individual ECM plot figure
-            plt.tight_layout()
-            plt.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
+            with _pyplot_lock:
+                plt.tight_layout()
+                plt.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
+                plt.close()
             ###################################################################
 
             # Plot annual and cumulative energy, carbon, and cost savings
@@ -1202,7 +1215,8 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
             # Loop through all three savings filter variables and add plot of
             # aggregated savings
-            fig, axbs = plt.subplots(3, 1, figsize=(11, 15))
+            with _pyplot_lock:
+                fig, axbs = plt.subplots(3, 1, figsize=(11, 15))
             for (axb, f) in zip(fig.axes, range(results_agg.shape[0])):
                 axb.set_axis_off()
                 # Initialize vector for storing total annual savings across
@@ -1419,10 +1433,13 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axb.set_axis_on()
 
             # Generate aggregate savings figure
-            plt.tight_layout()
-            plt.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
+            with _pyplot_lock:
+                plt.tight_layout()
+                plt.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
+                plt.close()
 
-            fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
+            with _pyplot_lock:
+                fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
             for (axc, fmp) in zip(fig.axes, range(len(fin_metrics))):
                 # Shorthands for x and y data on the plot
                 s_x, s_y = [results_finmets[:, len(fin_metrics)], results_finmets[:, fmp]]
@@ -1637,19 +1654,21 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                               bbox_transform=plt.gcf().transFigure,
                               title='Building Type')
             # End use legend
-            leg2 = axc.legend(plots2, euses_lgnd,
-                              loc='lower left',
-                              frameon=False,
-                              bbox_to_anchor=(0.25, -0.335, 1, 1),
-                              bbox_transform=plt.gcf().transFigure,
-                              title='End Use')
+            with _pyplot_lock:
+                leg2 = axc.legend(plots2, euses_lgnd,
+                                  loc='lower left',
+                                  frameon=False,
+                                  bbox_to_anchor=(0.25, -0.335, 1, 1),
+                                  bbox_transform=plt.gcf().transFigure,
+                                  title='End Use')
             # Add plot legends
             axc.add_artist(leg1)
             axc.add_artist(leg2)
             # Generate cost effectiveness figure
-            plt.tight_layout()
-            plt.savefig(plot_file_name_finmets, bbox_inches='tight')
-            plt.close()
+            with _pyplot_lock:
+                plt.tight_layout()
+                plt.savefig(plot_file_name_finmets, bbox_inches='tight')
+                plt.close()
 
             # Append Excel data, excluding the first two rows (uncompeted
             # 'All ECMs' results, which are not meaningful)
@@ -1662,6 +1681,18 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
             xlsx_var_name_list[i].to_excel(
                 writer, sheet_name=file_names_ecms[i], index=False)
         writer.close()
+
+    # Run both adoption scenarios concurrently.  Each scenario writes to its
+    # own output directory and XLSX file so there are no write conflicts.
+    # pyplot global state is serialised inside _plot_one_scenario via
+    # _pyplot_lock, so the two threads never race on matplotlib internals.
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(adopt_scenarios)) as pool:
+        futures = [pool.submit(_plot_one_scenario, a)
+                   for a in range(len(adopt_scenarios))]
+        # Re-raise any exception from a worker thread in the main thread.
+        for f in concurrent.futures.as_completed(futures):
+            f.result()
 
 
 if __name__ == '__main__':
