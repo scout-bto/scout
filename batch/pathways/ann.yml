@@ -45,6 +45,8 @@ ecm_prep:
     "(R) Other Fossil Cooking",
     "(R) Other Fossil Furnaces, CC",
     "(R) Other Fossil Furnaces, non-CC",
+    "(R) Propane Furnaces, CC",
+    "(R) Propane Furnaces, non-CC",
     "(R) Other Fossil Secondary Heating, CC",
     "(R) Other Fossil Secondary Heating, non-CC",
     "(R) Other Fossil Unknown & NB",
@@ -76,7 +78,7 @@ ecm_prep:
     "(R) Resistance Heating, CC",
     "(R) Resistance Heating, non-CC",
     "(C) Electric Chillers",
-    "(C) Electric HP & Boost Water Heaters",
+    "(C) Electric HPWHs",
     "(C) Ground Source HPs",
     "(C) Refrigeration",
     "(C) Residential Type ACs",
@@ -90,16 +92,18 @@ ecm_prep:
     "(C) Other Electric Unknown & NB",
     "(R) Other Electric Unknown & NB",
     "(C) PTHPs", 
-    "(C) PTACs"]
+    "(C) PTACs",
+    "(C) Gas RTACs"]
   site_energy: true
   no_scnd_lgt: true
   alt_regions: State
   alt_ref_carb: MidCase
-  detail_brkout: [regions, buildings, fuel types]
-  split_fuel: true
+  detail_brkout: [regions, buildings]
   report_stk:
     cap_invest: true
+  adopt_scn_restrict: Technical potential
 
   
 run:
   no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

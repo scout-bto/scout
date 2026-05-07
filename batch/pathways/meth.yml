@@ -55,14 +55,17 @@ ecm_prep:
     "(C) Gas Unknown & NB (Exist)",
     "(C) Gas Heat Pumps (Exist)",
     "(C) Gas Cooking (Exist)",
-    "(C) Gas Chillers (Exist)"]
+    "(C) Gas Chillers (Exist)",
+    "(C) Gas RTACs (Exist)",
+    "(C) Gas RTACs (New)"]
   site_energy: true
   no_scnd_lgt: true
   alt_regions: State
   alt_ref_carb: MidCase
-  detail_brkout: [regions, buildings, fuel types]
-  split_fuel: true
+  detail_brkout: [regions, buildings]
   fugitive_emissions: [methane-mid]
+  adopt_scn_restrict: Technical potential
   
 run:
   no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

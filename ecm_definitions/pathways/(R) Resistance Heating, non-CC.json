@@ -1,8 +1,6 @@
 {
   "name": "(R) Resistance Heating, non-CC",
-  "climate_zone": ["TRE", "FRCC", "MISC", "MISS", "PJMD",
-                   "SRCA", "SRSE", "SRCE", "SPPS", "SPPC",
-                   "SRSG", "CANO", "CASO"],
+  "climate_zone": "warm climates",
   "bldg_type": "all residential",
   "structure_type": "all",
   "end_use": ["heating"],

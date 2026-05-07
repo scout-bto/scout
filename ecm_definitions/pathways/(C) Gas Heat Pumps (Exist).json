@@ -9,7 +9,7 @@
     "gas_eng-driven_RTHP-heat",
     "res_type_gasHP-cool",
     "res_type_gasHP-heat",
-    "gas_eng-driven_RTAC"],
+    "gas_eng-driven_RTHP-cool"],
   "market_entry_year": 2023,
   "market_entry_year_source": null,
   "market_exit_year": null,

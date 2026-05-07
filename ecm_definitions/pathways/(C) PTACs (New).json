@@ -4,7 +4,7 @@
   "climate_zone": "all",
   "bldg_type": "all commercial",
   "structure_type": "new",
-  "end_use": ["heating", "cooling"],
+  "end_use": ["cooling"],
   "fuel_type": ["electricity"],
   "technology": ["pkg_terminal_AC-cool"],
   "market_entry_year": 2023,

@@ -5,8 +5,7 @@
   "structure_type": "all",
   "end_use": ["cooking"],
   "fuel_type": ["electricity"],
-  "technology": [
-    "electric_range_oven_24x24_griddle"],
+  "technology": "all",
   "market_entry_year": 2023,
   "market_entry_year_source": null,
   "market_exit_year": null,

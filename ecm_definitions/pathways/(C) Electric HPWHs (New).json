@@ -1,9 +1,9 @@
 {
-  "name": "(C) Electric HP Water Heaters",
+  "name": "(C) Electric HPWHs (New)",
   "low_gwp_refrigerant": "R-717",
   "climate_zone": "all",
   "bldg_type": "all commercial",
-  "structure_type": "all",
+  "structure_type": "new",
   "end_use": ["water heating"],
   "fuel_type": ["electricity"],
   "technology": ["HP water heater"],

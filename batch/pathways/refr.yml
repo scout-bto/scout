@@ -3,7 +3,7 @@ ecm_prep:
   ecm_directory: ../../ecm_definitions/pathways
   ecm_files: [
     "(C) Electric Chillers (Exist)",
-    "(C) Electric HP & Boost Water Heaters (Exist)",
+    "(C) Electric HPWHs (Exist)",
     "(C) Ground Source HPs (Exist)",
     "(C) Refrigeration (Exist)",
     "(C) Residential Type ACs (Exist)",
@@ -15,7 +15,7 @@ ecm_prep:
     "(R) Refrigeration (Exist)",
     "(R) Room ACs (Exist)",
     "(C) Electric Chillers (New)",
-    "(C) Electric HP & Boost Water Heaters (New)",
+    "(C) Electric HPWHs (New)",
     "(C) Ground Source HPs (New)",
     "(C) Refrigeration (New)",
     "(C) Residential Type ACs (New)",
@@ -34,9 +34,10 @@ ecm_prep:
   no_scnd_lgt: true
   alt_regions: State
   alt_ref_carb: MidCase
-  detail_brkout: [regions, buildings, fuel types]
-  split_fuel: true
+  detail_brkout: [regions, buildings]
   fugitive_emissions: [low-gwp refrigerant]
+  adopt_scn_restrict: Technical potential
 
 run:
   no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

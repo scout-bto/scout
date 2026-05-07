@@ -5,8 +5,7 @@
   "structure_type": "new",
   "end_use": ["cooking"],
   "fuel_type": ["natural gas"],
-  "technology": [
-    "gas_range_oven_24x24_griddle"],
+  "technology": "all",
   "market_entry_year": 2023,
   "market_entry_year_source": null,
   "market_exit_year": null,

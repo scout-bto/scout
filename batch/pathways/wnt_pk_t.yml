@@ -3,7 +3,7 @@ ecm_prep:
   ecm_directory: ../../ecm_definitions/pathways
   ecm_files: [
     "(C) Electric Chillers",
-    "(C) Electric HP & Boost Water Heaters",
+    "(C) Electric HPWHs",
     "(C) Ground Source HPs",
     "(C) Refrigeration",
     "(C) Residential Type ACs",
@@ -45,14 +45,15 @@ ecm_prep:
   no_scnd_lgt: true
   alt_regions: State
   alt_ref_carb: MidCase
-  detail_brkout: [regions, buildings, fuel types]
+  detail_brkout: [regions, buildings]
   tsv_metrics:
     tsv_type: power
     tsv_daily_hr_restrict: peak
     tsv_sys_shape_case: total reference
     tsv_season: winter
     tsv_power_agg: peak
-  split_fuel: true
+  adopt_scn_restrict: Technical potential
   
 run:
   no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]
