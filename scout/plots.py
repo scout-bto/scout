@@ -47,6 +47,48 @@ def pretty(low, high, n):
     return numpy.arange(miny, maxy+0.5*d, d)
 
 
+def _mpl_escape(s):
+    """Escape unmatched/literal dollar signs in a string for use as a matplotlib label.
+
+    matplotlib treats '$...$' as mathtext.  A lone '$' that is not part of a
+    balanced pair causes a ParseException at render time.  This helper splits
+    the string on already-escaped '\$' tokens, then in each plain segment
+    escapes any '$' that forms part of an *odd* run (i.e. is not the opening
+    or closing delimiter of a balanced mathtext pair '$...$').
+
+    Strategy: scan the string character by character; toggle an in_math flag
+    each time we see an unescaped '$'.  If we finish in_math=True, the last
+    opening '$' was unmatched — escape it.  Any '$' seen while *not* in math
+    mode that would start a valid '$.+$' pair is left alone; any other bare
+    '$' is escaped.
+    """
+    import re
+    # Split on segments that are already escaped (\$) so we never double-escape.
+    # Reassemble after processing the plain segments.
+    result = []
+    i = 0
+    while i < len(s):
+        if s[i] == '\\' and i + 1 < len(s) and s[i + 1] == '$':
+            # Already escaped — keep as-is
+            result.append('\\$')
+            i += 2
+        elif s[i] == '$':
+            # Look ahead: is there a closing '$' later (forming a pair)?
+            closing = s.find('$', i + 1)
+            if closing != -1:
+                # Valid mathtext pair — keep both delimiters and the content
+                result.append(s[i:closing + 1])
+                i = closing + 1
+            else:
+                # Unmatched bare '$' — escape it
+                result.append('\\$')
+                i += 1
+        else:
+            result.append(s[i])
+            i += 1
+    return ''.join(result)
+
+
 def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
              codes_bps_objlist, trim_out):
     # Set base directory
@@ -371,8 +413,8 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
          cs_axis_units + append_txt]
     # Y axis labels for cost effectiveness plots
     plot_axis_labels_finmets_y = \
-        ["IRR (%)", "Payback (years)", "CCE ($/MMBtu saved)",
-         r"CCC ($/t CO$_2$ avoided)"]
+        ["IRR (%)", "Payback (years)", r"CCE (\$/MMBtu saved)",
+         r"CCC (\$/t CO$_2$ avoided)"]
     # Financial metric titles
     plot_title_labels_finmets = \
         ["Internal Rate of Return (IRR)", "Simple Payback",
@@ -1150,7 +1192,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 # Add x and y axis labels
                 axa.set_xlabel("Year")
                 axa.set_xlim(2018, 2052)  # hardcode year range
-                axa.set_ylabel(plot_axis_labels_ecm[v])
+                axa.set_ylabel(_mpl_escape(plot_axis_labels_ecm[v]))
 
                 # Annotate total savings in a snapshot years for the 'All ECMs'
                 # case; otherwise, annotate the applicable ECM end uses
@@ -1178,7 +1220,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                         axa.text(x=xval_snap - xval_snap*0.002,
                                  y=yval_snap_eff - max(ylims)*0.05,
                                  s=str(round(yval_snap_base-yval_snap_eff, 1)
-                                       ) + " " + var_units[v],
+                                       ) + " " + _mpl_escape(var_units[v]),
                                  fontdict=dict(color="forestgreen", size=8))
                         axa.legend(labels=legend_param)
                 else:
@@ -1191,7 +1233,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                              transform=axa.transAxes)
 
                 # Add plot title
-                axa.set_title(meas_names[m])
+                axa.set_title(_mpl_escape(meas_names[m]))
                 axa.set_axis_on()
 
             # Generate individual ECM plot figure
@@ -1286,7 +1328,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                     buff_a = 0.05 * abs(max_val_ann - min_val_ann)
                     axb.set_xlim(2018, 2052)  # hardcode years
                     axb.set_ylim(min_val_ann-buff_a, max_val_ann+buff_a)
-                    axb.set_ylabel(plot_axis_labels_agg_ann[v])
+                    axb.set_ylabel(_mpl_escape(plot_axis_labels_agg_ann[v]))
                     axb.set_xlabel("Year")
 
                     # Develop y limits for total cumulative savings
@@ -1301,7 +1343,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                         years, total_cum, lw=3, color="#7f7f7f", ls='dotted')
                     buff_c = 0.05 * abs(max_val_cum - min_val_cum)
                     axb2.set_ylim(min_val_cum-buff_c, max_val_cum+buff_c)
-                    axb2.set_ylabel(plot_axis_labels_agg_cum[v])
+                    axb2.set_ylabel(_mpl_escape(plot_axis_labels_agg_cum[v]))
                     # Add plot title; force switch 'Climate Zone' variable to
                     # 'Region'
                     if filter_var[f] != 'Climate Zone':
@@ -1568,13 +1610,13 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                                 linestyle='dotted', zorder=1)
 
                     # Add x axis tick marks and axis labels
-                    axc.set_xlabel(plot_axis_labels_finmets_x[v])
+                    axc.set_xlabel(_mpl_escape(plot_axis_labels_finmets_x[v]))
                     # Add y axis tick marks and axis labels
-                    axc.set_ylabel(plot_axis_labels_finmets_y[fmp])
+                    axc.set_ylabel(_mpl_escape(plot_axis_labels_finmets_y[fmp]))
                     # Add label with total cost effective savings
                     label_text = 'Cost effective impact: ' + \
                                  str(round(total_save_ce, 1)) + \
-                                 " " + var_units[v]
+                                 " " + _mpl_escape(var_units[v])
                     axc.text(0.02, 0.98, label_text, fontsize=7,
                              horizontalalignment='left',
                              verticalalignment='top',
