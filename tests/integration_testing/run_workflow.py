@@ -54,14 +54,14 @@ def run_workflow(config: str = "", run_step: str = None, with_profiler: bool = F
                             if t is not main_thread and not t.daemon]
             for t in plot_threads:
                 t.join()
-            # Re-raise any exception captured by the plot thread so the CI job
+            # Re-raise any exception from the plot thread so the CI job
             # fails with the real error rather than a downstream FileNotFoundError.
             for t in plot_threads:
-                exc_list = getattr(t, "_plot_exc", [])
-                if exc_list:
+                exc = getattr(t, "_exc", None)
+                if exc is not None:
                     raise RuntimeError(
                         f"Plotting thread {t.name!r} failed"
-                    ) from exc_list[0]
+                    ) from exc
 
 
 def run_with_profiler(
