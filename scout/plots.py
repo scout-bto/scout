@@ -1236,9 +1236,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axa.set_axis_on()
 
             # Generate individual ECM plot figure
-            fig.tight_layout()
-            fig.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
-            plt.close(fig)
+            with _pyplot_lock:
+                fig.tight_layout()
+                fig.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
+                plt.close(fig)
             ###################################################################
 
             # Plot annual and cumulative energy, carbon, and cost savings
@@ -1474,9 +1475,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axb.set_axis_on()
 
             # Generate aggregate savings figure
-            fig.tight_layout()
-            fig.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
-            plt.close(fig)
+            with _pyplot_lock:
+                fig.tight_layout()
+                fig.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
+                plt.close(fig)
 
             with _pyplot_lock:
                 fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
@@ -1704,9 +1706,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
             axc.add_artist(leg1)
             axc.add_artist(leg2)
             # Generate cost effectiveness figure
-            fig.tight_layout()
-            fig.savefig(plot_file_name_finmets, bbox_inches='tight')
-            plt.close(fig)
+            with _pyplot_lock:
+                fig.tight_layout()
+                fig.savefig(plot_file_name_finmets, bbox_inches='tight')
+                plt.close(fig)
 
             # Append Excel data, excluding the first two rows (uncompeted
             # 'All ECMs' results, which are not meaningful)
@@ -1722,8 +1725,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
     # Run both adoption scenarios concurrently.  Each scenario writes to its
     # own output directory and XLSX file so there are no write conflicts.
-    # plt.subplots() is serialised via _pyplot_lock; all save/close operations
-    # use the object-level API so no pyplot global state is touched.
+    # plt.subplots(), tight_layout(), savefig(), and plt.close() are all
+    # serialised via _pyplot_lock because matplotlib is not thread-safe:
+    # tight_layout() invokes the mathtext parser which has a shared LRU cache,
+    # and plt.close() mutates pyplot's global figure registry.
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=len(adopt_scenarios)) as pool:
         futures = [pool.submit(_plot_one_scenario, a)
