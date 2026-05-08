@@ -52,7 +52,7 @@ def _mpl_escape(s):
 
     matplotlib treats '$...$' as mathtext.  A lone '$' that is not part of a
     balanced pair causes a ParseException at render time.  This helper splits
-    the string on already-escaped r'\$' tokens, then in each plain segment
+    the string on already-escaped '\\$' tokens, then in each plain segment
     escapes any '$' that forms part of an *odd* run (i.e. is not the opening
     or closing delimiter of a balanced mathtext pair '$...$').
 
