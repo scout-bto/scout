@@ -1424,17 +1424,20 @@ def mels_cpl_data_handler(cpl_data, conversions, years, key_list):
         orig_cost_units = specific_cpl_data['cost']['units']
 
         # Case where the commercial MELs cost data require conversion from
-        # $/unit to '$/ft^2 floor'; currently, data for this conversion are
-        # only available for PCs so other technologies will be ignored
+        # $/unit to '$/ft^2 floor'. This applies to 'PCs' (pre-AEO 2026 name)
+        # and 'office equipment' (AEO 2026+ name, which consolidates PCs and
+        # non-PC office equipment with PCs as the dominant energy component).
+        # Both names are handled for backward compatibility.
+        # Other technologies will be ignored.
         if orig_cost_units and (
             bldg_class == "commercial" and '$/ft^2 floor'
                 not in orig_cost_units and '$/unit' in orig_cost_units):
-            if eu == "PCs":
+            if eu in ("PCs", "office equipment"):
                 # Set the unconverted cost value
                 orig_cost = specific_cpl_data['cost']['typical']
                 # Strip the year from the cost units (to be added back later)
                 the_year = orig_cost_units[:4]
-                # PC cost conversion data are split into three categories by
+                # Cost conversion data are split into three categories by
                 # building type; find the appropriate category key to use
                 # in pulling these data for the current building type
                 if bldg_type in ["large office", "small office", "education"]:
@@ -1443,10 +1446,12 @@ def mels_cpl_data_handler(cpl_data, conversions, years, key_list):
                     convert_key = "health care"
                 else:
                     convert_key = "all other"
-                # Apply the cost conversion ($/unit->$/ft^2 floor) across years
+                # Conversion file stores the PC/office equipment conversion
+                # under "data center" (the AEO 2026+ name for end use 8,
+                # previously called "PCs")
                 adj_cost = {
                     key: orig_cost[key] * conversions["cost unit conversions"][
-                        eu]["conversion factor"]["value"][convert_key]
+                        "data center"]["conversion factor"]["value"][convert_key]
                     for key in years_str}
                 # Finalize adjusted cost units by adding back the year
                 adj_units = the_year + "$/ft^2 floor"
@@ -1936,7 +1941,8 @@ def main():
                 "refrigeration": ["refrigeration", "other-freezers"],
                 "ceiling fan": ["ceiling fan"],
                 "misc": ["TVs", "computers", "MELs",  "data center",
-                         "office equipment", "unspecified", "other"],
+                         "office equipment", "PCs", "non-PC office equipment",
+                         "unspecified", "other"],
                 "pool heaters": ["other-pool heaters"],
                 "pool pumps": ["other-pool pumps"],
                 "portable electric spas": ["other-spas"],

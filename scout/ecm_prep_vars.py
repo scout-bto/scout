@@ -171,6 +171,11 @@ class UsefulVars(object):
         aeo_yrs = JsonIO.load_json(handyfiles.metadata)
         # Shorthand for current year (based on AEO data vintage)
         self.current_yr = aeo_yrs["aeo_base_year"]
+        # AEO publication year (base year + 1); determines end use name mapping
+        aeo_import_year = self.current_yr + 1
+        # End use names 8 and 9 changed in AEO 2026
+        _eu8 = 'data center' if aeo_import_year >= 2026 else 'PCs'
+        _eu9 = 'office equipment' if aeo_import_year >= 2026 else 'non-PC office equipment'
         # Set minimum modeling year to AEO base year
         aeo_min = self.current_yr
         # Set maximum modeling year
@@ -865,7 +870,7 @@ class UsefulVars(object):
                     "electricity": [
                         'ventilation', 'water heating', 'cooling',
                         'heating', 'refrigeration', 'MELs',
-                        'office equipment', 'data center', 'lighting',
+                        _eu9, _eu8, 'lighting',
                         'cooking', "unspecified"],
                     "natural gas": [
                         'cooling', 'water heating', 'cooking', 'heating',
@@ -1013,8 +1018,8 @@ class UsefulVars(object):
                             ],
                             'cooking': [
                                 'elec_range-combined'],
-                            'data center': [None],
-                            'office equipment': [None],
+                            _eu8: [None],
+                            _eu9: [None],
                             'unspecified': [None]},
                         "natural gas": {
                             'cooling': [
@@ -1177,7 +1182,7 @@ class UsefulVars(object):
             ('Refrigeration', ["refrigeration", "other"]),
             ('Cooking', ["cooking"]),
             ('Computers and Electronics', [
-                "data center", "office equipment", "TVs", "computers"]),
+                _eu8, _eu9, "TVs", "computers"]),
             ('Other', [
                 "drying", "ceiling fan", "fans and pumps",
                 "MELs", "other", "unspecified"])])
@@ -1256,7 +1261,7 @@ class UsefulVars(object):
             "SEF": {"UEF": 1}}
         self.sf_to_house = {}
         self.com_eqp_eus_nostk = [
-            "data center", "office equipment", "MELs", "other", "unspecified"]
+            _eu8, _eu9, "MELs", "other", "unspecified"]
         # For lighting, take the upper bound on each bin of # of lights in the RECS HC5.1 data
         # and do a weighted sum of portion of homes reporting that bin. For heating, use the
         # AEO23 residential microtables to find number of primary heating units by building type

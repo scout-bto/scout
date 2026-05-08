@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import numpy as np
 import numpy.lib.recfunctions as recfn
 import re
@@ -8,6 +9,10 @@ import json
 import io
 from functools import reduce
 from scout.config import FilePaths as fp
+
+# AEO publication year used to select the correct end use name mapping.
+# Set by main() via the -y/--year CLI argument; falls back to metadata when None.
+aeo_import_year = None
 
 
 class EIAData(object):
@@ -103,6 +108,27 @@ class CommercialTranslationDicts(object):
                              'unspecified': 12  # for some "other" energy
                              }
 
+        # End use names 8 and 9 changed in AEO 2026; earlier AEOs used
+        # 'PCs' and 'non-PC office equipment'. The AEO year is taken from
+        # the module-level aeo_import_year (set via -y CLI arg) when available,
+        # otherwise derived from aeo_base_year in the metadata JSON.
+        if aeo_import_year is not None:
+            _aeo_yr = aeo_import_year
+        else:
+            try:
+                with open(fp.METADATA_PATH, 'r') as _f:
+                    _meta = json.load(_f)
+                _aeo_yr = _meta.get('aeo_base_year', 2025) + 1
+            except (FileNotFoundError, json.JSONDecodeError):
+                _aeo_yr = 2026  # default to AEO 2026 behaviour
+
+        if _aeo_yr >= 2026:  # AEO 2026 or later
+            _eu8 = 'data center'
+            _eu9 = 'office equipment'
+        else:  # pre-AEO 2026
+            _eu8 = 'PCs'
+            _eu9 = 'non-PC office equipment'
+
         self.endusedict = {'heating': 1,
                            'cooling': 2,
                            'water heating': 3,
@@ -110,8 +136,8 @@ class CommercialTranslationDicts(object):
                            'cooking': 5,
                            'lighting': 6,
                            'refrigeration': 7,
-                           'data center': 8,
-                           'office equipment': 9,
+                           _eu8: 8,
+                           _eu9: 9,
                            'other': 10,
                            'MELs': 10,
                            'unspecified': 11
@@ -1272,6 +1298,19 @@ def onsite_calc(generation_file, json_results):
 
 def main():
     """ Import input data files and do other things """
+
+    global aeo_import_year
+
+    aeo_versions = [2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025, 2026]
+    parser = argparse.ArgumentParser(
+        description='Build commercial microsegments from EIA AEO data.')
+    parser.add_argument(
+        '-y', '--year', type=int, default=None,
+        help='Specify year of AEO data to be imported',
+        choices=aeo_versions)
+    args = parser.parse_args()
+
+    aeo_import_year = args.year
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()

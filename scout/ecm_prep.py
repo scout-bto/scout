@@ -5783,8 +5783,10 @@ class Measure(object):
                         "Scout database: " + str(mskeys))
             elif bldg_sect == "commercial":
                 # For commercial data center/office equipment and MELs,
-                # use the load shape for plug loads
+                # use the load shape for plug loads (include pre-AEO 2026
+                # names 'PCs' and 'non-PC office equipment' for compatibility)
                 if mskeys[4] in ["data center", "office equipment",
+                                 "PCs", "non-PC office equipment",
                                  "MELs", "cooking", "unspecified"]:
                     eu = "plug loads"
                 # In all other cases, error
