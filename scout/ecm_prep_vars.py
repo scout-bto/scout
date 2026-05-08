@@ -171,8 +171,8 @@ class UsefulVars(object):
         aeo_yrs = JsonIO.load_json(handyfiles.metadata)
         # Shorthand for current year (based on AEO data vintage)
         self.current_yr = aeo_yrs["aeo_base_year"]
-        # AEO publication year (base year + 1); determines end use name mapping
-        aeo_import_year = self.current_yr + 1
+        # AEO publication year; determines end use name mapping
+        aeo_import_year = self.current_yr
         # End use names 8 and 9 changed in AEO 2026
         _eu8 = 'data center' if aeo_import_year >= 2026 else 'PCs'
         _eu9 = 'office equipment' if aeo_import_year >= 2026 else 'non-PC office equipment'

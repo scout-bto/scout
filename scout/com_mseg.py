@@ -118,7 +118,7 @@ class CommercialTranslationDicts(object):
             try:
                 with open(fp.METADATA_PATH, 'r') as _f:
                     _meta = json.load(_f)
-                _aeo_yr = _meta.get('aeo_base_year', 2025) + 1
+                _aeo_yr = _meta.get('aeo_base_year', 2025)
             except (FileNotFoundError, json.JSONDecodeError):
                 _aeo_yr = 2026  # default to AEO 2026 behaviour
 
