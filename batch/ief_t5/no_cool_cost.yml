@@ -28,8 +28,9 @@ ecm_prep:
   no_lnkd_costs:
     no_lnkd_stk_costs: in_adopt_and_report
     no_lnkd_op_costs: true
+  report_stk:
+    num_units: true
 
 run:
   high_res_comp: true
-  report_stk: true
   mkt_fracs: true

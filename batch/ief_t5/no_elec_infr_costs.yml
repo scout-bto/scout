@@ -25,8 +25,9 @@ ecm_prep:
   price_sensitivity: null
   split_fuel: true 
   detail_brkout: [regions, buildings, fuel types]
+  report_stk:
+    num_units: true
 
 run:
   high_res_comp: true
-  report_stk: true
   mkt_fracs: true

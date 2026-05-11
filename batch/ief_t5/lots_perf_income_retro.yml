@@ -28,8 +28,9 @@ ecm_prep:
   gshp_lot_restrict: true
   low_income_rent_subseg: true
   actual_res_heat_cop: true
+  report_stk:
+    num_units: true
 
 run:
   high_res_comp: true
-  report_stk: true
   mkt_fracs: true

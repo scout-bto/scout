@@ -178,7 +178,7 @@ class UsefulVars(object):
         # Shorthand for current year (based on AEO data vintage)
         self.current_yr = aeo_yrs["aeo_base_year"]
         # Set minimum modeling year to AEO base year
-        aeo_min = self.current_yr
+        aeo_min = 2020   # set to 2020 for ief work
         # Set maximum modeling year
         aeo_max = aeo_yrs["max year"]
         # Derive time horizon from min/max years
