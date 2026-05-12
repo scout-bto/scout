@@ -3700,19 +3700,24 @@ class Engine(object):
             # After making the adjustments above, convert the modified
             # contributing microsegment information back into a string
             # to use in keying in needed stock data
-            stk_cost_dat_key = str(tuple(key_list))
+            if not tch_apnd:
+                stk_cost_dat_key = str(tuple(key_list))
+                stk_cost_dat_key_alt = None
             # For HP measures with exogenously-specified switching
             # rates or representing replacement of specific heating and
             # cooling pairs, the heating technology will be specified in
             # contributing microsegment data with an appended competition info.
             # to distinguish such considerations; develop alternate stock data
             # keys to switch to to handle this case
-            if tch_apnd:
+            elif tch_apnd:
                 key_list_alt1 = copy.deepcopy(key_list)
                 key_list_alt1[-2] = (key_list_alt1[-2] + tch_apnd)
+                stk_cost_dat_key = None
                 stk_cost_dat_key_alt = str(tuple(key_list_alt1))
             else:
+                stk_cost_dat_key = mseg_key
                 stk_cost_dat_key_alt = None
+
         # Handle all other cases, where stock data will be available for
         # the contributing microsegment to be adjusted as-is
         else:
