@@ -3521,7 +3521,7 @@ class Engine(object):
                     inc_rent_info = [x for x in [
                         "-lowrent", "-lowown", "-nonlowrent"] if x in key_list[-2]]
                     panel_inc_rent_list = panel_info + inc_rent_info
-                    panel_inc_rent_info = "-".join(panel_inc_rent_list)
+                    panel_inc_rent_info = "".join(panel_inc_rent_list)
                     # Add panel info. to other appended tech. info. (after the dash)
                     tch_apnd = (panel_inc_rent_info + "-" + key_list[-2].split("-")[-1])
                 except IndexError:
