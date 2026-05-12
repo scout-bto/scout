@@ -129947,6 +129947,7 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
         cls.sample_measlist_out_comp_data = [{
             "Technical potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -129957,6 +129958,7 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
                         "adjusted energy (competed and captured)": {}}}},
             "Max adoption potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -129968,6 +129970,7 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
             {
             "Technical potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -129978,6 +129981,7 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
                         "adjusted energy (competed and captured)": {}}}},
             "Max adoption potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -129989,6 +129993,7 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
             {
             "Technical potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -129999,6 +130004,7 @@ class CleanUpTest(unittest.TestCase, CommonMethods):
                         "adjusted energy (competed and captured)": {}}}},
             "Max adoption potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {

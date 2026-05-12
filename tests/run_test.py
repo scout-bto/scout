@@ -1839,6 +1839,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key1: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -3260,6 +3261,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key1: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -4758,6 +4760,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key1: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -6209,6 +6212,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key2: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -7608,6 +7612,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key2: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -9083,6 +9088,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key2: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -10658,6 +10664,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.adjust_key2: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -16325,6 +16332,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             comp_key: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -16792,6 +16800,7 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             comp_key: {
                                 "b1": {"2009": -0.95, "2010": -0.95},
@@ -17489,6 +17498,7 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.overlap_key: {
                                 "rate distribution": {
@@ -19011,6 +19021,7 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.overlap_key: {
                                 "rate distribution": {
@@ -20547,6 +20558,7 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1}},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.overlap_key: {
                                 "rate distribution": {
@@ -22153,6 +22165,7 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                                     "baseline": {"2009": 1, "2010": 1},
                                     "measure": 1},
                                 "sub-market scaling": 1},
+                        "linked mseg values": {},
                         "competed choice parameters": {
                             cls.overlap_key: {
                                 "rate distribution": {
