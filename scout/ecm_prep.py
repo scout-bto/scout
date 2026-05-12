@@ -2087,18 +2087,13 @@ class Measure(object):
             # appropriate terminal value is reached
             for i in range(0, len(mskeys)):
                 # Handle case where heating equipment key has been further modified
-                # to enable assessment of panel upgrade sub-segments and/or commercial technology
-                # key has been modified to flag the isolation of ComStock gap segments;
+                # to enable assessment of panel upgrade sub-segments and/or rent/income bins;
                 # for the purposes of pulling stock/energy data from AEO, strip any of this
                 # additional information and use the original key information
                 if mskeys[i] is not None and (
                         any([x in mskeys[i] for x in self.handyvars.alt_panel_names]) or
                         any([x in mskeys[i] for x in self.handyvars.lmi_rent_names])):
                     key_item = mskeys[i].split("-")[0]
-                elif mskeys[i] is not None and "(gap)" in mskeys[i]:
-                    key_item = mskeys[i].split(" (")[0]
-                elif mskeys[i] is not None and mskeys[i] == "gap":
-                    key_item = None
                 else:
                     key_item = mskeys[i]
 
