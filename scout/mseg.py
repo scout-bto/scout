@@ -690,8 +690,17 @@ def list_generator(nrg_stock, tloads, filterdata, aeo_years, lt_factors):
         # Given the discovered lists of sq. footage values, ensure
         # length is equal to the number of years currently projected
         # by AEO. If not, and the list isn't empty, trigger an error.
-        if len(group_sqft_homes) is not aeo_years:
-            if len(group_sqft_homes) != 0:
+        if len(group_sqft_homes) != aeo_years:
+            if 0 < len(group_sqft_homes) < aeo_years:
+                # Some AEO releases omit the base year for new homes/sq ft
+                # (e.g., HS starts at 2021 in AEO 2026). Fill missing years
+                # with 0 so the vector length matches aeo_years.
+                max_yr = max(int(k) for k in group_sqft_homes.keys())
+                exp_min_yr = max_yr - aeo_years + 1
+                for yr in range(exp_min_yr, max_yr + 1):
+                    if str(yr) not in group_sqft_homes:
+                        group_sqft_homes[str(yr)] = 0
+            if len(group_sqft_homes) != aeo_years:
                 raise (ValueError('Error in length of discovered list!'))
 
         # Return sq. footage values and updated version of EIA
