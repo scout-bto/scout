@@ -1948,18 +1948,42 @@ class Engine(object):
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
                     # Shorthand for mseg information to use in pulling consumer choice weights later
                     choice_mseg = [mseg_key for m in measures_adj]
+
+            # Shorthand for linked stock and energy costs, to be added to unit costs below
+            lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
+                            "linked mseg values"] for m in measures_adj]
+            # Initialize linked stock and energy costs as zero
+            lnk_costs_fin = [
+                {v: {yr: 0 for yr in self.handyvars.aeo_years} for v in ["stock", "energy"]}
+                for m in measures_adj]
+            # Loop through linked stock and energy costs dicts for each measure and pull any
+            # linked data into dictionary, to be added to anchor mseg stock and energy costs
+            for m_ind, l in enumerate(lnk_costs_in):
+                # If linked costs are available, dict will have keys; each key is anchor mseg
+                if len(l) != 0:
+                    # If current mseg information is not found in linked costs dict, continue
+                    try:
+                        lnk_costs_fin[m_ind] = {
+                            v: l[choice_mseg[m_ind]][v] for v in ["stock", "energy"]}
+                    except KeyError:
+                        continue
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
                        for m_ind, m in enumerate(measures_adj)]
-            # Unit upfront capital cost dictionary (calculated for current mseg only)
+            # Unit upfront capital cost dictionary (calculated for current mseg only); account for
+            # any linked costs as well
             unit_cost_s_in = [{
-                yr: (markets_uc_stk[m_ind]["cost"]["stock"]["competed"]["efficient"][yr] /
+                yr: ((markets_uc_stk[m_ind]["cost"]["stock"]["competed"]["efficient"][yr] +
+                      lnk_costs_fin[m_ind]["stock"][yr]) /
                      n_units[m_ind][yr]) * self.handyvars.cost_convert["stock"]
                 if n_units[m_ind][yr] != 0 else 0 for yr in self.handyvars.aeo_years}
                 for m_ind, m in enumerate(measures_adj)]
-            # Unit annual operating cost dictionary (calculated for current mseg only)
+
+            # Unit annual operating cost dictionary (calculated for current mseg only); account for
+            # any linked costs as well
             unit_cost_e_in = [{
-                yr: (markets_uc_stk[m_ind]["cost"]["energy"]["competed"]["efficient"][yr] /
+                yr: ((markets_uc_stk[m_ind]["cost"]["energy"]["competed"]["efficient"][yr] +
+                      lnk_costs_fin[m_ind]["energy"][yr]) /
                      n_units[m_ind][yr]) *
                 self.handyvars.cost_convert["energy"]
                 if n_units[m_ind][yr] != 0 else 0 for yr in self.handyvars.aeo_years}
@@ -2186,9 +2210,31 @@ class Engine(object):
             life_meas = [markets_uc_stk[m_ind]["lifetime"]["measure"] if
                          markets_uc_stk[m_ind]["lifetime"]["measure"] >= 1 else 1 for
                          m_ind, m in enumerate(measures_adj)]
-            # Unit upfront capital cost dictionary (calculated for current mseg only, not annual)
+
+            # Shorthand for linked stock and energy costs, to be added to unit costs below
+            lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
+                            "linked mseg values"] for m in measures_adj]
+            # Initialize linked stock and energy costs as zero
+            lnk_costs_fin = [
+                {v: {yr: 0 for yr in self.handyvars.aeo_years} for v in ["stock", "energy"]}
+                for m in measures_adj]
+            # Loop through linked stock and energy costs dicts for each measure and pull any
+            # linked data into a dictionary, to be added to anchor mseg stock and energy costs
+            for m_ind, l in enumerate(lnk_costs_in):
+                # If linked costs are available, dict will have keys; each key is anchor mseg
+                if len(l) != 0:
+                    # If current mseg information is not found in linked costs dict, continue
+                    try:
+                        lnk_costs_fin[m_ind] = {
+                            v: l[choice_mseg[m_ind]][v] for v in ["stock", "energy"]}
+                    except KeyError:
+                        continue
+
+            # Unit upfront capital cost dictionary (calculated for current mseg only, not annual);
+            # account for any linked costs as well
             unit_cost_s_in_unadj = [{
-                yr: (markets_uc_stk[m_ind]["cost"]["stock"]["competed"]["efficient"][yr] /
+                yr: ((markets_uc_stk[m_ind]["cost"]["stock"]["competed"]["efficient"][yr] +
+                      lnk_costs_fin[m_ind]["stock"][yr]) /
                      (n_units[m_ind][yr] * stk_cap_fact[m_ind])) *
                 self.handyvars.cost_convert["stock"]
                 if n_units[m_ind][yr] != 0 else 0 for yr in self.handyvars.aeo_years}
@@ -2208,9 +2254,11 @@ class Engine(object):
                         except ZeroDivisionError:
                             unit_cost_s_in[m_ind][yr]["rate " + str(ind + 1)] = \
                                 (unit_cost_s_in_unadj[m_ind][yr] / life_meas[m_ind])
-            # Unit annual operating cost dictionary (calculated for current mseg only)
+            # Unit annual operating cost dictionary (calculated for current mseg only); account for
+            # any linked costs as well
             unit_cost_e_in = [{
-                yr: (markets_uc_stk[m_ind]["cost"]["energy"]["competed"]["efficient"][yr] /
+                yr: ((markets_uc_stk[m_ind]["cost"]["energy"]["competed"]["efficient"][yr] +
+                      lnk_costs_fin[m_ind]["energy"][yr]) /
                      (n_units[m_ind][yr] * stk_cap_fact[m_ind])) *
                 self.handyvars.cost_convert["energy"]
                 if n_units[m_ind][yr] != 0 else 0 for yr in self.handyvars.aeo_years}
