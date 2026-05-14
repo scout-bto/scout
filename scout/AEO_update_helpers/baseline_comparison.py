@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -48,6 +49,30 @@ import requests
 from backoff import expo, on_exception
 from dotenv import load_dotenv
 from tabulate import tabulate
+
+# ---------------------------------------------------------------------------
+# Utilities
+# ---------------------------------------------------------------------------
+
+
+class _Tee:
+    """Write to both a file and the original stdout simultaneously."""
+
+    def __init__(self, filepath: str) -> None:
+        self._file = open(filepath, "w", encoding="utf-8")  # noqa: WPS515
+        self._stdout = sys.stdout
+
+    def write(self, text: str) -> None:
+        self._stdout.write(text)
+        self._file.write(text)
+
+    def flush(self) -> None:
+        self._stdout.flush()
+        self._file.flush()
+
+    def close(self) -> None:
+        self._file.close()
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -94,14 +119,30 @@ class UsefulVars:
     * mapping from those names to the short codes in the EIA API
     """
 
-    def __init__(self) -> None:
+    def __init__(self, year: str | int | None = None) -> None:
+        yr = int(year) if year is not None else datetime.now().year
+
         # Map from human‑readable building class to API code
         self.bldg_class_translator = {
             "residential": "resd",
             "commercial": "comm",
         }
 
-        # Map from microsegments end‑use string to API end‑use code
+        # Map from microsegments end‑use string to API end‑use code.
+        # AEO 2026+: PC and non-PC office equipment merged into "otheqp";
+        # data center purchased electricity reported under datactrserv.
+        # Pre-2026: separate "PCs" (otheqppc) and
+        # "non-PC office equipment" (otheqpnpc); no data center entry
+        if yr >= 2026:
+            _eu_office: dict[str, str] = {
+                "office equipment": "otheqp",
+                "data center": "datactrserv",
+            }
+        else:
+            _eu_office = {
+                "non-PC office equipment": "otheqpnpc",
+                "PCs": "otheqppc",
+            }
         self.end_use_translator = {
             "clothes washing": "clw",
             "drying": "cdr",
@@ -111,8 +152,7 @@ class UsefulVars:
             "fans and pumps": "fpr",
             "freezers": "frz",
             "lighting": "lghtng",
-            "office equipment": "otheqpnpc",
-            "data center": "otheqppc",
+            **_eu_office,
             "other": "othu",
             "refrigeration": "refr",
             "cooling": "spc",
@@ -218,62 +258,92 @@ _totals: dict[tuple[str, str], dict[str, dict[str, float]]] = defaultdict(
 _error_log: list[dict] = []
 _zero_division_errors: list[dict] = []
 _series_results: list[dict] = []
+_skipped_log: list[dict] = []
+
+
+def _build_series_tolerance(year: str | int) -> dict[str, float]:
+    """Return the per-series tolerance map for *year*.
+
+    The commercial office-equipment series IDs changed in AEO 2026:
+    the separate PCs (otheqppc) and non-PC (otheqpnpc) purchased-
+    electricity series were merged into the single ``otheqp`` series.
+    All other series IDs are stable across years.
+    """
+    yr = int(year)
+
+    # Series IDs that are identical across all AEO years
+    common: dict[str, float] = {
+        # Residential – 0 % error
+        "cnsm_NA_resd_clw_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_cdr_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_cmpr_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_cgr_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_dsw_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_fpr_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_frz_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_lghtng_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_othu_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_refr_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_spc_elc_NA_usa_qbtu": 0.0,
+        "cnsm_hhd_resd_sph_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_tvr_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_wtht_elc_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_cdr_ng_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_cgr_ng_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_othu_ng_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_spc_ng_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_sph_ng_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_othu_dfo_NA_usa_qbtu": 0.0,
+        "cnsm_NA_resd_wtht_dfo_NA_usa_qbtu": 0.0,
+        # Commercial – electricity (stable)
+        "cnsm_NA_comm_NA_prc_cgr_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_prc_lghtng_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_prc_refr_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_prc_spc_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_prc_sph_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_prc_vntc_usa_qbtu": 0.0,
+        # Commercial – natural gas
+        "cnsm_NA_comm_NA_ng_cgr_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_ng_othu_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_ng_sph_usa_qbtu": 0.0,
+        "cnsm_NA_comm_NA_ng_wtht_usa_qbtu": 0.0,
+        # Commercial – distillate
+        "cnsm_NA_comm_NA_dfo_othu_usa_qbtu": 0.0,
+        # Residential – notable non-zero averages
+        "cnsm_NA_resd_wtht_ng_NA_usa_qbtu": 0.0002,   # 0.02%
+        "cnsm_NA_resd_sph_dfo_NA_usa_qbtu": 0.00232,  # 0.232%
+        # Commercial – electricity (non-zero)
+        "cnsm_NA_comm_NA_prc_othu_usa_qbtu": 0.0008,  # 0.08%
+        "cnsm_NA_comm_NA_prc_wtht_usa_qbtu": 0.00064,  # 0.064%
+        # Commercial – distillate (non-zero)
+        "cnsm_NA_comm_NA_dfo_sph_usa_qbtu": 0.0096,   # 0.96%
+        "cnsm_NA_comm_NA_dfo_wtht_usa_qbtu": 0.0674,  # 6.74%
+        # Commercial – natural gas (non-zero)
+        "cnsm_NA_comm_NA_ng_spc_usa_qbtu": 0.05802,   # 5.802%
+    }
+
+    if yr >= 2026:
+        # AEO 2026+: PCs + non-PC + data-center prc merged into otheqp
+        office_series: dict[str, float] = {
+            "cnsm_NA_comm_NA_prc_otheqp_usa_qbtu": 0.0,
+            "cnsm_NA_comm_NA_prc_datactrserv_usa_qbtu": 0.0,
+        }
+    else:
+        # Pre-2026: separate purchased-electricity series per category
+        office_series = {
+            "cnsm_NA_comm_NA_prc_otheqppc_usa_qbtu": 0.0,
+            "cnsm_NA_comm_NA_prc_otheqpnpc_usa_qbtu": 0.0,
+        }
+
+    return {**common, **office_series}
+
 
 # Baseline per-series tolerance map (fractions). If a series is missing,
 # the fallback tolerance is 0.0 (zero tolerance).
-SERIES_TOLERANCE: dict[str, float] = {
-
-    # Explicitly mark known 0.00% error series with 0 tolerance
-    "cnsm_NA_resd_clw_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_cdr_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_cmpr_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_cgr_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_dsw_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_fpr_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_frz_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_lghtng_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_othu_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_refr_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_spc_elc_NA_usa_qbtu": 0.0,
-    "cnsm_hhd_resd_sph_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_tvr_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_wtht_elc_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_cdr_ng_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_cgr_ng_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_othu_ng_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_spc_ng_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_sph_ng_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_othu_dfo_NA_usa_qbtu": 0.0,
-    "cnsm_NA_resd_wtht_dfo_NA_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_cgr_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_lghtng_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_otheqpnpc_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_otheqppc_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_refr_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_spc_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_sph_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_prc_vntc_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_ng_cgr_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_ng_othu_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_ng_sph_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_ng_wtht_usa_qbtu": 0.0,
-    "cnsm_NA_comm_NA_dfo_othu_usa_qbtu": 0.0,
-
-    # Residential – notable non-zero averages
-    "cnsm_NA_resd_wtht_ng_NA_usa_qbtu": 0.0002,   # 0.02%
-    "cnsm_NA_resd_sph_dfo_NA_usa_qbtu": 0.00232,  # 0.232%
-
-    # Commercial – electricity
-    "cnsm_NA_comm_NA_prc_othu_usa_qbtu": 0.0008,  # 0.08%
-    "cnsm_NA_comm_NA_prc_wtht_usa_qbtu": 0.00064,  # 0.064%
-
-    # Commercial – distillate
-    "cnsm_NA_comm_NA_dfo_sph_usa_qbtu": 0.0096,   # 0.96%
-    "cnsm_NA_comm_NA_dfo_wtht_usa_qbtu": 0.0674,  # 6.74%
-
-    # Commercial – natural gas
-    "cnsm_NA_comm_NA_ng_spc_usa_qbtu": 0.05802,   # 5.802%
-}
+# Populated at start of main() via _build_series_tolerance(year).
+SERIES_TOLERANCE: dict[str, float] = _build_series_tolerance(
+    datetime.now().year
+)
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +418,17 @@ def api_query(
     try:
         response = requests.get(url, timeout=(3, 30))
         response.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        # Re-raise rate-limit (429) and server errors (5xx) so the
+        # @on_exception backoff decorator can retry them.
+        code = exc.response.status_code if exc.response is not None else 0
+        if code == 429 or code >= 500:
+            if verbose:
+                print(f"[API] Retriable HTTP {code} for {series_id}; will retry.")
+            raise
+        if verbose:
+            print(f"[API] Request failed for {series_id}: {exc}")
+        return {}
     except requests.exceptions.RequestException as exc:  # network or HTTP error
         if verbose:
             print(f"[API] Request failed for {series_id}: {exc}")
@@ -554,8 +635,13 @@ def compare_one_combination(
         return
 
     if not eia_dict:
-        if verbose:
-            print(f"No EIA data returned for series {series_id}.")
+        if verbose or series_id in SERIES_TOLERANCE:
+            print(f"[SKIP] No EIA data returned for series {series_id} "
+                  f"({bldg} | {fuel} | {end_use}).")
+        _skipped_log.append(
+            {"reason": "no_eia_data", "series_id": series_id,
+             "building": bldg, "fuel": fuel, "end_use": end_use}
+        )
         # hit for: (res, cooking, other fuel)
         return
 
@@ -577,11 +663,15 @@ def compare_one_combination(
     joined = rfn.join_by("year", json_array, eia_array, usemask=False)
 
     if len(joined) == 0:
-        if verbose:
+        if verbose or series_id in SERIES_TOLERANCE:
             print(
-                f"No overlapping years between JSON and EIA for "
-                f"{bldg} | {fuel} | {end_use}."
+                f"[SKIP] No overlapping years between JSON and EIA for "
+                f"series {series_id} ({bldg} | {fuel} | {end_use})."
             )
+        _skipped_log.append(
+            {"reason": "no_year_overlap", "series_id": series_id,
+             "building": bldg, "fuel": fuel, "end_use": end_use}
+        )
         return
 
     # 4. Compute average percent error; protect against division by zero
@@ -724,10 +814,77 @@ def report_large_errors() -> None:
         )
 
 
+def report_skipped() -> None:
+    """Print a summary of all series that were silently skipped.
+
+    Only series for which Scout had JSON data are reported here; series
+    with no JSON data at all are expected to be absent and are not listed.
+    """
+
+    if not _skipped_log:
+        return
+
+    print(f"\nSkipped series ({len(_skipped_log)} total):")
+    for rec in _skipped_log:
+        reason_label = {
+            "no_eia_data": "no EIA data returned",
+            "no_year_overlap": "no overlapping years",
+        }.get(rec["reason"], rec["reason"])
+        print(
+            f"  {rec['building'].upper()} | {rec['fuel'].title()} | "
+            f"{rec['end_use'].title()} — {reason_label}\n"
+            f"    Series ID: {rec['series_id']}"
+        )
+
+
+def report_all_series_summary() -> None:
+    """Print a per-series summary of every compared end-use combination."""
+
+    if not _series_results:
+        return
+
+    print("\n" + "=" * 60)
+    print("ALL SERIES SUMMARY")
+    print("=" * 60)
+
+    min_tol_floor = 5e-5
+    rows = []
+    for rec in sorted(
+        _series_results,
+        key=lambda r: (r["building"], r["fuel"], r["end_use"]),
+    ):
+        sid = rec["series_id"]
+        avg = rec["avg_pct_err"]
+        base_tol = SERIES_TOLERANCE.get(sid, 0.0)
+        tol = base_tol if base_tol > 0.0 else min_tol_floor
+        status = "FAIL" if (avg - tol) > 1e-9 else "OK"
+        rows.append([
+            rec["building"].upper(),
+            rec["fuel"].title(),
+            rec["end_use"].title(),
+            f"{avg:.6%}",
+            f"{tol:.6%}",
+            status,
+        ])
+
+    print(
+        tabulate(
+            rows,
+            headers=[
+                "Building", "Fuel", "End Use",
+                "Avg Error", "Allowed", "Status",
+            ],
+            tablefmt="github",
+        )
+    )
+
+
 def enforce_max_error_or_fail() -> None:
     """Exit non-zero if any series exceeds its per-series tolerance.
 
     Compares all collected `_series_results` against `SERIES_TOLERANCE`.
+    Also fails if any series listed in `SERIES_TOLERANCE` was never compared
+    (silently skipped due to missing EIA data or no year overlap).
     Aggregates all violations and raises one `SystemExit` with a summary.
     """
 
@@ -761,9 +918,20 @@ def enforce_max_error_or_fail() -> None:
                 f"    Avg error: {v['avg_pct_err']:.6%} | Allowed: {v['tolerance']:.6%}"
             )
 
+    # Check that every series listed in SERIES_TOLERANCE was actually compared.
+    compared_sids = {rec["series_id"] for rec in _series_results}
+    missing = [sid for sid in SERIES_TOLERANCE if sid not in compared_sids]
+    if missing:
+        print(f"\n{len(missing)} expected series were never compared "
+              f"(missing from EIA response or no year overlap):")
+        for sid in sorted(missing):
+            print(f"  {sid}")
+
+    if violations or missing:
         raise SystemExit(
             (
-                f"{len(violations)} series exceeded per-series tolerances.\n"
+                f"{len(violations)} series exceeded per-series tolerances, "
+                f"{len(missing)} expected series were never compared.\n"
                 f"Failing run."
             )
         )
@@ -828,6 +996,15 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print extra diagnostic information while running.",
     )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help=(
+            "Path for the text output file. "
+            "Defaults to baseline_comparison_{year}.txt."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -846,37 +1023,55 @@ def main() -> None:
     opts = parse_args()
     year = opts.year
     verbose = opts.verbose
+    output_path = opts.output or f"baseline_comparison_{year}.txt"
 
-    print(f"Using AEO reference year {year} (verbose={verbose}).")
-
-    # Get API key early so we fail fast if it is missing
-    api_key = require_api_key()
-
-    # Load the microsegments JSON file
+    tee = _Tee(output_path)
+    _original_stdout = sys.stdout
+    sys.stdout = tee
     try:
-        with open(MSEG_PATH, "r", encoding="utf-8") as f:
-            mseg = json.load(f)
-    except FileNotFoundError:
-        raise SystemExit(
-            f"Could not find microsegments file at {MSEG_PATH}.\n"
-            "Please check that you are running this script from the project "
-            "root and that the file path is correct."
-        )
+        print(f"Using AEO reference year {year} (verbose={verbose}).")
 
-    uv = UsefulVars()
+        # Get API key early so we fail fast if it is missing
+        api_key = require_api_key()
 
-    # Loop over building classes, fuels, and end uses
-    for bldg in uv.bldg_class_translator.keys():
-        for fuel in uv.fuel_type:
-            for end_use in uv.end_use_translator.keys():
-                filters = FilterStrings(bldg_class=bldg, fuel=fuel, end_use=end_use)
-                compare_one_combination(mseg, filters, year, verbose, uv, api_key)
+        # Load the microsegments JSON file
+        try:
+            with open(MSEG_PATH, "r", encoding="utf-8") as f:
+                mseg = json.load(f)
+        except FileNotFoundError:
+            raise SystemExit(
+                f"Could not find microsegments file at {MSEG_PATH}.\n"
+                "Please check that you are running this script from the "
+                "project root and that the file path is correct."
+            )
 
-    # After all combinations, print summary information
-    print_rollups()
-    report_large_errors()
-    report_zero_division_cases()
-    enforce_max_error_or_fail()
+        # Refresh year-dependent look-up tables before the comparison loop.
+        uv = UsefulVars(year)
+        SERIES_TOLERANCE.clear()
+        SERIES_TOLERANCE.update(_build_series_tolerance(year))
+
+        # Loop over building classes, fuels, and end uses
+        for bldg in uv.bldg_class_translator.keys():
+            for fuel in uv.fuel_type:
+                for end_use in uv.end_use_translator.keys():
+                    filters = FilterStrings(
+                        bldg_class=bldg, fuel=fuel, end_use=end_use
+                    )
+                    compare_one_combination(
+                        mseg, filters, year, verbose, uv, api_key
+                    )
+
+        # After all combinations, print summary information
+        print_rollups()
+        report_all_series_summary()
+        report_large_errors()
+        report_skipped()
+        report_zero_division_cases()
+        enforce_max_error_or_fail()
+    finally:
+        sys.stdout = _original_stdout
+        tee.close()
+        print(f"\nResults also written to: {output_path}")
 
 
 if __name__ == "__main__":  # pragma: no cover - direct CLI execution
