@@ -9958,18 +9958,6 @@ class Measure(object):
                     self.fuel_type[mseg_type], self.end_use[mseg_type],
                     self.technology_type[mseg_type],
                     self.technology[mseg_type], self.structure_type]]
-        # Map legacy internal gain component names to the aggregated node, if present
-        try:
-            alias_map = getattr(self.handyvars, 'demand_tech_alias', {})
-        except Exception:
-            alias_map = {}
-        if isinstance(self.technology[mseg_type], list) and alias_map:
-            mapped = []
-            for t in self.technology[mseg_type]:
-                mt = alias_map.get(t, t)
-                if mt not in mapped:
-                    mapped.append(mt)
-            self.technology[mseg_type] = mapped
 
         # Flag heating/cooling end use microsegments. For heating/cooling
         # cases, an extra 'supply' or 'demand' key is required in the key
@@ -14415,17 +14403,6 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 msegs = json.loads(zip_ref.read().decode('utf-8'))
         else:
             msegs = JsonIO.load_json(handyfiles.msegs_in)
-        # Aggregate internal gains components (people + equipment only)
-        # into a single 'internal gains' node for heating/secondary heating/cooling
-        # demand microsegments. This prevents downstream double counting once logic
-        # skips originals when aggregate present.
-        try:
-            msegs = ECMPrepHelper.add_internal_gains_aggregate(msegs, handyvars.aeo_years)
-            logger.info("Applied internal gains aggregation (people + equipment)")
-
-        except Exception as e:
-            logger.warning(
-                f"Internal gains aggregation failed; proceeding without aggregation: {e}")
         # Import baseline cost, performance, and lifetime data
         bjszip = handyfiles.msegs_cpl_in
         with gzip.GzipFile(bjszip, 'r') as zip_ref:
