@@ -857,7 +857,6 @@ def report_all_series_summary() -> None:
         avg = rec["avg_pct_err"]
         base_tol = SERIES_TOLERANCE.get(sid, 0.0)
         tol = base_tol if base_tol > 0.0 else min_tol_floor
-        status = "FAIL" if (avg - tol) > 1e-9 else "OK"
         rows.append([
             rec["building"].upper(),
             rec["fuel"].title(),
