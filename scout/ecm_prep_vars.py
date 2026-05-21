@@ -870,7 +870,9 @@ class UsefulVars(object):
                     "electricity": [
                         'ventilation', 'water heating', 'cooling',
                         'heating', 'refrigeration', 'MELs',
-                        _eu9, _eu8, 'lighting',
+                        _eu9, _eu8,
+                        'PCs', 'non-PC office equipment',
+                        'lighting',
                         'cooking', "unspecified"],
                     "natural gas": [
                         'cooling', 'water heating', 'cooking', 'heating',

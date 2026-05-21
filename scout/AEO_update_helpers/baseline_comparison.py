@@ -864,7 +864,6 @@ def report_all_series_summary() -> None:
             rec["end_use"].title(),
             f"{avg:.6%}",
             f"{tol:.6%}",
-            status,
         ])
 
     print(
@@ -872,7 +871,7 @@ def report_all_series_summary() -> None:
             rows,
             headers=[
                 "Building", "Fuel", "End Use",
-                "Avg Error", "Allowed", "Status",
+                "Avg Error", "Scout 2025 Avg Error",
             ],
             tablefmt="github",
         )

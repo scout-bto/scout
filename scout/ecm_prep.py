@@ -9609,6 +9609,18 @@ class Measure(object):
                         self.fuel_type, self.end_use, self.technology,
                         self.technology_type]]
 
+        # Normalize legacy commercial PC labels only for AEO 2026+.
+        if self.handyvars.current_yr >= 2026:
+            for end_use_key in ["primary", "secondary"]:
+                if isinstance(self.end_use[end_use_key], list):
+                    self.end_use[end_use_key] = [
+                        "office equipment" if x in [
+                            "PCs", "non-PC office equipment"] else x
+                        for x in self.end_use[end_use_key]]
+                elif self.end_use[end_use_key] in [
+                        "PCs", "non-PC office equipment"]:
+                    self.end_use[end_use_key] = "office equipment"
+
         # Fill out an 'all' region input
         if self.climate_zone == 'all' or 'all' in self.climate_zone:
             self.climate_zone = self.handyvars.in_all_map["climate_zone"]
