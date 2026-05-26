@@ -1067,6 +1067,90 @@ class DataToFinalDictAtLeafNodeRestructuringTest(CommonUnitTest):
                             self.dict_list[i])
 
 
+class ServiceDemandFallbackTest(unittest.TestCase):
+    """Test fallback when commercial SDOUT lacks building-type rows."""
+
+    def test_data_handler_uses_broader_sd_fallback(self):
+        years = [2019, 2020]
+        db_array = np.array([
+            (5, 6, 2, 2, 30, 10.0, 'EndUseConsump'),
+            (5, 6, 2, 2, 31, 20.0, 'EndUseConsump')],
+            dtype=[('Division', '<i4'), ('BldgType', '<i4'),
+                   ('EndUse', '<i4'), ('Fuel', '<i4'), ('Year', '<i4'),
+                   ('Amount', '<f8'), ('Label', '<U50')])
+        sd_array = np.array([
+            (5, 4, 2, 2, 1, 1, 1, 6.0, 8.0,
+             'gas_chiller 2019 installed base', 1.0),
+            (5, 4, 2, 2, 1, 1, 2, 2.0, 2.0,
+             'gas_eng-driven_RTAC 2019 installed base', 2.0)],
+            dtype=[('r', '<i4'), ('b', '<i4'), ('s', '<i4'), ('f', '<i4'),
+                   ('d', '<i4'), ('t', '<i4'), ('v', '<i4'),
+                   ('2019', '<f8'), ('2020', '<f8'),
+                   ('Description', '<U50'), ('Eff', '<f8')])
+        load_array = np.array([], dtype=[('CDIV', '<i4'), ('BLDG', '<i4'),
+                                         ('ENDUSE', '<U2')])
+
+        result = cm.data_handler(
+            db_array, sd_array, load_array,
+            ['south atlantic', 'lodging', 'natural gas', 'cooling', 'supply'],
+            [2], years)
+
+        self.assertCountEqual(
+            result.keys(), ['gas_chiller', 'gas_eng-driven_RTAC'])
+        self.assertAlmostEqual(
+            result['gas_chiller']['energy']['2019'] +
+            result['gas_eng-driven_RTAC']['energy']['2019'],
+            10000000)
+        self.assertAlmostEqual(
+            result['gas_chiller']['energy']['2020'] +
+            result['gas_eng-driven_RTAC']['energy']['2020'],
+            20000000)
+
+    def test_data_handler_skips_zero_only_sd_scope(self):
+        years = [2019, 2020]
+        db_array = np.array([
+            (5, 6, 2, 2, 30, 10.0, 'EndUseConsump'),
+            (5, 6, 2, 2, 31, 20.0, 'EndUseConsump')],
+            dtype=[('Division', '<i4'), ('BldgType', '<i4'),
+                   ('EndUse', '<i4'), ('Fuel', '<i4'), ('Year', '<i4'),
+                   ('Amount', '<f8'), ('Label', '<U50')])
+        sd_array = np.array([
+            # Same-region rows exist but are all zeros.
+            (5, 4, 2, 2, 1, 1, 1, 0.0, 0.0,
+             'gas_chiller 2019 installed base', 1.0),
+            (5, 4, 2, 2, 1, 1, 2, 0.0, 0.0,
+             'gas_eng-driven_RTAC 2019 installed base', 2.0),
+            # Different-region rows carry non-zero service demand.
+            (4, 4, 2, 2, 1, 1, 1, 6.0, 8.0,
+             'gas_chiller 2019 installed base', 1.0),
+            (4, 4, 2, 2, 1, 1, 2, 2.0, 2.0,
+             'gas_eng-driven_RTAC 2019 installed base', 2.0)],
+            dtype=[('r', '<i4'), ('b', '<i4'), ('s', '<i4'), ('f', '<i4'),
+                   ('d', '<i4'), ('t', '<i4'), ('v', '<i4'),
+                   ('2019', '<f8'), ('2020', '<f8'),
+                   ('Description', '<U50'), ('Eff', '<f8')])
+        load_array = np.array([], dtype=[('CDIV', '<i4'), ('BLDG', '<i4'),
+                                         ('ENDUSE', '<U2')])
+
+        result = cm.data_handler(
+            db_array, sd_array, load_array,
+            ['south atlantic', 'lodging', 'natural gas', 'cooling', 'supply'],
+            [2], years)
+
+        self.assertCountEqual(
+            result.keys(), ['gas_chiller', 'gas_eng-driven_RTAC'])
+        self.assertGreater(result['gas_chiller']['energy']['2019'], 0)
+        self.assertGreater(result['gas_eng-driven_RTAC']['energy']['2019'], 0)
+        self.assertAlmostEqual(
+            result['gas_chiller']['energy']['2019'] +
+            result['gas_eng-driven_RTAC']['energy']['2019'],
+            10000000)
+        self.assertAlmostEqual(
+            result['gas_chiller']['energy']['2020'] +
+            result['gas_eng-driven_RTAC']['energy']['2020'],
+            20000000)
+
+
 class TestOtherElectricLoadDoubleCountingCleanup(unittest.TestCase):
     """Test function that cleans up double-counting of some electric technologies
 
