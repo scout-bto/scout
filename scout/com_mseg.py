@@ -399,7 +399,8 @@ def sd_mseg_percent(sd_array, sel, yrs):
     # Filter service demand data based on the specified census division,
     # building type, end use, and fuel type. Some valid commercial
     # fuel/end use pairs appear in DBOUT but have no building-type-specific
-    # SDOUT rows; in those cases, broaden to the same region and then to
+    # SDOUT rows; in those cases, broaden to the same building type to
+    # all building and then to
     # all regions so the total DBOUT energy is not dropped downstream.
     filter_scopes = [
         [sd_array['r'] == sel[0], sd_array['b'] == sel[1],
