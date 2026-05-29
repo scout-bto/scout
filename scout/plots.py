@@ -5,6 +5,14 @@ import pandas as pd
 from scout.config import FilePaths as fp
 import numpy
 import math
+import threading
+import concurrent.futures
+
+# Lock that serialises all pyplot global-state operations (subplots / savefig /
+# close).  The Agg backend is thread-safe at the C level but pyplot's Python
+# wrapper maintains global figure state, so concurrent threads must take this
+# lock for each figure's full create→build→save→close lifecycle.
+_pyplot_lock = threading.Lock()
 
 
 def nicenumber(x, round):
@@ -37,6 +45,47 @@ def pretty(low, high, n):
     miny = numpy.floor(low / d) * d
     maxy = numpy.ceil(high / d) * d
     return numpy.arange(miny, maxy+0.5*d, d)
+
+
+def _mpl_escape(s):
+    """Escape unmatched/literal dollar signs in a string for use as a matplotlib label.
+
+    matplotlib treats '$...$' as mathtext.  A lone '$' that is not part of a
+    balanced pair causes a ParseException at render time.  This helper splits
+    the string on already-escaped '\\$' tokens, then in each plain segment
+    escapes any '$' that forms part of an *odd* run (i.e. is not the opening
+    or closing delimiter of a balanced mathtext pair '$...$').
+
+    Strategy: scan the string character by character; toggle an in_math flag
+    each time we see an unescaped '$'.  If we finish in_math=True, the last
+    opening '$' was unmatched — escape it.  Any '$' seen while *not* in math
+    mode that would start a valid '$.+$' pair is left alone; any other bare
+    '$' is escaped.
+    """
+    # Split on segments that are already escaped (\$) so we never double-escape.
+    # Reassemble after processing the plain segments.
+    result = []
+    i = 0
+    while i < len(s):
+        if s[i] == '\\' and i + 1 < len(s) and s[i + 1] == '$':
+            # Already escaped — keep as-is
+            result.append('\\$')
+            i += 2
+        elif s[i] == '$':
+            # Look ahead: is there a closing '$' later (forming a pair)?
+            closing = s.find('$', i + 1)
+            if closing != -1:
+                # Valid mathtext pair — keep both delimiters and the content
+                result.append(s[i:closing + 1])
+                i = closing + 1
+            else:
+                # Unmatched bare '$' — escape it
+                result.append('\\$')
+                i += 1
+        else:
+            result.append(s[i])
+            i += 1
+    return ''.join(result)
 
 
 def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
@@ -363,7 +412,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
          cs_axis_units + append_txt]
     # Y axis labels for cost effectiveness plots
     plot_axis_labels_finmets_y = \
-        ["IRR (%)", "Payback (years)", "CCE ($/MMBtu saved)",
+        ["IRR (%)", "Payback (years)", r"CCE (\$/MMBtu saved)",
          r"CCC (\$/t CO$_2$ avoided)"]
     # Financial metric titles
     plot_title_labels_finmets = \
@@ -390,8 +439,13 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                           snap_yr, "CCE ($/MMBtu saved)," +
                           snap_yr, "CCC ($/tCO2 avoided)," + snap_yr]
 
-    # Loop through all adoption scenarios
-    for a in range(len(adopt_scenarios)):
+    # Loop through all adoption scenarios.
+    # The two scenarios are independent (different output dirs, colors, XLSX
+    # files) so we run them concurrently.  plt.subplots() calls are serialised
+    # with _pyplot_lock to avoid races on pyplot's figure registry; all other
+    # matplotlib operations use the object-level API (fig.savefig, etc.) so
+    # they never touch pyplot global state and need no lock.
+    def _plot_one_scenario(a):
         # a = 1 # Max adoption potential
         # Set plot colors for competed baseline, efficient, and low/high
         # results (varies by adoption scenario); also set Excel summary data
@@ -522,7 +576,8 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
             # Determine number of rows for individual ECM plots
             row = math.ceil(len(meas_names) / 4)
             # Initialize individual ECM plots
-            fig, axas = plt.subplots(row, 4, figsize=(20, row * 4.5))
+            with _pyplot_lock:
+                fig, axas = plt.subplots(row, 4, figsize=(20, row * 4.5))
 
             # Remove plots for any unused cells in the plotting matrix
             # Find number of blank plots in last row
@@ -708,19 +763,25 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
                         # Order competed ECM energy, carbon, or cost totals by
                         # year and determine low/high bounds
-                        # on each total value (if applicable)`
+                        # on each total value (if applicable).
+                        # Hoist the uncertainty-flag checks out of the year
+                        # loop: results_database.keys() is constant across
+                        # years, so computing column_stack once is sufficient.
+                        _rdb_keys = list(results_database.keys())
+                        base_uncertain_check = numpy.column_stack(
+                            ([any(b in s for b in ['Baseline']) for s in _rdb_keys],
+                             [any(b in s for b in ['low']) for s in _rdb_keys]))
+                        eff_uncertain_check = numpy.column_stack(
+                            ([any(b in s for b in ['Efficient']) for s in _rdb_keys],
+                             [any(b in s for b in ['low']) for s in _rdb_keys]))
+                        _base_has_uncertainty = (numpy.array(numpy.where(
+                            base_uncertain_check[:, 0] &
+                            base_uncertain_check[:, 1] is True)).size) > 0
+                        _eff_has_uncertainty = (numpy.array(numpy.where(
+                            eff_uncertain_check[:, 0] &
+                            eff_uncertain_check[:, 1:2] is True)).size) > 0
                         for yr in range(len(years)):
-                            base_uncertain_check = numpy.column_stack(
-                                ([any(b in s for b in ['Baseline'])
-                                    for s in list(results_database.keys())],
-                                    [any(b in s for b in ['low'])
-                                        for s in list(results_database.keys())]
-                                 )
-                            )
-                            if (numpy.array((numpy.where(
-                                    base_uncertain_check[:, 0] &
-                                    base_uncertain_check[:, 1] is True))
-                                            ).size) > 0:
+                            if _base_has_uncertainty:
                                 # Take mean value output directly from competed
                                 # results
                                 r_temp[1, yr] = results_database[
@@ -750,15 +811,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
                             # Set mean, low, and high values for case with ECM
                             # input/output uncertainty
-                            eff_uncertain_check = numpy.column_stack(
-                                ([any(b in s for b in ['Efficient'])
-                                    for s in list(results_database.keys())],
-                                    [any(b in s for b in ['low'])
-                                     for s in list(results_database.keys())]))
-                            if (numpy.array((numpy.where(
-                               eff_uncertain_check[:, 0] &
-                               eff_uncertain_check[:, 1:2] is True))
-                                        ).size) > 0:
+                            if _eff_has_uncertainty:
                                 # Take mean value output directly from competed
                                 # results
                                 r_temp[4, yr] = results_database[
@@ -1138,7 +1191,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 # Add x and y axis labels
                 axa.set_xlabel("Year")
                 axa.set_xlim(2018, 2052)  # hardcode year range
-                axa.set_ylabel(plot_axis_labels_ecm[v])
+                axa.set_ylabel(_mpl_escape(plot_axis_labels_ecm[v]))
 
                 # Annotate total savings in a snapshot years for the 'All ECMs'
                 # case; otherwise, annotate the applicable ECM end uses
@@ -1166,7 +1219,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                         axa.text(x=xval_snap - xval_snap*0.002,
                                  y=yval_snap_eff - max(ylims)*0.05,
                                  s=str(round(yval_snap_base-yval_snap_eff, 1)
-                                       ) + " " + var_units[v],
+                                       ) + " " + _mpl_escape(var_units[v]),
                                  fontdict=dict(color="forestgreen", size=8))
                         axa.legend(labels=legend_param)
                 else:
@@ -1179,12 +1232,14 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                              transform=axa.transAxes)
 
                 # Add plot title
-                axa.set_title(meas_names[m])
+                axa.set_title(_mpl_escape(meas_names[m]))
                 axa.set_axis_on()
 
             # Generate individual ECM plot figure
-            plt.tight_layout()
-            plt.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
+            with _pyplot_lock:
+                fig.tight_layout()
+                fig.savefig(f"{plot_file_name_ecms}-byECM.pdf", bbox_inches='tight')
+                plt.close(fig)
             ###################################################################
 
             # Plot annual and cumulative energy, carbon, and cost savings
@@ -1202,7 +1257,8 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
 
             # Loop through all three savings filter variables and add plot of
             # aggregated savings
-            fig, axbs = plt.subplots(3, 1, figsize=(11, 15))
+            with _pyplot_lock:
+                fig, axbs = plt.subplots(3, 1, figsize=(11, 15))
             for (axb, f) in zip(fig.axes, range(results_agg.shape[0])):
                 axb.set_axis_off()
                 # Initialize vector for storing total annual savings across
@@ -1272,7 +1328,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                     buff_a = 0.05 * abs(max_val_ann - min_val_ann)
                     axb.set_xlim(2018, 2052)  # hardcode years
                     axb.set_ylim(min_val_ann-buff_a, max_val_ann+buff_a)
-                    axb.set_ylabel(plot_axis_labels_agg_ann[v])
+                    axb.set_ylabel(_mpl_escape(plot_axis_labels_agg_ann[v]))
                     axb.set_xlabel("Year")
 
                     # Develop y limits for total cumulative savings
@@ -1287,7 +1343,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                         years, total_cum, lw=3, color="#7f7f7f", ls='dotted')
                     buff_c = 0.05 * abs(max_val_cum - min_val_cum)
                     axb2.set_ylim(min_val_cum-buff_c, max_val_cum+buff_c)
-                    axb2.set_ylabel(plot_axis_labels_agg_cum[v])
+                    axb2.set_ylabel(_mpl_escape(plot_axis_labels_agg_cum[v]))
                     # Add plot title; force switch 'Climate Zone' variable to
                     # 'Region'
                     if filter_var[f] != 'Climate Zone':
@@ -1419,10 +1475,13 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                 axb.set_axis_on()
 
             # Generate aggregate savings figure
-            plt.tight_layout()
-            plt.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
+            with _pyplot_lock:
+                fig.tight_layout()
+                fig.savefig(f"{plot_file_name_agg}-Aggregate.pdf", bbox_inches='tight')
+                plt.close(fig)
 
-            fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
+            with _pyplot_lock:
+                fig, axcs = plt.subplots(2, 2, figsize=(10, 7))
             for (axc, fmp) in zip(fig.axes, range(len(fin_metrics))):
                 # Shorthands for x and y data on the plot
                 s_x, s_y = [results_finmets[:, len(fin_metrics)], results_finmets[:, fmp]]
@@ -1552,13 +1611,13 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                                 linestyle='dotted', zorder=1)
 
                     # Add x axis tick marks and axis labels
-                    axc.set_xlabel(plot_axis_labels_finmets_x[v])
+                    axc.set_xlabel(_mpl_escape(plot_axis_labels_finmets_x[v]))
                     # Add y axis tick marks and axis labels
-                    axc.set_ylabel(plot_axis_labels_finmets_y[fmp])
+                    axc.set_ylabel(_mpl_escape(plot_axis_labels_finmets_y[fmp]))
                     # Add label with total cost effective savings
                     label_text = 'Cost effective impact: ' + \
                                  str(round(total_save_ce, 1)) + \
-                                 " " + var_units[v]
+                                 " " + _mpl_escape(var_units[v])
                     axc.text(0.02, 0.98, label_text, fontsize=7,
                              horizontalalignment='left',
                              verticalalignment='top',
@@ -1634,22 +1693,23 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                               loc='lower left',
                               frameon=False,
                               bbox_to_anchor=(0.1, -0.335, 1, 1),
-                              bbox_transform=plt.gcf().transFigure,
+                              bbox_transform=fig.transFigure,
                               title='Building Type')
             # End use legend
             leg2 = axc.legend(plots2, euses_lgnd,
                               loc='lower left',
                               frameon=False,
                               bbox_to_anchor=(0.25, -0.335, 1, 1),
-                              bbox_transform=plt.gcf().transFigure,
+                              bbox_transform=fig.transFigure,
                               title='End Use')
             # Add plot legends
             axc.add_artist(leg1)
             axc.add_artist(leg2)
             # Generate cost effectiveness figure
-            plt.tight_layout()
-            plt.savefig(plot_file_name_finmets, bbox_inches='tight')
-            plt.close()
+            with _pyplot_lock:
+                fig.tight_layout()
+                fig.savefig(plot_file_name_finmets, bbox_inches='tight')
+                plt.close(fig)
 
             # Append Excel data, excluding the first two rows (uncompeted
             # 'All ECMs' results, which are not meaningful)
@@ -1662,6 +1722,20 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
             xlsx_var_name_list[i].to_excel(
                 writer, sheet_name=file_names_ecms[i], index=False)
         writer.close()
+
+    # Run both adoption scenarios concurrently.  Each scenario writes to its
+    # own output directory and XLSX file so there are no write conflicts.
+    # plt.subplots(), tight_layout(), savefig(), and plt.close() are all
+    # serialised via _pyplot_lock because matplotlib is not thread-safe:
+    # tight_layout() invokes the mathtext parser which has a shared LRU cache,
+    # and plt.close() mutates pyplot's global figure registry.
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(adopt_scenarios)) as pool:
+        futures = [pool.submit(_plot_one_scenario, a)
+                   for a in range(len(adopt_scenarios))]
+        # Re-raise any exception from a worker thread in the main thread.
+        for f in concurrent.futures.as_completed(futures):
+            f.result()
 
 
 if __name__ == '__main__':
