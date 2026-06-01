@@ -196,14 +196,12 @@ class UsefulVars(object):
         self.adj_vars = ["stock", "energy", "carbon", "energy cost", "capital cost"]
         # Pre-compute the subset of adj_vars used in delay_entry_adj dicts
         # (avoid rebuilding on every compete_adj call where delay_entry_adj is True)
-        self.delay_adj_vars = [x for x in ["stock", "energy", "carbon", "energy cost",
-                                           "capital cost"] if x not in ["stock", "capital cost"]]
+        self.delay_adj_vars = ["energy", "carbon", "energy cost"]
         self.mast_vars = ["stock", "energy", "carbon", "cost"]
         self.brk_vars = brk_vars
         # Pre-compute filtered subsets used in hot inner loops to avoid
         # repeated list comprehensions on every compete_adj call
         self.cost_brk_vars = [x for x in brk_vars if "cost" in x]
-        self.non_stock_brk_vars = [x for x in brk_vars if x != "stock"]
         self.brk_mast_map = {"stock": "stock", "energy": "energy", "carbon": "carbon",
                              "energy cost": ["cost", "energy"], "capital cost": ["cost", "stock"]}
         self.out_break_czones = gvars["out_break_czones"]
@@ -2220,7 +2218,7 @@ class Engine(object):
             # years but is constant across year iterations).
             _energy_brk = adj_out_break["base fuel"]["energy"]
             vs_list_init = [
-                v if (_energy_brk[v] is not None and all(
+                v if (_energy_brk[v] is not None and (
                     (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
                      any([_energy_brk[v][_yr] != 0])) or (
                         isinstance(_energy_brk[v][_yr], numpy.ndarray) and
@@ -2683,7 +2681,7 @@ class Engine(object):
             # years but is constant across year iterations).
             _energy_brk = adj_out_break["base fuel"]["energy"]
             vs_list_init = [
-                v if (_energy_brk[v] is not None and all(
+                v if (_energy_brk[v] is not None and (
                     (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
                      any([_energy_brk[v][_yr] != 0])) or (
                         isinstance(_energy_brk[v][_yr], numpy.ndarray) and
@@ -4805,21 +4803,6 @@ class Engine(object):
                 secnd_adj_mktshr["adjusted energy (competed and captured)"][
                     secnd_mseg_adjkey][yr] += (
                         adj["energy"]["competed"]["efficient"][yr] * adj_c)
-
-        # Flag empty baseline and/or efficient results in the breakout dict for all variables on
-        # the basis of the "energy" variable data (results are None or all zeros).
-        # This is pre-computed once per measure/mseg by the caller and passed in; fall back to
-        # computing it here only for secondary microsegment paths that do not pass the value.
-        if vs_list_init is None:
-            _energy_brk = adj_out_break["base fuel"]["energy"]
-            vs_list_init = [
-                v if (_energy_brk[v] is not None and (
-                    (not isinstance(_energy_brk[v][yr], numpy.ndarray) and any(
-                        [_energy_brk[v][yr] != 0])) or (
-                        isinstance(_energy_brk[v][yr], numpy.ndarray) and any([
-                            any([_energy_brk[v][yr] != 0])]))
-                    for yr in _energy_brk[v].keys()))
-                else "" for v in ["baseline", "efficient"]]
 
         # Pre-compute filtered vs_list once per compete_adj call (avoids
         # repeated .copy() + list-comprehension filter on every mast_vars
@@ -8473,6 +8456,12 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
         plot_thread._exc = None
         plot_thread.start()
+        # Force the main script to wait until the plotting thread is completely done
+        plot_thread.join()
+
+        # Re-raise any exceptions that happened inside the thread
+        if plot_thread._exc:
+            raise plot_thread._exc
 
 
 def parse_args(args: list = None) -> argparse.NameSpace:  # noqa: F821
