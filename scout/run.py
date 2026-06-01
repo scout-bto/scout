@@ -4875,7 +4875,7 @@ class Engine(object):
                         adj_out_break["base fuel"][var][var_sub][yr] = \
                             _cur_val - (
                             adj[var]["total"][adj_key][yr]) * (
-                                1 - adj_t[var]) * fs_splt[var_sub][var][yr]
+                                1 - adj_t[var]) * fs_splt[var][yr]
                     except KeyError:
                         continue
 
