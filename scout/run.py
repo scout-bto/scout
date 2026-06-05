@@ -4013,20 +4013,28 @@ class Engine(object):
                 if detail:
                     out_fuel_gain = ""
                     for f in self.handyvars.out_break_fuels.items():
+                        # Special handling for other fuel tech.,
+                        # under detailed fuel type breakouts; this
+                        # tech. may fit into multiple fuel cats.
                         if self.fuel_switch_to in f[1] and \
                                 key_list[3] == "other fuel":
+                            # Assign coal/kerosene tech.
                             if f[0] == "Distillate/Other" and (
                                 key_list[-2] is not None and any([
                                     x in key_list[-2] for x in [
                                     "coal", "kerosene"]])):
                                 out_fuel_gain = f[0]
+                            # Assign commercial unspecified other fuel to
+                            # Distillate/Other
                             elif f[0] == "Distillate/Other" and (
                                     key_list[2] == "unspecified"):
                                 out_fuel_gain = f[0]
+                            # Assign wood tech.
                             elif f[0] == "Biomass" and (
                                 key_list[-2] is not None and "wood" in
                                     key_list[-2]):
                                 out_fuel_gain = f[0]
+                            # All other tech. goes to propane
                             elif f[0] == "Propane":
                                 out_fuel_gain = f[0]
                         elif self.fuel_switch_to in f[1]:
@@ -4430,14 +4438,8 @@ class Engine(object):
         if int(yr) < min_mkt_entry_yr:
             adj_frac_t = adj_fracs[yr] + added_sbmkt_fracs[yr]
         else:
-            # Use pre-computed weighting years for this yr when available,
-            # otherwise fall back to computing them (e.g. secondary mseg path).
-            if weighting_yrs_map is not None and yr in weighting_yrs_map:
-                weighting_yrs = weighting_yrs_map[yr]
-            else:
-                weighting_yrs = sorted([
-                    x for x in adj_fracs.keys() if
-                    (int(x) <= int(yr) and int(x) >= min_mkt_entry_yr)])
+            # Use pre-computed weighting years for this yr
+            weighting_yrs = weighting_yrs_map[yr]
 
             # Loop through the above set of years, successively updating the
             # weighted market share using a simple moving average.
@@ -4655,7 +4657,7 @@ class Engine(object):
 
         # Pre-compute filtered vs_list once per compete_adj call (avoids
         # repeated .copy() + list-comprehension filter on every mast_vars
-        # iteration – 8.4M calls in the profile).
+        # iteration).
         _vs_filtered = [x for x in vs_list_init if x]
         _has_efficient = "efficient" in vs_list_init
         _energy_brk_keys = adj_out_break["base fuel"]["energy"].keys()

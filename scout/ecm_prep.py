@@ -524,7 +524,7 @@ class Measure(object):
         self.eff_fs_splt = {a_s: {} for a_s in handyvars.adopt_schemes_prep}
         self.sector_shapes = None
         # Shallow-copy handyvars so that we avoid deep-copying the entire,
-        # very large UsefulVars object (~34 s for 94 measures in profiling).
+        # very large UsefulVars object.
         # Attributes that are mutated during fill_mkts must be deep-copied
         # individually so that changes in one measure do not affect others.
         # All other attributes are read-only across Measure methods.
@@ -14640,7 +14640,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         # for all measures that should be written out, then dispatch them in
         # parallel with a ThreadPoolExecutor — the GIL is released during
         # gzip compression and file I/O, so concurrent writes give a real
-        # speedup over the sequential loop (profiling: ~57 s saved).
+        # speedup over the sequential loop.
         def _write_compete(args):
             compete_dat, fs_dat, comp_folder, fs_folder, fname = args
             with gzip.open(comp_folder / fname, 'w', compresslevel=1) as zp:
