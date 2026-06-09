@@ -1063,10 +1063,9 @@ class Measure(object):
 
             # Add market breakout information
 
-            # Deep-copy the out_break_in template once per adopt_scheme, then
-            # reuse that single copy for the remaining slots — avoids 8-11
-            # redundant full deep-copies of the (potentially large) nested
-            # OrderedDict per measure per scheme.
+            # Helper for a fresh, independent deep-copy of the out_break_in.
+            # Each breakout slot needs its own copy so accumulation into one slot
+            # doesn't alias into the others.
             def _obi():
                 return copy.deepcopy(self.handyvars.out_break_in)
 
@@ -1085,7 +1084,7 @@ class Measure(object):
             if self.usr_opts["cap_invest"]:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["capital cost"] = {
-                        key: copy.deepcopy(self.handyvars.out_break_in) for key in
+                        key: _obi() for key in
                         ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this variable
