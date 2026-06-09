@@ -119,9 +119,9 @@ class ECMPrepHelper:
         inactive_set.difference_update(to_skipped)
         skipped_set.update(to_skipped)
 
-        run_setup["active"] = list(active_set)
-        run_setup["inactive"] = list(inactive_set)
-        run_setup["skipped"] = list(skipped_set)
+        run_setup["active"] = sorted(list(active_set))
+        run_setup["inactive"] = sorted(list(inactive_set))
+        run_setup["skipped"] = sorted(list(skipped_set))
 
         return run_setup
 
