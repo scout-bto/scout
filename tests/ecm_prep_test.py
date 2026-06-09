@@ -69681,7 +69681,8 @@ class AddKeyValsTest(unittest.TestCase, CommonMethods):
                 "level 2ab": {"2009": 4, "2010": 5}},
             "lifetime": {
                 "level 2ba": {"2009": 6, "2010": 7},
-                "level 2bb": {"2009": 8, "2010": 9}}} for n in range(2))
+                "level 2bb": {"2009": 8, "2010": 9}},
+            "sub-market scaling": 0.5} for n in range(2))
         cls.fail_dict1_in = {
             "level 1a": {
                 "level 2aa": {"2009": 2, "2010": 3},
@@ -69708,8 +69709,9 @@ class AddKeyValsTest(unittest.TestCase, CommonMethods):
                 "level 2aa": {"2009": 4, "2010": 6},
                 "level 2ab": {"2009": 8, "2010": 10}},
             "lifetime": {
-                "level 2ba": {"2009": 6, "2010": 7},
-                "level 2bb": {"2009": 8, "2010": 9}}}
+                "level 2ba": {"2009": 12, "2010": 14},
+                "level 2bb": {"2009": 16, "2010": 18}},
+            "sub-market scaling": 0.5}
 
     def test_ok_add_keyvals(self):
         """Test 'add_keyvals' function given valid inputs.

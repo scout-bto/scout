@@ -5037,44 +5037,46 @@ class Measure(object):
                     # competition in the analysis engine
                     contrib_mseg_key_str = str(contrib_mseg_key)
 
+                    # Case with no existing 'windows' contributing mseg
+                    # for the current climate zone, building type, fuel,
+                    # and end use (create new 'contributing mseg keys and
+                    # values' and 'competed choice parameters' microsegment
+                    # information)
+                    if contrib_mseg_key_str not in self.markets[
+                        adopt_scheme]["mseg_adjust"][
+                            "contributing mseg keys and values"].keys():
+                        # Register contributing microsegment info. for
+                        # later use in determining savings overlaps for
+                        # measures that apply to this microsegment
+                        self.markets[adopt_scheme]["mseg_adjust"][
+                            "contributing mseg keys and values"][
+                            contrib_mseg_key_str] = add_dict
+                    # Case with existing 'windows' contributing mseg
+                    # for the current climate zone, building type, fuel,
+                    # and end use (add to existing 'contributing mseg keys
+                    # and values' information)
+                    else:
+                        # Use of add_keyvals_restrict handles existing sub-market scaling
+                        # information for windows mseg that should be ignored in the addition
+                        self.markets[adopt_scheme]["mseg_adjust"][
+                            "contributing mseg keys and values"][
+                            contrib_mseg_key_str] = self.add_keyvals_restrict(
+                                self.markets[adopt_scheme]["mseg_adjust"][
+                                    "contributing mseg keys and values"][
+                                    contrib_mseg_key_str], add_dict)
+
                     # Check for whether detailed contributing mseg data
                     # are needed for current adoption scenario, and if so,
-                    # prepare data
+                    # prepare choice coefficient and sub-market scaling data
                     if self.handyvars.full_dat_out[adopt_scheme] or \
                             self.name in ctrb_ms_pkg_prep:
-                        # Case with no existing 'windows' contributing mseg
-                        # for the current climate zone, building type, fuel,
-                        # and end use (create new 'contributing mseg keys and
-                        # values' and 'competed choice parameters' microsegment
-                        # information)
-                        if contrib_mseg_key_str not in self.markets[
-                            adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"].keys():
-                            # Register contributing microsegment info. for
-                            # later use in determining savings overlaps for
-                            # measures that apply to this microsegment
-                            self.markets[adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"][
-                                contrib_mseg_key_str] = add_dict
-                            # Register choice parameters associated with
-                            # contributing microsegment for later use in
-                            # apportioning out various technology options
-                            # across competed stock
-                            self.markets[adopt_scheme]["mseg_adjust"][
-                                "competed choice parameters"][
-                                contrib_mseg_key_str] = choice_params
-                        # Case with existing 'windows' contributing mseg
-                        # for the current climate zone, building type, fuel,
-                        # and end use (add to existing 'contributing mseg keys
-                        # and values' information)
-                        else:
-                            self.markets[adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"][
-                                contrib_mseg_key_str] = self.add_keyvals(
-                                    self.markets[adopt_scheme]["mseg_adjust"][
-                                        "contributing mseg keys and values"][
-                                        contrib_mseg_key_str], add_dict)
-
+                        # Register choice parameters associated with
+                        # contributing microsegment for later use in
+                        # apportioning out various technology options
+                        # across competed stock
+                        self.markets[adopt_scheme]["mseg_adjust"][
+                            "competed choice parameters"][
+                            contrib_mseg_key_str] = choice_params
                         # Market scaling fraction comes out of
                         # "partition_microsegment" function in dict format,
                         # broken by year; reformat as single value if values
@@ -5091,31 +5093,6 @@ class Measure(object):
                             "contributing mseg keys and values"][
                             contrib_mseg_key_str]["sub-market scaling"] = \
                             mkt_scale_frac_fin
-                    else:
-                        # Case with no existing 'windows' contributing mseg
-                        # for the current climate zone, building type, fuel,
-                        # and end use (create new 'contributing mseg keys and
-                        # values' and 'competed choice parameters' microsegment
-                        # information)
-                        if contrib_mseg_key_str not in self.markets[
-                            adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"].keys():
-                            # Register limited contributing microsegment info. on stock and
-                            # costs for potential later use in determining unit stock and energy
-                            self.markets[adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"][
-                                contrib_mseg_key_str] = add_dict
-                        # Case with existing 'windows' contributing mseg
-                        # for the current climate zone, building type, fuel,
-                        # and end use (add to existing 'contributing mseg keys
-                        # and values' information)
-                        else:
-                            self.markets[adopt_scheme]["mseg_adjust"][
-                                "contributing mseg keys and values"][
-                                contrib_mseg_key_str] = self.add_keyvals(
-                                    self.markets[adopt_scheme]["mseg_adjust"][
-                                        "contributing mseg keys and values"][
-                                        contrib_mseg_key_str], add_dict)
 
                     # Add all updated contributing microsegment stock, energy
                     # carbon, cost, and lifetime information to existing master
@@ -10257,22 +10234,10 @@ class Measure(object):
         """
         for k in dict1:
             if k not in dict2:
-                # dict1 may have more year keys than dict2 when distribution
-                # sampling produces different year ranges; silently skip those
-                # extra keys (replicating original zip/sorted truncation).
-                # But if dict2 has keys that dict1 doesn't, the structures are
-                # genuinely mismatched → raise.
-                # Fast-path: if every key in dict2 is already in dict1 then
-                # dict2 cannot have keys that dict1 lacks, so skip the
-                # (expensive) set-difference entirely.  This avoids building a
-                # temporary set on every recursive call in the common case
-                # (~6 M calls observed in profiling).
-                if not dict2.keys() <= dict1.keys():
-                    raise KeyError("When adding together two dicts "
-                                   "for ECM '" + self.name +
-                                   "' update, dict key structures "
-                                   "do not match")
-                continue
+                raise KeyError("When adding together two dicts "
+                               "for ECM '" + self.name +
+                               "' update, dict key structures "
+                               "do not match")
             i = dict1[k]
             # Avoid isinstance() on every leaf — try addition first (fast
             # path for numeric values), fall back to recursion for dicts.
@@ -10294,13 +10259,10 @@ class Measure(object):
         """Add key values of two dicts, with restrictions.
 
         Note:
-            Restrict the addition of 'lifetime' information. This
-            function is used to merge baseline microsegments for
-            windows conduction and windows solar components; the
-            lifetimes for these components will be the same and
-            need not be added and averaged later, as is the case
-            for summed lifetime information yielded by 'add_keyvals'.
-            Dicts must be identically structured.
+            Restrict the addition of 'sub-market scaling' information. This function is used to
+            merge baseline microsegments for windows conduction and windows solar components; the
+            sub-market scaling information for these components will be the same and need not be
+            added. Dicts must otherwise be identically structured.
 
         Args:
             dict1 (dict): First dictionary to add.
@@ -10313,7 +10275,8 @@ class Measure(object):
             KeyError: When added dict keys do not match.
         """
         for k in dict1:
-            if k == "lifetime":
+            # Skip sub-market scaling key
+            if k == "sub-market scaling":
                 continue
             if k not in dict2:
                 raise KeyError("When adding together two dicts "
