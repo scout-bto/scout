@@ -10265,10 +10265,12 @@ class Measure(object):
         """Add key values of two dicts, with restrictions.
 
         Note:
-            Restrict the addition of 'sub-market scaling' information. This function is used to
-            merge baseline microsegments for windows conduction and windows solar components; the
-            sub-market scaling information for these components will be the same and need not be
-            added. Dicts must otherwise be identically structured.
+            Restrict the addition of 'sub-market scaling' information and 'lifetime' data.
+            This function is used to merge baseline microsegments for windows conduction
+            and windows solar components; the sub-market scaling information for these
+            components will be the same and need not be added. Lifetime data is also not
+            added as it should be copied from dict2 without modification. Dicts must
+            otherwise be identically structured.
 
         Args:
             dict1 (dict): First dictionary to add.
@@ -10281,8 +10283,8 @@ class Measure(object):
             KeyError: When added dict keys do not match.
         """
         for k in dict1:
-            # Skip sub-market scaling key
-            if k == "sub-market scaling":
+            # Skip sub-market scaling key and lifetime data
+            if k in ["sub-market scaling", "lifetime"]:
                 continue
             if k not in dict2:
                 raise KeyError("When adding together two dicts "
@@ -10296,7 +10298,7 @@ class Measure(object):
                 try:
                     dict1[k] = i + dict2[k]
                 except TypeError:
-                    self.add_keyvals(i, dict2[k])
+                    self.add_keyvals_restrict(i, dict2[k])
         return dict1
 
     def div_keyvals(self, dict1, dict2):
