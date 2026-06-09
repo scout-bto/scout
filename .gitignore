@@ -134,4 +134,4 @@ scout.egg-info/
 # buildstock data #
 ######################
 
-scout/supporting_data/base_disagg
+scout/supporting_data/base_disagg/input
