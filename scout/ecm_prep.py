@@ -1063,23 +1063,16 @@ class Measure(object):
 
             # Add market breakout information
 
-            # Deep-copy the out_break_in template once per adopt_scheme, then
-            # reuse that single copy for the remaining slots — avoids 8-11
-            # redundant full deep-copies of the (potentially large) nested
-            # OrderedDict per measure per scheme.
-            def _obi():
-                return copy.deepcopy(self.handyvars.out_break_in)
-
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": _obi(),
-                "efficient": _obi(),
-                "savings": _obi()} for
+                "baseline": copy.deepcopy(self.handyvars.out_break_in),
+                "efficient": copy.deepcopy(self.handyvars.out_break_in),
+                "savings": copy.deepcopy(self.handyvars.out_break_in)} for
                 key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
-                    key: _obi() for key in
+                    key: copy.deepcopy(self.handyvars.out_break_in) for key in
                     ["baseline", "efficient"]}
             # Add stock cost (capital investment) breakouts
             if self.usr_opts["cap_invest"]:
@@ -1092,7 +1085,7 @@ class Measure(object):
             if self.usr_opts["no_eff_capt"] is not True:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"]["efficient-captured"] = \
-                    _obi()
+                    copy.deepcopy(self.handyvars.out_break_in)
 
     def fill_mkts(self, msegs, msegs_cpl, convert_data, tsv_data_init, opts,
                   ctrb_ms_pkg_prep, tsv_data_nonfs):
