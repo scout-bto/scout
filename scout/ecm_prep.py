@@ -10299,6 +10299,11 @@ class Measure(object):
                     dict1[k] = i + dict2[k]
                 except TypeError:
                     self.add_keyvals_restrict(i, dict2[k])
+        # Also check for keys in dict2 that aren't in dict1, but skip
+        # the restricted keys (sub-market scaling, lifetime)
+        for k in dict2:
+            if k not in dict1 and k not in ["sub-market scaling", "lifetime"]:
+                dict1[k] = copy.deepcopy(dict2[k])
         return dict1
 
     def div_keyvals(self, dict1, dict2):
@@ -11714,7 +11719,7 @@ class MeasurePackage(Measure):
             # measure and add to the packaged master microsegment
             for k in (self.markets[adopt_scheme]["mseg_adjust"][
                     "contributing mseg keys and values"].keys()):
-                self.add_keyvals(
+                self.add_keyvals_restrict(
                     self.markets[adopt_scheme]["master_mseg"],
                     self.markets[adopt_scheme]["mseg_adjust"][
                         "contributing mseg keys and values"][k])

@@ -6,6 +6,7 @@ from scout.ecm_prep import Measure
 from scout.ecm_prep_vars import UsefulVars, UsefulInputFiles
 import pytest
 import os
+import copy
 from tests.ecm_prep_test.common import NullOpts, dict_check
 
 
@@ -68,6 +69,20 @@ def test_data():
         "level 1a": {"level 2aa": {"2009": 4, "2010": 6}, "level 2ab": {"2009": 8, "2010": 10}},
         "lifetime": {"level 2ba": {"2009": 6, "2010": 7}, "level 2bb": {"2009": 8, "2010": 9}},
     }
+    # Test case for when dict2 has extra keys (sub-market scaling) that dict1 doesn't
+    restrict_dict1_extra_keys = {
+        "level 1a": {"level 2aa": {"2009": 2, "2010": 3}, "level 2ab": {"2009": 4, "2010": 5}},
+        "lifetime": {"level 2ba": {"2009": 6, "2010": 7}, "level 2bb": {"2009": 8, "2010": 9}},
+    }
+    restrict_dict2_extra_keys = {
+        "level 1a": {"level 2aa": {"2009": 2, "2010": 3}, "level 2ab": {"2009": 4, "2010": 5}},
+        "lifetime": {"level 2ba": {"2009": 6, "2010": 7}, "level 2bb": {"2009": 8, "2010": 9}},
+        "sub-market scaling": 0.5,
+    }
+    ok_out_restrict_extra_keys = {
+        "level 1a": {"level 2aa": {"2009": 4, "2010": 6}, "level 2ab": {"2009": 8, "2010": 10}},
+        "lifetime": {"level 2ba": {"2009": 6, "2010": 7}, "level 2bb": {"2009": 8, "2010": 9}},
+    }
 
     return {
         "sample_measure_in": sample_measure_in,
@@ -79,6 +94,9 @@ def test_data():
         "fail_dict2_in": fail_dict2_in,
         "ok_out": ok_out,
         "ok_out_restrict": ok_out_restrict,
+        "restrict_dict1_extra_keys": restrict_dict1_extra_keys,
+        "restrict_dict2_extra_keys": restrict_dict2_extra_keys,
+        "ok_out_restrict_extra_keys": ok_out_restrict_extra_keys,
     }
 
 
@@ -115,4 +133,21 @@ def test_ok_add_keyvals_restrict(test_data):
             test_data["ok_dict3_in"], test_data["ok_dict4_in"]
         ),
         test_data["ok_out_restrict"],
+    )
+
+
+def test_ok_add_keyvals_restrict_with_extra_keys(test_data):
+    """Test 'add_keyvals_restrict' function when dict2 has extra keys like 'sub-market scaling'.
+    
+    This tests the fix for the cross-platform issue where envelope measures 
+    (like windows) get 'sub-market scaling' added but HVAC measures don't,
+    causing merge failures when packaging.
+    """
+    # Use deep copies since add_keyvals_restrict modifies dict1 in place
+    dict_check(
+        test_data["sample_measure_in"].add_keyvals_restrict(
+            copy.deepcopy(test_data["restrict_dict1_extra_keys"]), 
+            copy.deepcopy(test_data["restrict_dict2_extra_keys"])
+        ),
+        test_data["ok_out_restrict_extra_keys"],
     )
