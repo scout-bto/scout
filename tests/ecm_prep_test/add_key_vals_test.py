@@ -138,15 +138,15 @@ def test_ok_add_keyvals_restrict(test_data):
 
 def test_ok_add_keyvals_restrict_with_extra_keys(test_data):
     """Test 'add_keyvals_restrict' function when dict2 has extra keys like 'sub-market scaling'.
-    
-    This tests the fix for the cross-platform issue where envelope measures 
+
+    This tests the fix for the cross-platform issue where envelope measures
     (like windows) get 'sub-market scaling' added but HVAC measures don't,
     causing merge failures when packaging.
     """
     # Use deep copies since add_keyvals_restrict modifies dict1 in place
     dict_check(
         test_data["sample_measure_in"].add_keyvals_restrict(
-            copy.deepcopy(test_data["restrict_dict1_extra_keys"]), 
+            copy.deepcopy(test_data["restrict_dict1_extra_keys"]),
             copy.deepcopy(test_data["restrict_dict2_extra_keys"])
         ),
         test_data["ok_out_restrict_extra_keys"],
