@@ -404,6 +404,7 @@ class ECMPrepHelper:
                 del m.linked_htcl_tover
                 del m.linked_htcl_tover_anchor_eu
                 del m.linked_htcl_tover_anchor_tech
+                del m.linked_htcl_tover_linked_tech
                 # If backup fuel fraction data exist (will be dataframe), convert to simple flag for
                 # JSON write-out and subsequent use in run
                 if m.backup_fuel_fraction is not None:
@@ -588,8 +589,8 @@ class Measure(object):
         except AttributeError:
             self.htcl_tech_link = ""
         self.linked_htcl_tover, self.linked_htcl_tover_anchor_eu, \
-            self.linked_htcl_tover_anchor_tech = (
-                None for n in range(3))
+            self.linked_htcl_tover_anchor_tech, self.linked_htcl_tover_linked_tech = (
+                None for n in range(4))
         # Determine whether the measure replaces technologies pertaining to
         # the supply or the demand of energy services
         self.technology_type = None
@@ -1605,11 +1606,14 @@ class Measure(object):
                 all([x in self.handyvars.secondary_hvac_tech for x in self.technology["primary"]]))
             # Flag for removal of linked costs for any heating/cooling technologies not designated
             # as the one that should be used to assess linked heating/cooling costs
-            rmv_lnkd_tech_costs = (
-                self.linked_htcl_tover and self.linked_htcl_tover_anchor_eu not in mskeys and (
-                    mskeys[-2] is None or (
-                        self.linked_htcl_tover_linked_tech not in mskeys[-2]
-                        and self.linked_htcl_tover_linked_tech != "all")))
+            if self.linked_htcl_tover_linked_tech:
+                rmv_lnkd_tech_costs = (
+                    self.linked_htcl_tover and self.linked_htcl_tover_anchor_eu not in mskeys and (
+                        mskeys[-2] is None or (
+                            self.linked_htcl_tover_linked_tech not in mskeys[-2]
+                            and self.linked_htcl_tover_linked_tech != "all")))
+            else:
+                rmv_lnkd_tech_costs = False
 
             # Check whether early retrofit rates are specified at the
             # component (microsegment) level; if so, restrict early retrofit
@@ -4877,6 +4881,7 @@ class Measure(object):
                             (self.linked_htcl_tover and
                              self.linked_htcl_tover_anchor_eu not in mskeys and (
                             mskeys[-2] is not None and (
+                                self.linked_htcl_tover_linked_tech and
                                 self.linked_htcl_tover_linked_tech == "all" or
                                 self.linked_htcl_tover_linked_tech in mskeys[-2])))):
                         # Set the list of contributing mseg information to use in matching
@@ -7478,7 +7483,8 @@ class Measure(object):
                                     mskeys[4] in ["heating", "cooling"]
                                     # Ensure that current linked tech. is designated as the linked
                                     # tech. to use for stock cost reporting purposes
-                                    and (self.linked_htcl_tover_linked_tech == "all" or
+                                    and (self.linked_htcl_tover_linked_tech and
+                                         self.linked_htcl_tover_linked_tech == "all" or
                                          self.linked_htcl_tover_linked_tech in mskeys[-2])
                                     # Only adjust for central heat/cool tech (e.g., does not apply
                                     # to room ACs or space heaters, we don't report agg. costs for)
@@ -9928,12 +9934,11 @@ class Measure(object):
         # Case with heating and/or cooling microsegments
         if any([x in ht_cl_euses for x in self.end_use[mseg_type]]):
             # Format measure end use attribute as numpy array
-            eu = numpy.array(self.end_use[mseg_type])
             # Set a list of heating and/or cooling end uses
-            eu_hc = list(eu[numpy.where([x in ht_cl_euses for x in eu])])
+            eu_hc = [x for x in self.end_use[mseg_type] if x in ht_cl_euses]
             # Set a list of all other end uses
-            eu_non_hc = list(eu[numpy.where([
-                x not in ht_cl_euses for x in eu])])
+            eu_non_hc = [x for x in self.end_use[mseg_type]
+                         if x not in ht_cl_euses]
             # Set a list including all measure microsegment attributes,
             # constraining the 'end_use' attribute to only heating/cooling
             # end uses

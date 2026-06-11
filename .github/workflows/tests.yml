@@ -54,7 +54,7 @@ jobs:
       - name: Run tests
         id: run_tests
         continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
-        run: python -m unittest discover -p '*_test.py' tests/
+        run: python -m pytest tests/
       - name: Warn if tests failed with update-baseline
         if: steps.run_tests.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'update-baseline')
         run: |
