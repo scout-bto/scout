@@ -33,6 +33,8 @@ dependencies = [
     "jsonschema",
     "pytest",
     "orjson"
+    "boto3",
+    "pyarrow"
 ]
 
 [tool.setuptools_scm]
