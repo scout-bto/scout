@@ -62,7 +62,7 @@ class UsefulVars(object):
         self.tpp_data_skip_lines = 100
         self.tpp_dtypes = [('Proportion', 'f8'), ('Time Pref Premium', 'f8'),
                            ('Year', 'i4'), ('End Use', 'U32')]
-        
+
         # End use names 8 and 9 changed in AEO 2026; earlier AEOs used
         # 'PCs' and 'non-PC office equipment'. Determine which to use based on
         # AEO year from metadata
@@ -79,7 +79,7 @@ class UsefulVars(object):
         else:  # pre-AEO 2026
             _eu8 = 'PCs'
             _eu9 = 'non-PC office equipment'
-        
+
         self.eu_map = {
             "heating": 1,
             "cooling": 2,
