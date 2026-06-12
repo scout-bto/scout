@@ -10,7 +10,6 @@
   "bldg_type": "all commercial",
   "structure_type": "all",
   "end_use": [
-    "data center",
     "office equipment"
   ],
   "fuel_type": "electricity",
