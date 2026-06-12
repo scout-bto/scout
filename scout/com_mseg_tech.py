@@ -62,6 +62,24 @@ class UsefulVars(object):
         self.tpp_data_skip_lines = 100
         self.tpp_dtypes = [('Proportion', 'f8'), ('Time Pref Premium', 'f8'),
                            ('Year', 'i4'), ('End Use', 'U32')]
+        
+        # End use names 8 and 9 changed in AEO 2026; earlier AEOs used
+        # 'PCs' and 'non-PC office equipment'. Determine which to use based on
+        # AEO year from metadata
+        try:
+            with open(self.aeo_metadata, 'r') as _f:
+                _meta = json.load(_f)
+            _aeo_yr = _meta.get('aeo_base_year', 2025)
+        except (FileNotFoundError, json.JSONDecodeError):
+            _aeo_yr = 2026  # default to AEO 2026 behaviour
+
+        if _aeo_yr >= 2026:  # AEO 2026 or later
+            _eu8 = 'data center'
+            _eu9 = 'office equipment'
+        else:  # pre-AEO 2026
+            _eu8 = 'PCs'
+            _eu9 = 'non-PC office equipment'
+        
         self.eu_map = {
             "heating": 1,
             "cooling": 2,
@@ -69,7 +87,9 @@ class UsefulVars(object):
             "ventilation": 4,
             "cooking": 5,
             "lighting": 6,
-            "refrigeration": 7}
+            "refrigeration": 7,
+            _eu8: 8,
+            _eu9: 9}
 
         # Set base directory
         with open(fp.CONVERT_DATA / "ecm_cost_convert.json", 'r') as cc:
