@@ -10283,8 +10283,13 @@ class Measure(object):
             KeyError: When added dict keys do not match.
         """
         for k in dict1:
-            # Skip sub-market scaling key and lifetime data
-            if k in ["sub-market scaling", "lifetime"]:
+            # Skip sub-market scaling and efficient-captured-envelope keys. The former
+            # otherwise causes error when two windows segments (solar and conduction) are being
+            # merged in fill_mkts and the sub-market scaling information has yet to be added to one
+            # them. The latter would error when HVAC equipment/envelope segments are being packaged
+            # and ventilation segments in the former do not have the efficient-captured-envelope
+            # key, which is only applicable to heating/cooling segments.
+            if k in ["sub-market scaling", "efficient-captured-envelope"]:
                 continue
             if k not in dict2:
                 raise KeyError("When adding together two dicts "
