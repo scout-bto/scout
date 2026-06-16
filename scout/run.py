@@ -4453,12 +4453,6 @@ class Engine(object):
 
             # Loop through the above set of years, successively updating the
             # weighted market share using a simple moving average.
-            # Pre-flag whether the market share value will be a numpy array
-            # so the isinstance check inside the hot inner loop is avoided.
-            _first_wyr = weighting_yrs[0]
-            _adj_frac_is_array = isinstance(
-                adj_fracs[_first_wyr] + added_sbmkt_fracs[_first_wyr],
-                numpy.ndarray)
             for ind, wyr in enumerate(weighting_yrs):
                 # For non-technical potential cases, calculate the market
                 # share weight based on competed stock turnover in the given
@@ -4545,9 +4539,7 @@ class Engine(object):
                     adj_frac_t = (1 - wt_comp_wyr) * adj_frac_t + \
                         wt_comp_wyr * mms_lr
                     # Ensure that total weighted market share is never above 1.
-                    # Check type once via a pre-set flag rather than two
-                    # isinstance() calls on every iteration of the hot loop.
-                    if _adj_frac_is_array:
+                    if isinstance(adj_frac_t, numpy.ndarray):
                         adj_frac_t[numpy.where(adj_frac_t > 1)] = 1
                     elif adj_frac_t > 1:
                         adj_frac_t = 1
