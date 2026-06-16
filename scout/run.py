@@ -830,10 +830,20 @@ def _fast_copy_nested_dict(d):
     Significantly faster than copy.deepcopy for dicts whose leaf values are
     plain Python floats/ints or numpy scalars, as is the case for the
     output-breakout fraction dicts used in finalize_outputs.
+    error for numpy arrays, which are not supported by this function; 
+    if numpy arrays are present, copy.deepcopy should be used instead.
     """
     out = {}
     for k, v in d.items():
-        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+        if isinstance(v, dict):
+            out[k] = _fast_copy_nested_dict(v)
+        elif isinstance(v, np.ndarray):
+            raise TypeError(
+                f"_fast_copy_nested_dict does not support numpy arrays at key '{k}'. "
+                "Use copy.deepcopy instead."
+            )
+        else:
+            out[k] = v
     return out
 
 
@@ -5713,9 +5723,6 @@ class Engine(object):
             # loop through below in finalizing baseline/efficient breakouts
             mkt_keys = mkt_base_keys + mkt_eff_keys
 
-            def _fast_copy_frac(d):
-                return _fast_copy_nested_dict(d)
-
             # Pre-build per-key copies of the frac_* dicts so out_break_walk
             # (which mutates its first argument) gets a fresh copy each time
             # without redundant deepcopy inside the loop.
@@ -5723,28 +5730,28 @@ class Engine(object):
             for k in mkt_keys:
                 if "Baseline" in k:
                     if "Stock" in k and report_stk_units:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_stk)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_base_stk)
                     elif "Capital" in k and report_stk_costs:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_stk_cost)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_base_stk_cost)
                     elif "Energy Use" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_energy)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_base_energy)
                     elif "Energy Cost" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_cost)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_base_cost)
                     else:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_carb)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_base_carb)
                 elif any([x in k for x in ["Efficient", "Measure"]]):
                     if "Stock" in k and report_stk_units:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_eff_stk)
                     elif "Capital" in k and report_stk_costs:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk_cost)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_eff_stk_cost)
                     elif "Energy Use" in k and "Measure" not in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_eff_energy)
                     elif eff_capt and "Energy Use" in k and "Measure" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy_capt)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_eff_energy_capt)
                     elif "Energy Cost" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_cost)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_eff_cost)
                     else:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_carb)
+                        _frac_copies[k] = _fast_copy_nested_dict(frac_eff_carb)
             # Apply output breakout fractions to total baseline and efficient
             # stock, energy, carbon, and cost results initialized above
             for k in mkt_keys:
@@ -5815,7 +5822,7 @@ class Engine(object):
             for ind_k, k in enumerate(save_keys):
                 # Copy baseline breakouts dict to use in establishing the
                 # structure of the final savings output breakouts dict
-                orig_dict_struct = _fast_copy_frac(
+                orig_dict_struct = _fast_copy_nested_dict(
                     mkt_save_brk[mkt_base_keys[ind_k]])
                 # Loop through all nested levels of the dict above; when
                 # reaching terminal nodes, finalize savings values as
