@@ -549,16 +549,14 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
 
 
 def _apply_tech_map(df, map_df):
-    """Assign scout_tech to each row by matching all non-scout_tech columns in map_df."""
+    """Assign scout_tech to each row by merging on all non-scout_tech columns."""
+    merge_cols = [c for c in map_df.columns if c != 'scout_tech' and c in df.columns]
     df = df.copy()
-    df['scout_tech'] = None
-    for _, map_row in map_df.iterrows():
-        condition = pd.Series(True, index=df.index)
-        for col in map_df.columns:
-            if col != 'scout_tech' and col in df.columns:
-                condition &= (df[col] == map_row[col])
-        df.loc[condition, 'scout_tech'] = map_row['scout_tech']
-    return df
+    df['_orig_idx'] = range(len(df))
+    merged = df.merge(map_df[merge_cols + ['scout_tech']], on=merge_cols, how='left')
+    # If map rows have overlapping conditions, keep last match (preserves original priority)
+    merged = merged.drop_duplicates(subset=['_orig_idx'], keep='last')
+    return merged.drop(columns=['_orig_idx'])
 
 
 def _tech_output_block(normalized_matrix, output_func, eu, tech, all_tech):
@@ -610,6 +608,13 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
     else:
         raise ValueError(f"Unsupported geography combination for tech: {geos}")
 
+    # Pre-load map CSVs once — avoid repeated disk I/O inside the eu loop
+    map_dfs = {
+        eu: pd.read_csv(os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv"))
+        for eu in mykeys
+        if os.path.exists(os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv"))
+    }
+
     for weath in weathers:
         print(f"  Processing {sector} tech energy for {weath}...")
         if preloaded_dfs is not None and weath in preloaded_dfs:
@@ -626,13 +631,18 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
 
         all_eu = pd.DataFrame()
         for eu in mykeys:
-            df = df_all.copy()
-            df[eu] = df[combined_map[eu]].sum(axis=1)
+            if eu not in map_dfs:
+                print(f"    Skipping {eu}: map file not found")
+                continue
+
+            # Copy only the columns needed for this eu to reduce memory pressure
+            eu_source_cols = combined_map[eu]
+            needed_cols = list(dict.fromkeys(geos + eu_source_cols))
+            df = df_all[[c for c in needed_cols if c in df_all.columns]].copy()
+            df[eu] = df[eu_source_cols].sum(axis=1)
             df = df[df[eu] > 0]
 
-            map_path = os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv")
-            map_df = pd.read_csv(map_path)
-            df = _apply_tech_map(df, map_df)
+            df = _apply_tech_map(df, map_dfs[eu])
 
             df = df[geos + ['scout_tech', eu]]
             tech_list = df['scout_tech'].dropna().unique().tolist()
@@ -682,6 +692,13 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
     else:
         raise ValueError(f"Unsupported geography combination for tech: {geos}")
 
+    # Pre-load map CSVs once — avoid repeated disk I/O inside the eu loop
+    map_dfs = {
+        eu: pd.read_csv(os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv"))
+        for eu in mykeys
+        if os.path.exists(os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv"))
+    }
+
     for weath in weathers:
         print(f"  Processing {sector} tech stock for {weath}...")
         if preloaded_dfs is not None and weath in preloaded_dfs:
@@ -699,24 +716,35 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
 
         all_eu = pd.DataFrame()
         for eu in mykeys:
-            df = df_all.copy()
-            df[eu] = df[combined_map[eu]].sum(axis=1)
+            if eu not in map_dfs:
+                print(f"    Skipping {eu}: map file not found")
+                continue
+
+            # Copy only the columns needed for this eu to reduce memory pressure
+            eu_source_cols = combined_map[eu]
+            needed_cols = list(dict.fromkeys(geos + ['warea'] + eu_source_cols))
+            df = df_all[[c for c in needed_cols if c in df_all.columns]].copy()
+            df[eu] = df[eu_source_cols].sum(axis=1)
             df = df[df[eu] > 0]
 
-            map_path = os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv")
-            map_df = pd.read_csv(map_path)
-            df = _apply_tech_map(df, map_df)
-
-            df = df[geos + ['scout_tech', eu, 'warea']]
+            df = _apply_tech_map(df, map_dfs[eu])
+            df = df[geos + ['scout_tech', 'warea']]
             tech_list = df['scout_tech'].dropna().unique().tolist()
+
+            # Single groupby across all techs — avoids per-tech pivot_table aggregation
+            df_grouped = (
+                df.groupby([pivot_index, pivot_col, 'scout_tech'])['warea']
+                .sum()
+                .reset_index()
+            )
 
             all_tech = pd.DataFrame()
             for tech in tech_list:
-                tdf = df[df['scout_tech'] == tech].drop(columns=['scout_tech'])
-                tdf = tdf[tdf[eu] != 0]
-                conversion_matrix = tdf.pivot_table(
-                    index=pivot_index, columns=pivot_col,
-                    values='warea', aggfunc='sum')
+                tdf = (df_grouped[df_grouped['scout_tech'] == tech]
+                       .drop(columns=['scout_tech']))
+                # Use pivot (not pivot_table) since data is already aggregated
+                conversion_matrix = tdf.pivot(
+                    index=pivot_index, columns=pivot_col, values='warea')
                 normalized_matrix = conversion_matrix.div(
                     conversion_matrix.sum(axis=0), axis=1).reset_index()
                 all_tech = _tech_output_block(
