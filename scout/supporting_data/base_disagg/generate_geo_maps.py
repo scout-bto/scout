@@ -390,7 +390,7 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
         df = apply_geographies(df, scoutgeo_df, geos)
         df = df.dropna(subset=geos)
         df = df[geos + mykeys]
-        
+
         # Determine groupby columns based on geos
         if 'emm' in geos and 'state' in geos:
             group_cols = ['emm', 'state']
@@ -415,7 +415,7 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
             filename_geo = 'EMM'
         else:
             raise ValueError(f"Unsupported geography combination: {geos}")
-            
+
         df = df.groupby(group_cols).sum().reset_index()
 
         norm_pd = pd.DataFrame()
@@ -767,11 +767,11 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
 
 def combine_hvac_and_other(output_dir):
     """Combine HVAC technology files with end-use files.
-    
+
     NOTE: Technology-level disaggregation requires HVAC system mapping files
     that map building characteristics to Scout technology types. Without these
     mapping files, only end-use-level disaggregation is available.
-    
+
     For end-use-level analysis (most common), technology files are not needed.
     """
     tech_dir = os.path.join(output_dir, "2024_technology")
@@ -791,7 +791,7 @@ def combine_hvac_and_other(output_dir):
         return
 
     print("\nCombining HVAC tech and other end-use files...")
-    
+
     filenames = [
         "Com_Cdiv_EMM_amy2018",
         "Com_Cdiv_State_amy2018",
@@ -952,7 +952,7 @@ def main():
 
     # Define all fuel types to process
     fuel_types = ['electricity', 'natural gas', 'distillate', 'other fuel']
-    
+
     # Define geography combinations to generate
     # Cdiv/EMM and Cdiv/State outputs are required
     geo_combinations = [
