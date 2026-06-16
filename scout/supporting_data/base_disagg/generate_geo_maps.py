@@ -635,9 +635,12 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
                 print(f"    Skipping {eu}: map file not found")
                 continue
 
-            # Copy only the columns needed for this eu to reduce memory pressure
+            # Copy only the columns needed for this eu to reduce memory pressure.
+            # Include map join columns so _apply_tech_map has attributes to match on.
             eu_source_cols = combined_map[eu]
-            needed_cols = list(dict.fromkeys(geos + eu_source_cols))
+            map_join_cols = [c for c in map_dfs[eu].columns
+                             if c != 'scout_tech' and c in df_all.columns]
+            needed_cols = list(dict.fromkeys(geos + eu_source_cols + map_join_cols))
             df = df_all[[c for c in needed_cols if c in df_all.columns]].copy()
             df[eu] = df[eu_source_cols].sum(axis=1)
             df = df[df[eu] > 0]
@@ -720,9 +723,13 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
                 print(f"    Skipping {eu}: map file not found")
                 continue
 
-            # Copy only the columns needed for this eu to reduce memory pressure
+            # Copy only the columns needed for this eu to reduce memory pressure.
+            # Include map join columns so _apply_tech_map has attributes to match on.
             eu_source_cols = combined_map[eu]
-            needed_cols = list(dict.fromkeys(geos + ['warea'] + eu_source_cols))
+            map_join_cols = [c for c in map_dfs[eu].columns
+                             if c != 'scout_tech' and c in df_all.columns]
+            needed_cols = list(dict.fromkeys(
+                geos + ['warea'] + eu_source_cols + map_join_cols))
             df = df_all[[c for c in needed_cols if c in df_all.columns]].copy()
             df[eu] = df[eu_source_cols].sum(axis=1)
             df = df[df[eu] > 0]
