@@ -850,9 +850,10 @@ def _fast_copy_nested_dict(d):
 def _fast_copy_markets(d):
     """Iterative deep-copy of a nested markets dict.
 
-    Handles the three value types that appear in measure market dicts:
+    Handles the value types that appear in measure market dicts:
       - nested dicts  → recurse (via explicit stack — no Python call overhead)
       - numpy.ndarray → copy via .copy()
+      - list          → shallow copy via .copy() (elements are scalars in practice)
       - scalars / None / str / bool → shared reference (immutable, safe)
 
     Uses an explicit stack instead of recursion to eliminate the ~91 M
@@ -872,6 +873,8 @@ def _fast_copy_markets(d):
                 dst[k] = child
                 stack.append((v, child))
             elif isinstance(v, numpy.ndarray):
+                dst[k] = v.copy()
+            elif isinstance(v, list):
                 dst[k] = v.copy()
             else:
                 dst[k] = v
