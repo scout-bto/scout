@@ -8,7 +8,6 @@ import os
 import boto3
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pandas as pd
 from botocore import UNSIGNED
 from botocore.config import Config
 
@@ -64,6 +63,7 @@ def download_resstock(out_path):
     size = s3.head_object(Bucket=BUCKET, Key=key)["ContentLength"]
     print(f"ResStock national file: {size/1e6:.0f} MB -> {out_path}")
     s3.download_file(BUCKET, key, out_path)
+
 
 def download_comstock(out_path):
     base = (RELEASES["comstock"]
@@ -150,10 +150,12 @@ def _conform(table, schema):
         else:
             arrays.append(pa.nulls(n, type=field.type))
     return pa.Table.from_arrays(arrays, schema=schema)
+
+
 def main():
-    for ds, subdir in [("comstock", "2024_comstock")]:
     # for ds, subdir in [("resstock", "2024_resstock"),
     #                    ("comstock", "2024_comstock")]:
+    for ds, subdir in [("comstock", "2024_comstock")]:
         out_dir = os.path.join(INDIR, subdir, WEATHER)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, OUT_FILENAME)
