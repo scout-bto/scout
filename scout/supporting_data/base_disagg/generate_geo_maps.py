@@ -359,7 +359,8 @@ def replace_col_vals(df, tech):
 
 
 def process_end_use_energy(sector, filedir, filename, weathers, mymap,
-                           scoutgeo_df, geos, outdir, fueltype='electricity'):
+                           scoutgeo_df, geos, outdir, fueltype='electricity',
+                           preloaded_dfs=None):
     """Process end-use energy data to create geographic disaggregation maps."""
     if sector == "commercial":
         county_col = "in.nhgis_county_gisjoin"
@@ -371,9 +372,12 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
     mykeys = list(mymap)
     for weath in weathers:
         print(f"  Processing {sector} end-use energy ({fueltype}) for {weath}...")
-        df = pd.read_parquet(f"{filedir}{weath}/{filename}",
-                             engine='pyarrow')
-        df = normalize_columns(df)
+        if preloaded_dfs is not None and weath in preloaded_dfs:
+            df = preloaded_dfs[weath].copy()
+        else:
+            df = pd.read_parquet(f"{filedir}{weath}/{filename}",
+                                 engine='pyarrow')
+            df = normalize_columns(df)
         df = ensure_columns(df, mymap)
 
         df.rename(columns={county_col: 'county'}, inplace=True)
@@ -446,7 +450,8 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
 
 
 def process_end_use_stock(sector, filedir, filename, weathers, mymap,
-                          scoutgeo_df, geos, outdir, fueltype='electricity'):
+                          scoutgeo_df, geos, outdir, fueltype='electricity',
+                          preloaded_dfs=None):
     """Process end-use stock data to create geographic disaggregation maps."""
     def eu_rows(df, category, columns_dict, threshold=1):
         columns = columns_dict.get(category, [])
@@ -466,9 +471,12 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
 
     for weath in weathers:
         print(f"  Processing {sector} end-use stock ({fueltype}) for {weath}...")
-        alldf = pd.read_parquet(f"{filedir}{weath}/{filename}",
-                                engine='pyarrow')
-        alldf = normalize_columns(alldf)
+        if preloaded_dfs is not None and weath in preloaded_dfs:
+            alldf = preloaded_dfs[weath].copy()
+        else:
+            alldf = pd.read_parquet(f"{filedir}{weath}/{filename}",
+                                    engine='pyarrow')
+            alldf = normalize_columns(alldf)
         alldf = ensure_columns(alldf, mymap)
 
         alldf.rename(columns={county_col: "county"}, inplace=True)
@@ -540,18 +548,186 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
         print(f"    Saved {sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}_Stock.csv")
 
 
+def _apply_tech_map(df, map_df):
+    """Assign scout_tech to each row by matching all non-scout_tech columns in map_df."""
+    df = df.copy()
+    df['scout_tech'] = None
+    for _, map_row in map_df.iterrows():
+        condition = pd.Series(True, index=df.index)
+        for col in map_df.columns:
+            if col != 'scout_tech' and col in df.columns:
+                condition &= (df[col] == map_row[col])
+        df.loc[condition, 'scout_tech'] = map_row['scout_tech']
+    return df
+
+
+def _tech_output_block(normalized_matrix, output_func, eu, tech, all_tech):
+    """Normalize, format, and accumulate one technology's matrix."""
+    normalized_matrix = output_func(normalized_matrix)
+    normalized_matrix = normalized_matrix.fillna(0)
+    normalized_matrix.columns = normalized_matrix.iloc[0]
+    normalized_matrix.rename(
+        columns={normalized_matrix.columns[-1]: 'Total'}, inplace=True)
+    normalized_matrix = normalized_matrix.iloc[1:]
+    normalized_matrix.insert(0, 'CDIV', normalized_matrix.index)
+    normalized_matrix.insert(0, 'End use', eu.split('_')[1])
+    normalized_matrix.insert(0, 'Technology', tech)
+    if (normalized_matrix['Total'] != 0).all():
+        normalized_matrix.drop(columns=['Total'], inplace=True)
+        all_tech = (normalized_matrix if all_tech.empty
+                    else pd.concat([all_tech, normalized_matrix],
+                                   ignore_index=False))
+        if tech == "res_type_central_AC":
+            norm2 = replace_col_vals(normalized_matrix, "wall-window_room_AC")
+            all_tech = pd.concat([all_tech, norm2], ignore_index=False)
+    return all_tech
+
+
 def process_tech_energy(sector, filedir, filename, weathers, mymap,
-                        scoutgeo_df, geos, outdir, fdir):
-    """Process technology-level energy data (placeholder for now)."""
-    print(f"  Tech energy processing for {sector} (not yet implemented)")
-    pass
+                        scoutgeo_df, geos, outdir, mapping_dir,
+                        preloaded_dfs=None):
+    """Process technology-level energy data for electricity heating/cooling."""
+    if sector == "commercial":
+        county_col = "in.nhgis_county_gisjoin"
+        sec = "Com"
+    else:
+        county_col = "in.county"
+        sec = "Res"
+
+    combined_map = combine_keys(mymap[sector])
+    mykeys = list(combined_map)
+
+    if 'emm' in geos and 'cdiv' in geos:
+        pivot_index, pivot_col = 'emm', 'cdiv'
+        group_cols = ['emm', 'cdiv', 'scout_tech']
+        output_func = output_emm
+        filename_geo = 'EMM'
+    elif 'state' in geos and 'cdiv' in geos:
+        pivot_index, pivot_col = 'state', 'cdiv'
+        group_cols = ['state', 'cdiv', 'scout_tech']
+        output_func = output_state
+        filename_geo = 'State'
+    else:
+        raise ValueError(f"Unsupported geography combination for tech: {geos}")
+
+    for weath in weathers:
+        print(f"  Processing {sector} tech energy for {weath}...")
+        if preloaded_dfs is not None and weath in preloaded_dfs:
+            df_all = preloaded_dfs[weath].copy()
+        else:
+            df_all = pd.read_parquet(f"{filedir}{weath}/{filename}", engine='pyarrow')
+            df_all = normalize_columns(df_all)
+        df_all = ensure_columns(df_all, combined_map)
+        df_all.rename(columns={county_col: 'county'}, inplace=True)
+        df_all.rename(columns={'in.state': 'state'}, inplace=True)
+        df_all.reset_index(inplace=True)
+        df_all = apply_geographies(df_all, scoutgeo_df, geos)
+        df_all = df_all.dropna(subset=geos)
+
+        all_eu = pd.DataFrame()
+        for eu in mykeys:
+            df = df_all.copy()
+            df[eu] = df[combined_map[eu]].sum(axis=1)
+            df = df[df[eu] > 0]
+
+            map_path = os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv")
+            map_df = pd.read_csv(map_path)
+            df = _apply_tech_map(df, map_df)
+
+            df = df[geos + ['scout_tech', eu]]
+            tech_list = df['scout_tech'].dropna().unique().tolist()
+            df = df.groupby(group_cols).sum().reset_index()
+
+            all_tech = pd.DataFrame()
+            for tech in tech_list:
+                tdf = df[df['scout_tech'] == tech].drop(columns=['scout_tech'])
+                conversion_matrix = tdf.pivot(
+                    index=pivot_index, columns=pivot_col, values=eu)
+                normalized_matrix = conversion_matrix.div(
+                    conversion_matrix.sum(axis=0), axis=1).reset_index()
+                all_tech = _tech_output_block(
+                    normalized_matrix, output_func, eu, tech, all_tech)
+            if not all_tech.empty:
+                all_eu = (all_tech if all_eu.empty
+                          else pd.concat([all_eu, all_tech], ignore_index=False))
+
+        out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Tech.csv")
+        all_eu.to_csv(f"{outdir}/{out_file}", index=False)
+        print(f"    Saved {out_file}")
 
 
 def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
-                       geos, outdir, fdir):
-    """Process technology-level stock data (placeholder for now)."""
-    print(f"  Tech stock processing for {sector} (not yet implemented)")
-    pass
+                       geos, outdir, mapping_dir, preloaded_dfs=None):
+    """Process technology-level stock data for electricity heating/cooling."""
+    if sector == "commercial":
+        county_col = "in.nhgis_county_gisjoin"
+        area_col = "calc.weighted.sqft"
+        sec = "Com"
+    else:
+        county_col = "in.county"
+        area_col = "in.units_represented"
+        sec = "Res"
+
+    combined_map = combine_keys(mymap[sector])
+    mykeys = list(combined_map)
+
+    if 'emm' in geos and 'cdiv' in geos:
+        pivot_index, pivot_col = 'emm', 'cdiv'
+        output_func = output_emm
+        filename_geo = 'EMM'
+    elif 'state' in geos and 'cdiv' in geos:
+        pivot_index, pivot_col = 'state', 'cdiv'
+        output_func = output_state
+        filename_geo = 'State'
+    else:
+        raise ValueError(f"Unsupported geography combination for tech: {geos}")
+
+    for weath in weathers:
+        print(f"  Processing {sector} tech stock for {weath}...")
+        if preloaded_dfs is not None and weath in preloaded_dfs:
+            df_all = preloaded_dfs[weath].copy()
+        else:
+            df_all = pd.read_parquet(f"{filedir}{weath}/{filename}", engine='pyarrow')
+            df_all = normalize_columns(df_all)
+        df_all = ensure_columns(df_all, combined_map)
+        df_all.rename(columns={county_col: 'county'}, inplace=True)
+        df_all.rename(columns={'in.state': 'state'}, inplace=True)
+        df_all.rename(columns={area_col: 'warea'}, inplace=True)
+        df_all.reset_index(inplace=True)
+        df_all = apply_geographies(df_all, scoutgeo_df, geos)
+        df_all = df_all.dropna(subset=geos)
+
+        all_eu = pd.DataFrame()
+        for eu in mykeys:
+            df = df_all.copy()
+            df[eu] = df[combined_map[eu]].sum(axis=1)
+            df = df[df[eu] > 0]
+
+            map_path = os.path.join(mapping_dir, f"map_{sector[:3]}_{eu}.csv")
+            map_df = pd.read_csv(map_path)
+            df = _apply_tech_map(df, map_df)
+
+            df = df[geos + ['scout_tech', eu, 'warea']]
+            tech_list = df['scout_tech'].dropna().unique().tolist()
+
+            all_tech = pd.DataFrame()
+            for tech in tech_list:
+                tdf = df[df['scout_tech'] == tech].drop(columns=['scout_tech'])
+                tdf = tdf[tdf[eu] != 0]
+                conversion_matrix = tdf.pivot_table(
+                    index=pivot_index, columns=pivot_col,
+                    values='warea', aggfunc='sum')
+                normalized_matrix = conversion_matrix.div(
+                    conversion_matrix.sum(axis=0), axis=1).reset_index()
+                all_tech = _tech_output_block(
+                    normalized_matrix, output_func, eu, tech, all_tech)
+            if not all_tech.empty:
+                all_eu = (all_tech if all_eu.empty
+                          else pd.concat([all_eu, all_tech], ignore_index=False))
+
+        out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_Stock_electricity_Tech.csv")
+        all_eu.to_csv(f"{outdir}/{out_file}", index=False)
+        print(f"    Saved {out_file}")
 
 
 def combine_hvac_and_other(output_dir):
@@ -682,6 +858,13 @@ def main():
     parser.add_argument('--output-dir', type=str, default='output',
                         help='Directory to save the output CSV '
                              'files.')
+    parser.add_argument('--data-type', type=str, default='both',
+                        choices=['end_use', 'technology', 'both'],
+                        help='Which output type to generate: end_use, '
+                             'technology, or both (default: both).')
+    parser.add_argument('--mapping-dir', type=str, default='input/mapping',
+                        help='Directory containing map_*.csv files '
+                             '(default: input/mapping).')
     parser.add_argument('--all', action='store_true',
                         help='Generate all output files (default behavior).')
     parser.add_argument('--force', action='store_true',
@@ -697,8 +880,10 @@ def main():
     # Define output subdirectories
     tech_outdir = os.path.join(args.output_dir, '2024_technology')
     end_use_outdir = os.path.join(args.output_dir, '2024_end_use')
-    os.makedirs(tech_outdir, exist_ok=True)
-    os.makedirs(end_use_outdir, exist_ok=True)
+    if args.data_type in ('technology', 'both'):
+        os.makedirs(tech_outdir, exist_ok=True)
+    if args.data_type in ('end_use', 'both'):
+        os.makedirs(end_use_outdir, exist_ok=True)
 
     scoutgeo_df = get_scout_geo(script_dir)
 
@@ -711,7 +896,25 @@ def main():
                                       'baseline.parquet')
 
     weathers = [args.weather_year]
-    
+
+    # Pre-load parquet files once per sector so each process function receives
+    # an already-read, normalized DataFrame instead of re-reading from disk.
+    res_dfs = {}
+    com_dfs = {}
+    for weath in weathers:
+        if os.path.exists(resstock_data_path):
+            print(f"Pre-loading residential data for {weath}...")
+            raw = pd.read_parquet(
+                f"{args.resstock_path}/{weath}/baseline.parquet",
+                engine='pyarrow')
+            res_dfs[weath] = normalize_columns(raw)
+        if os.path.exists(comstock_data_path):
+            print(f"Pre-loading commercial data for {weath}...")
+            raw = pd.read_parquet(
+                f"{args.comstock_path}/{weath}/baseline.parquet",
+                engine='pyarrow')
+            com_dfs[weath] = normalize_columns(raw)
+
     # Define all fuel types to process
     fuel_types = ['electricity', 'natural gas', 'distillate', 'other fuel']
     
@@ -722,117 +925,194 @@ def main():
         (['cdiv', 'state'], 'Cdiv/State')
     ]
 
-    if not os.path.exists(resstock_data_path):
-        print(f"WARNING: ResStock data not found at: {resstock_data_path}")
-        print("  Skipping residential processing.")
-        print("  To generate residential disaggregation maps, provide "
-              "BuildStock parquet files.")
-    else:
-        print(f"Processing residential data from: {resstock_data_path}")
+    if args.data_type in ('end_use', 'both'):
+        if not os.path.exists(resstock_data_path):
+            print(f"WARNING: ResStock data not found at: {resstock_data_path}")
+            print("  Skipping residential processing.")
+            print("  To generate residential disaggregation maps, provide "
+                  "BuildStock parquet files.")
+        else:
+            print(f"Processing residential data from: {resstock_data_path}")
 
-        # Process residential for each geography and fuel type
-        for geos, geo_name in geo_combinations:
-            print(f"\n  Generating {geo_name} outputs...")
-            
-            for fuel in fuel_types:
-                # Get the fuel-specific end-use map
-                if fuel not in END_USE_MAP['residential']:
-                    print(f"    Skipping {fuel}: no mapping defined")
-                    continue
-                
-                # Create a map with just this fuel's end uses (not wrapped in another dict)
-                fuel_end_uses = END_USE_MAP['residential'][fuel]
-                
-                # Process residential end-use energy
+            for geos, geo_name in geo_combinations:
+                print(f"\n  Generating {geo_name} outputs...")
+
+                for fuel in fuel_types:
+                    if fuel not in END_USE_MAP['residential']:
+                        print(f"    Skipping {fuel}: no mapping defined")
+                        continue
+
+                    fuel_end_uses = END_USE_MAP['residential'][fuel]
+
+                    try:
+                        process_end_use_energy(
+                            sector='residential',
+                            filedir=f"{args.resstock_path}/",
+                            filename='baseline.parquet',
+                            weathers=weathers,
+                            mymap=fuel_end_uses,
+                            scoutgeo_df=scoutgeo_df,
+                            geos=geos,
+                            outdir=end_use_outdir,
+                            fueltype=fuel,
+                            preloaded_dfs=res_dfs
+                        )
+                    except Exception as e:
+                        print(f"    ERROR processing residential {fuel} energy ({geo_name}): {e}")
+                        traceback.print_exc()
+
+                    try:
+                        process_end_use_stock(
+                            sector='residential',
+                            filedir=f"{args.resstock_path}/",
+                            filename='baseline.parquet',
+                            weathers=weathers,
+                            mymap=fuel_end_uses,
+                            scoutgeo_df=scoutgeo_df,
+                            geos=geos,
+                            outdir=end_use_outdir,
+                            fueltype=fuel,
+                            preloaded_dfs=res_dfs
+                        )
+                    except Exception as e:
+                        print(f"    ERROR processing residential {fuel} stock ({geo_name}): {e}")
+
+        if not os.path.exists(comstock_data_path):
+            print(f"WARNING: ComStock data not found at: {comstock_data_path}")
+            print("  Skipping commercial processing.")
+            print("  To generate commercial disaggregation maps, provide "
+                  "BuildStock parquet files.")
+        else:
+            print(f"Processing commercial data from: {comstock_data_path}")
+
+            for geos, geo_name in geo_combinations:
+                print(f"\n  Generating {geo_name} outputs...")
+
+                for fuel in fuel_types:
+                    if fuel not in END_USE_MAP['commercial']:
+                        print(f"    Skipping {fuel}: no mapping defined")
+                        continue
+
+                    fuel_end_uses = END_USE_MAP['commercial'][fuel]
+
+                    try:
+                        process_end_use_energy(
+                            sector='commercial',
+                            filedir=f"{args.comstock_path}/",
+                            filename='baseline.parquet',
+                            weathers=weathers,
+                            mymap=fuel_end_uses,
+                            scoutgeo_df=scoutgeo_df,
+                            geos=geos,
+                            outdir=end_use_outdir,
+                            fueltype=fuel,
+                            preloaded_dfs=com_dfs
+                        )
+                    except Exception as e:
+                        print(f"    ERROR processing commercial {fuel} energy ({geo_name}): {e}")
+
+                    try:
+                        process_end_use_stock(
+                            sector='commercial',
+                            filedir=f"{args.comstock_path}/",
+                            filename='baseline.parquet',
+                            weathers=weathers,
+                            mymap=fuel_end_uses,
+                            scoutgeo_df=scoutgeo_df,
+                            geos=geos,
+                            outdir=end_use_outdir,
+                            fueltype=fuel,
+                            preloaded_dfs=com_dfs
+                        )
+                    except Exception as e:
+                        print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
+
+    if args.data_type in ('technology', 'both'):
+        if not os.path.exists(resstock_data_path):
+            print(f"WARNING: ResStock data not found at: {resstock_data_path}")
+            print("  Skipping residential technology processing.")
+        else:
+            print(f"\nProcessing residential technology data from: {resstock_data_path}")
+            for geos, geo_name in geo_combinations:
+                print(f"\n  Generating {geo_name} tech outputs...")
                 try:
-                    process_end_use_energy(
+                    process_tech_energy(
                         sector='residential',
                         filedir=f"{args.resstock_path}/",
                         filename='baseline.parquet',
                         weathers=weathers,
-                        mymap=fuel_end_uses,
+                        mymap=FUEL_ENDUSE_MAP,
                         scoutgeo_df=scoutgeo_df,
                         geos=geos,
-                        outdir=end_use_outdir,
-                        fueltype=fuel
+                        outdir=tech_outdir,
+                        mapping_dir=args.mapping_dir,
+                        preloaded_dfs=res_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing residential {fuel} energy ({geo_name}): {e}")
+                    print(f"    ERROR processing residential tech energy ({geo_name}): {e}")
+                    traceback.print_exc()
+                try:
+                    process_tech_stock(
+                        sector='residential',
+                        filedir=f"{args.resstock_path}/",
+                        filename='baseline.parquet',
+                        weathers=weathers,
+                        mymap=FUEL_ENDUSE_MAP,
+                        scoutgeo_df=scoutgeo_df,
+                        geos=geos,
+                        outdir=tech_outdir,
+                        mapping_dir=args.mapping_dir,
+                        preloaded_dfs=res_dfs
+                    )
+                except Exception as e:
+                    print(f"    ERROR processing residential tech stock ({geo_name}): {e}")
                     traceback.print_exc()
 
-                # Process residential end-use stock
+        if not os.path.exists(comstock_data_path):
+            print(f"WARNING: ComStock data not found at: {comstock_data_path}")
+            print("  Skipping commercial technology processing.")
+        else:
+            print(f"\nProcessing commercial technology data from: {comstock_data_path}")
+            for geos, geo_name in geo_combinations:
+                print(f"\n  Generating {geo_name} tech outputs...")
                 try:
-                    process_end_use_stock(
-                        sector='residential',
-                        filedir=f"{args.resstock_path}/",
-                        filename='baseline.parquet',
-                        weathers=weathers,
-                        mymap=fuel_end_uses,
-                        scoutgeo_df=scoutgeo_df,
-                        geos=geos,
-                        outdir=end_use_outdir,
-                        fueltype=fuel
-                    )
-                except Exception as e:
-                    print(f"    ERROR processing residential {fuel} stock ({geo_name}): {e}")
-
-    if not os.path.exists(comstock_data_path):
-        print(f"WARNING: ComStock data not found at: {comstock_data_path}")
-        print("  Skipping commercial processing.")
-        print("  To generate commercial disaggregation maps, provide "
-              "BuildStock parquet files.")
-    else:
-        print(f"Processing commercial data from: {comstock_data_path}")
-
-        # Process commercial for each geography and fuel type
-        for geos, geo_name in geo_combinations:
-            print(f"\n  Generating {geo_name} outputs...")
-            
-            for fuel in fuel_types:
-                # Get the fuel-specific end-use map
-                if fuel not in END_USE_MAP['commercial']:
-                    print(f"    Skipping {fuel}: no mapping defined")
-                    continue
-                
-                # Create a map with just this fuel's end uses (not wrapped in another dict)
-                fuel_end_uses = END_USE_MAP['commercial'][fuel]
-                
-                # Process commercial end-use energy
-                try:
-                    process_end_use_energy(
+                    process_tech_energy(
                         sector='commercial',
                         filedir=f"{args.comstock_path}/",
                         filename='baseline.parquet',
                         weathers=weathers,
-                        mymap=fuel_end_uses,
+                        mymap=FUEL_ENDUSE_MAP,
                         scoutgeo_df=scoutgeo_df,
                         geos=geos,
-                        outdir=end_use_outdir,
-                        fueltype=fuel
+                        outdir=tech_outdir,
+                        mapping_dir=args.mapping_dir,
+                        preloaded_dfs=com_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing commercial {fuel} energy ({geo_name}): {e}")
-
-                # Process commercial end-use stock
+                    print(f"    ERROR processing commercial tech energy ({geo_name}): {e}")
+                    traceback.print_exc()
                 try:
-                    process_end_use_stock(
+                    process_tech_stock(
                         sector='commercial',
                         filedir=f"{args.comstock_path}/",
                         filename='baseline.parquet',
                         weathers=weathers,
-                        mymap=fuel_end_uses,
+                        mymap=FUEL_ENDUSE_MAP,
                         scoutgeo_df=scoutgeo_df,
                         geos=geos,
-                        outdir=end_use_outdir,
-                        fueltype=fuel
+                        outdir=tech_outdir,
+                        mapping_dir=args.mapping_dir,
+                        preloaded_dfs=com_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
+                    print(f"    ERROR processing commercial tech stock ({geo_name}): {e}")
+                    traceback.print_exc()
 
     print("\nDisaggregation process finished.")
 
     # Post-processing steps
-    combine_hvac_and_other(args.output_dir)
+    if args.data_type == 'both':
+        combine_hvac_and_other(args.output_dir)
     fill_na_with_zeros(args.output_dir)
 
     # Install step
