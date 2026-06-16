@@ -10240,6 +10240,12 @@ class Measure(object):
         """
         for k in dict1:
             if k not in dict2:
+                # efficient-captured-envelope may legitimately be absent from
+                # contributing mseg dicts that have no HVAC/envelope overlap
+                # (e.g., ventilation or pure-envelope segments in a package);
+                # skip to preserve whatever value dict1 already holds.
+                if k == "efficient-captured-envelope":
+                    continue
                 raise KeyError("When adding together two dicts "
                                "for ECM '" + self.name +
                                "' update, dict key structures "

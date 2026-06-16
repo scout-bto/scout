@@ -5090,15 +5090,17 @@ class Engine(object):
                     # Reset these data based on the original (pre-competition)
                     # ratio between efficient-captured-envelope and
                     # efficient-captured, applied to adjusted (post-comp.)
-                    # efficient-captured data
-                    pre_comp_mkts = m.markets[adopt_scheme][
-                        "uncompeted"]["master_mseg"]["energy"]["total"]
-                    eff_capt_env = {
-                        yr: (eff_capt[yr] * (
-                             pre_comp_mkts["efficient-captured-envelope"][yr] /
-                             pre_comp_mkts["efficient-captured"][yr])) if
-                        pre_comp_mkts["efficient-captured"][yr] != 0
-                        else 0 for yr in self.handyvars.aeo_years}
+                    # efficient-captured data; only applies when envelope data
+                    # are present (non-None)
+                    if eff_capt_env is not None:
+                        pre_comp_mkts = m.markets[adopt_scheme][
+                            "uncompeted"]["master_mseg"]["energy"]["total"]
+                        eff_capt_env = {
+                            yr: (eff_capt[yr] * (
+                                 pre_comp_mkts["efficient-captured-envelope"][yr] /
+                                 pre_comp_mkts["efficient-captured"][yr])) if
+                            pre_comp_mkts["efficient-captured"][yr] != 0
+                            else 0 for yr in self.handyvars.aeo_years}
                 except KeyError:
                     eff_capt_env = None
             except KeyError:
