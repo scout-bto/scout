@@ -11,7 +11,6 @@ from ast import literal_eval
 import math
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy_financial as npf
-import threading
 # Use the Agg (non-interactive) backend so that matplotlib can safely be used
 # from background threads without touching the macOS main-thread UI context.
 import matplotlib
@@ -8237,28 +8236,9 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     if all([x is False for x in [trim_out, trim_yrs]]):
         # Notify user that the output data are being plotted
         print("Plotting output data...", end="", flush=True)
-        # Execute plots in a background thread so main() can return while
-        # matplotlib renders/saves PDFs (plotting has no downstream callers).
-        # The Agg backend (set at module import time) is thread-safe.
-
-        def _run_plot_bg():
-            try:
-                run_plot(meas_summary, a_run, handyvars, measures_objlist,
-                         regions, cbpslist, trim_out)
-                print("Plotting complete")
-            except Exception as exc:
-                plot_thread._exc = exc
-                raise
-
-        plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
-        plot_thread._exc = None
-        plot_thread.start()
-        # Force the main script to wait until the plotting thread is completely done
-        plot_thread.join()
-
-        # Re-raise any exceptions that happened inside the thread
-        if plot_thread._exc:
-            raise plot_thread._exc
+        run_plot(meas_summary, a_run, handyvars, measures_objlist,
+                 regions, cbpslist, trim_out)
+        print("Plotting complete")
 
 
 def parse_args(args: list = None) -> argparse.NameSpace:  # noqa: F821
