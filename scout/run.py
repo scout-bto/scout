@@ -829,14 +829,14 @@ def _fast_copy_nested_dict(d):
     Significantly faster than copy.deepcopy for dicts whose leaf values are
     plain Python floats/ints or numpy scalars, as is the case for the
     output-breakout fraction dicts used in finalize_outputs.
-    error for numpy arrays, which are not supported by this function; 
+    error for numpy arrays, which are not supported by this function;
     if numpy arrays are present, copy.deepcopy should be used instead.
     """
     out = {}
     for k, v in d.items():
         if isinstance(v, dict):
             out[k] = _fast_copy_nested_dict(v)
-        elif isinstance(v, np.ndarray):
+        elif isinstance(v, numpy.ndarray):
             raise TypeError(
                 f"_fast_copy_nested_dict does not support numpy arrays at key '{k}'. "
                 "Use copy.deepcopy instead."
