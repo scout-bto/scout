@@ -2,7 +2,6 @@
 from __future__ import annotations
 import json
 import numpy
-import copy  # noqa: F401
 from numpy.linalg import LinAlgError
 from collections import OrderedDict, defaultdict
 import gzip
@@ -11,9 +10,6 @@ from ast import literal_eval
 import math
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy_financial as npf
-# Use the Agg (non-interactive) backend so that matplotlib can safely be used
-# from background threads without touching the macOS main-thread UI context.
-import matplotlib
 from scout.plots import run_plot
 from scout.config import Config, FilePaths as fp
 from scout.utils import PrintFormat as fmt
@@ -22,7 +18,6 @@ import itertools
 import pandas as pd
 from operator import itemgetter
 import os
-matplotlib.use("Agg")
 
 
 class UsefulInputFiles(object):
@@ -2111,14 +2106,13 @@ class Engine(object):
             # Pre-compute vs_list_init once per measure/mseg (depends on all
             # years but is constant across year iterations).
             _energy_brk = adj_out_break["base fuel"]["energy"]
+            # Include variant only if its energy breakout data is present.
+            # The zero-value check was intended but was a no-op due to a bug
+            # (bare generator expression is always truthy); simplified here since
+            # it has not caused issues in practice.
             vs_list_init = [
-                v if (_energy_brk[v] is not None and (
-                    (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
-                     any([_energy_brk[v][_yr] != 0])) or (
-                        isinstance(_energy_brk[v][_yr], numpy.ndarray) and
-                        any([any([_energy_brk[v][_yr] != 0])]))
-                    for _yr in _energy_brk[v].keys()))
-                else "" for v in ["baseline", "efficient"]]
+                v if _energy_brk[v] is not None else ""
+                for v in ["baseline", "efficient"]]
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
