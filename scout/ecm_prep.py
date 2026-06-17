@@ -2313,6 +2313,11 @@ class Measure(object):
                                     # Shallow copy of the dict is sufficient:
                                     # its values are replaced (not mutated),
                                     # and the float list is read-only.
+                                    # Shallow copy is sufficient because the
+                                    # downstream code at 2349
+                                    # perf_meas[0][k] = perf_meas[0][k][key_item]
+                                    # only rebinds outer slots; do not mutate
+                                    # nested values in place or this becomes unsafe.
                                     perf_meas = [
                                         dict(perf_meas),
                                         self.handyvars.alt_attr_brk_map[
@@ -2397,6 +2402,11 @@ class Measure(object):
                                     # Shallow copy of the dict is sufficient:
                                     # its values are replaced (not mutated),
                                     # and the float list is read-only.
+                                    # Shallow copy is sufficient because the
+                                    # downstream code at 2438
+                                    # cost_meas[0][k] = cost_meas[0][k][key_item]
+                                    # only rebinds outer slots; do not mutate
+                                    # nested values in place or this becomes unsafe.
                                     cost_meas = [
                                         dict(cost_meas),
                                         self.handyvars.alt_attr_brk_map[
@@ -2521,6 +2531,11 @@ class Measure(object):
                                     # Shallow copy of the dict is sufficient:
                                     # its values are replaced (not mutated),
                                     # and the float list is read-only.
+                                    # Shallow copy is sufficient because the
+                                    # downstream code at 2567
+                                    # mkt_scale_frac[0][k] = mkt_scale_frac[0][k][key_item]
+                                    # only rebinds outer slots; do not mutate
+                                    # nested values in place or this becomes unsafe.
                                     mkt_scale_frac = [
                                         dict(mkt_scale_frac),
                                         self.handyvars.alt_attr_brk_map[
@@ -14022,6 +14037,11 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                         m["usr_opts"][k] is False
                         for k in m["usr_opts"].keys()]) for
                         m in match_in_prep_file])) or
+                    # Use .get() instead of direct key access to handle prepped files generated
+                    # by older versions of the code that may be missing options added later.
+                    # If a key is absent, .get() returns None; if the new option's default is
+                    # also None, the comparison correctly evaluates as equal and avoids
+                    # triggering an unnecessary re-prep.
                     (not all([all([m["usr_opts"].get(x) ==
                                   vars(opts)[x] for x in [
                         k for k in vars(opts).keys() if
