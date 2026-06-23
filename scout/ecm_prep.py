@@ -5787,9 +5787,11 @@ class Measure(object):
                         "mapped to any baseline load shape in the "
                         "Scout database: " + str(mskeys))
             elif bldg_sect == "commercial":
-                # For commercial PCs/non-PC office equipment and MELs,
-                # use the load shape for plug loads
-                if mskeys[4] in ["PCs", "non-PC office equipment",
+                # For commercial data center/office equipment and MELs,
+                # use the load shape for plug loads (include pre-AEO 2026
+                # names 'PCs' and 'non-PC office equipment' for compatibility)
+                if mskeys[4] in ["data center", "office equipment",
+                                 "PCs", "non-PC office equipment",
                                  "MELs", "cooking", "unspecified"]:
                     eu = "plug loads"
                 # In all other cases, error
@@ -5803,9 +5805,10 @@ class Measure(object):
         # re-weighting and load shape information does not already exist for
         # the current combination of region, building type, and end use, set
         # energy load shapes for given climate, building type, and end use
-        if self.handyvars.tsv_hourly_lafs is not None and \
-            eu not in self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
-                mskeys[2]].keys():
+        if (
+                self.handyvars.tsv_hourly_lafs is not None and
+                eu not in self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
+                    mskeys[2]].keys()):
             # Key in the appropriate load shape data if it wasn't successfully
             # keyed in above via the current end use name
             if not load_fact:
@@ -9611,6 +9614,18 @@ class Measure(object):
                         self.energy_efficiency, self.energy_efficiency_units,
                         self.fuel_type, self.end_use, self.technology,
                         self.technology_type]]
+
+        # Normalize legacy commercial PC labels only for AEO 2026+.
+        if self.handyvars.current_yr >= 2026:
+            for end_use_key in ["primary", "secondary"]:
+                if isinstance(self.end_use[end_use_key], list):
+                    self.end_use[end_use_key] = [
+                        "office equipment" if x in [
+                            "PCs", "non-PC office equipment"] else x
+                        for x in self.end_use[end_use_key]]
+                elif self.end_use[end_use_key] in [
+                        "PCs", "non-PC office equipment"]:
+                    self.end_use[end_use_key] = "office equipment"
 
         # Fill out an 'all' region input
         if self.climate_zone == 'all' or 'all' in self.climate_zone:

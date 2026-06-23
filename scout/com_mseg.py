@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import numpy as np
 import numpy.lib.recfunctions as recfn
 import re
@@ -8,6 +9,10 @@ import json
 import io
 from functools import reduce
 from scout.config import FilePaths as fp
+
+# AEO publication year used to select the correct end use name mapping.
+# Set by main() via the -y/--year CLI argument; falls back to metadata when None.
+aeo_import_year = None
 
 
 class EIAData(object):
@@ -103,6 +108,27 @@ class CommercialTranslationDicts(object):
                              'unspecified': 12  # for some "other" energy
                              }
 
+        # End use names 8 and 9 changed in AEO 2026; earlier AEOs used
+        # 'PCs' and 'non-PC office equipment'. The AEO year is taken from
+        # the module-level aeo_import_year (set via -y CLI arg) when available,
+        # otherwise derived from aeo_base_year in the metadata JSON.
+        if aeo_import_year is not None:
+            _aeo_yr = aeo_import_year
+        else:
+            try:
+                with open(fp.METADATA_PATH, 'r') as _f:
+                    _meta = json.load(_f)
+                _aeo_yr = _meta.get('aeo_base_year', 2025)
+            except (FileNotFoundError, json.JSONDecodeError):
+                _aeo_yr = 2026  # default to AEO 2026 behaviour
+
+        if _aeo_yr >= 2026:  # AEO 2026 or later
+            _eu8 = 'data center'
+            _eu9 = 'office equipment'
+        else:  # pre-AEO 2026
+            _eu8 = 'PCs'
+            _eu9 = 'non-PC office equipment'
+
         self.endusedict = {'heating': 1,
                            'cooling': 2,
                            'water heating': 3,
@@ -110,8 +136,8 @@ class CommercialTranslationDicts(object):
                            'cooking': 5,
                            'lighting': 6,
                            'refrigeration': 7,
-                           'PCs': 8,
-                           'non-PC office equipment': 9,
+                           _eu8: 8,
+                           _eu9: 9,
                            'other': 10,
                            'MELs': 10,
                            'unspecified': 11
@@ -307,72 +333,97 @@ def sd_mseg_percent(sd_array, sel, yrs):
     # Convert the years list from a list of integers to a list of strings
     yrs = [str(yr) for yr in yrs]
 
-    # Filter service demand data based on the specified census
-    # division, building type, end use, and fuel type
-    filtered = sd_array[np.all([sd_array['r'] == sel[0],
-                                sd_array['b'] == sel[1],
-                                sd_array['s'] == sel[2],
-                                sd_array['f'] == sel[3]], axis=0)]
+    def clean_sd_subset(filtered):
+        """Normalize service-demand descriptions and drop placeholders."""
 
-    # Initialize list of rows to remove from 'filtered' based on a
-    # regex search of the 'Description' text
-    rows_to_remove = []
+        rows_to_remove = []
 
-    # Replace technology descriptions in the array 'filtered' with
-    # generalized names, removing any text describing the vintage or
-    # efficiency level and preparing to delete placeholder rows
-    # (placeholder rows are in the data as imported)
-    for idx, row in enumerate(filtered):
-
-        # Identify the technology name from the 'Description' column in
-        # the data using a regex set up to match any text '.+?' that
-        # appears before the first occurrence of one or more spaces
-        # followed by a 2 and three other numbers (i.e., 2009 or 2035)
-        tech_name = re.search(r'.+?(?=\s+2[0-9]{3})', row['Description'])
-
-        # Also check the special case where the technology name is so
-        # long that the year number is partially truncated at the end
-        # of the string
-        exc_tech_name = re.search(
-            r'.+?(?=\s+2[0-9]{1,2}$)',
-            row['Description'])
-
-        # If the regex matched, overwrite the original description with
-        # the matching text, which describes the technology without
-        # scenario-specific text like '2003 installed base'
-        if tech_name:
-            filtered['Description'][idx] = tech_name.group(0)
-        # Else check to see if the description indicates a placeholder
-        # row, which should be deleted before the technologies are
-        # summarized and returned from this function
-        elif re.search('placeholder', row['Description']):
-            rows_to_remove.append(idx)
-        # Else check to see if the description is an empty string,
-        # and if so, add it to the list of rows to remove
-        elif re.search(r'^(?![\s\S])', row['Description']):
-            rows_to_remove.append(idx)
-        # Else check for a special case where the year in the
-        # technology name sought by the tech_name regex didn't match
-        # because the year in the name is partially truncated at
-        # the end of the technology name string
-        elif exc_tech_name:
-            filtered['Description'][idx] = exc_tech_name.group(0)
-        # Implicitly, if the text does not match either regex, it
-        # is assumed that it does not need to be edited or removed
-
-    # Delete the placeholder rows from the filtered array
-    filtered = np.delete(filtered, rows_to_remove, 0)
-
-    # Special filtering for lighting to drop special modifier text
-    # in the descriptions of linear fluorescent bulb types (e.g.,
-    # replace 'T8 F32 Commodity' with 'T8 F32') now that year
-    # details have been removed
-    if sel[2] == CommercialTranslationDicts().endusedict['lighting']:
+        # Replace technology descriptions in the array 'filtered' with
+        # generalized names, removing any text describing the vintage or
+        # efficiency level and preparing to delete placeholder rows
+        # (placeholder rows are in the data as imported)
         for idx, row in enumerate(filtered):
-            # Identify linear fluorescent types
-            tech_name = re.search('^(T[0-9] F[0-9]{2})', row['Description'])
+
+            # Identify the technology name from the 'Description' column in
+            # the data using a regex set up to match any text '.+?' that
+            # appears before the first occurrence of one or more spaces
+            # followed by a 2 and three other numbers (i.e., 2009 or 2035)
+            tech_name = re.search(r'.+?(?=\s+2[0-9]{3})', row['Description'])
+
+            # Also check the special case where the technology name is so
+            # long that the year number is partially truncated at the end
+            # of the string
+            exc_tech_name = re.search(
+                r'.+?(?=\s+2[0-9]{1,2}$)',
+                row['Description'])
+
+            # If the regex matched, overwrite the original description with
+            # the matching text, which describes the technology without
+            # scenario-specific text like '2003 installed base'
             if tech_name:
                 filtered['Description'][idx] = tech_name.group(0)
+            # Else check to see if the description indicates a placeholder
+            # row, which should be deleted before the technologies are
+            # summarized and returned from this function
+            elif re.search('placeholder', row['Description']):
+                rows_to_remove.append(idx)
+            # Else check to see if the description is an empty string,
+            # and if so, add it to the list of rows to remove
+            elif re.search(r'^(?![\s\S])', row['Description']):
+                rows_to_remove.append(idx)
+            # Else check for a special case where the year in the
+            # technology name sought by the tech_name regex didn't match
+            # because the year in the name is partially truncated at
+            # the end of the technology name string
+            elif exc_tech_name:
+                filtered['Description'][idx] = exc_tech_name.group(0)
+            # Implicitly, if the text does not match either regex, it
+            # is assumed that it does not need to be edited or removed
+
+        filtered = np.delete(filtered, rows_to_remove, 0)
+
+        # Special filtering for lighting to drop special modifier text
+        # in the descriptions of linear fluorescent bulb types (e.g.,
+        # replace 'T8 F32 Commodity' with 'T8 F32') now that year
+        # details have been removed
+        if sel[2] == CommercialTranslationDicts().endusedict['lighting']:
+            for idx, row in enumerate(filtered):
+                # Identify linear fluorescent types
+                tech_name = re.search('^(T[0-9] F[0-9]{2})',
+                                      row['Description'])
+                if tech_name:
+                    filtered['Description'][idx] = tech_name.group(0)
+
+        return filtered
+
+    # Filter service demand data based on the specified census division,
+    # building type, end use, and fuel type. Some valid commercial
+    # fuel/end use pairs appear in DBOUT but have no building-type-specific
+    # SDOUT rows; in those cases, broaden to the same building type to
+    # all building and then to
+    # all regions so the total DBOUT energy is not dropped downstream.
+    filter_scopes = [
+        [sd_array['r'] == sel[0], sd_array['b'] == sel[1],
+         sd_array['s'] == sel[2], sd_array['f'] == sel[3]],
+        [sd_array['r'] == sel[0], sd_array['s'] == sel[2],
+         sd_array['f'] == sel[3]],
+        [sd_array['s'] == sel[2], sd_array['f'] == sel[3]]]
+
+    filtered = np.array([], dtype=sd_array.dtype)
+    for filters in filter_scopes:
+        candidate = clean_sd_subset(sd_array[np.all(filters, axis=0)])
+        if candidate.size == 0:
+            continue
+
+        # Keep broadening if all SD values are zero in the current scope.
+        # This prevents valid DBOUT energy from being forced to zero for
+        # building types that only have placeholder SD rows locally.
+        if recfn.structured_to_unstructured(candidate[yrs],
+                                            dtype='<f8').any():
+            filtered = candidate
+            break
+
+        filtered = candidate
 
     # Because different technologies are sometimes coded with the same
     # technology type number (especially in lighting, where lighting
@@ -1272,6 +1323,19 @@ def onsite_calc(generation_file, json_results):
 
 def main():
     """ Import input data files and do other things """
+
+    global aeo_import_year
+
+    aeo_versions = [2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025, 2026]
+    parser = argparse.ArgumentParser(
+        description='Build commercial microsegments from EIA AEO data.')
+    parser.add_argument(
+        '-y', '--year', type=int, default=None,
+        help='Specify year of AEO data to be imported',
+        choices=aeo_versions)
+    args = parser.parse_args()
+
+    aeo_import_year = args.year
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()

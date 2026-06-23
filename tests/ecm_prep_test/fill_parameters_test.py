@@ -341,8 +341,8 @@ def test_data():
                 "ceiling fan",
                 "ventilation",
                 "MELs",
-                "non-PC office equipment",
-                "PCs",
+                "office equipment",
+                "data center",
                 "unspecified",
             ],
             [
@@ -520,8 +520,8 @@ def test_data():
                 "ceiling fan",
                 "ventilation",
                 "MELs",
-                "non-PC office equipment",
-                "PCs",
+                "office equipment",
+                "data center",
                 "unspecified",
             ],
             [

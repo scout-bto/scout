@@ -460,7 +460,9 @@
                             },
                             "additionalProperties": false
                         },
+                        "data center": {"$ref": "#/definitions/cplObject"},
                         "PCs": {"$ref": "#/definitions/cplObject"},
+                        "office equipment": { "type": "number", "const": 0 },
                         "non-PC office equipment": { "type": "number", "const": 0 },
                         "MELs": {
                             "type": "object",

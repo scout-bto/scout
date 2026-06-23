@@ -3,7 +3,7 @@
   "climate_zone": "all",
   "bldg_type": ["assembly", "education", "large office", "small office", "health care", "lodging"],
   "structure_type": "all",
-  "end_use": ["heating", "cooling", "ventilation", "lighting", "PCs"],
+  "end_use": ["heating", "cooling", "ventilation", "lighting", "PCs", "data center"],
   "fuel_type": "all",
   "technology": "all",
   "market_entry_year": 2025,
@@ -13,7 +13,8 @@
   "market_exit_year": null,
   "market_exit_year_source": null,
   "energy_efficiency": {
-      "heating": 0.35, "cooling": 0.35, "ventilation": 0.35, "lighting": 0.45, "PCs": 0.80},
+      "heating": 0.35, "cooling": 0.35, "ventilation": 0.35, "lighting": 0.45,
+      "PCs": 0.80, "data center": 0.80},
   "energy_efficiency_units": "relative savings (constant)",
   "energy_efficiency_source": {
     "note": "Based on typical relative savings range of 10%-40% (lighting/HVAC) and 50%-90% (PCs)",

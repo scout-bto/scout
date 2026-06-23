@@ -69,7 +69,8 @@
       "enum": [
         "all", "heating", "secondary heating", "cooling", "water heating", "cooking", 
         "drying", "lighting", "refrigeration", "ceiling fan", "fans and pumps", "computers", 
-        "TVs", "ventilation", "PCs", "non-PC office equipment", "MELs", "unspecified", "other"
+        "TVs", "ventilation", "PCs", "non-PC office equipment", "MELs", "unspecified", "other",
+        "office equipment", "data center" 
       ]
     },
     "structureTypeEnum": {

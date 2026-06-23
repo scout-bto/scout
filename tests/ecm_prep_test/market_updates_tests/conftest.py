@@ -60,7 +60,14 @@ def market_test_data():
     # National-level variables (AIA regions)
     handyfiles = UsefulInputFiles(opts)
     handyvars = UsefulVars(base_dir, handyfiles, opts)
-    handyvars.com_eqp_eus_nostk = ["lighting", "PCs", "MELs"]
+    handyvars.com_eqp_eus_nostk = [
+        "lighting",
+        "PCs",
+        "non-PC office equipment",
+        "office equipment",
+        "data center",
+        "MELs",
+    ]
     # Site energy assessment settings
     opts_site_energy, opts_site_energy_dict = [copy.deepcopy(x) for x in [opts, opts_dict]]
     opts_site_energy.site_energy, opts_site_energy_dict["site_energy"] = (True for n in range(2))

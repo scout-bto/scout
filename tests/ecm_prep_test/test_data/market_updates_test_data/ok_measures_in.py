@@ -513,7 +513,7 @@ ok_measures_in = [
         "climate_zone": "AIA_CZ1",
         "fuel_type": "electricity",
         "fuel_switch_to": None,
-        "end_use": ["PCs", "MELs"],
+        "end_use": ["office equipment", "MELs"],
         "market_entry_year": None,
         "market_exit_year": None,
         "technology": [None, "distribution transformers"],

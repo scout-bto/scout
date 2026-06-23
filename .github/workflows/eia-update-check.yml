@@ -33,7 +33,7 @@ jobs:
           # Fail the step if the Python command fails, even when piped through tee
           set -o pipefail
           mkdir -p tests/eia_update
-          python -m scout.AEO_update_helpers.baseline_comparison --year 2025 2>&1 | tee tests/eia_update/eia_baseline_output.txt
+          python -m scout.AEO_update_helpers.baseline_comparison --year 2026 2>&1 | tee tests/eia_update/eia_baseline_output.txt
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

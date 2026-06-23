@@ -24,6 +24,7 @@ sample_mseg_in = {
                 },
                 "lighting": {"T5 F28": {"stock": "NA", "energy": {"2009": 11, "2010": 11}}},
                 "PCs": {"stock": "NA", "energy": {"2009": 12, "2010": 12}},
+                "office equipment": {"stock": "NA", "energy": {"2009": 12, "2010": 12}},
                 "MELs": {
                     "distribution transformers": {"stock": "NA", "energy": {"2009": 24, "2010": 24}}
                 },
