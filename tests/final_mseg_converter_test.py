@@ -3794,6 +3794,40 @@ class MELsDataUnitTest(CommonUnitTest):
                       "source": "Source F"
                     }
                 },
+                "office equipment": {
+                    "performance": {
+                      "typical": {
+                        "active": {
+                          "2009": 183.0,
+                          "2010": 166.0,
+                          "2011": 146.0},
+                        "ready": {
+                          "2009": 2.0,
+                          "2010": 2.0,
+                          "2011": 2.0},
+                        "off": {
+                          "2009": 5.0,
+                          "2010": 5.0,
+                          "2011": 5.0}
+                      },
+                      "units": "kWh/yr",
+                      "source": "Source D"
+                    },
+                    "cost": {
+                      "typical": {
+                        "2009": 594.0,
+                        "2010": 595.0,
+                        "2011": 597.0},
+                      "units": "2018$/unit",
+                      "source": "Source E"
+                    },
+                    "lifetime": {
+                      "average": 5.0,
+                      "range": 2.0,
+                      "units": "years",
+                      "source": "Source F"
+                    }
+                },
                 "MELs": {
                     "escalators": {
                         "performance": {
@@ -3837,7 +3871,7 @@ class MELsDataUnitTest(CommonUnitTest):
     # square foot floor area basis in commercial buildings
     conversions_data = {
         "cost unit conversions": {
-            "PCs": {
+            "data center": {
                 "original units": "$/computer",
                 "revised units": "$/ft^2 floor",
                 "conversion factor": {
@@ -3863,20 +3897,22 @@ class MELsDataHandlerFunctionTest(MELsDataUnitTest):
     # specifications), covering residential and commercial building types
     sample_keys = [['AIA_CZ2', 'single family home', 'electricity',
                     'ceiling fan'],
-                   ['AIA_CZ3', 'large office', 'electricity', 'PCs'],
+                   ['AIA_CZ3', 'large office', 'electricity', 'office equipment'],
                    ['AIA_CZ4', 'single family home', 'electricity', 'TVs',
                     'TV'],
                    ['AIA_CZ5', 'small office', 'electricity', 'MELs',
                     'escalators'],
-                   ['AIA_CZ3', 'assembly', 'electricity', 'PCs'],
+                   ['AIA_CZ3', 'assembly', 'electricity', 'office equipment'],
                    ['AIA_CZ4', 'single family home', 'electricity',
-                    'TVs', 'home theater and audio']]
+                    'TVs', 'home theater and audio'],
+                   ['AIA_CZ3', 'large office', 'electricity', 'PCs'],
+                   ['AIA_CZ3', 'assembly', 'electricity', 'PCs']]
 
     # Create a list that indicates for each entry in the sample_keys
     # list whether a dict should be produced or if the function under
     # test should return '0' because there will not be any associated
     # cost, performance, or lifetime data
-    dict_expected = [True, True, True, False, True, True]
+    dict_expected = [True, True, True, False, True, True, True, True]
 
     # Provide a list of years (as integers) over which the cost,
     # performance, and lifetime data should be produced
@@ -3949,7 +3985,37 @@ class MELsDataHandlerFunctionTest(MELsDataUnitTest):
             'average': 10,
             'range': 10,
             'units': 'years',
-            'source': 'Source CC'}}]
+            'source': 'Source CC'}},
+        # PCs (pre-AEO 2026 name) - large office: same conversion as
+        # 'office equipment', 594/595/597 * 0.0025 (office and education)
+        {'installed cost': {
+            'typical': {'2009': 1.485, '2010': 1.4875, '2011': 1.4925},
+            'units': '2018$/ft^2 floor',
+            'source': 'Source E'},
+         'performance': {
+            'typical': {'2009': 190, '2010': 173, '2011': 153},
+            'units': 'kWh/yr',
+            'source': 'Source D'},
+         'lifetime': {
+            'average': 5,
+            'range': 2,
+            'units': 'years',
+            'source': 'Source F'}},
+        # PCs (pre-AEO 2026 name) - assembly: same conversion as
+        # 'office equipment', 594/595/597 * 0.001 (all other)
+        {'installed cost': {
+            'typical': {'2009': 0.594, '2010': 0.595, '2011': 0.597},
+            'units': '2018$/ft^2 floor',
+            'source': 'Source E'},
+         'performance': {
+            'typical': {'2009': 190, '2010': 173, '2011': 153},
+            'units': 'kWh/yr',
+            'source': 'Source D'},
+         'lifetime': {
+            'average': 5,
+            'range': 2,
+            'units': 'years',
+            'source': 'Source F'}}]
 
     # Test the MELs cost, performance, and lifetime data processing
     # function using the common MELs data dict, cost conversion

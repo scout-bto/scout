@@ -194,6 +194,7 @@ sample_cpl_in = {
                     }
                 },
                 "PCs": 0,
+                "office equipment": 0,
                 "MELs": {"distribution transformers": 0},
             }
         },

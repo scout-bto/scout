@@ -55,8 +55,8 @@ def test_data():
         "ceiling fan",
         "ventilation",
         "MELs",
-        "non-PC office equipment",
-        "PCs",
+        "office equipment",
+        "data center",
         "dishwasher",
         "electric other",
         "rechargeables",
@@ -243,8 +243,8 @@ def test_data():
         "all unspecified",
         "all ventilation",
         "all MELs",
-        "all non-PC office equipment",
-        "all PCs",
+        "all office equipment",
+        "all data center",
     ]
 
     return {

@@ -27,6 +27,29 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # Shallow clone; master is fetched separately in the compare step
           fetch-depth: 1
+      - name: Check for update-baseline label
+        id: check-label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let hasLabel = false;
+            if (context.eventName === 'pull_request') {
+              // Labels are directly available in the PR event payload
+              hasLabel = context.payload.pull_request.labels.some(
+                l => l.name === 'update-baseline'
+              );
+            } else if (context.eventName === 'push') {
+              // Post-merge push: find the PR(s) associated with this commit
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+              });
+              hasLabel = prs.some(
+                pr => pr.labels.some(l => l.name === 'update-baseline')
+              );
+            }
+            core.setOutput('update_baseline', hasLabel ? 'true' : 'false');
       - name: Set up Python 3.10.17
         uses: actions/setup-python@v5
         with:
@@ -272,7 +295,7 @@ jobs:
               }'
           done
           # Mark integration test status based on update-baseline label
-          UPDATE_BASELINE="${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}"
+          UPDATE_BASELINE="${{ steps.check-label.outputs.update_baseline }}"
           if [[ "$UPDATE_BASELINE" == "true" ]]; then
             integ_state="success"
             integ_desc="Plot images differ from master, but 'update-baseline' label is set"
@@ -294,7 +317,7 @@ jobs:
       - name: Fail if results differ from master
         if: steps.compare.outputs.has_diff == 'true'
         env:
-          UPDATE_BASELINE: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
+          UPDATE_BASELINE: ${{ steps.check-label.outputs.update_baseline }}
         run: |
           HAS_JSON_DIFF="${{ steps.compare.outputs.has_json_diff }}"
           HAS_PLOT_DIFF="${{ steps.compare.outputs.has_plot_diff }}"

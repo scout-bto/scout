@@ -10,8 +10,7 @@
   "bldg_type": "all commercial",
   "structure_type": "all",
   "end_use": [
-    "PCs",
-    "non-PC office equipment"
+    "office equipment"
   ],
   "fuel_type": "electricity",
   "fuel_switch_to": null,

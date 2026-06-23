@@ -52,13 +52,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
       - name: Run tests
-        id: run_tests
-        continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'update-baseline') }}
         run: python -m pytest tests/
-      - name: Warn if tests failed with update-baseline
-        if: steps.run_tests.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'update-baseline')
-        run: |
-          echo "::warning::Unit tests failed, but 'update-baseline' label is set. Treating as expected change."
 
   check-docs:
     runs-on: ubuntu-latest
@@ -96,11 +90,18 @@ jobs:
       enable_profiler: ${{ steps.check_profiler.outputs.enable_profiler }}
     steps:
       - name: Check if PR
-        uses: 8BitJonny/gh-get-current-pr@2.2.0
+        uses: actions/github-script@v7
         id: PR
         with:
-          filterOutClosed: true
-          filterOutDraft: true
+          script: |
+            const pr = context.payload.pull_request;
+            if (pr && !pr.draft) {
+              core.setOutput('pr_found', 'true');
+              core.setOutput('pr', JSON.stringify({ base: { ref: pr.base?.ref || '' } }));
+            } else {
+              core.setOutput('pr_found', 'false');
+              core.setOutput('pr', '{}');
+            }
       - name: Check for profiler label
         id: check_profiler
         run: |
