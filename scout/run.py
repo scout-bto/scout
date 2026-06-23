@@ -3044,10 +3044,10 @@ class Engine(object):
 
                         # Efficient-captured energy all with switched to fuel
                         if var_sub == "efficient-captured":
-                            fs_splt = adj_out_break["captured fuel splits"]
+                            fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                         # Efficient energy may be split across base/switched to fuel
                         else:
-                            fs_splt = adj_out_break["fuel splits"]
+                            fs_splt = adj_out_break["fuel splits"][var_sub]
 
                         # Handle extra key on the adjusted microsegment data
                         # for the cost variables ("energy")
@@ -3059,7 +3059,7 @@ class Engine(object):
                                 adj_out_break["base fuel"][cost_brk_key][var_sub][yr] = \
                                     adj_out_break["base fuel"][cost_brk_key][var_sub][yr] - (
                                     adj[var][cost_mast_key]["total"][var_sub][yr]) * (
-                                    1 - adj_frac_t) * fs_splt[var_sub][cost_brk_key][yr]
+                                    1 - adj_frac_t) * fs_splt[cost_brk_key][yr]
                         else:
                             # Handle efficient captured energy case for fuel
                             # switching, where unless dual fuel characteristics
@@ -3071,7 +3071,7 @@ class Engine(object):
                                     adj_out_break[
                                         "base fuel"][var][var_sub][yr] - (
                                     adj[var]["total"][var_sub][yr]) * (
-                                    1 - adj_frac_t) * fs_splt[var_sub][var][yr]
+                                    1 - adj_frac_t) * fs_splt[var][yr]
                             except KeyError:
                                 continue
 
@@ -3528,17 +3528,17 @@ class Engine(object):
                             if var_sub == "baseline":
                                 adj_frac_t = adj_frac_base
                                 # Baseline data all with original fuel
-                                fs_splt = adj_out_break["fuel splits"]
+                                fs_splt = adj_out_break["fuel splits"][var_sub]
                             elif var_sub == "efficient-captured":
                                 adj_frac_t = adj_frac_eff
                                 # Efficient-captured energy all with switched
                                 # to fuel
-                                fs_splt = adj_out_break["captured fuel splits"]
+                                fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                             else:
                                 adj_frac_t = adj_frac_eff
                                 # Efficient energy may be split across base/
                                 # switched to fuel
-                                fs_splt = adj_out_break["fuel splits"]
+                                fs_splt = adj_out_break["fuel splits"][var_sub]
 
                             # Handle extra key on the adjusted microsegment
                             # data for the cost variables ("energy")
@@ -3552,8 +3552,7 @@ class Engine(object):
                                         "base fuel"][cost_brk_key][var_sub][yr] = adj_out_break[
                                             "base fuel"][cost_brk_key][var_sub][yr] - (
                                         adj[var][cost_mast_key]["total"][var_sub][yr]) * (
-                                            1 - adj_frac_t) * fs_splt[var_sub][
-                                        cost_brk_key][yr]
+                                            1 - adj_frac_t) * fs_splt[cost_brk_key][yr]
                             else:
                                 # Handle case where no base fuel data is reported, which is
                                 # conceivable for fuel switching (go to next variable in loop)
@@ -3571,7 +3570,7 @@ class Engine(object):
                                             "base fuel"][var][var_sub][yr] = \
                                             adj_out_break["base fuel"][var][var_sub][yr] - (
                                             adj[var]["total"][var_sub][yr]) * (
-                                            1 - adj_frac_t) * fs_splt[var_sub][var][yr]
+                                            1 - adj_frac_t) * fs_splt[var][yr]
                                     else:
                                         continue
                                 except KeyError:
