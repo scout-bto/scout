@@ -298,15 +298,9 @@ def main():
     if aeo_import_year == 2015:
         nlt_cp_skip_header = 20
         lt_skip_header = 35
-        lt_skip_footer = 54
-    elif aeo_import_year == 2026:
-        nlt_cp_skip_header = 2
-        lt_skip_header = 40
-        lt_skip_footer = 51
     else:
         nlt_cp_skip_header = 2
         lt_skip_header = 37
-        lt_skip_footer = 52
 
     # Instantiate lists to store minimum and maximum years identified
     # from the data
@@ -343,19 +337,11 @@ def main():
         return eia_nlt_cp
 
     def import_residential_cpl_lighting_data(file_name, skip_header_lines):
-        try:
-            return np.genfromtxt(file_name, names=rmt.r_lt_names,
-                                 dtype=None, comments=None,
-                                 skip_header=skip_header_lines,
-                                 skip_footer=lt_skip_footer,
-                                 encoding="latin1")
-        except ValueError:
-            # AEO 2026 rsmlgt adds extra header rows and has one fewer
-            # footer row than prior layouts.
-            return np.genfromtxt(file_name, names=rmt.r_lt_names,
-                                 dtype=None, comments=None,
-                                 skip_header=40, skip_footer=51,
-                                 encoding="latin1")
+        eia_lt = np.genfromtxt(file_name, names=rmt.r_lt_names,
+                               dtype=None, comments=None,
+                               skip_header=skip_header_lines, skip_footer=52,
+                               encoding="latin1")
+        return eia_lt
 
     def import_commercial_service_demand_data(file_name):  # KSDOUT.txt
         serv_dtypes = cm.dtype_array(file_name)
@@ -367,39 +353,14 @@ def main():
         return catg_data
 
     def import_commercial_cpl_data(file_name):  # ktek.csv
-        def _import_with_skip(skip_lines):
-            tech_dtypes = cm.dtype_array(file_name, ',', skip_lines - 1)
-            dtype_names = {name for name, _ in tech_dtypes}
-            wanted_cols = cmt.UsefulVars().columns_to_keep
-            if not set(wanted_cols).issubset(dtype_names):
-                return None
-
-            col_indices, reduced_dtypes = cmt.dtype_reducer(
-                tech_dtypes, wanted_cols)
-            return cm.data_import(file_name, reduced_dtypes, ',',
-                                  skip_lines, col_indices)
-
-        # Try the configured skip line count first.
-        tech_data = _import_with_skip(cmt.UsefulVars().cpl_data_skip_lines)
-
-        # If expected year columns are missing, detect the actual header row
-        # and retry import with that dynamically identified skip value.
-        if tech_data is None or not {'y1', 'y2'}.issubset(set(tech_data.dtype.names)):
-            detected_skip = None
-            with open(file_name, 'r', encoding='latin1') as f_in:
-                for i, line in enumerate(f_in, start=1):
-                    if line.startswith('t,v,r,s,f,shr,eff,c1,c2,c3,c4,life,y1,y2'):
-                        detected_skip = i
-                        break
-
-            if detected_skip:
-                tech_data = _import_with_skip(detected_skip)
-
-        if tech_data is None:
-            raise ValueError(
-                f"Unable to import commercial CPL data from {file_name}; "
-                "required columns were not found.")
-
+        tech_dtypes = cm.dtype_array(file_name, ',',
+                                     cmt.UsefulVars().cpl_data_skip_lines - 1)
+        col_indices, tech_dtypes = cmt.dtype_reducer(
+                                        tech_dtypes,
+                                        cmt.UsefulVars().columns_to_keep)
+        tech_data = cm.data_import(file_name, tech_dtypes, ',',
+                                   cmt.UsefulVars().cpl_data_skip_lines,
+                                   col_indices)
         return tech_data
 
     def import_commercial_time_preference_data(file_name):  # kprem.txt
