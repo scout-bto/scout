@@ -66,10 +66,7 @@ import pandas as pd
 from backoff import on_exception, expo
 from collections import OrderedDict
 from pathlib import Path
-from dotenv import load_dotenv
 from scout.config import FilePaths as fp
-
-load_dotenv()
 
 
 class UsefulVars(object):
@@ -115,8 +112,8 @@ class ValidQueries(object):
 
     def __init__(self):
         self.file_type = ['national', 'regional']
-        self.years = ['2018', '2019', '2020', '2021', '2022', '2023', '2025', '2026']
-        self.emm_years = ['2020', '2021', '2022', '2023', '2025', '2026']
+        self.years = ['2018', '2019', '2020', '2021', '2022', '2023', '2025']
+        self.emm_years = ['2020', '2021', '2022', '2023', '2025']
         self.cases = {
             '2018': ['ref2018', 'co2fee25'],
             '2019': ['ref2019'],
@@ -125,8 +122,7 @@ class ValidQueries(object):
             '2022': ['ref2022', 'lowogs', 'lorencst'],
             '2023': ['ref2023', 'lowogs', 'lowZTC', 'highogs', 'highZTC',
                      'lowmaclowZTC', 'highmachighZTC'],
-            '2025': ['ref2025', 'lowogs', 'lowZTC', 'highogs', 'highZTC'],
-            '2026': ['cb2026', 'lowogs', 'lowZTC', 'highogs', 'highZTC']}
+            '2025': ['ref2025', 'lowogs', 'lowZTC', 'highogs', 'highZTC']}
         self.regions_dict = OrderedDict({'WECCB': 'BASN',
                                          'WECCCAN': 'CANO',
                                          'WECCCAS': 'CASO',
@@ -980,9 +976,8 @@ def updater_state(conv_emm, aeo_min, conv_gas):
     # Get EMM emissions factors from EMM conversion file
     emm_co2 = pd.DataFrame.from_dict(
         conv_emm['CO2 intensity of electricity']['data'], orient='index')
-    emm_co2_cols = [col for col in emm_co2.columns if col != aeo_min]
     # Divide each year in dataframe by base year
-    emm_co2_ratios = emm_co2[emm_co2_cols].div(emm_co2[aeo_min], axis=0)
+    emm_co2_ratios = emm_co2.iloc[:, 1:].div(emm_co2[aeo_min], axis=0)
     # Re-insert base year into new dataframe
     emm_co2_ratios.insert(0, aeo_min, '')
     emm_co2_ratios[aeo_min] = 1.0
@@ -995,12 +990,10 @@ def updater_state(conv_emm, aeo_min, conv_gas):
     emm_price_com = pd.DataFrame.from_dict(
         conv_emm['End-use electricity price']['data']['commercial'],
         orient='index')
-    emm_price_res_cols = [col for col in emm_price_res.columns if col != aeo_min]
-    emm_price_com_cols = [col for col in emm_price_com.columns if col != aeo_min]
     # Divide each year in dataframe by base year
-    emm_price_res_ratios = emm_price_res[emm_price_res_cols].div(
+    emm_price_res_ratios = emm_price_res.iloc[:, 1:].div(
         emm_price_res[aeo_min], axis=0)
-    emm_price_com_ratios = emm_price_com[emm_price_com_cols].div(
+    emm_price_com_ratios = emm_price_com.iloc[:, 1:].div(
         emm_price_com[aeo_min], axis=0)
     # Re-insert base year into new dataframe
     emm_price_res_ratios.insert(0, aeo_min, '')

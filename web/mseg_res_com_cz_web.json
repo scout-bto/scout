@@ -30587,7 +30587,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1709951.0999999999,
             "2017": 1660111.9,
@@ -30627,7 +30627,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2640127.4,
             "2017": 2823621.3,
@@ -36208,7 +36208,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 10186064.6,
             "2017": 9947396.000000002,
@@ -36248,7 +36248,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6017245.6,
             "2017": 6473687.699999999,
@@ -41829,7 +41829,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 710581.7000000001,
             "2017": 691927.5,
@@ -41869,7 +41869,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 666580.4,
             "2017": 714519.3,
@@ -47450,7 +47450,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 574142.0000000001,
             "2017": 558982.5,
@@ -47490,7 +47490,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1956641.1000000003,
             "2017": 2098669.1,
@@ -53071,7 +53071,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 3047938.3,
             "2017": 2992293.5,
@@ -53111,7 +53111,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3356305.6999999997,
             "2017": 3625467.5999999996,
@@ -58692,7 +58692,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 695996.2999999999,
             "2017": 685133.7999999999,
@@ -58732,7 +58732,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 12873043.2,
             "2017": 13960946.000000002,
@@ -64313,7 +64313,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 14744183.699999997,
             "2017": 14360286.0,
@@ -64353,7 +64353,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3959557.6999999997,
             "2017": 4247821.399999999,
@@ -69934,7 +69934,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 9459801.8,
             "2017": 9228169.2,
@@ -69974,7 +69974,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6144693.6,
             "2017": 6604489.5,
@@ -75555,7 +75555,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 5453575.3,
             "2017": 5322212.699999999,
@@ -75595,7 +75595,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6172440.7,
             "2017": 6635148.6,
@@ -81176,7 +81176,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1624364.6999999997,
             "2017": 1591512.1,
@@ -81216,7 +81216,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1062246.2,
             "2017": 1147556.1,
@@ -86797,7 +86797,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 5158828.600000001,
             "2017": 5037516.0,
@@ -86837,7 +86837,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1812806.7,
             "2017": 1950278.9,
@@ -120229,7 +120229,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 3141191.4000000004,
             "2017": 3046645.9000000004,
@@ -120269,7 +120269,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 4813775.399999999,
             "2017": 5144120.0,
@@ -125850,7 +125850,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 15664275.200000001,
             "2017": 15276109.1,
@@ -125890,7 +125890,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 9500579.9,
             "2017": 10206556.0,
@@ -131471,7 +131471,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1266784.9000000001,
             "2017": 1232742.2,
@@ -131511,7 +131511,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1128656.7999999998,
             "2017": 1209087.0,
@@ -137092,7 +137092,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 884861.1,
             "2017": 860879.9,
@@ -137132,7 +137132,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2976212.4000000004,
             "2017": 3189658.5999999996,
@@ -142713,7 +142713,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 4942538.399999999,
             "2017": 4840739.6,
@@ -142753,7 +142753,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6600869.8,
             "2017": 7120820.9,
@@ -148334,7 +148334,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1115736.6,
             "2017": 1098657.1,
@@ -148374,7 +148374,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 15758820.1,
             "2017": 17086941.1,
@@ -153955,7 +153955,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 25633036.099999994,
             "2017": 24924242.5,
@@ -153995,7 +153995,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6863288.199999999,
             "2017": 7352140.899999999,
@@ -159576,7 +159576,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 15660261.499999998,
             "2017": 15242372.0,
@@ -159616,7 +159616,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 9675725.9,
             "2017": 10376716.5,
@@ -165197,7 +165197,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 9594604.5,
             "2017": 9353284.5,
@@ -165237,7 +165237,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 11608413.299999999,
             "2017": 12467271.0,
@@ -170818,7 +170818,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2773025.9,
             "2017": 2716076.8,
@@ -170858,7 +170858,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1760978.5,
             "2017": 1901364.0999999999,
@@ -176439,7 +176439,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 7415066.4,
             "2017": 7240620.3,
@@ -176479,7 +176479,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 4302924.399999999,
             "2017": 4630004.7,
@@ -209871,7 +209871,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1820203.4,
             "2017": 1768658.6,
@@ -209911,7 +209911,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2809378.0,
             "2017": 3007955.0,
@@ -215492,7 +215492,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 10358164.7,
             "2017": 10136241.0,
@@ -215532,7 +215532,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6486697.8,
             "2017": 6996773.7,
@@ -221113,7 +221113,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1182199.9,
             "2017": 1151164.6,
@@ -221153,7 +221153,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1118874.5999999999,
             "2017": 1202206.3,
@@ -226734,7 +226734,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 886183.6000000001,
             "2017": 864840.4,
@@ -226774,7 +226774,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2455232.8000000003,
             "2017": 2638916.9999999995,
@@ -232355,7 +232355,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2716297.8,
             "2017": 2661904.6,
@@ -232395,7 +232395,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3279249.6,
             "2017": 3540844.1999999993,
@@ -237976,7 +237976,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1206177.7,
             "2017": 1191088.5999999996,
@@ -238016,7 +238016,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 13772854.4,
             "2017": 14984385.2,
@@ -243597,7 +243597,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 19486567.9,
             "2017": 18958935.5,
@@ -243637,7 +243637,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6044213.8,
             "2017": 6479641.8,
@@ -249218,7 +249218,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 9350305.3,
             "2017": 9115253.0,
@@ -249258,7 +249258,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 6692740.899999999,
             "2017": 7187819.4,
@@ -254839,7 +254839,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 6354622.100000001,
             "2017": 6218036.4,
@@ -254879,7 +254879,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 8050351.299999999,
             "2017": 8679407.0,
@@ -260460,7 +260460,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2602429.0000000005,
             "2017": 2554762.8000000003,
@@ -260500,7 +260500,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2190270.2,
             "2017": 2369182.3,
@@ -266081,7 +266081,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 6676271.899999999,
             "2017": 6518348.399999999,
@@ -266121,7 +266121,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2840439.6999999997,
             "2017": 3055399.1,
@@ -299513,7 +299513,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 4135638.0,
             "2017": 4029046.4,
@@ -299553,7 +299553,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 5842697.0,
             "2017": 6270771.8,
@@ -305134,7 +305134,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 18725253.6,
             "2017": 18362332.2,
@@ -305174,7 +305174,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 13275208.200000001,
             "2017": 14340537.0,
@@ -310755,7 +310755,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 946044.6,
             "2017": 923999.8,
@@ -310795,7 +310795,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2417209.2,
             "2017": 2598262.6,
@@ -316376,7 +316376,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 1424981.4,
             "2017": 1392265.2,
@@ -316416,7 +316416,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3991320.5999999996,
             "2017": 4295271.0,
@@ -321997,7 +321997,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 4853990.8,
             "2017": 4753647.8,
@@ -322037,7 +322037,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 5864792.2,
             "2017": 6331988.0,
@@ -327618,7 +327618,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2117412.4000000004,
             "2017": 2085276.0,
@@ -327658,7 +327658,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 28404391.6,
             "2017": 30779615.6,
@@ -333239,7 +333239,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 20008267.4,
             "2017": 19533824.4,
@@ -333279,7 +333279,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 5953400.6,
             "2017": 6402388.4,
@@ -338860,7 +338860,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 22788132.400000002,
             "2017": 22241752.6,
@@ -338900,7 +338900,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 14943969.2,
             "2017": 16069721.399999999,
@@ -344481,7 +344481,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 12659961.6,
             "2017": 12402014.2,
@@ -344521,7 +344521,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 17913853.2,
             "2017": 19329258.200000003,
@@ -350102,7 +350102,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 7096324.6,
             "2017": 6965212.2,
@@ -350142,7 +350142,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 5798916.0,
             "2017": 6272502.6,
@@ -355723,7 +355723,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 4030011.5999999996,
             "2017": 3937196.4,
@@ -355763,7 +355763,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2179151.6,
             "2017": 2345170.6,
@@ -389155,7 +389155,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2162032.1,
             "2017": 2107552.4999999995,
@@ -389195,7 +389195,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3045093.9,
             "2017": 3270608.4,
@@ -394776,7 +394776,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 13067295.5,
             "2017": 12870975.4,
@@ -394816,7 +394816,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 8692303.0,
             "2017": 9429483.399999999,
@@ -400397,7 +400397,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 514372.0,
             "2017": 504149.3,
@@ -400437,7 +400437,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1180674.0000000002,
             "2017": 1273919.5,
@@ -406018,7 +406018,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 800838.4,
             "2017": 784038.2999999999,
@@ -406058,7 +406058,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2451565.4,
             "2017": 2645454.5999999996,
@@ -411639,7 +411639,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2818195.4,
             "2017": 2774374.6,
@@ -411679,7 +411679,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3140786.6999999997,
             "2017": 3402882.5999999996,
@@ -417260,7 +417260,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 856699.2999999999,
             "2017": 845866.6,
@@ -417300,7 +417300,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 10734933.0,
             "2017": 11683163.100000001,
@@ -422881,7 +422881,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 11071193.200000001,
             "2017": 10853950.999999998,
@@ -422921,7 +422921,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 3602672.8,
             "2017": 3889149.9,
@@ -428502,7 +428502,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 11021439.700000001,
             "2017": 10797392.5,
@@ -428542,7 +428542,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 7738884.100000001,
             "2017": 8351265.8999999985,
@@ -434123,7 +434123,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 5971257.0,
             "2017": 5868471.8,
@@ -434163,7 +434163,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 7738881.3,
             "2017": 8379849.8,
@@ -439744,7 +439744,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2978880.1999999997,
             "2017": 2941459.0000000005,
@@ -439784,7 +439784,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 2883590.1000000006,
             "2017": 3137395.3,
@@ -445365,7 +445365,7 @@
             "stock": "NA"
           }
         },
-        "data center": {
+        "PCs": {
           "energy": {
             "2016": 2575382.7,
             "2017": 2517890.5,
@@ -445405,7 +445405,7 @@
           },
           "stock": "NA"
         },
-        "office equipment": {
+        "non-PC office equipment": {
           "energy": {
             "2016": 1407691.4,
             "2017": 1516161.6999999997,

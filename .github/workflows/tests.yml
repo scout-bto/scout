@@ -96,18 +96,11 @@ jobs:
       enable_profiler: ${{ steps.check_profiler.outputs.enable_profiler }}
     steps:
       - name: Check if PR
-        uses: actions/github-script@v7
+        uses: 8BitJonny/gh-get-current-pr@2.2.0
         id: PR
         with:
-          script: |
-            const pr = context.payload.pull_request;
-            if (pr && !pr.draft) {
-              core.setOutput('pr_found', 'true');
-              core.setOutput('pr', JSON.stringify({ base: { ref: pr.base?.ref || '' } }));
-            } else {
-              core.setOutput('pr_found', 'false');
-              core.setOutput('pr', '{}');
-            }
+          filterOutClosed: true
+          filterOutDraft: true
       - name: Check for profiler label
         id: check_profiler
         run: |
