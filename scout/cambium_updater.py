@@ -65,7 +65,10 @@ import json
 import gzip
 import re
 from pathlib import Path
+from dotenv import load_dotenv
 from scout.config import FilePaths as fp
+
+load_dotenv()
 
 
 class UsefulInputFiles(object):
