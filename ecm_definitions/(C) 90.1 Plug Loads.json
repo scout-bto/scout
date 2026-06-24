@@ -21,7 +21,8 @@
   ],
   "structure_type": "all",
   "end_use": [
-    "office equipment"
+    "PCs",
+    "non-PC office equipment"
   ],
   "fuel_type": "electricity",
   "fuel_switch_to": null,
