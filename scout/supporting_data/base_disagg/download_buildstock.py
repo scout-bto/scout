@@ -1,7 +1,9 @@
 """
-Download ComStock/ResStock 2024 baseline parquet from NREL OEDI.
+Download ComStock/ResStock baseline parquet from NREL OEDI.
 pip install boto3 pyarrow
 Public bucket -> UNSIGNED, no AWS credentials required.
+
+Set YEAR = "2025" (default) or "2024" to select the release.
 """
 import io
 import os
@@ -17,10 +19,34 @@ WEATHER = "amy2018"
 INDIR = "input"
 OUT_FILENAME = "baseline.parquet"
 
-# Hard-code the release tags you confirmed exist:
-RELEASES = {
-    "resstock": f"{BASE}/2024/resstock_amy2018_release_2/",
-    "comstock": f"{BASE}/2024/comstock_amy2018_release_2/",
+# Set to "2025" or "2024" to pick the release.
+YEAR = "2025"
+
+CONFIGS = {
+    "2025": {
+        "resstock": {
+            "prefix": f"{BASE}/2025/resstock_amy2018_release_1/",
+            "path": "metadata_and_annual_results/national/full/parquet/",
+            "filename": "upgrade0.parquet",
+        },
+        "comstock": {
+            "prefix": f"{BASE}/2025/comstock_amy2018_release_3/",
+            "path": "metadata_and_annual_results/by_state_and_county/full/parquet/",
+            "file_suffix": "_upgrade0.parquet",
+        },
+    },
+    "2024": {
+        "resstock": {
+            "prefix": f"{BASE}/2024/resstock_amy2018_release_2/",
+            "path": "metadata_and_annual_results/national/parquet/",
+            "filename": "baseline_metadata_and_annual_results.parquet",
+        },
+        "comstock": {
+            "prefix": f"{BASE}/2024/comstock_amy2018_release_2/",
+            "path": "metadata_and_annual_results_aggregates/by_state_and_county/full/parquet/",
+            "file_suffix": "_baseline_agg.parquet",
+        },
+    },
 }
 
 # Columns generate_geo_maps.py needs from ComStock (keeps memory low)
@@ -57,22 +83,22 @@ s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
 
 def download_resstock(out_path):
-    key = (RELEASES["resstock"]
-           + "metadata_and_annual_results/national/parquet/"
-             "baseline_metadata_and_annual_results.parquet")
+    cfg = CONFIGS[YEAR]["resstock"]
+    key = cfg["prefix"] + cfg["path"] + cfg["filename"]
     size = s3.head_object(Bucket=BUCKET, Key=key)["ContentLength"]
     print(f"ResStock national file: {size/1e6:.0f} MB -> {out_path}")
     s3.download_file(BUCKET, key, out_path)
 
 
 def download_comstock(out_path):
-    base = (RELEASES["comstock"]
-            + "metadata_and_annual_results/by_state_and_county/full/parquet/")
+    cfg = CONFIGS[YEAR]["comstock"]
+    base = cfg["prefix"] + cfg["path"]
+    suffix = cfg["file_suffix"]
     paginator = s3.get_paginator("list_objects_v2")
     keys = []
     for page in paginator.paginate(Bucket=BUCKET, Prefix=base):
         for obj in page.get("Contents", []):
-            if obj["Key"].endswith("_baseline.parquet"):
+            if obj["Key"].endswith(suffix):
                 keys.append(obj["Key"])
     if not keys:
         raise RuntimeError(f"No county baseline files under {base}")
@@ -153,9 +179,8 @@ def _conform(table, schema):
 
 
 def main():
-    # for ds, subdir in [("resstock", "2024_resstock"),
-    #                    ("comstock", "2024_comstock")]:
-    for ds, subdir in [("comstock", "2024_comstock")]:
+    for ds in ["resstock", "comstock"]:
+        subdir = f"{YEAR}_{ds}"
         out_dir = os.path.join(INDIR, subdir, WEATHER)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, OUT_FILENAME)
