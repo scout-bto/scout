@@ -765,7 +765,7 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
         print(f"    Saved {out_file}")
 
 
-def combine_hvac_and_other(output_dir):
+def combine_hvac_and_other(output_dir, year="2025"):
     """Combine HVAC technology files with end-use files.
 
     NOTE: Technology-level disaggregation requires HVAC system mapping files
@@ -774,8 +774,8 @@ def combine_hvac_and_other(output_dir):
 
     For end-use-level analysis (most common), technology files are not needed.
     """
-    tech_dir = os.path.join(output_dir, "2024_technology")
-    end_use_dir = os.path.join(output_dir, "2024_end_use")
+    tech_dir = os.path.join(output_dir, f"{year}_technology")
+    end_use_dir = os.path.join(output_dir, f"{year}_end_use")
 
     # Check if any tech files exist
     tech_files_exist = False
@@ -831,10 +831,10 @@ def combine_hvac_and_other(output_dir):
         print("No technology files found to combine.")
 
 
-def fill_na_with_zeros(output_dir):
+def fill_na_with_zeros(output_dir, year="2025"):
     """Fill NA values with 0 in all generated CSV files."""
     print("Filling NA values with 0...")
-    for folder_name in ["2024_end_use", "2024_technology"]:
+    for folder_name in [f"{year}_end_use", f"{year}_technology"]:
         folder_path = os.path.join(output_dir, folder_name)
         if not os.path.exists(folder_path):
             print(f"  Skipping {folder_name}: directory not found")
@@ -857,14 +857,14 @@ def fill_na_with_zeros(output_dir):
     print("NA filling complete.")
 
 
-def install_files(output_dir, install_dir):
+def install_files(output_dir, install_dir, year="2025"):
     print(f"Installing generated files to {install_dir}...")
     if not os.path.exists(install_dir):
         os.makedirs(install_dir)
 
     source_dirs = [
-        os.path.join(output_dir, "2024_end_use"),
-        os.path.join(output_dir, "2024_technology")
+        os.path.join(output_dir, f"{year}_end_use"),
+        os.path.join(output_dir, f"{year}_technology")
     ]
 
     for source_dir in source_dirs:
@@ -882,14 +882,17 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate geographic disaggregation maps from ResStock and "
                     "ComStock data.")
+    parser.add_argument('--year', type=str, default='2025',
+                        choices=['2024', '2025'],
+                        help='BuildStock release year (default: 2025).')
     parser.add_argument('--weather-year', type=str, default='amy2018',
                         help='Weather year (e.g. amy2018 or tmy3).')
-    parser.add_argument('--comstock-path', type=str,
-                        default='input/2024_comstock',
-                        help='Path to ComStock data directory.')
-    parser.add_argument('--resstock-path', type=str,
-                        default='input/2024_resstock',
-                        help='Path to ResStock data directory.')
+    parser.add_argument('--comstock-path', type=str, default=None,
+                        help='Path to ComStock data directory '
+                             '(default: input/<year>_comstock).')
+    parser.add_argument('--resstock-path', type=str, default=None,
+                        help='Path to ResStock data directory '
+                             '(default: input/<year>_resstock).')
     parser.add_argument('--output-dir', type=str, default='output',
                         help='Directory to save the output CSV '
                              'files.')
@@ -909,12 +912,18 @@ def main():
 
     args = parser.parse_args()
 
+    # Apply year-based defaults for paths not explicitly provided
+    if args.comstock_path is None:
+        args.comstock_path = f"input/{args.year}_comstock"
+    if args.resstock_path is None:
+        args.resstock_path = f"input/{args.year}_resstock"
+
     # Define base directory relative to the script location
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Define output subdirectories
-    tech_outdir = os.path.join(args.output_dir, '2024_technology')
-    end_use_outdir = os.path.join(args.output_dir, '2024_end_use')
+    tech_outdir = os.path.join(args.output_dir, f'{args.year}_technology')
+    end_use_outdir = os.path.join(args.output_dir, f'{args.year}_end_use')
     if args.data_type in ('technology', 'both'):
         os.makedirs(tech_outdir, exist_ok=True)
     if args.data_type in ('end_use', 'both'):
@@ -1147,14 +1156,14 @@ def main():
 
     # Post-processing steps
     if args.data_type == 'both':
-        combine_hvac_and_other(args.output_dir)
-    fill_na_with_zeros(args.output_dir)
+        combine_hvac_and_other(args.output_dir, year=args.year)
+    fill_na_with_zeros(args.output_dir, year=args.year)
 
     # Install step
     if args.install:
         install_dir = os.path.abspath(
             os.path.join(script_dir, '..', '..', 'convert_data', 'geo_map'))
-        install_files(args.output_dir, install_dir)
+        install_files(args.output_dir, install_dir, year=args.year)
 
 
 if __name__ == "__main__":
