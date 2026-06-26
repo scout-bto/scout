@@ -7391,9 +7391,9 @@ class Measure(object):
                                     mskeys[4] in ["heating", "cooling"]
                                     # Ensure that current linked tech. is designated as the linked
                                     # tech. to use for stock cost reporting purposes
-                                    and (self.linked_htcl_tover_linked_tech and
+                                    and (self.linked_htcl_tover_linked_tech and (
                                          self.linked_htcl_tover_linked_tech == "all" or
-                                         self.linked_htcl_tover_linked_tech in mskeys[-2])
+                                         self.linked_htcl_tover_linked_tech in mskeys[-2]))
                                     # Only adjust for central heat/cool tech (e.g., does not apply
                                     # to room ACs or space heaters, we don't report agg. costs for)
                                     and not any([mskeys[-2] is not None and x in mskeys[-2]
@@ -11710,7 +11710,11 @@ class MeasurePackage(Measure):
                     if adopt_scheme == "Technical potential":
                         # Pull factors that were used to align current cm's stock values with that
                         # of the anchor segment to ensure apples-to-apples cost comparisons
-                        try:
+                        if "paired heat/cool mseg adjustments" in \
+                            m[adopt_scheme]["microsegments"].keys() and \
+                            cm in m[adopt_scheme]["microsegments"][
+                                "paired heat/cool mseg adjustments"][
+                                "linked cost adjustments"].keys():
                             stk_cap_fact, lnkd_cost_adj_fact = [
                                 m[adopt_scheme]["microsegments"][
                                     "paired heat/cool mseg adjustments"][
@@ -11726,7 +11730,7 @@ class MeasurePackage(Measure):
                                 rmv_hp_dblct_meas_stkcosts, rmv_scnd_hvac_stkcosts,
                                 rmv_lnkd_tech_costs, opts, stk_cap_fact, lnkd_cost_adj_fact,
                                 dmd_meas=False, is_in_package=False)
-                        except KeyError:
+                        else:
                             pass
                 # Generate a dictionary including data on how much of the
                 # packaged measure's baseline energy/carbon/cost is attributed
