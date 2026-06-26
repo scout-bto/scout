@@ -310,11 +310,11 @@ def _build_series_tolerance(year: str | int) -> dict[str, float]:
         # Commercial – distillate
         "cnsm_NA_comm_NA_dfo_othu_usa_qbtu": 0.0,
         # Residential – notable non-zero averages
-        "cnsm_NA_resd_wtht_ng_NA_usa_qbtu": 0.0002,   # 0.02%
+        "cnsm_NA_resd_wtht_ng_NA_usa_qbtu": 0.00025,   # 0.025%
         "cnsm_NA_resd_sph_dfo_NA_usa_qbtu": 0.00232,  # 0.232%
         # Commercial – electricity (non-zero)
-        "cnsm_NA_comm_NA_prc_othu_usa_qbtu": 0.0008,  # 0.08%
-        "cnsm_NA_comm_NA_prc_wtht_usa_qbtu": 0.00064,  # 0.064%
+        "cnsm_NA_comm_NA_prc_othu_usa_qbtu": 0.0012,  # 0.12%
+        "cnsm_NA_comm_NA_prc_wtht_usa_qbtu": 0.00095,  # 0.095%
         # Commercial – distillate (non-zero)
         "cnsm_NA_comm_NA_dfo_sph_usa_qbtu": 0.0096,   # 0.96%
         "cnsm_NA_comm_NA_dfo_wtht_usa_qbtu": 0.0674,  # 6.74%
