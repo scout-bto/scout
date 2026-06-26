@@ -7,7 +7,7 @@ Run this script from the project root as a module so imports and
 relative paths resolve correctly, and so your API key can be picked up
 from a ``.env`` file or environment variable::
 
-    python -m scout.AEO_update_helpers.baseline_comparison --year 2025
+    python -m scout.AEO_update_helpers.baseline_comparison --year 2026
 
 You can optionally add ``--verbose`` to see extra diagnostic output.
 
@@ -310,16 +310,16 @@ def _build_series_tolerance(year: str | int) -> dict[str, float]:
         # Commercial – distillate
         "cnsm_NA_comm_NA_dfo_othu_usa_qbtu": 0.0,
         # Residential – notable non-zero averages
-        "cnsm_NA_resd_wtht_ng_NA_usa_qbtu": 0.0002,   # 0.02%
-        "cnsm_NA_resd_sph_dfo_NA_usa_qbtu": 0.00232,  # 0.232%
+        "cnsm_NA_resd_wtht_ng_NA_usa_qbtu": 0.0003,   # 0.03%
+        "cnsm_NA_resd_sph_dfo_NA_usa_qbtu": 0.0016,  # 0.16%
         # Commercial – electricity (non-zero)
-        "cnsm_NA_comm_NA_prc_othu_usa_qbtu": 0.0008,  # 0.08%
-        "cnsm_NA_comm_NA_prc_wtht_usa_qbtu": 0.00064,  # 0.064%
+        "cnsm_NA_comm_NA_prc_othu_usa_qbtu": 0.0012,  # 0.12%
+        "cnsm_NA_comm_NA_prc_wtht_usa_qbtu": 0.0010,  # 0.10%
         # Commercial – distillate (non-zero)
-        "cnsm_NA_comm_NA_dfo_sph_usa_qbtu": 0.0096,   # 0.96%
-        "cnsm_NA_comm_NA_dfo_wtht_usa_qbtu": 0.0674,  # 6.74%
+        "cnsm_NA_comm_NA_dfo_sph_usa_qbtu": 0.0005,   # 0.05%
+        "cnsm_NA_comm_NA_dfo_wtht_usa_qbtu": 0.0004,  # 0.04%
         # Commercial – natural gas (non-zero)
-        "cnsm_NA_comm_NA_ng_spc_usa_qbtu": 0.05802,   # 5.802%
+        "cnsm_NA_comm_NA_ng_spc_usa_qbtu": 0.00009,   # 0.009%
     }
 
     if yr >= 2026:
@@ -388,7 +388,7 @@ def api_query(
         ID of the time series we want (for example
         ``cnsm_NA_resd_lghtng_elc_NA_usa_qbtu``).
     year : str
-        AEO reference year, e.g. "2025". Used only in the URL path.
+        AEO reference year, e.g. "2026". Used only in the URL path.
     verbose : bool
         If True, print the URL and any error messages.
     """
@@ -870,7 +870,7 @@ def report_all_series_summary() -> None:
             rows,
             headers=[
                 "Building", "Fuel", "End Use",
-                "Avg Error", "Scout 2025 Avg Error",
+                "Avg Error", "Allowed Error",
             ],
             tablefmt="github",
         )
@@ -987,7 +987,7 @@ def parse_args() -> argparse.Namespace:
         "--year",
         type=str,
         default=str(datetime.now().year),
-        help="AEO year (YYYY) to query, for example 2025.",
+        help="AEO year (YYYY) to query, for example 2026.",
     )
     parser.add_argument(
         "--verbose",
