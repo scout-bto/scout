@@ -1902,9 +1902,9 @@ class Engine(object):
         mkt_fracs = [{} for meas in range(0, len(measures_adj))]
         mkt_fracs_tot = dict.fromkeys(self.handyvars.aeo_years, 0)
 
-        # Find mseg key to use in pulling stock and cost data (in some cases, like cooling
-        # msegs for heat pump tech,stock turnover and cost information for the current
-        # msegs should be linked to another microsegment – heating msegs, in the HP case)
+        # Find mseg key to use in pulling stock, cost, and consumer choice weight data (in some
+        # cases, like cooling msegs for heat pump tech,stock turnover and cost information
+        # for current msegs should be linked to another mseg – heating msegs, in the HP case)
         stk_cost_dat_keys = [self.find_join_keys(m, mseg_key) for m in measures_adj]
 
         # Calculate the total annualized cost (capital + operating) needed to
@@ -1921,9 +1921,10 @@ class Engine(object):
             # Unit annual operating cost dictionary (calculated across all measure segments)
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "residential"] for m in measures_adj]
-            choice_mseg = [mseg_key for m in measures_adj]
+            # Shorthand for mseg information to use in pulling consumer choice weights later
+            choice_mseg = [mseg_key] * len(measures_adj)
         else:
-            # Shorthand for mseg-specific stock/cost data
+            # Shorthand for mseg-specific stock/cost data; use mseg info. pulled above
             try:
                 markets_uc_stk = [
                     m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
@@ -1948,8 +1949,7 @@ class Engine(object):
                         "mseg_adjust"]["contributing mseg keys and values"][
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
                     # Shorthand for mseg information to use in pulling consumer choice weights later
-                    choice_mseg = [mseg_key for m in measures_adj]
-
+                    choice_mseg = [mseg_key] * len(measures_adj)
             # Shorthand for linked stock and energy costs, to be added to unit costs below
             lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                             "linked mseg values"] for m in measures_adj]
@@ -2007,10 +2007,6 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
-        # Pre-compute str(mseg_key) once – it is used inside every
-        # (ind × yr) iteration of the choice-parameter lookup below.
-        mseg_key_str = str(mseg_key)
-
         # Loop through competing measures and calculate market shares for
         # each based on their annualized capital and operating costs
         for ind, m in enumerate(measures_adj):
@@ -2020,7 +2016,7 @@ class Engine(object):
             # (avoids re-traversing the full dict on every year iteration).
             try:
                 _choice_params = m.markets[adopt_scheme]["competed"][
-                    "mseg_adjust"]["competed choice parameters"][mseg_key_str]
+                    "mseg_adjust"]["competed choice parameters"][str(choice_mseg[ind])]
             except KeyError:
                 _choice_params = None
 
@@ -2179,9 +2175,9 @@ class Engine(object):
         mkt_fracs = [{} for meas in range(0, len(measures_adj))]
         tot_cost = [{} for meas in range(0, len(measures_adj))]
 
-        # Find mseg key to use in pulling stock and stock cost data (in some cases, like cooling
-        # msegs for heat pump tech, stock cost and stock turnover information for the current
-        # msegs should be linked to another microsegment – heating msegs, in the HP case)
+        # Find mseg key to use in pulling stock, cost, and consumer choice weight data (in some
+        # cases, like cooling msegs for heat pump tech,stock turnover and cost information
+        # for current msegs should be linked to another mseg – heating msegs, in the HP case)
         stk_cost_dat_keys = [self.find_join_keys(m, mseg_key) for m in measures_adj]
 
         # Calculate the total annualized cost (capital + operating) needed to
@@ -2203,9 +2199,9 @@ class Engine(object):
             # rate bins; flag for handling below
             op_cost_rate_bins = True
             # Shorthand for mseg information to use in pulling consumer choice weights later
-            choice_mseg = [mseg_key for m in measures_adj]
+            choice_mseg = [mseg_key] * len(measures_adj)
         else:
-            # Shorthand for mseg-specific stock/stock cost data
+            # Shorthand for mseg-specific stock/stock cost data; use mseg info. pulled above
             try:
                 markets_uc_stk, markets_uc_capfact = [[
                     m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][x][
@@ -2231,6 +2227,8 @@ class Engine(object):
                         "Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             mseg_key] for m_ind, m in enumerate(measures_adj)] for x in [
                         "contributing mseg keys and values", "capacity factor"]]
+                    # Shorthand for mseg information to use in pulling consumer choice weights later
+                    choice_mseg = [mseg_key] * len(measures_adj)
 
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
@@ -2483,9 +2481,6 @@ class Engine(object):
                 list(zip(result[c_l], counts_arr[c_l]))
                 for c_l in range(n_samples)]
 
-        # Pre-compute str(mseg_key) once – used in every (ind × yr) iteration.
-        mseg_key_str = str(mseg_key)
-
         # Loop through competing measures and use total annualized capital
         # + operating costs to determine the overall share of the market
         # that is captured by each measure; use market shares to make
@@ -2499,7 +2494,7 @@ class Engine(object):
             try:
                 _rate_dist_all = m.markets[adopt_scheme]["competed"][
                     "mseg_adjust"]["competed choice parameters"][
-                        mseg_key_str]["rate distribution"]
+                        str(choice_mseg[ind])]["rate distribution"]
             except KeyError:
                 _rate_dist_all = None
 
@@ -3049,10 +3044,10 @@ class Engine(object):
 
                         # Efficient-captured energy all with switched to fuel
                         if var_sub == "efficient-captured":
-                            fs_splt = adj_out_break["captured fuel splits"]
+                            fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                         # Efficient energy may be split across base/switched to fuel
                         else:
-                            fs_splt = adj_out_break["fuel splits"]
+                            fs_splt = adj_out_break["fuel splits"][var_sub]
 
                         # Handle extra key on the adjusted microsegment data
                         # for the cost variables ("energy")
@@ -3064,7 +3059,7 @@ class Engine(object):
                                 adj_out_break["base fuel"][cost_brk_key][var_sub][yr] = \
                                     adj_out_break["base fuel"][cost_brk_key][var_sub][yr] - (
                                     adj[var][cost_mast_key]["total"][var_sub][yr]) * (
-                                    1 - adj_frac_t) * fs_splt[var_sub][cost_brk_key][yr]
+                                    1 - adj_frac_t) * fs_splt[cost_brk_key][yr]
                         else:
                             # Handle efficient captured energy case for fuel
                             # switching, where unless dual fuel characteristics
@@ -3076,7 +3071,7 @@ class Engine(object):
                                     adj_out_break[
                                         "base fuel"][var][var_sub][yr] - (
                                     adj[var]["total"][var_sub][yr]) * (
-                                    1 - adj_frac_t) * fs_splt[var_sub][var][yr]
+                                    1 - adj_frac_t) * fs_splt[var][yr]
                             except KeyError:
                                 continue
 
@@ -3533,17 +3528,17 @@ class Engine(object):
                             if var_sub == "baseline":
                                 adj_frac_t = adj_frac_base
                                 # Baseline data all with original fuel
-                                fs_splt = adj_out_break["fuel splits"]
+                                fs_splt = adj_out_break["fuel splits"][var_sub]
                             elif var_sub == "efficient-captured":
                                 adj_frac_t = adj_frac_eff
                                 # Efficient-captured energy all with switched
                                 # to fuel
-                                fs_splt = adj_out_break["captured fuel splits"]
+                                fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                             else:
                                 adj_frac_t = adj_frac_eff
                                 # Efficient energy may be split across base/
                                 # switched to fuel
-                                fs_splt = adj_out_break["fuel splits"]
+                                fs_splt = adj_out_break["fuel splits"][var_sub]
 
                             # Handle extra key on the adjusted microsegment
                             # data for the cost variables ("energy")
@@ -3557,8 +3552,7 @@ class Engine(object):
                                         "base fuel"][cost_brk_key][var_sub][yr] = adj_out_break[
                                             "base fuel"][cost_brk_key][var_sub][yr] - (
                                         adj[var][cost_mast_key]["total"][var_sub][yr]) * (
-                                            1 - adj_frac_t) * fs_splt[var_sub][
-                                        cost_brk_key][yr]
+                                            1 - adj_frac_t) * fs_splt[cost_brk_key][yr]
                             else:
                                 # Handle case where no base fuel data is reported, which is
                                 # conceivable for fuel switching (go to next variable in loop)
@@ -3576,7 +3570,7 @@ class Engine(object):
                                             "base fuel"][var][var_sub][yr] = \
                                             adj_out_break["base fuel"][var][var_sub][yr] - (
                                             adj[var]["total"][var_sub][yr]) * (
-                                            1 - adj_frac_t) * fs_splt[var_sub][var][yr]
+                                            1 - adj_frac_t) * fs_splt[var][yr]
                                     else:
                                         continue
                                 except KeyError:
@@ -4775,10 +4769,10 @@ class Engine(object):
                     try:
                         # Efficient-captured energy all with switched to fuel
                         if var_sub == "efficient-captured":
-                            fs_splt = adj_out_break["captured fuel splits"]
+                            fs_splt = adj_out_break["captured fuel splits"]["efficient"]
                         # Efficient energy may be split across base/switched to fuel
                         else:
-                            fs_splt = adj_out_break["fuel splits"]
+                            fs_splt = adj_out_break["fuel splits"][var_sub]
                         # Ensure baseline result is not already zero before adjusting; if zero, no
                         # further adjustment required
                         _cur_val = adj_out_break["base fuel"][var][var_sub][yr]
@@ -4790,7 +4784,7 @@ class Engine(object):
                         adj_out_break["base fuel"][var][var_sub][yr] = \
                             _cur_val - (
                             adj[var]["total"][adj_key][yr]) * (
-                                1 - adj_t[var]) * fs_splt[var_sub][var][yr]
+                                1 - adj_t[var]) * fs_splt[var][yr]
                     except KeyError:
                         continue
 
