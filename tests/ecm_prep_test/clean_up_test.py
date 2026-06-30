@@ -65,6 +65,7 @@ def test_data():
         {
             "Technical potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -78,6 +79,7 @@ def test_data():
             },
             "Max adoption potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -93,6 +95,7 @@ def test_data():
         {
             "Technical potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -106,6 +109,7 @@ def test_data():
             },
             "Max adoption potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -121,6 +125,7 @@ def test_data():
         {
             "Technical potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
@@ -134,6 +139,7 @@ def test_data():
             },
             "Max adoption potential": {
                 "contributing mseg keys and values": {},
+                "linked mseg values": {},
                 "competed choice parameters": {},
                 "capacity factor": {},
                 "secondary mseg adjustments": {
