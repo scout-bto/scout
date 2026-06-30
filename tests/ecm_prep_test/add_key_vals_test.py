@@ -66,7 +66,21 @@ def test_data():
     }
     ok_out_restrict = {
         "level 1a": {"level 2aa": {"2009": 4, "2010": 6}, "level 2ab": {"2009": 8, "2010": 10}},
+        "lifetime": {"level 2ba": {"2009": 12, "2010": 14}, "level 2bb": {"2009": 16, "2010": 18}},
+    }
+    # Test case for when dict2 has extra keys (sub-market scaling) that dict1 doesn't
+    restrict_dict1_extra_keys = {
+        "level 1a": {"level 2aa": {"2009": 2, "2010": 3}, "level 2ab": {"2009": 4, "2010": 5}},
         "lifetime": {"level 2ba": {"2009": 6, "2010": 7}, "level 2bb": {"2009": 8, "2010": 9}},
+    }
+    restrict_dict2_extra_keys = {
+        "level 1a": {"level 2aa": {"2009": 2, "2010": 3}, "level 2ab": {"2009": 4, "2010": 5}},
+        "lifetime": {"level 2ba": {"2009": 6, "2010": 7}, "level 2bb": {"2009": 8, "2010": 9}},
+        "sub-market scaling": 0.5,
+    }
+    ok_out_restrict_extra_keys = {
+        "level 1a": {"level 2aa": {"2009": 4, "2010": 6}, "level 2ab": {"2009": 8, "2010": 10}},
+        "lifetime": {"level 2ba": {"2009": 12, "2010": 14}, "level 2bb": {"2009": 16, "2010": 18}},
     }
 
     return {
@@ -79,6 +93,9 @@ def test_data():
         "fail_dict2_in": fail_dict2_in,
         "ok_out": ok_out,
         "ok_out_restrict": ok_out_restrict,
+        "restrict_dict1_extra_keys": restrict_dict1_extra_keys,
+        "restrict_dict2_extra_keys": restrict_dict2_extra_keys,
+        "ok_out_restrict_extra_keys": ok_out_restrict_extra_keys,
     }
 
 

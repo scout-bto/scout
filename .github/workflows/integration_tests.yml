@@ -85,6 +85,7 @@ jobs:
 
             # --- Checkout master ---
             git fetch --depth=1 origin master
+            git stash  # stash any result files to avoid conflicts
             git checkout origin/master -- .
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
@@ -161,7 +162,7 @@ jobs:
           # Extract baseline JSONs from master
           mkdir -p tests/integration_testing/base_results
           git show origin/master:tests/integration_testing/results/agg_results.json > tests/integration_testing/base_results/agg_results.json
-          git show origin/master:tests/integration_testing/results/ecm_results.json > tests/integration_testing/base_results/ecm_results.json
+          git show origin/master:tests/integration_testing/results/ecm_results.json | git lfs smudge > tests/integration_testing/base_results/ecm_results.json
           git show origin/master:tests/integration_testing/results/plots/tech_potential/Summary_Data-TP.xlsx > tests/integration_testing/base_results/Summary_Data-TP.xlsx
           git show origin/master:tests/integration_testing/results/plots/max_adopt_potential/Summary_Data-MAP.xlsx > tests/integration_testing/base_results/Summary_Data-MAP.xlsx
 
@@ -578,7 +579,7 @@ jobs:
           # --- JSON comparison: approximate (threshold-based) ---
           mkdir -p tests/integration_testing/base_results
           git show origin/master:tests/integration_testing/results/agg_results.json > tests/integration_testing/base_results/agg_results.json
-          git show origin/master:tests/integration_testing/results/ecm_results.json > tests/integration_testing/base_results/ecm_results.json
+          git show origin/master:tests/integration_testing/results/ecm_results.json | git lfs smudge > tests/integration_testing/base_results/ecm_results.json
           git show origin/master:tests/integration_testing/results/plots/tech_potential/Summary_Data-TP.xlsx > tests/integration_testing/base_results/Summary_Data-TP.xlsx
           git show origin/master:tests/integration_testing/results/plots/max_adopt_potential/Summary_Data-MAP.xlsx > tests/integration_testing/base_results/Summary_Data-MAP.xlsx
 
