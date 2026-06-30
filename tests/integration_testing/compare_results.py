@@ -26,6 +26,13 @@ class ScoutCompare():
             dict: json as a dictionary
         """
         with open(file_path, 'r') as file:
+            first_line = file.readline()
+            if first_line.startswith("version https://git-lfs.github.com"):
+                raise ValueError(
+                    f"{file_path} is a Git LFS pointer, not the actual file. "
+                    "Fetch the file via 'git lfs smudge' before comparing."
+                )
+            file.seek(0)
             return json.load(file)
 
     @staticmethod
