@@ -1,4 +1,5 @@
 
+import gc
 import pandas as pd
 import os
 import re
@@ -370,18 +371,22 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
         sec = "Res"
 
     mykeys = list(mymap)
+    needed_cols = list(dict.fromkeys(
+        [county_col, 'in.state'] + [c for cols in mymap.values() for c in cols]
+    ))
     for weath in weathers:
         print(f"  Processing {sector} end-use energy ({fueltype}) for {weath}...")
         if preloaded_dfs is not None and weath in preloaded_dfs:
-            df = preloaded_dfs[weath].copy()
+            src = preloaded_dfs[weath]
+            available = [c for c in needed_cols if c in src.columns]
+            df = src[available].copy()
         else:
             df = pd.read_parquet(f"{filedir}{weath}/{filename}",
                                  engine='pyarrow')
             df = normalize_columns(df)
         df = ensure_columns(df, mymap)
 
-        df.rename(columns={county_col: 'county'}, inplace=True)
-        df.rename(columns={'in.state': 'state'}, inplace=True)
+        df.rename(columns={county_col: 'county', 'in.state': 'state'}, inplace=True)
 
         for eu in mykeys:
             df[eu] = df[mymap[eu]].sum(axis=1)
@@ -469,19 +474,29 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
         area_col = "weight"
         sec = "Res"
 
+    needed_cols = list(dict.fromkeys(
+        [county_col, "in.state", area_col] +
+        [c for cols in mymap.values() for c in cols]
+    ))
     for weath in weathers:
         print(f"  Processing {sector} end-use stock ({fueltype}) for {weath}...")
         if preloaded_dfs is not None and weath in preloaded_dfs:
-            alldf = preloaded_dfs[weath].copy()
+            src = preloaded_dfs[weath]
+            available = [c for c in needed_cols if c in src.columns]
+            alldf = src[available].copy()
+            missing = sorted(set(needed_cols) - set(available))
+            for c in missing:
+                alldf[c] = 0.0
+            if missing:
+                print(f"    Zero-filled {len(missing)} absent column(s): {missing}")
         else:
             alldf = pd.read_parquet(f"{filedir}{weath}/{filename}",
                                     engine='pyarrow')
             alldf = normalize_columns(alldf)
-        alldf = ensure_columns(alldf, mymap)
+            alldf = ensure_columns(alldf, mymap)
 
-        alldf.rename(columns={county_col: "county"}, inplace=True)
-        alldf.rename(columns={"in.state": "state"}, inplace=True)
-        alldf.rename(columns={area_col: "warea"}, inplace=True)
+        alldf.rename(columns={county_col: "county", "in.state": "state",
+                               area_col: "warea"}, inplace=True)
 
         if "warea" not in alldf.columns:
             raise KeyError(
@@ -760,7 +775,7 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
 
-        out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_Stock_electricity_Tech.csv")
+        out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Stock_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
         print(f"    Saved {out_file}")
 
@@ -808,7 +823,7 @@ def combine_hvac_and_other(output_dir, year="2025"):
         if "Stock" in filename:
             filename_eu = (f"{filename.replace('Stock', '')}"
                            f"electricity_Stock.csv")
-            filename_tech = f"{filename}_electricity_Tech.csv"
+            filename_tech = f"{filename.replace('_Stock', '')}_electricity_Stock_Tech.csv"
         else:
             filename_eu = f"{filename}_electricity.csv"
             filename_tech = f"{filename}_electricity_Tech.csv"
