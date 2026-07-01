@@ -914,10 +914,12 @@ def main():
     parser.add_argument('--output-dir', type=str, default='output',
                         help='Directory to save the output CSV '
                              'files.')
-    parser.add_argument('--data-type', type=str, default='both',
+    parser.add_argument('--data-type', type=str, default=None,
                         choices=['end_use', 'technology', 'both'],
                         help='Which output type to generate: end_use, '
-                             'technology, or both (default: both).')
+                             'technology, or both. Defaults to both when '
+                             'generating. Omit entirely with --install to '
+                             'copy existing output files without regenerating.')
     parser.add_argument('--mapping-dir', type=str, default='input/mapping',
                         help='Directory containing map_*.csv files '
                              '(default: input/mapping).')
@@ -934,6 +936,13 @@ def main():
 
     args = parser.parse_args()
 
+    # --data-type not given: skip generation entirely (allows --install-only use).
+    # When generating without --install, default to 'both'.
+    run_generation = args.data_type is not None
+    if not run_generation and not args.install:
+        args.data_type = 'both'
+        run_generation = True
+
     # Apply year-based defaults for paths not explicitly provided
     if args.comstock_path is None:
         args.comstock_path = f"input/{args.year}_comstock"
@@ -946,6 +955,15 @@ def main():
     # Define output subdirectories
     tech_outdir = os.path.join(args.output_dir, f'{args.year}_technology')
     end_use_outdir = os.path.join(args.output_dir, f'{args.year}_end_use')
+
+    if not run_generation:
+        # Install-only: skip all data loading and generation.
+        if args.install:
+            install_dir = os.path.abspath(
+                os.path.join(script_dir, '..', '..', 'convert_data', 'geo_map'))
+            install_files(args.output_dir, install_dir, year=args.year)
+        return
+
     if args.data_type in ('technology', 'both'):
         os.makedirs(tech_outdir, exist_ok=True)
     if args.data_type in ('end_use', 'both'):
