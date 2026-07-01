@@ -496,7 +496,7 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
             alldf = ensure_columns(alldf, mymap)
 
         alldf.rename(columns={county_col: "county", "in.state": "state",
-                               area_col: "warea"}, inplace=True)
+                              area_col: "warea"}, inplace=True)
 
         if "warea" not in alldf.columns:
             raise KeyError(
