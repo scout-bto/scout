@@ -537,8 +537,11 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
             conversion_matrix = df.pivot_table(
                 index=pivot_index, columns=pivot_col, values="warea",
                 aggfunc='sum')
+            del df
+            gc.collect()
             normalized_matrix = conversion_matrix.div(
                 conversion_matrix.sum(axis=0), axis=1).reset_index()
+            del conversion_matrix
             normalized_matrix = output_func(normalized_matrix)
             normalized_matrix = normalized_matrix.fillna(0)
             normalized_matrix.columns = normalized_matrix.iloc[0]
