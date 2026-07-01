@@ -925,6 +925,10 @@ def main():
                         help='Generate all output files (default behavior).')
     parser.add_argument('--force', action='store_true',
                         help='Overwrite existing output files.')
+    parser.add_argument('--sector', type=str, default='both',
+                        choices=['residential', 'commercial', 'both'],
+                        help='Which sector to process: residential, commercial, '
+                             'or both (default: both).')
     parser.add_argument('--install', action='store_true',
                         help='Copy generated files to geo_map directory.')
 
@@ -964,13 +968,13 @@ def main():
     res_dfs = {}
     com_dfs = {}
     for weath in weathers:
-        if os.path.exists(resstock_data_path):
+        if args.sector in ('residential', 'both') and os.path.exists(resstock_data_path):
             print(f"Pre-loading residential data for {weath}...")
             raw = pd.read_parquet(
                 f"{args.resstock_path}/{weath}/baseline.parquet",
                 engine='pyarrow')
             res_dfs[weath] = normalize_columns(raw)
-        if os.path.exists(comstock_data_path):
+        if args.sector in ('commercial', 'both') and os.path.exists(comstock_data_path):
             print(f"Pre-loading commercial data for {weath}...")
             raw = pd.read_parquet(
                 f"{args.comstock_path}/{weath}/baseline.parquet",
@@ -988,7 +992,9 @@ def main():
     ]
 
     if args.data_type in ('end_use', 'both'):
-        if not os.path.exists(resstock_data_path):
+        if args.sector not in ('residential', 'both'):
+            print("Skipping residential end-use processing (--sector commercial).")
+        elif not os.path.exists(resstock_data_path):
             print(f"WARNING: ResStock data not found at: {resstock_data_path}")
             print("  Skipping residential processing.")
             print("  To generate residential disaggregation maps, provide "
@@ -1039,7 +1045,9 @@ def main():
                     except Exception as e:
                         print(f"    ERROR processing residential {fuel} stock ({geo_name}): {e}")
 
-        if not os.path.exists(comstock_data_path):
+        if args.sector not in ('commercial', 'both'):
+            print("Skipping commercial end-use processing (--sector residential).")
+        elif not os.path.exists(comstock_data_path):
             print(f"WARNING: ComStock data not found at: {comstock_data_path}")
             print("  Skipping commercial processing.")
             print("  To generate commercial disaggregation maps, provide "
@@ -1090,7 +1098,9 @@ def main():
                         print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
 
     if args.data_type in ('technology', 'both'):
-        if not os.path.exists(resstock_data_path):
+        if args.sector not in ('residential', 'both'):
+            print("Skipping residential technology processing (--sector commercial).")
+        elif not os.path.exists(resstock_data_path):
             print(f"WARNING: ResStock data not found at: {resstock_data_path}")
             print("  Skipping residential technology processing.")
         else:
@@ -1130,7 +1140,9 @@ def main():
                     print(f"    ERROR processing residential tech stock ({geo_name}): {e}")
                     traceback.print_exc()
 
-        if not os.path.exists(comstock_data_path):
+        if args.sector not in ('commercial', 'both'):
+            print("Skipping commercial technology processing (--sector residential).")
+        elif not os.path.exists(comstock_data_path):
             print(f"WARNING: ComStock data not found at: {comstock_data_path}")
             print("  Skipping commercial technology processing.")
         else:
