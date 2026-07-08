@@ -960,7 +960,7 @@ def main():
         # Install-only: skip all data loading and generation.
         if args.install:
             install_dir = os.path.abspath(
-                os.path.join(script_dir, '..', '..', 'convert_data', 'geo_map'))
+                os.path.join(script_dir, '..', 'convert_data', 'geo_map'))
             install_files(args.output_dir, install_dir, year=args.year)
         return
 
@@ -1210,7 +1210,7 @@ def main():
     # Install step
     if args.install:
         install_dir = os.path.abspath(
-            os.path.join(script_dir, '..', '..', 'convert_data', 'geo_map'))
+            os.path.join(script_dir, '..', 'convert_data', 'geo_map'))
         install_files(args.output_dir, install_dir, year=args.year)
 
 
