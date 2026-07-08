@@ -320,8 +320,6 @@ def ensure_columns(df, mymap, fill=0.0):
 
 def apply_geographies(df, dfdict, geos):
     df['county'] = df['county'].astype(str)
-    df.loc[df['state'] == 'AK', 'county'] = 'G0'
-    df.loc[df['state'] == 'HI', 'county'] = 'G1'
     for geo in geos:
         if geo == 'emm':
             geocol = 'emm2020_county'
@@ -682,6 +680,11 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
 
+        # Add AK/HI columns for residential Cdiv outputs
+        if sec == "Res" and 'cdiv' in geos:
+            all_eu['AK'] = 0
+            all_eu['HI'] = 0
+
         out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
         print(f"    Saved {out_file}")
@@ -777,6 +780,11 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
             if not all_tech.empty:
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
+
+        # Add AK/HI columns for residential Cdiv outputs
+        if sec == "Res" and 'cdiv' in geos:
+            all_eu['AK'] = 0
+            all_eu['HI'] = 0
 
         out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Stock_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
