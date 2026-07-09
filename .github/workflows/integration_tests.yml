@@ -254,28 +254,51 @@ jobs:
         with:
           name: results
           path: ./tests/integration_testing/results/
-      - name: Commit plot comparison images
-        # Only commit PNG comparison images (for PR comment embedding).
-        # JSON and PDF results are uploaded as artifacts only — committing them
-        # breaks GitHub's diff viewer due to file size.
-        if: steps.compare.outputs.has_plot_diff == 'true'
+      - name: Commit integration result updates
+        # For PRs with the update-baseline label, commit updated integration
+        # results as new baseline files. Otherwise, commit only plot comparison
+        # PNGs to support PR comment embedding.
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.compare.outputs.has_diff == 'true'
         id: commit_results
         run: |
-          # Only commit PNG images for plot diff visualization
-          if [[ -d ./tests/integration_testing/results/plot_images ]]; then
-            git add ./tests/integration_testing/results/plot_images/
+          UPDATE_BASELINE="${{ steps.check-label.outputs.update_baseline }}"
+
+          if [[ "$UPDATE_BASELINE" == "true" ]]; then
+            # Drop transient diff reports before committing new baseline files.
+            rm -f ./tests/integration_testing/results/*_diffs.csv
+            rm -f ./tests/integration_testing/results/*_key_diffs.csv
+
+            git add ./tests/integration_testing/results/agg_results.json
+            git add ./tests/integration_testing/results/ecm_results.json
+            if [[ -d ./tests/integration_testing/results/plots ]]; then
+              git add ./tests/integration_testing/results/plots/
+            fi
+            if [[ -d ./tests/integration_testing/results/plot_images ]]; then
+              git add ./tests/integration_testing/results/plot_images/
+            fi
+            if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
+              git add ./tests/integration_testing/results/base_plot_images/
+            fi
+            commit_msg="Update integration test baselines from CI"
+          else
+            # Only commit PNG images for plot diff visualization.
+            if [[ -d ./tests/integration_testing/results/plot_images ]]; then
+              git add ./tests/integration_testing/results/plot_images/
+            fi
+            if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
+              git add ./tests/integration_testing/results/base_plot_images/
+            fi
+            commit_msg="Upload plot comparison images from CI build"
           fi
-          if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
-            git add ./tests/integration_testing/results/base_plot_images/
-          fi
+
           # Only commit if there are staged changes
           if git diff --cached --quiet; then
-            echo "No plot images to commit"
+            echo "No integration result updates to commit"
             exit 0
           fi
           git config --global user.email "github-action@users.noreply.github.com"
           git config --global user.name "GitHub Action"
-          git commit -m "Upload plot comparison images from CI build"
+          git commit -m "$commit_msg"
           echo "Pushing to branch"
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
@@ -296,13 +319,12 @@ jobs:
               }'
           done
           # Mark integration test status based on update-baseline label
-          UPDATE_BASELINE="${{ steps.check-label.outputs.update_baseline }}"
           if [[ "$UPDATE_BASELINE" == "true" ]]; then
             integ_state="success"
-            integ_desc="Plot images differ from master, but 'update-baseline' label is set"
+            integ_desc="Integration results differ from master and baseline was updated"
           else
             integ_state="failure"
-            integ_desc="Plot images differ from master (pixel-level comparison)"
+            integ_desc="Integration results differ from master"
           fi
           curl -L \
             -X POST \
