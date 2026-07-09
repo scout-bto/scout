@@ -299,8 +299,31 @@ jobs:
           git config --global user.email "github-action@users.noreply.github.com"
           git config --global user.name "GitHub Action"
           git commit -m "$commit_msg"
-          echo "Pushing to branch"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+
+          target_branch="${{ github.head_ref || github.ref_name }}"
+          echo "Pushing to branch ${target_branch}"
+
+          # Rebase the generated commit onto the latest remote branch tip in
+          # case the PR was updated while CI was running.
+          for attempt in 1 2 3; do
+            git fetch origin "$target_branch"
+            if ! git rebase "origin/$target_branch"; then
+              echo "Failed to rebase CI baseline update onto origin/${target_branch}"
+              git rebase --abort || true
+              exit 1
+            fi
+
+            if git push origin HEAD:"$target_branch"; then
+              break
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "Failed to push CI baseline update after 3 attempts"
+              exit 1
+            fi
+
+            echo "Push rejected; refetching and retrying"
+          done
 
           # Set status checks on the new commit so it inherits parent job statuses
           checks=("code-quality-checks" "Unit Tests (Python 3.10)" "Unit Tests (Python 3.11)" "Unit Tests (Python 3.12)")
