@@ -306,6 +306,11 @@ jobs:
           # Rebase the generated commit onto the latest remote branch tip in
           # case the PR was updated while CI was running.
           for attempt in 1 2 3; do
+            # Some tooling (e.g., filters/LFS) can leave the working tree
+            # dirty after commit in CI; rebase requires a clean tree.
+            git reset --hard HEAD
+            git clean -fd
+
             git fetch origin "$target_branch"
             if ! git rebase "origin/$target_branch"; then
               echo "Failed to rebase CI baseline update onto origin/${target_branch}"
