@@ -130,3 +130,13 @@ jobs:
     with:
       enable_profiler: ${{ needs.check-PR.outputs.enable_profiler == 'true' || github.ref == 'refs/heads/master' }}
     secrets: inherit
+
+  eia-update-check-pr:
+    needs: [check-PR]
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'master' &&
+      github.event.pull_request.draft == false &&
+      contains(github.event.pull_request.labels.*.name, 'update-baseline')
+    uses: ./.github/workflows/eia-update-check.yml
+    secrets: inherit
