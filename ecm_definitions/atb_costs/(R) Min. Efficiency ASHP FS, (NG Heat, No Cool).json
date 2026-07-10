@@ -1,0 +1,136 @@
+{
+  "name": "(R) Min. Efficiency ASHP FS, (NG Heat, No Cool)",
+  "_description": "Minimum efficiency air source heat pump heating and cooling, fuel switching in homes without existing cooling",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": "yes",
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": [
+    "natural gas",
+    "electricity"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": [
+    "boiler (NG)",
+    "furnace (NG)",
+    "central AC",
+    "room AC"
+  ],
+  "htcl_tech_link": "ng heat+no cool",
+  "tech_switch_to": "ASHP",
+  "energy_efficiency": {
+    "heating": 2.58,
+    "cooling": 4.4
+  },
+  "energy_efficiency_units": "COP",
+  "energy_efficiency_source": {
+    "notes": "Minimum efficiency performance in 2023.",
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": 45,
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "Draft PDS:01, MINHERS Addendum 71, SEER2/HSPF2 Conversions",
+        "author": "RESNET",
+        "year": 2022,
+        "pages": 2,
+        "url": "https://www.resnet.us/about/standards/minhers/draft:pds:01:minhers:addendum:71:seer2:hspf2:conversions/"
+      },
+      {
+        "title": "Residential Demand Module of the National Energy Modeling System: Model Documentation 2014",
+        "author": "U.S. Energy Information Administration",
+        "year": 2014,
+        "pages": 17,
+        "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      }
+    ]
+  },
+  "installed_cost": {
+    "new": 13163.0,
+    "existing": 13355.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Retail (new) and total installed (existing) cost for min. efficiency ASHPs in 2023.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": true,
+    "240V circuit": true
+  },
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the min. efficiency range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 39,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "BA_Hot-Humid": {
+      "heating": 0.03,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Humid": {
+      "heating": 0.04,
+      "cooling": 0.0
+    },
+    "BA_Very Cold": {
+      "heating": 0.55,
+      "cooling": 0.0
+    },
+    "BA_Subarctic": {
+      "heating": 0.8,
+      "cooling": 0.0
+    },
+    "BA_Cold": {
+      "heating": 0.09,
+      "cooling": 0.0
+    },
+    "BA_Hot-Dry": {
+      "heating": 0.09,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Dry": {
+      "heating": 0.08,
+      "cooling": 0.0
+    },
+    "BA_Marine": {
+      "heating": 0.4,
+      "cooling": 0.0
+    }
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiples determined as proportion of total homes with gas heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

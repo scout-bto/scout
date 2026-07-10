@@ -1,0 +1,129 @@
+{
+  "name": "(C) Best Refrigeration",
+  "_description": "Highest efficiency major category commercial refrigeration units in 2022",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": [
+    "assembly",
+    "education",
+    "food sales",
+    "food service",
+    "health care",
+    "lodging",
+    "large office",
+    "small office",
+    "mercantile/service",
+    "warehouse"
+  ],
+  "structure_type": "all",
+  "end_use": "refrigeration",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "Commercial Reach-In Freezers",
+    "Commercial Reach-In Refrigerators",
+    "Commercial Supermarket Display Cases",
+    "Commercial Walk-In Freezers",
+    "Commercial Walk-In Refrigerators"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "Commercial Reach-In Freezers": 2.7,
+    "Commercial Reach-In Refrigerators": 7.4,
+    "Commercial Supermarket Display Cases": 3.3,
+    "Commercial Walk-In Freezers": 3.2,
+    "Commercial Walk-In Refrigerators": 7.1
+  },
+  "energy_efficiency_units": "BTU out/BTU in",
+  "energy_efficiency_source": {
+    "notes": "Best' performance for the relevant technology in the Scout baseline technology characteristics data for food sales building type in AIA_CZ1 and the year 2022 (based on the ktekx.xlsx AEO 2023 file, 2022 High category)",
+    "source_data": {
+      "title": "Scout : Baseline Cost, Performance, and Lifetime Data ('cpl_res_com_cz.json')",
+      "author": "U.S. Department of Energy",
+      "year": 2023,
+      "pages": null,
+      "url": "https://github.com/trynthink/scout/blob/master/scout/supporting_data/stock_energy_tech_data/cpl_res_com_cz.gz"
+    }
+  },
+  "installed_cost": {
+    "Commercial Reach-In Freezers": {
+      "existing": 1024.0,
+      "new": 805.0
+    },
+    "Commercial Reach-In Refrigerators": {
+      "existing": 1654.0,
+      "new": 1286.0
+    },
+    "Commercial Supermarket Display Cases": {
+      "existing": 1070.0,
+      "new": 901.0
+    },
+    "Commercial Walk-In Freezers": {
+      "existing": 1096.0,
+      "new": 1011.0
+    },
+    "Commercial Walk-In Refrigerators": {
+      "existing": 675.0,
+      "new": 576.0
+    }
+  },
+  "cost_units": "2022$/kBtu/h refrigeration",
+  "installed_cost_source": {
+    "notes": "Retail (new) and total installed (existing) cost for high efficiency refrigeration units in 2022",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix C",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        97,
+        94,
+        91,
+        104,
+        100
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/appendix-c.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": {
+    "Commercial Reach-In Freezers": 10.0,
+    "Commercial Reach-In Refrigerators": 10.0,
+    "Commercial Supermarket Display Cases": 10.0,
+    "Commercial Walk-In Freezers": 10.0,
+    "Commercial Walk-In Refrigerators": 10.0
+  },
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetimes for high efficiency refrigeration units in 2022 (use average compressor life where broken out)",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix C",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        97,
+        94,
+        91,
+        104,
+        100
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/appendix-c.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Aven Satre:Meloy",
+    "organization": "LBNL",
+    "email": "asatremeloy@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

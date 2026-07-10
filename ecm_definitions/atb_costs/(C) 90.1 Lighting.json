@@ -1,0 +1,113 @@
+{
+  "name": "(C) 90.1 Lighting",
+  "_description": "Incremental lighting energy savings and added costs from switching between BAU commercial code in 2021 (assume 90.1:2013) and current code (90.1:2019)",
+  "measure_type": "add-on",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": [
+    "assembly",
+    "education",
+    "food sales",
+    "food service",
+    "health care",
+    "lodging",
+    "large office",
+    "small office",
+    "mercantile/service",
+    "warehouse"
+  ],
+  "structure_type": "all",
+  "end_use": "lighting",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "assembly": 0.3,
+    "education": 0.2,
+    "food sales": 0.0,
+    "food service": 0.2,
+    "health care": 0.1,
+    "lodging": 0.2,
+    "large office": 0.2,
+    "small office": 0.2,
+    "mercantile/service": 0.2,
+    "warehouse": 0.3,
+    "other": 0.2,
+    "unspecified": 0.0
+  },
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": [
+      "Based on comparison of lighting power densities in Table 9.5.1.",
+      "see full calculations at https://docs.google.com/spreadsheets/d/1tZHWcn0I0UGFjCTFRHccs_OGH5:WXufgDz5tN_TbHTc/edit?usp=sharing"
+    ],
+    "source_data": {
+      "title": "Standard 90.1:2013 \u2013 Energy Standard for Buildings Except Low:Rise Residential Buildings",
+      "author": "ASHRAE",
+      "year": 2016,
+      "pages": null,
+      "url": "https://www.ashrae.org/technical:resources/bookstore/standard:90:1"
+    }
+  },
+  "installed_cost": {
+    "assembly": 2.0,
+    "education": 2.0,
+    "food sales": 0.0,
+    "food service": 1.2,
+    "health care": 2.0,
+    "lodging": 0.7,
+    "large office": 1.8,
+    "small office": 1.8,
+    "mercantile/service": 1.2,
+    "warehouse": 2.0,
+    "other": 1.8,
+    "unspecified": 1.8
+  },
+  "cost_units": "2020$/ft^2 floor",
+  "installed_cost_source": {
+    "notes": [
+      "Assumes incremental cost between 90.1:2013 and 90.1:2019 would be similar to that of 90.1:2016 and 90.1:2019",
+      "see full calculations at https://docs.google.com/spreadsheets/d/1tZHWcn0I0UGFjCTFRHccs_OGH5:WXufgDz5tN_TbHTc/edit?usp=sharing"
+    ],
+    "source_data": {
+      "title": "National Cost:Effectiveness of ANSI/ASHRAE/IES Standard 90.1:2019",
+      "author": "Pacific Northwest National Laboratory",
+      "year": 2018,
+      "pages": [
+        64,
+        75
+      ],
+      "url": "https://www.pnnl.gov/main/publications/external/technical_reports/PNNL:29940.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 10.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Typical commercial lighting technology lifetime, based on EIA NEMS buildings module raw data represented in Scout baselines",
+    "source_data": {
+      "title": "Scout technology cost, performance, and lifetime data",
+      "author": "U.S. Department of Energy",
+      "year": 2021,
+      "pages": null,
+      "url": "https://github.com/trynthink/scout/blob/master/supporting_data/stock_energy_tech_data/cpl_res_com_cz.json"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Aven Satre:Meloy",
+    "organization": "LBNL",
+    "email": "asatremeloy@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

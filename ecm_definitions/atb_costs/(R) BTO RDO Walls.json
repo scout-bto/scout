@@ -1,0 +1,68 @@
+{
+  "name": "(R) BTO RDO Walls",
+  "_description": "Targeted cost and performance of residential walls in BTO R&D roadmap.",
+  "measure_type": "add-on",
+  "market_entry_year": 2040,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "secondary heating",
+    "cooling"
+  ],
+  "fuel_type": "all",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "wall",
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": 40.0,
+  "energy_efficiency_units": "R value",
+  "energy_efficiency_source": {
+    "notes": "Target R-value doubled to assume 2 in. insulation thickness.",
+    "source_data": {
+      "title": "Opaque Envelopes: Pathway to Building Energy Efficiency and Demand Flexibility RDO Report",
+      "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+      "year": 2021,
+      "pages": [
+        24,
+        38
+      ],
+      "url": "https://www1.eere.energy.gov/buildings/pdfs/80170.pdf"
+    }
+  },
+  "installed_cost": 0.75,
+  "cost_units": "2022$/ft^2 wall",
+  "installed_cost_source": {
+    "notes": "Based on 10 year payback for given performance levels. Adds lowest incremental cost in roadmap to baseline component costs from Scout baseline cost database.",
+    "source_data": {
+      "title": "Opaque Envelopes: Pathway to Building Energy Efficiency and Demand Flexibility RDO Report",
+      "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+      "year": 2021,
+      "pages": 24,
+      "url": "https://www1.eere.energy.gov/buildings/pdfs/80170.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 100.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Assumed equal to the lifetime of the home",
+    "source_data": null
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

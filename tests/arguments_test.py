@@ -114,7 +114,8 @@ class TestConfig(unittest.TestCase, Utils):
             "state_appl_regs": None,
             "bps": None,
             "codes": None,
-            "report_stk": None
+            "report_stk": None,
+            "comstock_gap": False
         },
         "run": {
             "results_directory": None,
@@ -396,7 +397,7 @@ class TestECMPrepArgsTranslate(unittest.TestCase, Utils):
         "tsv_metrics": False,
         "retro_set": ["1", None, None],
         "exog_hp_rates": False,
-        "grid_decarb": False,
+        "grid_decarb": False
     }
 
     # Expected values translated from ecm_prep_args valid config file; aligns with
