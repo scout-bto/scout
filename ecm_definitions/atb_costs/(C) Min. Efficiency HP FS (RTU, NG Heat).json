@@ -1,0 +1,108 @@
+{
+  "name": "(C) Min. Efficiency HP FS (RTU, NG Heat)",
+  "_description": "Minimum efficiency rooftop HP, fuel switching from gas RTU.",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": "yes",
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "ventilation"
+  ],
+  "fuel_type": [
+    "natural gas",
+    "electricity"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": [
+    "gas_furnace",
+    "gas_eng-driven_RTAC",
+    "rooftop_AC",
+    "scroll_chiller",
+    "reciprocating_chiller",
+    "centrifugal_chiller",
+    "screw_chiller",
+    "CAV_Vent",
+    "VAV_Vent"
+  ],
+  "htcl_tech_link": "ng rtu+rtac or chiller",
+  "tech_switch_to": "ASHP",
+  "energy_efficiency": {
+    "heating": 3.4,
+    "cooling": 3.4,
+    "ventilation": 0.0
+  },
+  "energy_efficiency_units": {
+    "heating": "BTU out/BTU in",
+    "cooling": "BTU out/BTU in",
+    "ventilation": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": "Minimum efficiency performance in 2023.",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 139,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 164.0,
+    "existing": 171.0
+  },
+  "cost_units": "2023$/kBtu/h heating",
+  "installed_cost_source": {
+    "notes": "Minimum efficiency costs in 2023 normalized by capacity",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": true,
+    "240V circuit": true
+  },
+  "product_lifetime": 21.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average minimum efficiency lifetime.",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 139,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "gas_furnace": 0.92,
+    "gas_eng-driven_RTAC": 1.0,
+    "rooftop_AC": 0.46,
+    "scroll_chiller": 0.04,
+    "reciprocating_chiller": 0.04,
+    "centrifugal_chiller": 0.04,
+    "screw_chiller": 0.04,
+    "CAV_Vent": 0.35,
+    "VAV_Vent": 0.1
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiple of 92% was determined by dividing square feet in which main heating equipment is gas packaged unit (14491406 sf) by square feet in shiwch main heating equipment is gas furnace or packaged unit (176461522 sf). Cooling equipment multiples determined by square feet in which given cooling system (e.g., RTAC, chiller) is pared with given heating system for the measure. Ventilation multiples determined by square feet in which given ventilation system (VAV or CAV) is paired with given heating system for the measure.",
+    "source_data": {
+      "title": "CBECS 2018 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/commercial/data/2018/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

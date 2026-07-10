@@ -1,0 +1,85 @@
+{
+  "name": "(C) Ref. Case Refrigeration",
+  "_description": "Counterfactual commercial refrigeration measure, no savings vs. reference case",
+  "measure_type": "add-on",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": "refrigeration",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "Commercial Reach-In Freezers",
+    "Commercial Reach-In Refrigerators",
+    "Commercial Supermarket Display Cases",
+    "Commercial Walk-In Freezers",
+    "Commercial Walk-In Refrigerators",
+    "Commercial Beverage Merchandisers",
+    "Commercial Ice Machines",
+    "Commercial Refrigerated Vending Machines"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": 0.0,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": [
+      "Ref. case performance",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details"
+    ],
+    "source_data": null
+  },
+  "installed_cost": 0.0,
+  "cost_units": "2022$/kBtu/h refrigeration",
+  "installed_cost_source": {
+    "notes": [
+      "Ref. case cost (no additional cost)",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
+    ],
+    "source_data": null
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": {
+    "Commercial Reach-In Freezers": 10.0,
+    "Commercial Reach-In Refrigerators": 10.0,
+    "Commercial Supermarket Display Cases": 10.0,
+    "Commercial Walk-In Freezers": 10.0,
+    "Commercial Walk-In Refrigerators": 10.0,
+    "Commercial Beverage Merchandisers": 10.0,
+    "Commercial Ice Machines": 10.0,
+    "Commercial Refrigerated Vending Machines": 10.0
+  },
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetimes for high efficiency refrigeration units in 2022 (use average compressor life where broken out)",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix C",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        91,
+        94,
+        97,
+        100,
+        104
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/appendix-c.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Aven Satre:Meloy",
+    "organization": "LBNL",
+    "email": "asatremeloy@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

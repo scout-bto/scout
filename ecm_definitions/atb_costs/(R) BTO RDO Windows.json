@@ -1,0 +1,108 @@
+{
+  "name": "(R) BTO RDO Windows",
+  "_description": "Targeted cost and performance of residential windows in BTO R&D roadmap (adjust market entry from 2030 to 2035 to align with breakthrough HVAC equipment measures).",
+  "measure_type": "full service",
+  "market_entry_year": 2035,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "secondary heating",
+    "cooling"
+  ],
+  "fuel_type": "all",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "windows conduction",
+    "windows solar"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "heating": {
+      "windows conduction": 13.0,
+      "windows solar": 0.65
+    },
+    "secondary heating": {
+      "windows conduction": 13.0,
+      "windows solar": 0.65
+    },
+    "cooling": {
+      "windows conduction": 13.0,
+      "windows solar": 0.05
+    }
+  },
+  "energy_efficiency_units": {
+    "windows conduction": "R value",
+    "windows solar": "SHGC"
+  },
+  "energy_efficiency_source": {
+    "notes": [
+      "Highest performance when range is given",
+      "R value = inverse of U value."
+    ],
+    "source_data": {
+      "title": "Pathway to Zero Energy Windows",
+      "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+      "year": 2022,
+      "pages": [
+        25,
+        30
+      ],
+      "url": "https://doi.org/10.2172/1866581"
+    }
+  },
+  "installed_cost": 47.66,
+  "cost_units": "2022$/ft^2 glazing",
+  "installed_cost_source": {
+    "notes": "Based on 5 year payback and 10 year payback for given performance levels for highly insulating and dynamic windows, respectively. Adds lowest incremental cost in roadmap to baseline residential window costs from Scout baseline cost database.",
+    "source_data": [
+      {
+        "title": "Pathway to Zero Energy Windows",
+        "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+        "year": 2022,
+        "pages": [
+          25,
+          30
+        ],
+        "url": "https://doi.org/10.2172/1866581"
+      },
+      {
+        "title": "Scout Baseline Envelope Characteristics Database",
+        "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+        "year": 2023,
+        "pages": null,
+        "url": "https://github.com/trynthink/scout/blob/master/scout/supporting_data/convert_data/cpl_envelope_mels.json"
+      }
+    ]
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 30.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Assumes wood as the norm",
+    "source_data": {
+      "title": "Study of the Life Expectancy of Home Component",
+      "author": "National Association of Homebuilders",
+      "year": 2007,
+      "pages": 15,
+      "url": "http://stevesmallman.com/wp:content/uploads/2013/05/NAHB:Lifetimes.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

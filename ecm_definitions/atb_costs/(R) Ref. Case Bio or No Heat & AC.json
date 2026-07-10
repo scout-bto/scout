@@ -1,0 +1,80 @@
+{
+  "name": "(R) Ref. Case Bio or No Heat & AC",
+  "_description": "Ref. case wood stove heating w/ central or window AC",
+  "measure_type": "add-on",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": [
+    "other fuel",
+    "electricity"
+  ],
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "stove (wood)",
+    "central AC",
+    "room AC"
+  ],
+  "htcl_tech_link": "bio heat+cac&rac",
+  "tech_switch_to": null,
+  "energy_efficiency": 0.0,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": [
+      "Ref. case performance",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details"
+    ],
+    "source_data": null
+  },
+  "installed_cost": 0.0,
+  "cost_units": "2022$/unit",
+  "installed_cost_source": {
+    "notes": [
+      "Ref. case cost (no additional cost)",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
+    ],
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 19.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the typical range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": 39,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "heating": 1.0,
+    "cooling": 0.05
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Note: no scaling fraction for bio heat since it is not included in the complementary measure subset that has heating without any cooling. Cooling multiple of 5% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via wood pellet or NO heating 778 homes.",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

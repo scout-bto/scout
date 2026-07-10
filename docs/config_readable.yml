@@ -18,6 +18,10 @@ ecm_prep:
     Allowed values are {AIA, EMM, State}. Default EMM
   captured_energy: (boolean) If true, enable captured energy calculation.
     Default False
+  comstock_gap: (boolean) If true, specifically partition out
+    applicable energy use for each Measure that is not covered
+    by ComStock tool and include this percentage in Measure outputs.
+    Default False
   detail_brkout: (array) List of options by which to breakout
     results. The `fuel types` option is only valid if the split_fuel
     argument is set to false. The `all` option selects all three

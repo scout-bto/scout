@@ -1,0 +1,161 @@
+{
+  "name": "(C) Ref. Case RTU, NG Heat",
+  "_description": "Ref. case gas furnace integrated in packaged rooftop unit plus ventilation",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "ventilation"
+  ],
+  "fuel_type": [
+    "natural gas",
+    "electricity"
+  ],
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "gas_furnace",
+    "gas_eng-driven_RTAC",
+    "gas_eng-driven_RTHP-heat",
+    "res_type_gasHP-heat",
+    "gas_eng-driven_RTHP-cool",
+    "res_type_gasHP-cool",
+    "rooftop_AC",
+    "scroll_chiller",
+    "reciprocating_chiller",
+    "centrifugal_chiller",
+    "screw_chiller",
+    "CAV_Vent",
+    "VAV_Vent"
+  ],
+  "htcl_tech_link": "ng rtu+rtac or chiller",
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "gas_furnace": 0.81,
+    "gas_eng-driven_RTAC": 1.4,
+    "gas_eng-driven_RTHP-heat": 1.4,
+    "res_type_gasHP-heat": 1.4,
+    "gas_eng-driven_RTHP-cool": 1.4,
+    "res_type_gasHP-cool": 1.4,
+    "rooftop_AC": 4.3,
+    "scroll_chiller": 4.6,
+    "reciprocating_chiller": 4.1,
+    "centrifugal_chiller": 11.3,
+    "screw_chiller": 4.4,
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0
+  },
+  "energy_efficiency_units": {
+    "heating": "BTU out/BTU in",
+    "cooling": "BTU out/BTU in",
+    "ventilation": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": "Typical value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "gas_furnace": {
+      "new": 18.46,
+      "existing": 19.42
+    },
+    "gas_eng-driven_RTAC": {
+      "new": 311.0,
+      "existing": 317.0
+    },
+    "gas_eng-driven_RTHP-heat": {
+      "new": 317.0,
+      "existing": 317.0
+    },
+    "gas_eng-driven_RTHP-cool": {
+      "new": 317.0,
+      "existing": 317.0
+    },
+    "res_type_gasHP-heat": {
+      "new": 317.0,
+      "existing": 317.0
+    },
+    "res_type_gasHP-cool": {
+      "new": 317.0,
+      "existing": 317.0
+    },
+    "scroll_chiller": {
+      "new": 74.34,
+      "existing": 81.28
+    },
+    "reciprocating_chiller": {
+      "new": 69.9,
+      "existing": 72.76
+    },
+    "centrifugal_chiller": {
+      "new": 52.68,
+      "existing": 53.36
+    },
+    "screw_chiller": {
+      "new": 76.5,
+      "existing": 78.65
+    },
+    "rooftop_AC": {
+      "new": 112.0,
+      "existing": 113.0
+    },
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0
+  },
+  "cost_units": "2023$/kBtu/h heating",
+  "installed_cost_source": {
+    "notes": "Typical efficiency costs in 2023, normalized by capacity",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 21.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of typical commercial RTU lifetime",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": 135,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "gas_furnace": 0.92,
+    "gas_eng-driven_RTAC": 1.0,
+    "gas_eng-driven_RTHP-heat": 1.0,
+    "res_type_gasHP-heat": 1.0,
+    "gas_eng-driven_RTHP-cool": 1.0,
+    "res_type_gasHP-cool": 1.0,
+    "rooftop_AC": 0.46,
+    "scroll_chiller": 0.04,
+    "reciprocating_chiller": 0.04,
+    "centrifugal_chiller": 0.04,
+    "screw_chiller": 0.04,
+    "CAV_Vent": 0.35,
+    "VAV_Vent": 0.1
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiple of 92% was determined by dividing square feet in which main heating equipment is gas packaged unit (14491406 sf) by square feet in shiwch main heating equipment is gas furnace or packaged unit (176461522 sf). Cooling equipment multiples determined by square feet in which given cooling system (e.g., RTAC, chiller) is pared with given heating system for the measure. Ventilation multiples determined by square feet in which given ventilation system (VAV or CAV) is paired with given heating system for the measure.",
+    "source_data": {
+      "title": "CBECS 2018 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/commercial/data/2018/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

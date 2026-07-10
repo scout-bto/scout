@@ -1,0 +1,79 @@
+{
+  "name": "(C) Ref. Case Electric Range FS",
+  "_description": "Reference case commercial electric range, fuel switching",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": "yes",
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": "cooking",
+  "fuel_type": [
+    "natural gas",
+    "distillate"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": "elec_range-combined",
+  "energy_efficiency": 0.5,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": [
+      "Typical (2022) combined energy efficiency for electric resistance griddle, oven, and range",
+      "compare to typical combined gas efficiency to derive relative savings impact"
+    ],
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        167,
+        168
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 4319.0,
+    "existing": 4388.0
+  },
+  "cost_units": "2022$/kBtu/h cooking",
+  "installed_cost_source": {
+    "notes": "2022 Typical retail (new) and installed (existing) cost value for electric range with griddle and oven, normalized by kBtu/h cooking capacity (EIA assumes ~2.6 kBtu/h capacity)",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 168,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 12.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average life of Typical electric range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 168,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

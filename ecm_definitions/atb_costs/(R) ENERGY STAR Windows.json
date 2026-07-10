@@ -1,0 +1,113 @@
+{
+  "name": "(R) ENERGY STAR Windows",
+  "_description": "Typical size residential double pane window that meets the ENERGY STAR version 7 performance specification",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "secondary heating",
+    "cooling"
+  ],
+  "fuel_type": "all",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "windows conduction",
+    "windows solar"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "IECC_CZ1": {
+      "windows conduction": 3.125,
+      "windows solar": 0.23
+    },
+    "IECC_CZ2": {
+      "windows conduction": 3.125,
+      "windows solar": 0.23
+    },
+    "IECC_CZ3": {
+      "windows conduction": 3.6,
+      "windows solar": 0.23
+    },
+    "IECC_CZ4": {
+      "windows conduction": 4.3,
+      "windows solar": 0.4
+    },
+    "IECC_CZ5": {
+      "windows conduction": 5.9,
+      "windows solar": 0.4
+    },
+    "IECC_CZ6": {
+      "windows conduction": 5.9,
+      "windows solar": 0.4
+    },
+    "IECC_CZ7": {
+      "windows conduction": 5.9,
+      "windows solar": 0.4
+    },
+    "IECC_CZ8": {
+      "windows conduction": 5.9,
+      "windows solar": 0.4
+    }
+  },
+  "energy_efficiency_units": {
+    "windows conduction": "R value",
+    "windows solar": "SHGC"
+  },
+  "energy_efficiency_source": {
+    "notes": [
+      "See table 1",
+      "assumes 'Northern' maps to IECC climate zones 5, 6, 7, 8, 'North:Central' maps to IECC climate zone 4, 'South:Central' maps to IECC climate zone 3, and 'Southern' maps to IECC climate zones 1 and 2."
+    ],
+    "source_data": {
+      "title": "ENERGY STAR Product Specification Residential Windows, Doors, and Skylights Version 7.0",
+      "author": "ENERGY STAR",
+      "year": 2022,
+      "pages": 5,
+      "url": "https://www.energystar.gov/sites/default/files/asset/document/ES_Residential_WDS_V7_Final%20Specification%202022.pdf"
+    }
+  },
+  "installed_cost": 39.06,
+  "cost_units": "2022$/ft^2 glazing",
+  "installed_cost_source": {
+    "notes": "Assume baseline window cost from Scout data",
+    "source_data": {
+      "title": "Scout Baseline Envelope Characteristics Database",
+      "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+      "year": 2023,
+      "pages": null,
+      "url": "https://github.com/trynthink/scout/blob/master/scout/supporting_data/convert_data/cpl_envelope_mels.json"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 30.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetime for Low:E, Triple, Non:metal, Arg, L:Gain",
+    "source_data": {
+      "title": "NREL National Residential Efficiency Measures Database",
+      "author": "National Renewable Energy Laboratory",
+      "year": 2018,
+      "pages": null,
+      "url": "https://remdb.nrel.gov/measures.php?gId=16&ctId=190"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

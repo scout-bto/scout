@@ -1,0 +1,74 @@
+{
+  "name": "(R) Brk. HPWH FS",
+  "_description": "Highest efficiency HPWH with significantly reduced costs due to tech. breakthroughs, fuel switching",
+  "measure_type": "full service",
+  "market_entry_year": 2035,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "water heating",
+  "fuel_type": [
+    "natural gas",
+    "distillate",
+    "other fuel"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": "HPWH",
+  "energy_efficiency": 3.73,
+  "energy_efficiency_units": "UEF",
+  "energy_efficiency_source": {
+    "notes": "High efficiency in 2022",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        62,
+        65
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 1438.0,
+    "existing": 1688.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "See 'Best', halve the cost.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": false
+  },
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetime for ENERGY STAR v4.0 unit in 2022, rounded down from 15.1 years",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 65,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

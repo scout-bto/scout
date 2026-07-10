@@ -1,0 +1,140 @@
+{
+  "name": "(R) Best NG Heat, No Cooling",
+  "_description": "Highest performing natural gas heating equipment without any paired cooling",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": [
+    "natural gas",
+    "electricity"
+  ],
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "boiler (NG)",
+    "furnace (NG)",
+    "central AC",
+    "room AC"
+  ],
+  "htcl_tech_link": "ng heat+no cool",
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "boiler (NG)": 0.96,
+    "furnace (NG)": 0.99,
+    "central AC": 4.98,
+    "room AC": 4.6
+  },
+  "energy_efficiency_units": {
+    "heating": "AFUE",
+    "cooling": "COP"
+  },
+  "energy_efficiency_source": {
+    "notes": "\"High\" value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "boiler (NG)": {
+      "new": 8112.0,
+      "existing": 8340.0
+    },
+    "furnace (NG)": {
+      "new": 4087.0,
+      "existing": 4280.0
+    },
+    "central AC": {
+      "new": 7477.0,
+      "existing": 7804.0
+    },
+    "room AC": {
+      "new": 672.0,
+      "existing": 826.0
+    }
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "High efficiency equipment for new (retail) and existing (total installed) contexts.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": {
+    "furnace (NG)": 21.0,
+    "boiler (NG)": 25.0,
+    "central AC": 18.0,
+    "room AC": 10.0
+  },
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the typical range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": [
+        10,
+        17,
+        27,
+        31
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "BA_Hot-Humid": {
+      "heating": 0.03,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Humid": {
+      "heating": 0.04,
+      "cooling": 0.0
+    },
+    "BA_Very Cold": {
+      "heating": 0.55,
+      "cooling": 0.0
+    },
+    "BA_Subarctic": {
+      "heating": 0.8,
+      "cooling": 0.0
+    },
+    "BA_Cold": {
+      "heating": 0.09,
+      "cooling": 0.0
+    },
+    "BA_Hot-Dry": {
+      "heating": 0.09,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Dry": {
+      "heating": 0.08,
+      "cooling": 0.0
+    },
+    "BA_Marine": {
+      "heating": 0.4,
+      "cooling": 0.0
+    }
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiples determined as proportion of total homes with gas heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

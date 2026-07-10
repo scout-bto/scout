@@ -1,0 +1,61 @@
+{
+  "name": "(C) Ref. Case Resist. WH",
+  "_description": "Typical commercial electric resistance storage water heater, 119-gal",
+  "measure_type": "add-on",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": "water heating",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": 0.0,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": [
+      "Ref. case performance",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details"
+    ],
+    "source_data": null
+  },
+  "installed_cost": 0.0,
+  "cost_units": "2022$/kBtu/h water heating",
+  "installed_cost_source": {
+    "notes": [
+      "Ref. case cost (no additional cost)",
+      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
+    ],
+    "source_data": null
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 12.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average life of typical 119-gal commercial electric resistance storage water heater",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 151,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Aven Satre:Meloy",
+    "organization": "LBNL",
+    "email": "asatremeloy@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "name": "(C) Ref. Case ASHP (RTU)",
+  "_description": "Ref. case central air source heat pump heating and cooling plus ventilation",
+  "measure_type": "fulll service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "ventilation"
+  ],
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "rooftop_ASHP-heat",
+    "rooftop_ASHP-cool",
+    "all ventilation",
+    "pkg_terminal_HP-cool",
+    "pkg_terminal_HP-heat"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "rooftop_ASHP-heat": 3.4,
+    "rooftop_ASHP-cool": 3.4,
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0,
+    "pkg_terminal_HP-cool": 3.4,
+    "pkg_terminal_HP-heat": 3.4
+  },
+  "energy_efficiency_units": {
+    "heating": "BTU out/BTU in",
+    "cooling": "BTU out/BTU in",
+    "ventilation": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": "Typical efficiency level in 2023.",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 139,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "installed_cost": {
+    "rooftop_ASHP-heat": {
+      "new": 163.3,
+      "existing": 170.4
+    },
+    "rooftop_ASHP-cool": {
+      "new": 0.0,
+      "existing": 0.0
+    },
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0,
+    "pkg_terminal_HP-heat": {
+      "new": 163.3,
+      "existing": 170.4
+    },
+    "pkg_terminal_HP-cool": {
+      "new": 0.0,
+      "existing": 0.0
+    }
+  },
+  "cost_units": "2023$/kBtu/h heating",
+  "installed_cost_source": {
+    "notes": "Typical efficiency costs in 2023, normalized by capacity",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of typical residential air source heat pump lifetime",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": 39,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "rooftop_ASHP-heat": 1.0,
+    "rooftop_ASHP-cool": 1.0,
+    "CAV_Vent": 0.06,
+    "VAV_Vent": 0.04,
+    "pkg_terminal_HP-cool": 1.0,
+    "pkg_terminal_HP-heat": 1.0
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Ventilation multiples determined by square feet in which given ventilation system (VAV or CAV) is paired with given heating system for the measure.",
+    "source_data": {
+      "title": "CBECS 2018 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/commercial/data/2018/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

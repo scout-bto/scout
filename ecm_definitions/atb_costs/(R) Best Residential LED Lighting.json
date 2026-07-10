@@ -1,0 +1,150 @@
+{
+  "name": "(R) Best Residential LED Lighting",
+  "_description": "Highest efficiency A19 E26 LED bulbs available in 2024",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "lighting",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "general service (CFL)",
+    "general service (incandescent)",
+    "general service (LED)"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": "LED",
+  "energy_efficiency": 139.0,
+  "energy_efficiency_units": "lm/W",
+  "energy_efficiency_source": {
+    "notes": [
+      "Based on the efficacy range for the most efficient 40W and 60W equivalent A19 E26 bulbs on the ENERGY STAR product finder database in 2024 (139 lm/W)",
+      "from product pages, EcoSmart 60W Equivalent A19 Dimmable Energy Star Clear Filament Vintage Style Bulb (90 lm/W), IKEA SOLHETTA LED bulb E26 800 lm (133 lm/W), IKEA SOLHETTA LED bulb E26 450 lm (137 lm/W), IKEA SOHLETTA E26 1600 lm (142 lm/W)"
+    ],
+    "source_data": [
+      {
+        "title": "ENERGY STAR Certified Light Bulbs",
+        "author": "U.S. Environmental Protection Agency",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.energystar.gov/productfinder/product/certified:light:bulbs/details/2293883"
+      },
+      {
+        "title": "60:Watt Equivalent A19 Dimmable Energy Star Clear Filament Vintage Style LED Light Bulb Daylight (4:Pack)",
+        "author": "Home Depot",
+        "year": 2024,
+        "pages": null,
+        "url": "hhttps://www.homedepot.com/p/Feit:Electric:60:Watt:Equivalent:A19:Dimmable:CEC:Title:20:Compliant:ENERGY:STAR:90:CRI:E26:LED:Light:Bulb:Soft:White:2700K:4:Pack:OM60DM:927CA:4/304116338"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 800 lumen, dimmable/globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:800:lumen:dimmable:globe:opal:70530119/"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 450 lumen, globe opal",
+        "author": "IKEA",
+        "year": 2023,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:450:lumen:globe:opal:80498576/"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 1600 lumen, dimmable/globe opal",
+        "author": "IKEA",
+        "year": 2023,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:1600:lumen:dimmable:globe:opal:30530116/"
+      }
+    ]
+  },
+  "installed_cost": 3.68,
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Based on EcoSmart ($12.98/4:pack), IKEA E26 800 lm ($6.99/2:pack), IKEA E26 450 lm ($1.99/2:pack), IKEA E26 1600 lm ($6.99), adjusted to reflect at least baseline LED cost of $3.68",
+    "source_data": [
+      {
+        "title": "60:Watt Equivalent A19 Dimmable CEC Title 20 Compliant ENERGY STAR 90+ CRI E26 LED Light Bulb, Soft White 2700K (4:Pack)",
+        "author": "Home Depot",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.homedepot.com/p/Feit:Electric:60:Watt:Equivalent:A19:Dimmable:CEC:Title:20:Compliant:ENERGY:STAR:90:CRI:E26:LED:Light:Bulb:Soft:White:2700K:4:Pack:OM60DM:927CA:4/304116338"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 800 lumen, dimmable/globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:800:lumen:dimmable:globe:opal:70530119/"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 450 lumen, globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:450:lumen:globe:opal:80498576/"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 1600 lumen, dimmable/globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:1600:lumen:dimmable:globe:opal:30530116/"
+      }
+    ]
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 22.8,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "22.8 years (assume 3h/day use) based on EcoSmart 60W Equivalent A19 Dimmable Energy Star (4:Pack) and IKEA products (all 25000 hours)",
+    "source_data": [
+      {
+        "title": "60:Watt Equivalent A19 Dimmable CEC Title 20 Compliant ENERGY STAR 90+ CRI E26 LED Light Bulb, Soft White 2700K (4:Pack)",
+        "author": "Home Depot",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.homedepot.com/p/Feit:Electric:60:Watt:Equivalent:A19:Dimmable:CEC:Title:20:Compliant:ENERGY:STAR:90:CRI:E26:LED:Light:Bulb:Soft:White:2700K:4:Pack:OM60DM:927CA:4/304116338"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 800 lumen, dimmable/globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:800:lumen:dimmable:globe:opal:70530119/"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 450 lumen, globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:450:lumen:globe:opal:80498576/"
+      },
+      {
+        "title": "SOLHETTA LED bulb E26 1600 lumen, dimmable/globe opal",
+        "author": "IKEA",
+        "year": 2024,
+        "pages": null,
+        "url": "https://www.ikea.com/us/en/p/solhetta:led:bulb:e26:1600:lumen:dimmable:globe:opal:30530116/"
+      }
+    ]
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Xinwei Zhuang",
+    "organization": "LBNL",
+    "email": "xinweizhuang@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

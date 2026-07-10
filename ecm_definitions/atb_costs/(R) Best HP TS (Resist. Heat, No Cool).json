@@ -1,0 +1,136 @@
+{
+  "name": "(R) Best HP TS (Resist. Heat, No Cool)",
+  "_description": "Best available air source heat pump (w/ cold climates specs as applicable) fully replacing original resistance equipment, no existing cooling.",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "resistance heat",
+    "central AC",
+    "room AC"
+  ],
+  "htcl_tech_link": "resistance heat+no cool",
+  "tech_switch_to": "ASHP",
+  "energy_efficiency": {
+    "cooling": 6.6,
+    "heating": 3.6
+  },
+  "energy_efficiency_units": "COP",
+  "energy_efficiency_source": {
+    "notes": [
+      "High efficiency ASHP performance in 2023",
+      "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
+      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": 39,
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "Draft PDS:01, MINHERS Addendum 71, SEER2/HSPF2 Conversions",
+        "author": "RESNET",
+        "year": 2022,
+        "pages": 2,
+        "url": "https://www.resnet.us/about/standards/minhers/draft:pds:01:minhers:addendum:71:seer2:hspf2:conversions/"
+      },
+      {
+        "title": "Residential Demand Module of the National Energy Modeling System: Model Documentation 2014",
+        "author": "U.S. Energy Information Administration",
+        "year": 2014,
+        "pages": 17,
+        "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      }
+    ]
+  },
+  "installed_cost": {
+    "new": 19943.0,
+    "existing": 20135.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Retail (new) and total installed (existing) for 'High' ASHPs in 2023",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": false
+  },
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average best lifetime",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 39,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "BA_Hot-Humid": {
+      "heating": 0.06,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Humid": {
+      "heating": 0.07,
+      "cooling": 0.0
+    },
+    "BA_Very Cold": {
+      "heating": 0.38,
+      "cooling": 0.0
+    },
+    "BA_Subarctic": {
+      "heating": 0.8,
+      "cooling": 0.0
+    },
+    "BA_Cold": {
+      "heating": 0.13,
+      "cooling": 0.0
+    },
+    "BA_Hot-Dry": {
+      "heating": 0.1,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Dry": {
+      "heating": 0.06,
+      "cooling": 0.0
+    },
+    "BA_Marine": {
+      "heating": 0.45,
+      "cooling": 0.0
+    }
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiples determined as proportions of total homes with electric non-HP heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

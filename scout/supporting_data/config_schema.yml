@@ -292,6 +292,11 @@ properties:
         type: ["object", "null"]
         default: null
         description: Key-value pairs to update fields across all ECM definitions. Any number of ECM fields can be updated with additional keys. Keys should correspond to ECM definition fields.
+      
+      comstock_gap:
+        type: boolean
+        default: false
+        description: If true, specifically partition out applicable energy use for each Measure that is not covered by ComStock tool and include this percentage in Measure outputs.        
 
       report_stk:
         type: object

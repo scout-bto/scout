@@ -1,0 +1,130 @@
+{
+  "name": "(R) Ref. Case Resist. Heat, No Cooling",
+  "_description": "Ref. case electric resistance heating equipment without any paired cooling",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling"
+  ],
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "resistance heat",
+    "central AC",
+    "room AC"
+  ],
+  "htcl_tech_link": "resistance heat+no cool",
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "resistance heat": 1.0,
+    "central AC": 4.28,
+    "room AC": 3.52
+  },
+  "energy_efficiency_units": {
+    "resistance heat": "COP",
+    "central AC": "COP",
+    "room AC": "COP"
+  },
+  "energy_efficiency_source": {
+    "notes": "Typical value for performance, converted to Scout units where necessary.",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "resistance heat": {
+      "new": 3006.0,
+      "existing": 3198.0
+    },
+    "central AC": {
+      "new": 5599.0,
+      "existing": 5927.0
+    },
+    "room AC": {
+      "new": 650.0,
+      "existing": 803.0
+    }
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+    "source_data": null
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": {
+    "resistance heat": 23.0,
+    "central AC": 18.0,
+    "room AC": 10.0
+  },
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average of the typical range",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Admnistration",
+      "year": 2023,
+      "pages": [
+        23,
+        27,
+        31
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "BA_Hot-Humid": {
+      "heating": 0.06,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Humid": {
+      "heating": 0.07,
+      "cooling": 0.0
+    },
+    "BA_Very Cold": {
+      "heating": 0.38,
+      "cooling": 0.0
+    },
+    "BA_Subarctic": {
+      "heating": 0.8,
+      "cooling": 0.0
+    },
+    "BA_Cold": {
+      "heating": 0.13,
+      "cooling": 0.0
+    },
+    "BA_Hot-Dry": {
+      "heating": 0.1,
+      "cooling": 0.0
+    },
+    "BA_Mixed-Dry": {
+      "heating": 0.06,
+      "cooling": 0.0
+    },
+    "BA_Marine": {
+      "heating": 0.45,
+      "cooling": 0.0
+    }
+  },
+  "market_scaling_fractions_source": {
+    "notes": "Heating multiples determined as proportions of total homes with electric non-HP heating that DO NOT have cooling systems in each BA climate zone. Cooling multiple zeroes out cooling segment.",
+    "source_data": {
+      "title": "RECS 2020 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/residential/data/2020/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

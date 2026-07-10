@@ -1,0 +1,125 @@
+{
+  "name": "(R) IECC 2021 Walls & Air Sealing",
+  "_description": "Residential wall insulation and air sealing consistent with IECC 2021 energy code levels.",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "secondary heating",
+    "cooling"
+  ],
+  "fuel_type": "all",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "wall",
+    "infiltration"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": {
+    "IECC_CZ1": {
+      "wall": 13.0,
+      "infiltration": 5.0
+    },
+    "IECC_CZ2": {
+      "wall": 13.0,
+      "infiltration": 5.0
+    },
+    "IECC_CZ3": {
+      "wall": 20.0,
+      "infiltration": 3.0
+    },
+    "IECC_CZ4": {
+      "wall": 30.0,
+      "infiltration": 3.0
+    },
+    "IECC_CZ5": {
+      "wall": 30.0,
+      "infiltration": 3.0
+    },
+    "IECC_CZ6": {
+      "wall": 30.0,
+      "infiltration": 3.0
+    },
+    "IECC_CZ7": {
+      "wall": 30.0,
+      "infiltration": 3.0
+    },
+    "IECC_CZ8": {
+      "wall": 30.0,
+      "infiltration": 3.0
+    }
+  },
+  "energy_efficiency_units": {
+    "wall": "R value",
+    "infiltration": "ACH"
+  },
+  "energy_efficiency_source": {
+    "notes": "Walls: see table R402.1.3, wood frame wall column, use R:values for cavity insulation. Infiltration: see section R402.4.1.2 at 50 Pascals.",
+    "source_data": {
+      "title": "2021 International Energy Conservation Code",
+      "author": "International Code Council",
+      "year": 2021,
+      "pages": [
+        246,
+        251
+      ],
+      "url": null
+    }
+  },
+  "installed_cost": {
+    "wall": 2.76,
+    "infiltration": {
+      "new": 0.0,
+      "existing": 1.2
+    }
+  },
+  "cost_units": {
+    "wall": "2022$/ft^2 wall",
+    "infiltration": "2022$/ft^2 wall"
+  },
+  "installed_cost_source": {
+    "notes": "Walls: assume baseline costs from Scout data. Infiltration: based on average cost for 5 ACH vs. 5 ACH (new) and 5 ACH vs. 10 ACH (existing).",
+    "source_data": [
+      {
+        "title": "Scout Baseline Envelope Characteristics Database",
+        "author": "U.S. Department of Energy, Office of Energy Efficiency and Renewable Energy, Building Technologies Office",
+        "year": 2023,
+        "pages": null,
+        "url": "https://github.com/trynthink/scout/blob/master/scout/supporting_data/convert_data/cpl_envelope_mels.json"
+      },
+      {
+        "title": "National Residential Efficiency Measures Database",
+        "author": "NREL",
+        "year": 2018,
+        "pages": null,
+        "url": "https://remdb.nrel.gov/measures.php?gId=10&ctId=376"
+      }
+    ]
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 100.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Assumed equal to the lifetime of the building",
+    "source_data": null
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

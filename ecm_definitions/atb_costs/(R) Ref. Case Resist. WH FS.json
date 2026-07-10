@@ -1,0 +1,65 @@
+{
+  "name": "(R) Ref. Case Resist. WH FS",
+  "_description": "Typical residential electric resistance storage water heater, fuel switching",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": 2029,
+  "min_eff_elec_flag": "yes",
+  "ref_case_flag": "yes",
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "water heating",
+  "fuel_type": [
+    "natural gas",
+    "distillate",
+    "other fuel"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": "all",
+  "htcl_tech_link": null,
+  "tech_switch_to": "electric WH",
+  "energy_efficiency": 0.92,
+  "energy_efficiency_units": "UEF",
+  "energy_efficiency_source": {
+    "notes": "Typical performance",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "installed_cost": {
+    "new": 1018.0,
+    "existing": 1518.0
+  },
+  "cost_units": "2023$/unit",
+  "installed_cost_source": {
+    "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": true
+  },
+  "product_lifetime": 15.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average lifetime for typical residential electric resistance storage water heaters rounded down from 15.1 years",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 62,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-08-28 12:21:12"
+  }
+}

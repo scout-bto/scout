@@ -1,0 +1,126 @@
+{
+  "name": "(C) Best HP FS (Other Fossil Furnace & AC)",
+  "_description": "Best available air source heat pump fully replacing original distillate furnace equipment",
+  "measure_type": "full service",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all commercial",
+  "structure_type": "all",
+  "end_use": [
+    "heating",
+    "cooling",
+    "ventilation"
+  ],
+  "fuel_type": [
+    "distillate",
+    "electricity"
+  ],
+  "fuel_switch_to": "electricity",
+  "backup_fuel_fraction": null,
+  "technology": [
+    "oil_furnace",
+    "res_type_central_AC",
+    "wall-window_room_AC",
+    "CAV_Vent",
+    "VAV_Vent"
+  ],
+  "htcl_tech_link": "other fossil furnace+cac&rac",
+  "tech_switch_to": "ASHP",
+  "energy_efficiency": {
+    "cooling": 6.6,
+    "heating": 3.6,
+    "ventilation": 0.0
+  },
+  "energy_efficiency_units": {
+    "heating": "BTU out/BTU in",
+    "cooling": "BTU out/BTU in",
+    "ventilation": "relative savings (constant)"
+  },
+  "energy_efficiency_source": {
+    "notes": [
+      "High' ASHP performance in 2023",
+      "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
+      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": 39,
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "Draft PDS:01, MINHERS Addendum 71, SEER2/HSPF2 Conversions",
+        "author": "RESNET",
+        "year": 2022,
+        "pages": 2,
+        "url": "https://www.resnet.us/about/standards/minhers/draft:pds:01:minhers:addendum:71:seer2:hspf2:conversions/"
+      },
+      {
+        "title": "Residential Demand Module of the National Energy Modeling System: Model Documentation 2014",
+        "author": "U.S. Energy Information Administration",
+        "year": 2014,
+        "pages": 17,
+        "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      }
+    ]
+  },
+  "installed_cost": {
+    "new": 554.0,
+    "existing": 588.0
+  },
+  "cost_units": "2023$/kBtu/h heating",
+  "installed_cost_source": {
+    "notes": [
+      "Uses residential system costs and normalizes by typical capacity of residential systems (36 kBtu/h)",
+      "Retail (new) and total installed (existing) for 'High' ASHPs in 2023."
+    ],
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+  },
+  "add_elec_infr_cost": {
+    "panel": false,
+    "240V circuit": true
+  },
+  "product_lifetime": 21.0,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "High' lifetime",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": 139,
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+    }
+  },
+  "market_scaling_fractions": {
+    "oil_furnace": 0.21,
+    "res_type_central_AC": 0.37,
+    "wall-window_room_AC": 0.37,
+    "CAV_Vent": 0.0,
+    "VAV_Vent": 0.0
+  },
+  "market_scaling_fractions_source": {
+    "notes": [
+      "Heating multiple of 21% was determined by dividing square feet in which main heating equipment is oil or propane furnace (961852 sf) by square feet in switch main heating equipment is oil or propane furnace or packaged unit (4543002 sf)",
+      "cooling multiple of 37% was determined by dividing square feet in which cooling equipment is residential split system or individual AC unit AND heating equipment is not natural gas or electric (13428155 sf) by square feet with same cooling constraint and heating across all fossil fuel types (36556957 sf). Ventilation multiples determined by square feet in which given ventilation system (VAV or CAV) is paired with given heating system for the measure."
+    ],
+    "source_data": {
+      "title": "CBECS 2018 Microdata",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": null,
+      "url": "https://www.eia.gov/consumption/commercial/data/2018/index.php?view=microdata"
+    }
+  },
+  "_updated_by": {
+    "name": "Jared Langevin",
+    "organization": "LBNL",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}
