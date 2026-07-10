@@ -325,8 +325,28 @@ def ensure_columns(df, mymap, fill=0.0):
 # --- CORE LOGIC ---
 
 
+def normalize_county_ids(df, dfdict):
+    """Translate 'ST, County Name' county identifiers to GISJOIN codes.
+
+    2025 ResStock identifies AK/HI counties as e.g. 'AK, Yukon-Koyukuk
+    Census Area' instead of the GISJOIN codes (e.g. 'G0200130') used for
+    every other state and vintage, so those rows fail the GISJOIN-keyed
+    join below and silently drop out. Build a (state, county_name) ->
+    GISJOIN lookup from the geography crosswalk and rewrite any
+    name-formatted county values to GISJOIN before the join runs.
+    """
+    is_named = df['county'].str.match(r'^[A-Z]{2}, ')
+    if not is_named.any():
+        return df
+    name_key = dfdict['state'] + ', ' + dfdict['county_name']
+    name_to_gisjoin = dict(zip(name_key, dfdict['gisjoin']))
+    df.loc[is_named, 'county'] = df.loc[is_named, 'county'].map(name_to_gisjoin)
+    return df
+
+
 def apply_geographies(df, dfdict, geos):
     df['county'] = df['county'].astype(str)
+    df = normalize_county_ids(df, dfdict)
     for geo in geos:
         if geo == 'emm':
             geocol = 'emm2020_county'
@@ -336,6 +356,12 @@ def apply_geographies(df, dfdict, geos):
             geocol = geo
         d = dfdict.set_index('gisjoin').T.to_dict('index')[geocol]
         df[geo] = df['county'].map(d)
+        if geo == 'emm':
+            # AK/HI have no real NEMS EMM region (see the 'AK_HI'
+            # placeholder set in get_scout_geo); exclude them from
+            # EMM-based disaggregation while still letting cdiv/state
+            # resolve to their real values above.
+            df.loc[df[geo] == 'AK_HI', geo] = pd.NA
     df = df.drop('county', axis=1)
     return df
 
@@ -448,10 +474,14 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
                        else pd.concat([norm_pd, normalized_matrix],
                                       ignore_index=False))
 
-        # Add AK/HI columns for residential Cdiv outputs
+        # Ensure AK/HI columns exist even if the source data has no
+        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
+        # coverage); don't clobber real shares computed from ResStock
+        # vintages (2025+) that do include them.
         if sec == "Res" and 'cdiv' in geos:
-            norm_pd['AK'] = 0
-            norm_pd['HI'] = 0
+            for st in ("AK", "HI"):
+                if st not in norm_pd.columns:
+                    norm_pd[st] = 0
 
         fuel_suffix = f"_{remove_space(fueltype)}" if fueltype else ""
         norm_pd.to_csv(f"{outdir}/{sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}.csv",
@@ -560,10 +590,14 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
                        else pd.concat([norm_pd, normalized_matrix],
                                       ignore_index=False))
 
-        # Add AK/HI columns for residential Cdiv outputs
+        # Ensure AK/HI columns exist even if the source data has no
+        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
+        # coverage); don't clobber real shares computed from ResStock
+        # vintages (2025+) that do include them.
         if sec == "Res" and 'cdiv' in geos:
-            norm_pd['AK'] = 0
-            norm_pd['HI'] = 0
+            for st in ("AK", "HI"):
+                if st not in norm_pd.columns:
+                    norm_pd[st] = 0
 
         fuel_suffix = f"_{remove_space(fueltype)}" if fueltype else ""
         norm_pd.to_csv(f"{outdir}/{sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}_Stock.csv",
@@ -687,10 +721,14 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
 
-        # Add AK/HI columns for residential Cdiv outputs
+        # Ensure AK/HI columns exist even if the source data has no
+        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
+        # coverage); don't clobber real shares computed from ResStock
+        # vintages (2025+) that do include them.
         if sec == "Res" and 'cdiv' in geos:
-            all_eu['AK'] = 0
-            all_eu['HI'] = 0
+            for st in ("AK", "HI"):
+                if st not in all_eu.columns:
+                    all_eu[st] = 0
 
         out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
@@ -788,10 +826,14 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
 
-        # Add AK/HI columns for residential Cdiv outputs
+        # Ensure AK/HI columns exist even if the source data has no
+        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
+        # coverage); don't clobber real shares computed from ResStock
+        # vintages (2025+) that do include them.
         if sec == "Res" and 'cdiv' in geos:
-            all_eu['AK'] = 0
-            all_eu['HI'] = 0
+            for st in ("AK", "HI"):
+                if st not in all_eu.columns:
+                    all_eu[st] = 0
 
         out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Stock_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
