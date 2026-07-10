@@ -136,6 +136,7 @@ class UsefulVars(object):
         elec_infr_costs (dict): Electrical infrastructure costs to add when fuel switching equipment
             to electricity.
         alt_panel_names (list): Panel upgrade requirement info. to append to tech. names.
+        comstock_gap (dict): Uncovered ComStock fractions of energy use by com. bldg. and fuel.
     """
 
     def __init__(self, base_dir, handyfiles, opts):
@@ -183,6 +184,7 @@ class UsefulVars(object):
         # Derive time horizon from min/max years
         self.aeo_years = [
             str(i) for i in range(aeo_min, aeo_max + 1)]
+        self.aeo_years_set = set(self.aeo_years)
         self.aeo_years_summary = ["2030", "2050"]
         # Set early retrofit rate assumptions
 
@@ -283,7 +285,11 @@ class UsefulVars(object):
             _cpi_by_year.setdefault(yr, []).append(row['VALUE'])
         self._cpi_year_means = {
             yr: numpy.mean(vals) for yr, vals in _cpi_by_year.items()}
+<<<<<<< HEAD
         # Fallback value: last row's VALUE (matches existing behavior)
+=======
+        # Fallback value: last row's VALUE (matches existing behaviour)
+>>>>>>> bss-develop-25-backup
         self._cpi_latest_value = float(self.consumer_price_ind[-1][1])
         # If states are used, read in state-level cost adjustment data
         if self.regions == "State":
@@ -1222,6 +1228,53 @@ class UsefulVars(object):
         else:
             self.out_break_fuels = {}
 
+<<<<<<< HEAD
+=======
+        # Pre-compute reverse lookups for fast O(1) breakout category resolution
+        # in find_adj_out_break_cats (MeasurePackage). Built once at init time;
+        # used instead of linear scans on every call.
+
+        # Climate zone: region_string -> label
+        # Note: out_break_czones values may be a plain string (e.g. 'AIA_CZ1')
+        # or a list of strings (e.g. ['TRE']). Normalise to list before iterating
+        # so we don't accidentally iterate over individual characters.
+        self.out_break_czones_rev = {
+            region: label
+            for label, regions in self.out_break_czones.items()
+            for region in (
+                [regions] if isinstance(regions, str) else regions)}
+
+        # Building type: (bldg_type_string, vintage_string) -> label
+        # Values in out_break_bldgtypes are lists like ['new', 'single family home', ...]
+        # where the first element is always the vintage ('new' or 'existing').
+        self.out_break_bldgtypes_rev = {}
+        for label, vals in self.out_break_bldgtypes.items():
+            vintage = vals[0]  # first element is always the vintage
+            for bldg in vals[1:]:  # remaining elements are building type strings
+                self.out_break_bldgtypes_rev[(bldg, vintage)] = label
+
+        # End use: a mapping used in find_adj_out_break_cats.
+        # The end-use lookup has conditional logic (supply/demand, 'other' special cases),
+        # so we store a flat mapping from (eu_string, supply_demand) -> label for the
+        # supply/demand-sensitive end uses, and eu_string -> label for the rest.
+        self.out_break_enduses_rev = {}
+        for label, eus in self.out_break_enduses.items():
+            for eu in eus:
+                if label in ["Heating (Equip.)", "Cooling (Equip.)"]:
+                    self.out_break_enduses_rev[(eu, "supply")] = label
+                elif label in ["Heating (Env.)", "Cooling (Env.)"]:
+                    self.out_break_enduses_rev[(eu, "demand")] = label
+                else:
+                    # Non-HVAC end uses: no supply/demand distinction
+                    self.out_break_enduses_rev[eu] = label
+
+        # Fuel type: fuel_string -> label
+        self.out_break_fuels_rev = {
+            fuel: label
+            for label, fuels in self.out_break_fuels.items()
+            for fuel in fuels}
+
+>>>>>>> bss-develop-25-backup
         # Use the above output categories to establish a dictionary with blank
         # values at terminal leaf nodes; this dict will eventually store
         # partitioning fractions needed to breakout the measure results
@@ -1636,6 +1689,27 @@ class UsefulVars(object):
             "240V circuit": 1384  # BTB "typical" dif., central ASHP w/ and w/o new circuit
         }
         self.alt_panel_names = ["-no panel", "-manage"]
+        # If user wants to further segment data/reporting in a way that isolates the slice of
+        # commercial energy use that is uncovered by ComStock for subsequent mapping purposes,
+        # read in the data containing the fractions of that uncovered energy use by Scout/AEO
+        # building type; otherwise set variable to None
+        if opts.comstock_gap:
+            try:
+                comstock_gap = pd.read_csv(handyfiles.comstock_gap)
+            except ValueError:
+                raise ValueError(
+                    "Error reading in '" + handyfiles.comstock_gap)
+            # Read in the building types (expects Scout/AEO building types) and fuel types (expects
+            # Scout/AEO fuel types) that are covered in the gap fractions
+            bldg_types = comstock_gap[comstock_gap.columns[0]].unique()
+            fuel_types = comstock_gap.columns[-2:]
+            # Initialize final dict of gap model data, using df values to set keys
+            self.comstock_gap = {bldg: {fuel: {} for fuel in fuel_types} for bldg in bldg_types}
+            for index, row in comstock_gap.iterrows():
+                for fuel in fuel_types:
+                    self.comstock_gap[row["building type"]][fuel] = row[fuel]
+        else:
+            self.comstock_gap = None
 
     def import_state_data(self, handyfiles, state_vars, valid_regions, opts):
         """Import and further prepare sub-federal adoption driver data.
@@ -2174,6 +2248,7 @@ class UsefulInputFiles(object):
         self.low_volume_rate = fp.SUB_FED / "rates.csv"
         self.local_cost_adj = fp.CONVERT_DATA / "loc_cost_adj.csv"
         self.panel_shares = fp.INPUTS / 'panel_shares.csv'
+        self.comstock_gap = fp.CONVERT_DATA / "com_gap_fracs.csv"
 
     def set_decarb_grid_vars(self, opts: argparse.NameSpace):  # noqa: F821
         """Assign instance variables related to grid decarbonization which are dependent on the

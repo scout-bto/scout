@@ -1,0 +1,73 @@
+{
+  "name": "(R) ENERGY STAR Pool Pumps",
+  "_description": "ENERGY STAR pool pumps",
+  "measure_type": "add-on",
+  "market_entry_year": 2025,
+  "market_exit_year": null,
+  "min_eff_elec_flag": null,
+  "ref_case_flag": null,
+  "climate_zone": "all",
+  "bldg_type": "all residential",
+  "structure_type": "all",
+  "end_use": "other",
+  "fuel_type": "electricity",
+  "fuel_switch_to": null,
+  "backup_fuel_fraction": null,
+  "technology": [
+    "pool heaters",
+    "pool pumps"
+  ],
+  "htcl_tech_link": null,
+  "tech_switch_to": null,
+  "energy_efficiency": 0.393442623,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": {
+    "notes": "Compare ESTAR Connected to typical weighted energy factor.",
+    "source_data": {
+      "title": "Grid-Interactive Efficient Building Technology Cost, Performance, and Lifetime Characteristics",
+      "author": "Nubbe et al.",
+      "year": 2020,
+      "pages": 63,
+      "url": "https://eta-publications.lbl.gov/sites/default/files/geb_technologies_data_report_final_v5_clean_ag_0.pdf"
+    }
+  },
+  "installed_cost": {
+    "new": 1336.0,
+    "existing": 1359.0
+  },
+  "cost_units": "2020$/unit",
+  "installed_cost_source": {
+    "notes": "ESTAR Connected pool pump retail (new) and total installed (existing) cost in 2020$, subtract add-on controls (average $163)",
+    "source_data": {
+      "title": "Grid-Interactive Efficient Building Technology Cost, Performance, and Lifetime Characteristics",
+      "author": "Nubbe et al.",
+      "year": 2020,
+      "pages": 63,
+      "url": "https://eta-publications.lbl.gov/sites/default/files/geb_technologies_data_report_final_v5_clean_ag_0.pdf"
+    }
+  },
+  "add_elec_infr_cost": null,
+  "product_lifetime": 7.3,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": {
+    "notes": "Average life of ESTAR Connected pool pump",
+    "source_data": {
+      "title": "Grid-Interactive Efficient Building Technology Cost, Performance, and Lifetime Characteristics",
+      "author": "Nubbe et al.",
+      "year": 2020,
+      "pages": 63,
+      "url": "https://eta:publications.lbl.gov/sites/default/files/geb_technologies_data_report_final_v5_clean_ag_0.pdf"
+    }
+  },
+  "market_scaling_fractions": null,
+  "market_scaling_fractions_source": {
+    "notes": null,
+    "source_data": null
+  },
+  "_updated_by": {
+    "name": "Xinwei Zhuang",
+    "organization": "LBNL",
+    "email": "xinweizhuang@lbl.gov",
+    "timestamp": "2025-09-24 13:39:06"
+  }
+}

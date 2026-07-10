@@ -396,6 +396,9 @@ class ECMPrepHelper:
             # Delete 'handyvars' measure attribute (not relevant to
             # analysis engine)
             del m.handyvars
+            # Delete gap weights if they aren't populated
+            if not m.gap_wts:
+                del m.gap_wts
             # Delete 'tsv_features' measure attributes
             # (not relevant) for individual measures
             if not isinstance(m, MeasurePackage):
@@ -487,6 +490,8 @@ class Measure(object):
                variables (climate zone, building class, end use, fuel)
         sector_shapes (dict): Sector-level hourly baseline and efficient load
             shapes by adopt scheme, EMM region, and year.
+        gap_wts (dict): Data used to calculate portions of Scout/AEO msegs that
+            ComStock load shapes do not cover.
     """
 
     def __init__(
@@ -528,7 +533,11 @@ class Measure(object):
         self.eff_fs_splt = {a_s: {} for a_s in handyvars.adopt_schemes_prep}
         self.sector_shapes = None
         # Shallow-copy handyvars so that we avoid deep-copying the entire,
+<<<<<<< HEAD
         # very large UsefulVars object.
+=======
+        # very large UsefulVars object (~34 s for 94 measures in profiling).
+>>>>>>> bss-develop-25-backup
         # Attributes that are mutated during fill_mkts must be deep-copied
         # individually so that changes in one measure do not affect others.
         # All other attributes are read-only across Measure methods.
@@ -1068,9 +1077,16 @@ class Measure(object):
 
             # Add market breakout information
 
+<<<<<<< HEAD
             # Helper for a fresh, independent deep-copy of the out_break_in.
             # Each breakout slot needs its own copy so accumulation into one slot
             # doesn't alias into the others.
+=======
+            # Deep-copy the out_break_in template once per adopt_scheme, then
+            # reuse that single copy for the remaining slots — avoids 8-11
+            # redundant full deep-copies of the (potentially large) nested
+            # OrderedDict per measure per scheme.
+>>>>>>> bss-develop-25-backup
             def _obi():
                 return copy.deepcopy(self.handyvars.out_break_in)
 
@@ -1097,6 +1113,17 @@ class Measure(object):
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"]["efficient-captured"] = \
                     _obi()
+<<<<<<< HEAD
+=======
+            # Set ComStock gap weights by building type, if applicable
+            if self.usr_opts["comstock_gap"]:
+                self.gap_wts = {
+                    bldg: {"total": {yr: 0 for yr in self.handyvars.aeo_years},
+                           "gap": {yr: 0 for yr in self.handyvars.aeo_years}}
+                    for bldg in self.handyvars.out_break_bldgtypes}
+            else:
+                self.gap_wts = None
+>>>>>>> bss-develop-25-backup
 
     def fill_mkts(self, msegs, msegs_cpl, convert_data, tsv_data_init, opts,
                   ctrb_ms_pkg_prep, tsv_data_nonfs):
@@ -1636,7 +1663,10 @@ class Measure(object):
             else:
                 mskeys_swtch, mskeys_swtch_fuel, mskeys_swtch_eu, mskeys_swtch_tech = (
                     "" for n in range(4))
+<<<<<<< HEAD
 
+=======
+>>>>>>> bss-develop-25-backup
             # Flag exclusions for linked cost calculations
             rmv_hp_dblct_base_stkcosts, rmv_hp_dblct_meas_stkcosts, rmv_scnd_hvac_stkcosts, \
                 rmv_lnkd_tech_costs = self.set_lnkd_cost_exclude(mskeys)
@@ -2287,11 +2317,14 @@ class Measure(object):
                                     # Shallow copy of the dict is sufficient:
                                     # its values are replaced (not mutated),
                                     # and the float list is read-only.
+<<<<<<< HEAD
                                     # Shallow copy is sufficient because the
                                     # downstream code at 2349
                                     # perf_meas[0][k] = perf_meas[0][k][key_item]
                                     # only rebinds outer slots; do not mutate
                                     # nested values in place or this becomes unsafe.
+=======
+>>>>>>> bss-develop-25-backup
                                     perf_meas = [
                                         dict(perf_meas),
                                         self.handyvars.alt_attr_brk_map[
@@ -2376,11 +2409,14 @@ class Measure(object):
                                     # Shallow copy of the dict is sufficient:
                                     # its values are replaced (not mutated),
                                     # and the float list is read-only.
+<<<<<<< HEAD
                                     # Shallow copy is sufficient because the
                                     # downstream code at 2438
                                     # cost_meas[0][k] = cost_meas[0][k][key_item]
                                     # only rebinds outer slots; do not mutate
                                     # nested values in place or this becomes unsafe.
+=======
+>>>>>>> bss-develop-25-backup
                                     cost_meas = [
                                         dict(cost_meas),
                                         self.handyvars.alt_attr_brk_map[
@@ -2505,11 +2541,14 @@ class Measure(object):
                                     # Shallow copy of the dict is sufficient:
                                     # its values are replaced (not mutated),
                                     # and the float list is read-only.
+<<<<<<< HEAD
                                     # Shallow copy is sufficient because the
                                     # downstream code at 2567
                                     # mkt_scale_frac[0][k] = mkt_scale_frac[0][k][key_item]
                                     # only rebinds outer slots; do not mutate
                                     # nested values in place or this becomes unsafe.
+=======
+>>>>>>> bss-develop-25-backup
                                     mkt_scale_frac = [
                                         dict(mkt_scale_frac),
                                         self.handyvars.alt_attr_brk_map[
@@ -4210,6 +4249,23 @@ class Measure(object):
                     # When there is no sub-segmentation required, adjustment fractions are 1
                     panel_adj = {"stock": 1, "energy": 1}
 
+                # If applicable, pull in information needed to sub-segment commercial stock and
+                # energy use data by the service demand/energy that is covered vs. not covered in
+                # ComStock hourly data, to aid in subsequent mapping of Scout data to ComStock data
+                # Ensure that no residential data are pulled in, and that existing commercial
+                # 'unspecified' building type is also ignored (gap segmentation doesn't apply)
+                if self.gap_wts and mskeys[2] not in [
+                        "single family home", "multi family home", "mobile home", "unspecified"]:
+                    # Handle case where Scout building type and/or fuel type is not covered in the
+                    # gap fractions (currently should cover all but 'unspecified' building type
+                    # and electricity and natural gas fuel types)
+                    try:
+                        gap_adj_frac = self.handyvars.comstock_gap[mskeys[2]][mskeys[3]]
+                    except KeyError:
+                        gap_adj_frac = None
+                else:
+                    gap_adj_frac = None
+
                 # Update bass diffusion parameters needed to determine the
                 # fraction of the baseline microsegment that will be captured
                 # by efficient alternatives to the baseline technology
@@ -4912,7 +4968,11 @@ class Measure(object):
                     if self.handyvars.full_dat_out[adopt_scheme]:
                         # Populate detailed breakout information for measure
                         self.breakout_mseg(mskeys, contrib_mseg_key, adopt_scheme, opts, brk_in_dat,
+<<<<<<< HEAD
                                            brk_stk_costs)
+=======
+                                           brk_stk_costs, gap_adj_frac)
+>>>>>>> bss-develop-25-backup
 
                     # Record contributing microsegment data needed for ECM
                     # competition in the analysis engine
@@ -5140,6 +5200,10 @@ class Measure(object):
                 cc_msg = ""
             else:
                 cc_msg = " (cost units converted)"
+        # If ComStock gap weights are being reported out, clean up empty dict branches and finalize
+        # data as fractions
+        if self.gap_wts:
+            self.gap_wts = self.finalize_gap_wts()
 
         # Print message to console; if in verbose mode, print to new line,
         # otherwise append to existing message on the console
@@ -5170,6 +5234,31 @@ class Measure(object):
 
         return key_out
 
+<<<<<<< HEAD
+=======
+    def finalize_gap_wts(self):
+        """Finalize fractions of measure msegs not covered by ComStock load shapes.
+
+        Returns:
+            Normalized gap weights (fraction of total energy that is uncovered, by building type).
+        """
+        # Initialize final fraction dict
+        gap_wts_fin = {}
+        # Loop through all building types in the data
+        for bd in self.gap_wts.keys():
+            # If values are all zero (indicating measure doesn't apply) move to next
+            if all([x == 0 for x in self.gap_wts[bd]["total"].values()]):
+                continue
+            # Divide gap portion of mseg by total mseg energy
+            else:
+                gap_wts_fin[bd] = {
+                    yr: self.gap_wts[bd]["gap"][yr] / self.gap_wts[bd]["total"][yr]
+                    if self.gap_wts[bd]["total"][yr] != 0 else 0
+                    for yr in self.handyvars.aeo_years}
+
+        return gap_wts_fin
+
+>>>>>>> bss-develop-25-backup
     def use_deflt_res_choice(self, mskeys, consume_warn, opts):
         """Assign default res. tech. choice coefficients for segments without AEO coefficients.
 
@@ -7404,9 +7493,15 @@ class Measure(object):
                                     mskeys[4] in ["heating", "cooling"]
                                     # Ensure that current linked tech. is designated as the linked
                                     # tech. to use for stock cost reporting purposes
+<<<<<<< HEAD
                                     and (self.linked_htcl_tover_linked_tech and (
                                          self.linked_htcl_tover_linked_tech == "all" or
                                          self.linked_htcl_tover_linked_tech in mskeys[-2]))
+=======
+                                    and (self.linked_htcl_tover_linked_tech and
+                                         self.linked_htcl_tover_linked_tech == "all" or
+                                         self.linked_htcl_tover_linked_tech in mskeys[-2])
+>>>>>>> bss-develop-25-backup
                                     # Only adjust for central heat/cool tech (e.g., does not apply
                                     # to room ACs or space heaters, we don't report agg. costs for)
                                     and not any([mskeys[-2] is not None and x in mskeys[-2]
@@ -9854,10 +9949,18 @@ class Measure(object):
         if any([x in ht_cl_euses for x in self.end_use[mseg_type]]):
             # Format measure end use attribute as numpy array
             # Set a list of heating and/or cooling end uses
+<<<<<<< HEAD
             eu_hc = [x for x in self.end_use[mseg_type] if x in ht_cl_euses]
             # Set a list of all other end uses
             eu_non_hc = [x for x in self.end_use[mseg_type]
                          if x not in ht_cl_euses]
+=======
+            # Convert to plain str to avoid np.str_ leaking into mskeys tuples
+            eu_hc = [str(x) for x in eu[numpy.where([x in ht_cl_euses for x in eu])]]
+            # Set a list of all other end uses
+            eu_non_hc = [str(x) for x in eu[numpy.where([
+                x not in ht_cl_euses for x in eu])]]
+>>>>>>> bss-develop-25-backup
             # Set a list including all measure microsegment attributes,
             # constraining the 'end_use' attribute to only heating/cooling
             # end uses
@@ -10127,6 +10230,7 @@ class Measure(object):
         """
         for k in dict1:
             if k not in dict2:
+<<<<<<< HEAD
                 # efficient-captured-envelope may legitimately be absent from
                 # contributing mseg dicts that have no HVAC/envelope overlap
                 # (e.g., ventilation or pure-envelope segments in a package);
@@ -10137,6 +10241,24 @@ class Measure(object):
                                "for ECM '" + self.name +
                                "' update, dict key structures "
                                "do not match")
+=======
+                # dict1 may have more year keys than dict2 when distribution
+                # sampling produces different year ranges; silently skip those
+                # extra keys (replicating original zip/sorted truncation).
+                # But if dict2 has keys that dict1 doesn't, the structures are
+                # genuinely mismatched → raise.
+                # Fast-path: if every key in dict2 is already in dict1 then
+                # dict2 cannot have keys that dict1 lacks, so skip the
+                # (expensive) set-difference entirely.  This avoids building a
+                # temporary set on every recursive call in the common case
+                # (~6 M calls observed in profiling).
+                if not dict2.keys() <= dict1.keys():
+                    raise KeyError("When adding together two dicts "
+                                   "for ECM '" + self.name +
+                                   "' update, dict key structures "
+                                   "do not match")
+                continue
+>>>>>>> bss-develop-25-backup
             i = dict1[k]
             # Avoid isinstance() on every leaf — try addition first (fast
             # path for numeric values), fall back to recursion for dicts.
@@ -10176,6 +10298,7 @@ class Measure(object):
             KeyError: When added dict keys do not match.
         """
         for k in dict1:
+<<<<<<< HEAD
             # Skip sub-market scaling and efficient-captured-envelope keys. The former
             # otherwise causes error when two windows segments (solar and conduction) are being
             # merged in fill_mkts and the sub-market scaling information has yet to be added to one
@@ -10183,6 +10306,9 @@ class Measure(object):
             # and ventilation segments in the former do not have the efficient-captured-envelope
             # key, which is only applicable to heating/cooling segments.
             if k in ["sub-market scaling", "efficient-captured-envelope"]:
+=======
+            if k == "lifetime":
+>>>>>>> bss-develop-25-backup
                 continue
             if k not in dict2:
                 raise KeyError("When adding together two dicts "
@@ -10196,7 +10322,11 @@ class Measure(object):
                 try:
                     dict1[k] = i + dict2[k]
                 except TypeError:
+<<<<<<< HEAD
                     self.add_keyvals_restrict(i, dict2[k])
+=======
+                    self.add_keyvals(i, dict2[k])
+>>>>>>> bss-develop-25-backup
         return dict1
 
     def div_keyvals(self, dict1, dict2):
@@ -10408,7 +10538,7 @@ class Measure(object):
         return rand_list
 
     def breakout_mseg(self, mskeys, contrib_mseg_key, adopt_scheme, opts, brk_in_dat,
-                      brk_stk_costs):
+                      brk_stk_costs, gap_adj_frac):
         """Record mseg contributions to breakouts by region/bldg/end use/fuel.
 
         Args:
@@ -10421,6 +10551,8 @@ class Measure(object):
                 breakouts.
             brk_stk_costs (list, NoneType): Stores all segment-specific stock cost data to be
                 assigned to breakouts; None when no stock costs are assessed.
+            gap_adj_frac (float): Fraction to apply to breakout data to represent
+                portions of msegs that are not covered by ComStock load shapes (if applicable)
         Returns:
             Updated measure market breakouts by region, building type, end use, and
             fuel type that reflect the influence of the current mseg being looped.
@@ -10492,6 +10624,15 @@ class Measure(object):
                                      brk_carb_total, brk_stock_cost_total] if x]
             eff_data = [x for x in [brk_stock_total_meas, brk_energy_total_eff, brk_energy_cost_eff,
                                     brk_carb_total_eff, brk_stock_cost_total_meas] if x]
+            if self.gap_wts and gap_adj_frac is not None:
+                # Update total energy use affected by measure/building type
+                self.gap_wts[out_bldg]["total"] = {
+                    yr: self.gap_wts[out_bldg]["total"][yr] + brk_energy_total[yr]
+                    for yr in self.handyvars.aeo_years}
+                # Update gap in total energy use
+                self.gap_wts[out_bldg]["gap"] = {
+                    yr: self.gap_wts[out_bldg]["gap"][yr] + brk_energy_total[yr] * gap_adj_frac
+                    for yr in self.handyvars.aeo_years}
 
             # Create a shorthand for efficient captured energy data to add to the
             # breakout dict
@@ -11138,6 +11279,8 @@ class MeasurePackage(Measure):
             same region, building type/vintage, fuel type, and end use.
         sector_shapes (dict): Sector-level hourly baseline and efficient load
             shapes by adopt scheme, EMM region, and year.
+        gap_wts (dict): Data used to calculate portions of Scout/AEO msegs that
+            ComStock load shapes do not cover.
 
     """
 
@@ -11174,7 +11317,7 @@ class MeasurePackage(Measure):
         # to be supported by packaged – integration of HVAC equipment and
         # envelope and/or controls, or integration of lighting equipment and
         # controls; also raise error if package is merging equipment measures
-        # with inconsistent fuel switching settings
+        # with inconsistent fuel switching settings.
         elif not (all([all([x in ["heating", "secondary heating",
                                   "ventilation", "cooling"] for x in
                             m.end_use["primary"]])
@@ -11274,6 +11417,8 @@ class MeasurePackage(Measure):
         self.sector_shapes = None
         self.htcl_overlaps = {adopt: {"keys": [], "data": {}} for
                               adopt in handyvars.adopt_schemes_prep}
+        # Set gap weights to that of first contributing ECM
+        self.gap_wts = self.contributing_ECMs_eqp[0].gap_wts
         for adopt_scheme in handyvars.adopt_schemes_prep:
             self.markets[adopt_scheme] = {
                 "master_mseg": {
@@ -11723,11 +11868,15 @@ class MeasurePackage(Measure):
                     if adopt_scheme == "Technical potential":
                         # Pull factors that were used to align current cm's stock values with that
                         # of the anchor segment to ensure apples-to-apples cost comparisons
+<<<<<<< HEAD
                         if "paired heat/cool mseg adjustments" in \
                             m[adopt_scheme]["microsegments"].keys() and \
                             cm in m[adopt_scheme]["microsegments"][
                                 "paired heat/cool mseg adjustments"][
                                 "linked cost adjustments"].keys():
+=======
+                        try:
+>>>>>>> bss-develop-25-backup
                             stk_cap_fact, lnkd_cost_adj_fact = [
                                 m[adopt_scheme]["microsegments"][
                                     "paired heat/cool mseg adjustments"][
@@ -11743,7 +11892,11 @@ class MeasurePackage(Measure):
                                 rmv_hp_dblct_meas_stkcosts, rmv_scnd_hvac_stkcosts,
                                 rmv_lnkd_tech_costs, opts, stk_cap_fact, lnkd_cost_adj_fact,
                                 dmd_meas=False, is_in_package=False)
+<<<<<<< HEAD
                         else:
+=======
+                        except KeyError:
+>>>>>>> bss-develop-25-backup
                             pass
                 # Generate a dictionary including data on how much of the
                 # packaged measure's baseline energy/carbon/cost is attributed
@@ -14102,11 +14255,14 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                         m["usr_opts"][k] is False
                         for k in m["usr_opts"].keys()]) for
                         m in match_in_prep_file])) or
+<<<<<<< HEAD
                     # Use .get() instead of direct key access to handle prepped files generated
                     # by older versions of the code that may be missing options added later.
                     # If a key is absent, .get() returns None; if the new option's default is
                     # also None, the comparison correctly evaluates as equal and avoids
                     # triggering an unnecessary re-prep.
+=======
+>>>>>>> bss-develop-25-backup
                     (not all([all([m["usr_opts"].get(x) ==
                                   vars(opts)[x] for x in [
                         k for k in vars(opts).keys() if
@@ -14719,7 +14875,11 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         # for all measures that should be written out, then dispatch them in
         # parallel with a ThreadPoolExecutor — the GIL is released during
         # gzip compression and file I/O, so concurrent writes give a real
+<<<<<<< HEAD
         # speedup over the sequential loop.
+=======
+        # speedup over the sequential loop (profiling: ~57 s saved).
+>>>>>>> bss-develop-25-backup
         def _write_compete(args):
             compete_dat, fs_dat, comp_folder, fs_folder, fname = args
             with gzip.open(comp_folder / fname, 'w', compresslevel=1) as zp:

@@ -2,6 +2,10 @@
 from __future__ import annotations
 import json
 import numpy
+<<<<<<< HEAD
+=======
+import copy  # noqa: F401
+>>>>>>> bss-develop-25-backup
 from numpy.linalg import LinAlgError
 from collections import OrderedDict, defaultdict
 import gzip
@@ -10,6 +14,10 @@ from ast import literal_eval
 import math
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy_financial as npf
+import threading
+# Use the Agg (non-interactive) backend so that matplotlib can safely be used
+# from background threads without touching the macOS main-thread UI context.
+import matplotlib
 from scout.plots import run_plot
 from scout.config import Config, FilePaths as fp
 from scout.utils import PrintFormat as fmt
@@ -18,6 +26,7 @@ import itertools
 import pandas as pd
 from operator import itemgetter
 import os
+matplotlib.use("Agg")
 
 
 class UsefulInputFiles(object):
@@ -598,6 +607,8 @@ class Codes_BPS_Measure(object):
                variables (climate zone, building class, end use, fuel),
         savings (dict): Energy, carbon, and stock, energy, and carbon cost
             savings for measure over baseline technology case.
+        gap_wts (dict): Data used to calculate portions of Scout/AEO msegs that
+            ComStock load shapes do not cover.
     """
 
     def __init__(self, handyvars, name, report_stk_units, report_stk_costs):
@@ -671,6 +682,11 @@ class Codes_BPS_Measure(object):
                 "efficient": _fast_copy_nested_dict(out_break_in),
                 "savings": _fast_copy_nested_dict(out_break_in)}
                 for key in handyvars.brk_vars}
+<<<<<<< HEAD
+=======
+        # Initialize gap weights (may or may not be needed, depending on user settings)
+        self.gap_wts = {}
+>>>>>>> bss-develop-25-backup
 
 
 class Measure(object):
@@ -824,6 +840,7 @@ def _fast_copy_nested_dict(d):
     Significantly faster than copy.deepcopy for dicts whose leaf values are
     plain Python floats/ints or numpy scalars, as is the case for the
     output-breakout fraction dicts used in finalize_outputs.
+<<<<<<< HEAD
     error for numpy arrays, which are not supported by this function;
     if numpy arrays are present, copy.deepcopy should be used instead.
     """
@@ -838,16 +855,28 @@ def _fast_copy_nested_dict(d):
             )
         else:
             out[k] = v
+=======
+    """
+    out = {}
+    for k, v in d.items():
+        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+>>>>>>> bss-develop-25-backup
     return out
 
 
 def _fast_copy_markets(d):
     """Iterative deep-copy of a nested markets dict.
 
+<<<<<<< HEAD
     Handles the value types that appear in measure market dicts:
       - nested dicts  → recurse (via explicit stack — no Python call overhead)
       - numpy.ndarray → copy via .copy()
       - list          → shallow copy via .copy() (elements are scalars in practice)
+=======
+    Handles the three value types that appear in measure market dicts:
+      - nested dicts  → recurse (via explicit stack — no Python call overhead)
+      - numpy.ndarray → copy via .copy()
+>>>>>>> bss-develop-25-backup
       - scalars / None / str / bool → shared reference (immutable, safe)
 
     Uses an explicit stack instead of recursion to eliminate the ~91 M
@@ -868,8 +897,11 @@ def _fast_copy_markets(d):
                 stack.append((v, child))
             elif isinstance(v, numpy.ndarray):
                 dst[k] = v.copy()
+<<<<<<< HEAD
             elif isinstance(v, list):
                 dst[k] = v.copy()
+=======
+>>>>>>> bss-develop-25-backup
             else:
                 dst[k] = v
     return result
@@ -987,6 +1019,9 @@ class Engine(object):
                     adopt_scheme] = OrderedDict()
                 # Initialize measure financial metrics
                 self.output_ecms[m.name]["Financial Metrics"] = OrderedDict()
+            # Report through ComStock gap weights if these are specified for measure
+            if hasattr(m, 'gap_wts'):
+                self.output_ecms[m.name]["ComStock Gap Weights"] = m.gap_wts
 
     def trim_code_bps_yrs(self, orig_dict, focus_yrs):
         """Trims code/BPS measure results to reduced year set if specified.
@@ -1007,7 +1042,85 @@ class Engine(object):
                 del orig_dict[k]
         return orig_dict
 
+    def finalize_gap_wts(self, gap_wts_orig):
+        """Finalize fractions of code/BPS measure msegs not covered by ComStock load shapes."""
+        # Initialize final fraction dict
+        gap_wts_fin = {}
+        # Loop through all building types in the data
+        for bd in gap_wts_orig.keys():
+            # If values are all zero (indicating measure doesn't apply) move to next
+            if all([x == 0 for x in gap_wts_orig[bd]["total"].values()]):
+                continue
+            # Divide gap portion of mseg by total mseg energy
+            else:
+                gap_wts_fin[bd] = {
+                    yr: gap_wts_orig[bd]["gap"][yr] / gap_wts_orig[bd]["total"][yr]
+                    if gap_wts_orig[bd]["total"][yr] != 0 else 0
+                    for yr in self.handyvars.aeo_years}
+
+        return gap_wts_fin
+
+    def finalize_conv_denoms(self, adopt_scheme, conv_fracs):
+        """Find totals of all energy that could be converted to new electric tech by segment.
+
+        Args:
+            adopt_scheme (string): Assumed consumer adoption scenario.
+            conv_fracs (dict): Converted units information that excludes total potential number
+                of units that could be converted.
+
+        Returns:
+            Converted units dict completed with information about total potential number of
+            units that could be converted, in addition to the number that was converted, which
+            was updated within the previous functions.
+        """
+        # Map between measure output breakouts and the breakouts used in conversions
+        # End uses: in conversions names are lower case; 'heating' drops '(Equip.)' from breakouts
+        eu_out_break_conv_map = {x: x.lower() if x != "Heating (Equip.)" else "heating"
+                                 for x in self.handyvars.out_break_enduses}
+        # Buildings: map into higher-level residential and commercial
+        res_bldg_types = ["Single Family", "Multi Family", "Manufactured", "Residential"]
+        bldg_out_break_conv_map = {
+            x: ("residential" if any([y in x for y in res_bldg_types]) else "commercial") for
+            x in self.handyvars.out_break_bldgtypes}
+        # Fuels: take as-is but lower case
+        fuel_out_break_conv_map = {x: x.lower() for x in self.handyvars.out_break_fuels}
+
+        # Loop across all measures and sum all possible energy that could be converted to another
+        # technology, by region, bulding type, fuel type, end use and building vintage
+        for m in self.measures:
+            # Pull fully broken out baseline energy data (post-competition) for each measure
+            brkout = m.markets[adopt_scheme]["competed"]["mseg_out_break"]["stock"]["baseline"]
+            # Loop regions
+            for reg in brkout.keys():
+                # Loop building types and determine vintage from building type name (always includes
+                # '(New)' or '(Existing)')
+                for bldg in brkout[reg].keys():
+                    bldg_conv = bldg_out_break_conv_map[bldg]
+                    vint_conv = ["new" if "New" in bldg else "existing"][0]
+                    # Loop end uses
+                    for eu in [x[0] for x in eu_out_break_conv_map.items() if
+                               x[1] in self.handyvars.conversion_eus]:
+                        eu_conv = eu_out_break_conv_map[eu]
+                        # Loop fuels
+                        for fuel in [x for x in brkout[reg][bldg][eu].keys() if
+                                     x in fuel_out_break_conv_map.keys()]:
+                            fuel_conv = fuel_out_break_conv_map[fuel]
+                            # Loop years and add to the denominator in the conversion data
+                            for yr in brkout[reg][bldg][eu][fuel].keys():
+                                conv_fracs["total"][reg][bldg_conv][fuel_conv][eu_conv][
+                                    vint_conv][yr]["all"] += brkout[reg][bldg][eu][fuel][yr]
+        return conv_fracs
+
     def finalize_conv_fracs(self, conv_fracs):
+        """Finalize fractions of all energy that was converted to new electric tech by segment.
+
+        Args:
+            conv_fracs: Unnormalized data on number of actual and potential conversions of base
+                tech to new electric tech by segment.
+
+        Returns:
+            Fractions of base tech converted to new electric tech by segment.
+        """
         for (k, i) in conv_fracs.items():
             # Check that terminal nodes (broken out by year) have been reached, if not go further
             if isinstance(i, dict) and k not in self.handyvars.aeo_years:
@@ -1922,7 +2035,11 @@ class Engine(object):
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "residential"] for m in measures_adj]
             # Shorthand for mseg information to use in pulling consumer choice weights later
+<<<<<<< HEAD
             choice_mseg = [mseg_key] * len(measures_adj)
+=======
+            choice_mseg = [mseg_key for m in measures_adj]
+>>>>>>> bss-develop-25-backup
         else:
             # Shorthand for mseg-specific stock/cost data; use mseg info. pulled above
             try:
@@ -1949,7 +2066,12 @@ class Engine(object):
                         "mseg_adjust"]["contributing mseg keys and values"][
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
                     # Shorthand for mseg information to use in pulling consumer choice weights later
+<<<<<<< HEAD
                     choice_mseg = [mseg_key] * len(measures_adj)
+=======
+                    choice_mseg = [mseg_key for m in measures_adj]
+
+>>>>>>> bss-develop-25-backup
             # Shorthand for linked stock and energy costs, to be added to unit costs below
             lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                             "linked mseg values"] for m in measures_adj]
@@ -2007,6 +2129,10 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
+        # Pre-compute str(mseg_key) once – it is used inside every
+        # (ind × yr) iteration of the choice-parameter lookup below.
+        mseg_key_str = str(mseg_key)
+
         # Loop through competing measures and calculate market shares for
         # each based on their annualized capital and operating costs
         for ind, m in enumerate(measures_adj):
@@ -2016,7 +2142,11 @@ class Engine(object):
             # (avoids re-traversing the full dict on every year iteration).
             try:
                 _choice_params = m.markets[adopt_scheme]["competed"][
+<<<<<<< HEAD
                     "mseg_adjust"]["competed choice parameters"][str(choice_mseg[ind])]
+=======
+                    "mseg_adjust"]["competed choice parameters"][mseg_key_str]
+>>>>>>> bss-develop-25-backup
             except KeyError:
                 _choice_params = None
 
@@ -2134,6 +2264,7 @@ class Engine(object):
             # Pre-compute vs_list_init once per measure/mseg (depends on all
             # years but is constant across year iterations).
             _energy_brk = adj_out_break["base fuel"]["energy"]
+<<<<<<< HEAD
             # Include variant only if its energy breakout data is present.
             # The zero-value check was intended but was a no-op due to a bug
             # (bare generator expression is always truthy); simplified here since
@@ -2141,6 +2272,16 @@ class Engine(object):
             vs_list_init = [
                 v if _energy_brk[v] is not None else ""
                 for v in ["baseline", "efficient"]]
+=======
+            vs_list_init = [
+                v if (_energy_brk[v] is not None and (
+                    (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                     any([_energy_brk[v][_yr] != 0])) or (
+                        isinstance(_energy_brk[v][_yr], numpy.ndarray) and
+                        any([any([_energy_brk[v][_yr] != 0])]))
+                    for _yr in _energy_brk[v].keys()))
+                else "" for v in ["baseline", "efficient"]]
+>>>>>>> bss-develop-25-backup
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
@@ -2199,7 +2340,11 @@ class Engine(object):
             # rate bins; flag for handling below
             op_cost_rate_bins = True
             # Shorthand for mseg information to use in pulling consumer choice weights later
+<<<<<<< HEAD
             choice_mseg = [mseg_key] * len(measures_adj)
+=======
+            choice_mseg = [mseg_key for m in measures_adj]
+>>>>>>> bss-develop-25-backup
         else:
             # Shorthand for mseg-specific stock/stock cost data; use mseg info. pulled above
             try:
@@ -2227,9 +2372,13 @@ class Engine(object):
                         "Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             mseg_key] for m_ind, m in enumerate(measures_adj)] for x in [
                         "contributing mseg keys and values", "capacity factor"]]
+<<<<<<< HEAD
                     # Shorthand for mseg information to use in pulling consumer choice weights later
                     choice_mseg = [mseg_key] * len(measures_adj)
 
+=======
+                    choice_mseg = [mseg_key for m in measures_adj]
+>>>>>>> bss-develop-25-backup
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
                        for m_ind, m in enumerate(measures_adj)]
@@ -2481,6 +2630,12 @@ class Engine(object):
                 list(zip(result[c_l], counts_arr[c_l]))
                 for c_l in range(n_samples)]
 
+<<<<<<< HEAD
+=======
+        # Pre-compute str(mseg_key) once – used in every (ind × yr) iteration.
+        mseg_key_str = str(mseg_key)
+
+>>>>>>> bss-develop-25-backup
         # Loop through competing measures and use total annualized capital
         # + operating costs to determine the overall share of the market
         # that is captured by each measure; use market shares to make
@@ -2494,7 +2649,11 @@ class Engine(object):
             try:
                 _rate_dist_all = m.markets[adopt_scheme]["competed"][
                     "mseg_adjust"]["competed choice parameters"][
+<<<<<<< HEAD
                         str(choice_mseg[ind])]["rate distribution"]
+=======
+                        mseg_key_str]["rate distribution"]
+>>>>>>> bss-develop-25-backup
             except KeyError:
                 _rate_dist_all = None
 
@@ -2509,7 +2668,10 @@ class Engine(object):
                     # each discount rate category for this particular
                     # microsegment
                     mkt_dists = _rate_dist_all[yr] if _rate_dist_all is not None else {}
+<<<<<<< HEAD
 
+=======
+>>>>>>> bss-develop-25-backup
                     # For each discount rate category, find which measure has
                     # the lowest annualized cost and assign that measure the
                     # share of commercial market adopters defined for that
@@ -4079,28 +4241,20 @@ class Engine(object):
                 if detail:
                     out_fuel_gain = ""
                     for f in self.handyvars.out_break_fuels.items():
-                        # Special handling for other fuel tech.,
-                        # under detailed fuel type breakouts; this
-                        # tech. may fit into multiple fuel cats.
                         if self.fuel_switch_to in f[1] and \
                                 key_list[3] == "other fuel":
-                            # Assign coal/kerosene tech.
                             if f[0] == "Distillate/Other" and (
                                 key_list[-2] is not None and any([
                                     x in key_list[-2] for x in [
                                     "coal", "kerosene"]])):
                                 out_fuel_gain = f[0]
-                            # Assign commercial unspecified other fuel to
-                            # Distillate/Other
                             elif f[0] == "Distillate/Other" and (
                                     key_list[2] == "unspecified"):
                                 out_fuel_gain = f[0]
-                            # Assign wood tech.
                             elif f[0] == "Biomass" and (
                                 key_list[-2] is not None and "wood" in
                                     key_list[-2]):
                                 out_fuel_gain = f[0]
-                            # All other tech. goes to propane
                             elif f[0] == "Propane":
                                 out_fuel_gain = f[0]
                         elif self.fuel_switch_to in f[1]:
@@ -4504,11 +4658,31 @@ class Engine(object):
         if int(yr) < min_mkt_entry_yr:
             adj_frac_t = adj_fracs[yr] + added_sbmkt_fracs[yr]
         else:
+<<<<<<< HEAD
             # Use pre-computed weighting years for this yr
             weighting_yrs = weighting_yrs_map[yr]
 
             # Loop through the above set of years, successively updating the
             # weighted market share using a simple moving average.
+=======
+            # Use pre-computed weighting years for this yr when available,
+            # otherwise fall back to computing them (e.g. secondary mseg path).
+            if weighting_yrs_map is not None and yr in weighting_yrs_map:
+                weighting_yrs = weighting_yrs_map[yr]
+            else:
+                weighting_yrs = sorted([
+                    x for x in adj_fracs.keys() if
+                    (int(x) <= int(yr) and int(x) >= min_mkt_entry_yr)])
+
+            # Loop through the above set of years, successively updating the
+            # weighted market share using a simple moving average.
+            # Pre-flag whether the market share value will be a numpy array
+            # so the isinstance check inside the hot inner loop is avoided.
+            _first_wyr = weighting_yrs[0]
+            _adj_frac_is_array = isinstance(
+                adj_fracs[_first_wyr] + added_sbmkt_fracs[_first_wyr],
+                numpy.ndarray)
+>>>>>>> bss-develop-25-backup
             for ind, wyr in enumerate(weighting_yrs):
                 # For non-technical potential cases, calculate the market
                 # share weight based on competed stock turnover in the given
@@ -4595,7 +4769,13 @@ class Engine(object):
                     adj_frac_t = (1 - wt_comp_wyr) * adj_frac_t + \
                         wt_comp_wyr * mms_lr
                     # Ensure that total weighted market share is never above 1.
+<<<<<<< HEAD
                     if isinstance(adj_frac_t, numpy.ndarray):
+=======
+                    # Check type once via a pre-set flag rather than two
+                    # isinstance() calls on every iteration of the hot loop.
+                    if _adj_frac_is_array:
+>>>>>>> bss-develop-25-backup
                         adj_frac_t[numpy.where(adj_frac_t > 1)] = 1
                     elif adj_frac_t > 1:
                         adj_frac_t = 1
@@ -4715,7 +4895,11 @@ class Engine(object):
 
         # Pre-compute filtered vs_list once per compete_adj call (avoids
         # repeated .copy() + list-comprehension filter on every mast_vars
+<<<<<<< HEAD
         # iteration).
+=======
+        # iteration – 8.4M calls in the profile).
+>>>>>>> bss-develop-25-backup
         _vs_filtered = [x for x in vs_list_init if x]
         _has_efficient = "efficient" in vs_list_init
         _energy_brk_keys = adj_out_break["base fuel"]["energy"].keys()
@@ -5072,8 +5256,10 @@ class Engine(object):
         if self.opts.write_elec_conv_fracs and adopt_scheme == "Max adoption potential" and any([
                 x in mseg_key for x in self.handyvars.conversion_eus]):
             # Determine whether current measure converts baseline equipment fuel to electricity
-            # and/or otherwise changes tech type (e.g., electric resistance to HPs)
-            conversion = (measure.fuel_switch_to == "electricity" or (
+            # and/or otherwise changes tech type (e.g., electric resistance to HPs). Note:
+            # technically this would register switch away from electric fuel as well, were that
+            # specified
+            conversion = (measure.fuel_switch_to is not None or (
                 measure.tech_switch_to not in [None, "NA", "same"]))
             # Find and set region, fuel, end use, and vintage for current mseg
             key_list = list(literal_eval(mseg_key))
@@ -5093,13 +5279,14 @@ class Engine(object):
                     bldg_type = "commercial"
                 # Update conversion numbers for total and competed stock
                 for c_typ in ["total", "competed"]:
-                    # Add to the total conversion-eligible equipment numbers
-                    self.handyvars.conversion_fracs[c_typ][reg][bldg_type][base_fuel_out][eu][vint][
-                        yr]["all"] += adj["stock"][c_typ]["all"][yr]
                     # If applicable, add to the total converted equipment numbers
                     if conversion:
                         self.handyvars.conversion_fracs[c_typ][reg][bldg_type][base_fuel_out][eu][
                             vint][yr]["converted"] += adj["stock"][c_typ]["measure"][yr]
+                    # For competed, add to the total conversion-eligible equipment numbers
+                    if c_typ == "competed":
+                        self.handyvars.conversion_fracs[c_typ][reg][bldg_type][base_fuel_out][
+                            eu][vint][yr]["all"] += adj["stock"][c_typ]["all"][yr]
 
     def finalize_outputs(
             self, adopt_scheme, trim_out, trim_yrs, report_stk_units, report_stk_costs):
@@ -5758,11 +5945,36 @@ class Engine(object):
                     m.markets[adopt_scheme]["competed"]["mseg_out_break"][
                         "capital cost"]["baseline"], stk_base_cost_avg, focus_yrs,
                     divide=True)
+            # Case with market penetration fractions/breakouts; copy
+            # measure stock totals to avoid manipulation via "frac_eff_stk"
+            # calculation
+            if all([x for x in [self.opts.mkt_fracs, report_stk_units]]):
+                eff_stk = copy.deepcopy(m.markets[adopt_scheme][
+                    "competed"]["mseg_out_break"]["stock"]["efficient"])
+            else:
+                eff_stk = m.markets[adopt_scheme][
+                    "competed"]["mseg_out_break"]["stock"]["efficient"]
+            if report_stk_units:
+                # Calculate efficient stock fractions by breakout category
+                frac_eff_stk = self.out_break_walk(
+                    m.markets[adopt_scheme]["competed"][
+                        "mseg_out_break"]["stock"]["efficient"],
+                    stk_eff_avg, focus_yrs, divide=True)
+            if report_stk_costs:
                 # Calculate efficient stock cost fractions by breakout category
                 frac_eff_stk_cost = self.out_break_walk(
                     m.markets[adopt_scheme]["competed"][
                         "mseg_out_break"]["capital cost"]["efficient"],
                     stk_eff_cost_avg, focus_yrs, divide=True)
+            if self.opts.mkt_fracs is True:
+                # Calculate market penetration percentages for the current
+                # measure and scenario by output breakout category; divide
+                # post-competition measure stock by the total stock that
+                # the measure could possibly affect (before competition)
+                frac_mkt_stk = self.out_break_walk(
+                    eff_stk, m.markets[adopt_scheme]["uncompeted"][
+                        "master_mseg"]["stock"]["total"]["all"],
+                    focus_yrs, divide=True, mkt_frac=True)
 
             # Create shorthand variable for results by breakout category
             mkt_save_brk = self.output_ecms[m.name][
@@ -5771,6 +5983,12 @@ class Engine(object):
             # loop through below in finalizing baseline/efficient breakouts
             mkt_keys = mkt_base_keys + mkt_eff_keys
 
+<<<<<<< HEAD
+=======
+            def _fast_copy_frac(d):
+                return _fast_copy_nested_dict(d)
+
+>>>>>>> bss-develop-25-backup
             # Pre-build per-key copies of the frac_* dicts so out_break_walk
             # (which mutates its first argument) gets a fresh copy each time
             # without redundant deepcopy inside the loop.
@@ -5778,6 +5996,7 @@ class Engine(object):
             for k in mkt_keys:
                 if "Baseline" in k:
                     if "Stock" in k and report_stk_units:
+<<<<<<< HEAD
                         _frac_copies[k] = _fast_copy_nested_dict(frac_base_stk)
                     elif "Capital" in k and report_stk_costs:
                         _frac_copies[k] = _fast_copy_nested_dict(frac_base_stk_cost)
@@ -5800,6 +6019,30 @@ class Engine(object):
                         _frac_copies[k] = _fast_copy_nested_dict(frac_eff_cost)
                     else:
                         _frac_copies[k] = _fast_copy_nested_dict(frac_eff_carb)
+=======
+                        _frac_copies[k] = _fast_copy_frac(frac_base_stk)
+                    elif "Capital" in k and report_stk_costs:
+                        _frac_copies[k] = _fast_copy_frac(frac_base_stk_cost)
+                    elif "Energy Use" in k:
+                        _frac_copies[k] = _fast_copy_frac(frac_base_energy)
+                    elif "Energy Cost" in k:
+                        _frac_copies[k] = _fast_copy_frac(frac_base_cost)
+                    else:
+                        _frac_copies[k] = _fast_copy_frac(frac_base_carb)
+                elif any([x in k for x in ["Efficient", "Measure"]]):
+                    if "Stock" in k and report_stk_units:
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk)
+                    elif "Capital" in k and report_stk_costs:
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk_cost)
+                    elif "Energy Use" in k and "Measure" not in k:
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy)
+                    elif eff_capt and "Energy Use" in k and "Measure" in k:
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy_capt)
+                    elif "Energy Cost" in k:
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_cost)
+                    else:
+                        _frac_copies[k] = _fast_copy_frac(frac_eff_carb)
+>>>>>>> bss-develop-25-backup
             # Apply output breakout fractions to total baseline and efficient
             # stock, energy, carbon, and cost results initialized above
             for k in mkt_keys:
@@ -5870,7 +6113,11 @@ class Engine(object):
             for ind_k, k in enumerate(save_keys):
                 # Copy baseline breakouts dict to use in establishing the
                 # structure of the final savings output breakouts dict
+<<<<<<< HEAD
                 orig_dict_struct = _fast_copy_nested_dict(
+=======
+                orig_dict_struct = _fast_copy_frac(
+>>>>>>> bss-develop-25-backup
                     mkt_save_brk[mkt_base_keys[ind_k]])
                 # Loop through all nested levels of the dict above; when
                 # reaching terminal nodes, finalize savings values as
@@ -6667,6 +6914,8 @@ class Engine(object):
         # breakout categories; these will be updated as the measure is adjusted below
         cdbps_regs, cdbps_bldgs, cdbps_eus = [
             m_cdbps.reg_brk, m_cdbps.bldg_vnt_brk, m_cdbps.end_use_brk]
+        # Set shorthand for code/BPS ComStock gap fraction attribute
+        cdbps_gap_fracs = m_cdbps.gap_wts
 
         # Loop through all existing non-code/BPS measures that pertain to the current combination
         # of region, building type and vintage and adjust their data and the code/BPS measure data
@@ -6678,8 +6927,14 @@ class Engine(object):
 
             # Set measure fuel type attribute for later use in tracking fuel switching
             meas_fuel, meas_eus = [m.fuel_type["primary"], m.end_use["primary"]]
-            # Loop through metrics that are broken out in measure data. (Note that costs
-            # denote energy costs only, and carbon costs are not broken out/won't be adjusted)
+
+            # Set shorthand for measure ComStock gap fraction attribute
+            if hasattr(m, "gap_wts"):
+                meas_gap_fracs = m.gap_wts
+            else:
+                meas_gap_fracs = None
+            # Loop through metrics that are broken out in measure data. (Note that carbon costs are
+            # not broken out/won't be adjusted)
             for brk_var in self.handyvars.brk_vars:
                 # Map high-level cost variable to energy or capital cost vars in breakout data
                 if isinstance(self.handyvars.brk_mast_map[brk_var], list):
@@ -6774,7 +7029,7 @@ class Engine(object):
                         mast_dat_cdbps_base, mast_dat_cdbps_save, reg, bldg, apply_yrs,
                         onsite_times_apply_fracs, rel_elec_eff[brk_var], prior_yr_rmv, brk_var,
                         cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, reg, bldg, vint, meas_fuel,
-                        meas_eus, res_focus, adopt_scheme)
+                        meas_eus, res_focus, meas_gap_fracs, cdbps_gap_fracs, adopt_scheme)
                 # Apply any additional energy reduction requirements, leveraging data shorthands
                 # above. Note that stock and stock cost totals are currently unadjusted for energy
                 # code reductions, such that per unit energy/carb/energy cost will be reduced and
@@ -6786,7 +7041,7 @@ class Engine(object):
                         brk_dat_cdbps_base, brk_dat_cdbps_save, mast_dat_cdbps_eff,
                         mast_dat_cdbps_base, mast_dat_cdbps_save, reg, bldg, apply_yrs,
                         add_energy_times_apply_fracs, prior_yr_rmv, cdbps_regs, cdbps_bldgs,
-                        cdbps_eus, focus_yrs)
+                        cdbps_eus, focus_yrs, meas_gap_fracs, cdbps_gap_fracs)
 
         return
 
@@ -6796,7 +7051,7 @@ class Engine(object):
             brk_dat_cdbps_save, mast_dat_cdbps_eff, mast_dat_cdbps_base, mast_dat_cdbps_save,
             reg, bldg, apply_yrs, onsite_times_apply_fracs, rel_elec_eff,
             prior_yr_rmv, var, cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, reg_in, bldg_in,
-            vint_in, meas_fuel, meas_eus, res_focus, adopt_scheme):
+            vint_in, meas_fuel, meas_eus, res_focus, meas_gap_fracs, cdbps_gap_fracs, adopt_scheme):
         """Apply onsite emissions reductions required via code/BPS.
 
         Args:
@@ -6834,6 +7089,8 @@ class Engine(object):
             meas_fuel (str): Measure fuel type (used to track fuel and/or technology switch to HPs).
             meas_eus (str): Measure end uses (used to track fuel and/or tech. switch to HPs).
             res_focus (str): Flag for whether current building type is residential (or not).
+            meas_gap_fracs (dict or None): Measure ComStock gap shape weight.
+            cdbps_gap_frac (dict): Code/BPS measure ComStock gap shape weight.
             adopt_scheme (string): Assumed consumer adoption scenario.
         """
 
@@ -6897,7 +7154,7 @@ class Engine(object):
                             adopt_scheme == "Max adoption potential" and any([
                                 x in self.handyvars.out_break_enduses[eu]
                                 for x in self.handyvars.conversion_eus]):
-                            for yr in [a_y for a_y in apply_yrs if a_y in focus_yrs]:
+                            for yr in apply_yrs:
                                 # Set end use and fuel type
                                 eu_in = self.handyvars.out_break_enduses[eu]
                                 # Manage cases where multiple detailed end uses match the
@@ -6922,29 +7179,10 @@ class Engine(object):
                                     bldg_type = "residential"
                                 else:
                                     bldg_type = "commercial"
-                                # Add to reported conversion numbers
-                                for c_typ in ["total", "competed"]:
-                                    # Add to the numerator (converted equip. numbers)
-                                    self.handyvars.conversion_fracs[c_typ][reg_in][bldg_type][
-                                        ft_out][eu_in][vint_in][yr]["converted"] += \
-                                        convert_fossil[yr]
-                                    # If totals are zero (indicating the segment has not yet
-                                    # already been assessed), add to denominator as appropriate
-                                    if self.handyvars.conversion_fracs[c_typ][reg_in][
-                                            bldg_type][ft_out][eu_in][vint_in][yr]["all"] == 0:
-                                        # When calculating portion of total stock that converted,
-                                        # use the total stock in the baseline as denominator
-                                        if c_typ == "total":
-                                            self.handyvars.conversion_fracs[c_typ][reg_in][
-                                                bldg_type][ft_out][eu_in][vint_in][yr]["all"] += \
-                                                brk_dat_base[reg][bldg][eu][fossil_fuel][yr]
-                                        # When calculating portion of competed stock that converted,
-                                        # use the stock that was eligible for conversion in a given
-                                        # year as denominator
-                                        else:
-                                            self.handyvars.conversion_fracs[c_typ][reg_in][
-                                                bldg_type][ft_out][eu_in][vint_in][yr]["all"] += \
-                                                elig_convert[yr]
+                                # Add to reported total conversion numbers
+                                self.handyvars.conversion_fracs["total"][reg_in][bldg_type][
+                                    ft_out][eu_in][vint_in][yr]["converted"] += convert_fossil[yr]
+
                         # Record conversions across measure variables. Only record stock conversions
                         # for the heating end use, which is considered a default "anchor" use to
                         # avoid issues interpreting stock totals for these measures when they apply
@@ -6988,6 +7226,13 @@ class Engine(object):
                             if len(brk_dat_cdbps_base[reg][bldg][eu][fossil_fuel].keys()) == 0:
                                 for yr in focus_yrs:
                                     brk_dat_cdbps_base[reg][bldg][eu][fossil_fuel][yr] = 0
+                                # Initialize gap fractions if needed
+                                if meas_gap_fracs is not None and \
+                                    bldg in meas_gap_fracs.keys() and \
+                                        bldg not in cdbps_gap_fracs.keys():
+                                    cdbps_gap_fracs[bldg] = {
+                                        "total": {yr: 0 for yr in focus_yrs},
+                                        "gap": {yr: 0 for yr in focus_yrs}}
                             # Initialize efficient data
                             if len(brk_dat_cdbps_eff[reg][bldg][eu][elec_key].keys()) == 0:
                                 for yr in focus_yrs:
@@ -7052,6 +7297,11 @@ class Engine(object):
                                 # master data for the codes/BPS measure
                                 brk_dat_cdbps_base[reg][bldg][eu][fossil_fuel][yr] += \
                                     added_elec_base[yr]  # This will be fossil
+                                # Adjust gap fractions if needed
+                                if bldg in cdbps_gap_fracs.keys():
+                                    cdbps_gap_fracs[bldg]["total"][yr] += added_elec_base[yr]
+                                    cdbps_gap_fracs[bldg]["gap"][yr] += (
+                                        added_elec_base[yr] * meas_gap_fracs[bldg][yr])
                                 brk_dat_cdbps_eff[reg][bldg][eu][elec_key][yr] += \
                                     added_elec_eff[yr]  # This will be electric
                                 # Only update savings breakout data if applicable
@@ -7078,7 +7328,7 @@ class Engine(object):
             mast_dat_eff, mast_dat_base, mast_dat_save, brk_dat_cdbps_eff, brk_dat_cdbps_base,
             brk_dat_cdbps_save, mast_dat_cdbps_eff, mast_dat_cdbps_base, mast_dat_cdbps_save,
             reg, bldg, apply_yrs, add_energy_times_apply_fracs, prior_yr_rmv,
-            cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs):
+            cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, meas_gap_fracs, cdbps_gap_fracs):
         """Apply additional energy reduction impacts needed to meet code/BPS.
 
         Args:
@@ -7108,6 +7358,8 @@ class Engine(object):
             cdbps_bldgs (list): Applicable building type/vintage categories for codes/BPS measure.
             cdbps_eus (list): Applicable end use categories for codes/BPS measure.
             focus_yrs (str): Years to report the output data for (can be full AEO range or trimmed).
+            meas_gap_fracs (dict or None): Measure ComStock gap shape weight.
+            cdbps_gap_frac (dict): Code/BPS measure ComStock gap shape weight.
         """
 
         # Loop through all end uses for the given region and building type/vintage breakout
@@ -7139,7 +7391,8 @@ class Engine(object):
                     brk_dat_cdbps_save[reg][bldg][eu],
                     mast_dat_cdbps_eff, mast_dat_cdbps_base, mast_dat_cdbps_save,
                     reg, bldg, eu, apply_yrs, add_energy_times_apply_fracs,
-                    prior_yr_rmv, cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs)
+                    prior_yr_rmv, cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs,
+                    meas_gap_fracs, cdbps_gap_fracs)
             else:
                 # Loop through fuel types under end use breakout
                 for fuel in brk_dat_base[reg][bldg][eu].keys():
@@ -7173,14 +7426,15 @@ class Engine(object):
                             brk_dat_cdbps_save[reg][bldg][eu][fuel],
                             mast_dat_cdbps_eff, mast_dat_cdbps_base, mast_dat_cdbps_save,
                             reg, bldg, eu, apply_yrs, add_energy_times_apply_fracs, prior_yr_rmv,
-                            cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs)
+                            cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, meas_gap_fracs,
+                            cdbps_gap_fracs)
 
     def adjust_data(self, brk_dat_eff, brk_dat_eff_capt, brk_dat_eff_capt_env, brk_dat_base,
                     brk_dat_save, mast_dat_eff, mast_dat_base, mast_dat_save, brk_dat_cdbps_eff,
                     brk_dat_cdbps_base, brk_dat_cdbps_save, mast_dat_cdbps_eff, mast_dat_cdbps_base,
                     mast_dat_cdbps_save, reg, bldg, eu, apply_yrs,
                     add_energy_times_apply_fracs, prior_yr_rmv, cdbps_regs,
-                    cdbps_bldgs, cdbps_eus, focus_yrs):
+                    cdbps_bldgs, cdbps_eus, focus_yrs, meas_gap_fracs, cdbps_gap_fracs):
         """Make the actual adjustments to reflect additional energy reductions to meet code/BPS.
 
         brk_dat_eff (dict): Efficient stock/energy/carbon/ecost breakouts for indiv. measure.
@@ -7210,6 +7464,8 @@ class Engine(object):
         cdbps_bldgs (list): Applicable building type/vintage categories for codes/BPS measure.
         cdbps_eus (list): Applicable end use categories for codes/BPS measure.
         focus_yrs (str): Years to report the output data for (can be full AEO range or trimmed).
+        meas_gap_fracs (dict or None): Measure ComStock gap shape weight.
+        cdbps_gap_frac (dict): Code/BPS measure ComStock gap shape weight.
         """
 
         # Determine energy/carbon/cost data that should be removed from the additional energy
@@ -7287,6 +7543,21 @@ class Engine(object):
             for yr in focus_yrs:
                 brk_dat_cdbps_base[yr] += reduce_base_to_meet_thres[yr]
 
+        # Initialize gap fractions if needed
+        if (meas_gap_fracs is not None) and (bldg in meas_gap_fracs.keys()) and (
+                bldg not in cdbps_gap_fracs.keys()):
+            cdbps_gap_fracs[bldg] = {
+                "total": {yr: reduce_base_to_meet_thres[yr] for yr in focus_yrs},
+                "gap": {yr: reduce_base_to_meet_thres[yr] * meas_gap_fracs[bldg][yr]
+                        for yr in focus_yrs}}
+        # Add to gap fractions if needed
+        elif (meas_gap_fracs is not None) and (bldg in meas_gap_fracs.keys()):
+            cdbps_gap_fracs[bldg]["total"] = {
+                yr: cdbps_gap_fracs[bldg]["total"][yr] + reduce_base_to_meet_thres[yr]
+                for yr in focus_yrs}
+            cdbps_gap_fracs[bldg]["gap"] = {
+                yr: cdbps_gap_fracs[bldg]["gap"][yr] + (
+                    reduce_base_to_meet_thres[yr] * meas_gap_fracs[bldg][yr]) for yr in focus_yrs}
         # Initialize efficient breakout data if needed as zero; since this is always zero for
         # codes/BPS measures, no subsequent update is needed
         if len(brk_dat_cdbps_eff.keys()) == 0:
@@ -7607,6 +7878,9 @@ class Engine(object):
             codes_bps_dict_out["Markets and Savings (Overall)"], \
                 codes_bps_dict_out["Markets and Savings (by Category)"] = (
                     OrderedDict() for n in range(2))
+            # Finalize gap fractions data, if applicable
+            if len(cbps.gap_wts.keys()) != 0:
+                codes_bps_dict_out["ComStock Gap Weights"] = self.finalize_gap_wts(cbps.gap_wts)
         # Otherwise update the existing dict for the measure
         else:
             # Set shorthand for dict to update
@@ -8082,6 +8356,9 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                   end="", flush=True)
             a_run.compete_measures(adopt_scheme, htcl_totals, opts)
             print("Competition complete")
+        # Finalize potential converted energy of all measures in analysis
+        if a_run.handyvars.conversion_fracs and adopt_scheme == "Max adoption potential":
+            a_run.finalize_conv_denoms(adopt_scheme, a_run.handyvars.conversion_fracs)
         # Calculate each measure's competed measure savings and metrics
         # using updated competed markets, and print progress update to user
         print("Calculating competed '" + adopt_scheme +
@@ -8290,9 +8567,34 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     if all([x is False for x in [trim_out, trim_yrs]]):
         # Notify user that the output data are being plotted
         print("Plotting output data...", end="", flush=True)
+<<<<<<< HEAD
         run_plot(meas_summary, a_run, handyvars, measures_objlist,
                  regions, cbpslist, trim_out)
         print("Plotting complete")
+=======
+        # Execute plots in a background thread so main() can return while
+        # matplotlib renders/saves PDFs (plotting has no downstream callers).
+        # The Agg backend (set at module import time) is thread-safe.
+
+        def _run_plot_bg():
+            try:
+                run_plot(meas_summary, a_run, handyvars, measures_objlist,
+                         regions, cbpslist, trim_out)
+                print("Plotting complete")
+            except Exception as exc:
+                plot_thread._exc = exc
+                raise
+
+        plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
+        plot_thread._exc = None
+        plot_thread.start()
+        # Force the main script to wait until the plotting thread is completely done
+        plot_thread.join()
+
+        # Re-raise any exceptions that happened inside the thread
+        if plot_thread._exc:
+            raise plot_thread._exc
+>>>>>>> bss-develop-25-backup
 
 
 def parse_args(args: list = None) -> argparse.NameSpace:  # noqa: F821

@@ -39,11 +39,29 @@ def run_workflow(config: str = "", run_step: str = None, with_profiler: bool = F
 
     # Run run.py
     if run_step == "run" or run_step is None:
+        import threading
         opts = run.parse_args(["-y", config])
         if with_profiler:
             run_with_profiler(run.main, opts, fp.RESULTS / "profile_run.csv")
         else:
             run.main(opts)
+            # run.main() launches plotting in a background thread and returns
+            # immediately. Wait for all non-daemon threads (e.g. the plot thread)
+            # to finish so that output files (Summary_Data-TP.xlsx, etc.) are
+            # fully written before the process exits or results are compared.
+            main_thread = threading.main_thread()
+            plot_threads = [t for t in threading.enumerate()
+                            if t is not main_thread and not t.daemon]
+            for t in plot_threads:
+                t.join()
+            # Re-raise any exception from the plot thread so the CI job
+            # fails with the real error rather than a downstream FileNotFoundError.
+            for t in plot_threads:
+                exc = getattr(t, "_exc", None)
+                if exc is not None:
+                    raise RuntimeError(
+                        f"Plotting thread {t.name!r} failed"
+                    ) from exc
 
 
 def run_with_profiler(
@@ -59,9 +77,18 @@ def run_with_profiler(
         output_file (pathlib.Path): .csv filepath to write profiling stats
     """
 
+    import threading
+
     pr = cProfile.Profile()
     pr.enable()
     func(args)
+    # run.main() launches plotting in a background thread and returns
+    # immediately. Wait for all non-daemon threads (i.e. the plot thread) to
+    # finish before disabling the profiler so that plotting time is captured.
+    main_thread = threading.main_thread()
+    for t in threading.enumerate():
+        if t is not main_thread and not t.daemon:
+            t.join()
     pr.disable()
     write_profile_stats(pr, output_file)
 
