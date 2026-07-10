@@ -1,0 +1,32 @@
+description: Assess annual operational energy under BAU.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/pathways
+  ecm_files: [
+    "(C) Ground and Floor",
+    "(C) Infiltration",
+    "(C) Internal Gains",
+    "(C) Roofs",
+    "(C) Ventilation",
+    "(C) Walls",
+    "(C) Windows Conduction",
+    "(C) Windows Solar",
+    "(R) Ground",
+    "(R) Infiltration",
+    "(R) Internal Gains",
+    "(R) Roofs",
+    "(R) Walls",
+    "(R) Windows Conduction",
+    "(R) Windows Solar"]
+  site_energy: true
+  no_scnd_lgt: true
+  alt_regions: State
+  alt_ref_carb: MidCase
+  detail_brkout: [regions, buildings]
+  report_stk:
+    cap_invest: true
+  adopt_scn_restrict: Technical potential
+
+  
+run:
+  no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

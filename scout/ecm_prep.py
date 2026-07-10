@@ -4314,11 +4314,9 @@ class Measure(object):
                 # the current mseg region to the regionality of the
                 # fugitive emissions methane leakage data (state breakouts)
 
-                # Non-state region setting must be mapped to state
+                # Set leakage rate scenario for methane
                 if opts.fugitive_emissions is not False and \
-                    opts.fugitive_emissions[0] in ['1', '3'] and (
-                        opts.alt_regions != "State" and
-                        mskeys[3] == "natural gas"):
+                        opts.fugitive_emissions[0] in ['1', '3']:
                     # Prepare leakage rate sensitivity variable based on
                     # input options
                     if opts.fugitive_emissions[2] == '1':
@@ -4327,6 +4325,13 @@ class Measure(object):
                         lkg_rate_scenario = "Mid"
                     else:
                         lkg_rate_scenario = "High"
+
+                # Non-state region setting must be mapped to state
+                if opts.fugitive_emissions is not False and \
+                    opts.fugitive_emissions[0] in ['1', '3'] and (
+                        opts.alt_regions != "State" and
+                        mskeys[3] == "natural gas"):
+
                     # Prepare fractions needed to map state-resolved
                     # fugitive methane data to current region
                     try:
@@ -4420,17 +4425,18 @@ class Measure(object):
                                 # air source heat pump
                                 if bldg_sect == "residential":
                                     tech_name_chk_e = "ASHP"
-                                # Commercial case; assume switching to
-                                # air source heat pump for small
-                                # commercial HVAC, and water/ground
-                                # source HP for large
+                                # Commercial case; assume switching to packaged/window units,
+                                # rooftop units, or water/ground source HPs depending on baseline
+                                # tech. being switched from
                                 else:
-                                    # Small commercial
-                                    if mskeys[-2] in \
-                                            self.handyvars.com_RTU_fs_tech:
-                                        tech_name_chk_e = \
-                                            "rooftop_ASHP-cool"
-                                    # Large commercial
+                                    # Packaged terminal and/or window units
+                                    if any([x in mskeys[-2] for x in ["pkg", "wall", "res_type"]]):
+                                        tech_name_chk_e = "wall-window_room_AC"
+                                    # RTUs (assume fuel-fired or resistance furnaces are integrated)
+                                    elif any([x in mskeys[-2] for x in [
+                                            "rooftop", "furnace", "res-heat"]]):
+                                        tech_name_chk_e = "rooftop_ASHP-cool"
+                                    # All other larger commercial tech.
                                     else:
                                         tech_name_chk_e = "comm_GSHP-cool"
                             # Set baseline refrigerant data to that of the
@@ -4470,7 +4476,13 @@ class Measure(object):
                             # baseline technology name in the case of a
                             # switch to HP from another baseline cooling tech.
                             else:
-                                tech_name_chk_b = mskeys[-2]
+                                # Package terminal HP units use wall/window data;
+                                # in all other cases the baseline tech. name should
+                                # be in the refrigerants data file
+                                if "pkg" in mskeys[-2]:
+                                    tech_name_chk_b = "wall-window_room_AC"
+                                else:
+                                    tech_name_chk_b = mskeys[-2]
                                 # Given switch to HP from another baseline
                                 # cooling technology, set flag to zero out
                                 # measure refrigerant emissions (since they
@@ -9830,18 +9842,6 @@ class Measure(object):
                     self.fuel_type[mseg_type], self.end_use[mseg_type],
                     self.technology_type[mseg_type],
                     self.technology[mseg_type], self.structure_type]]
-        # Map legacy internal gain component names to the aggregated node, if present
-        try:
-            alias_map = getattr(self.handyvars, 'demand_tech_alias', {})
-        except Exception:
-            alias_map = {}
-        if isinstance(self.technology[mseg_type], list) and alias_map:
-            mapped = []
-            for t in self.technology[mseg_type]:
-                mt = alias_map.get(t, t)
-                if mt not in mapped:
-                    mapped.append(mt)
-            self.technology[mseg_type] = mapped
 
         # Flag heating/cooling end use microsegments. For heating/cooling
         # cases, an extra 'supply' or 'demand' key is required in the key
@@ -10197,6 +10197,7 @@ class Measure(object):
                     dict1[k] = i + dict2[k]
                 except TypeError:
                     self.add_keyvals_restrict(i, dict2[k])
+
         return dict1
 
     def div_keyvals(self, dict1, dict2):
@@ -14482,17 +14483,6 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 msegs = json.loads(zip_ref.read().decode('utf-8'))
         else:
             msegs = JsonIO.load_json(handyfiles.msegs_in)
-        # Aggregate internal gains components (people + equipment only)
-        # into a single 'internal gains' node for heating/secondary heating/cooling
-        # demand microsegments. This prevents downstream double counting once logic
-        # skips originals when aggregate present.
-        try:
-            msegs = ECMPrepHelper.add_internal_gains_aggregate(msegs, handyvars.aeo_years)
-            logger.info("Applied internal gains aggregation (people + equipment)")
-
-        except Exception as e:
-            logger.warning(
-                f"Internal gains aggregation failed; proceeding without aggregation: {e}")
         # Import baseline cost, performance, and lifetime data
         bjszip = handyfiles.msegs_cpl_in
         with gzip.GzipFile(bjszip, 'r') as zip_ref:

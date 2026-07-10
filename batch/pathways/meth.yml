@@ -1,0 +1,71 @@
+description: Assess annual fugitive methane emissions under BAU.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/pathways
+  ecm_files: [
+    "(C) Gas Furnaces, CC (Res New)",
+    "(C) Gas Furnaces, non-CC (Res New)",
+    "(C) Gas Furnaces, non-CC (New)",
+    "(C) Gas Furnaces, CC (New)",
+    "(R) Gas Secondary Heating, CC (New)",
+    "(R) Gas Furnaces, CC (New)",
+    "(R) Gas Furnaces, non-CC (New)",
+    "(R) Gas Secondary Heating, non-CC (New)",
+    "(C) Gas Storage Water Heaters (New)",
+    "(C) Gas Storage Water Heaters POU (New)",
+    "(R) Gas Storage Water Heaters (MF New)",
+    "(R) Gas Storage Water Heaters <30 (New)",
+    "(R) Gas Storage Water Heaters (New)",
+    "(R) Gas Boilers, CC (MF New)",
+    "(R) Gas Boilers, CC (New)",
+    "(R) Gas Boilers, non-CC (New)",
+    "(R) Gas Boilers, non-CC (MF New)",
+    "(C) Gas Boilers, CC (New)",
+    "(C) Gas Boilers, non-CC (New)",
+    "(R) Gas Unknown & NB (New)",
+    "(R) Gas Heat Pumps (New)",
+    "(R) Gas Dryers (New)",
+    "(R) Gas Cooking (New)",
+    "(C) Gas Unknown & NB (New)",
+    "(C) Gas Heat Pumps (New)",
+    "(C) Gas Cooking (New)",
+    "(C) Gas Chillers (New)",
+    "(R) Gas Boilers, non-CC (MF Exist)",
+    "(R) Gas Boilers, non-CC (Exist)",
+    "(R) Gas Boilers, CC (MF Exist)",
+    "(R) Gas Boilers, CC (Exist)",
+    "(C) Gas Storage Water Heaters POU (Exist)",
+    "(C) Gas Storage Water Heaters (Exist)",
+    "(R) Gas Storage Water Heaters (Exist)",
+    "(R) Gas Storage Water Heaters <30 (Exist)",
+    "(R) Gas Storage Water Heaters (MF Exist)",
+    "(R) Gas Secondary Heating, non-CC (Exist)",
+    "(R) Gas Secondary Heating, CC (Exist)",
+    "(R) Gas Furnaces, non-CC (Exist)",
+    "(R) Gas Furnaces, CC (Exist)",
+    "(C) Gas Furnaces, non-CC (Res Exist)",
+    "(C) Gas Furnaces, CC (Res Exist)",
+    "(C) Gas Furnaces, non-CC (Exist)",
+    "(C) Gas Furnaces, CC (Exist)",
+    "(C) Gas Boilers, CC (Exist)",
+    "(C) Gas Boilers, non-CC (Exist)",
+    "(R) Gas Unknown & NB (Exist)",
+    "(R) Gas Heat Pumps (Exist)",
+    "(R) Gas Dryers (Exist)",
+    "(R) Gas Cooking (Exist)",
+    "(C) Gas Unknown & NB (Exist)",
+    "(C) Gas Heat Pumps (Exist)",
+    "(C) Gas Cooking (Exist)",
+    "(C) Gas Chillers (Exist)",
+    "(C) Gas RTACs (Exist)",
+    "(C) Gas RTACs (New)"]
+  site_energy: true
+  no_scnd_lgt: true
+  alt_regions: State
+  alt_ref_carb: MidCase
+  detail_brkout: [regions, buildings]
+  fugitive_emissions: [methane-mid]
+  adopt_scn_restrict: Technical potential
+  
+run:
+  no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

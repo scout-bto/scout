@@ -1,0 +1,43 @@
+description: Assess annual fugitive refrigerant emissions under BAU.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/pathways
+  ecm_files: [
+    "(C) Electric Chillers (Exist)",
+    "(C) Electric HPWHs (Exist)",
+    "(C) Ground Source HPs (Exist)",
+    "(C) Refrigeration (Exist)",
+    "(C) Residential Type ACs (Exist)",
+    "(C) Rooftop ACs (Exist)",
+    "(C) Rooftop HPs (Exist)",
+    "(R) Air Source HPs (Exist)",
+    "(R) Central ACs (Exist)",
+    "(R) Ground Source HPs (Exist)",
+    "(R) Refrigeration (Exist)",
+    "(R) Room ACs (Exist)",
+    "(C) Electric Chillers (New)",
+    "(C) Electric HPWHs (New)",
+    "(C) Ground Source HPs (New)",
+    "(C) Refrigeration (New)",
+    "(C) Residential Type ACs (New)",
+    "(C) Rooftop ACs (New)",
+    "(C) Rooftop HPs (New)",
+    "(R) Air Source HPs (New)",
+    "(R) Central ACs (New)",
+    "(R) Ground Source HPs (New)",
+    "(R) Refrigeration (New)",
+    "(R) Room ACs (New)",
+    "(C) PTACs (Exist)",
+    "(C) PTACs (New)",
+    "(C) PTHPs (Exist)",
+    "(C) PTHPs (New)"]
+  site_energy: true
+  no_scnd_lgt: true
+  alt_regions: State
+  alt_ref_carb: MidCase
+  detail_brkout: [regions, buildings]
+  fugitive_emissions: [low-gwp refrigerant]
+  adopt_scn_restrict: Technical potential
+
+run:
+  no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

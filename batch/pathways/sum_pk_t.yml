@@ -1,0 +1,61 @@
+description: Runs to assess annual operational energy.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/pathways
+  ecm_files: [
+    "(C) Electric Chillers",
+    "(C) Electric HPWHs",
+    "(C) Ground Source HPs",
+    "(C) Refrigeration",
+    "(C) Residential Type ACs",
+    "(C) Rooftop ACs",
+    "(C) Rooftop HPs",
+    "(R) Air Source HPs",
+    "(R) Central ACs",
+    "(R) Ground Source HPs",
+    "(R) Refrigeration",
+    "(R) Room ACs",
+    "(C) CAV Ventilation Systems",
+    "(C) Electric Cooking",
+    "(C) Electric Storage Water Heaters",
+    "(C) Electronics",
+    "(C) Lighting, LED",
+    "(C) Lighting, non-LED",
+    "(C) Other Misc. Electric",
+    "(C) Resistance Heating, CC",
+    "(C) Resistance Heating, non-CC",
+    "(C) VAV Ventilation Systems",
+    "(R) Electric Cooking",
+    "(R) Electric Dryers",
+    "(R) Electric Secondary Heating, CC",
+    "(R) Electric Secondary Heating, non-CC",
+    "(R) Electric Storage Water Heaters",
+    "(R) Electronics",
+    "(R) Fans & Pumps",
+    "(R) Lighting, LED",
+    "(R) Lighting, Non-LED",
+    "(R) Other Appliances",
+    "(R) Pools & Spas",
+    "(R) Resistance Heating, CC",
+    "(R) Resistance Heating, non-CC",
+    "(C) Other Electric Unknown & NB",
+    "(R) Other Electric Unknown & NB",
+    "(C) PTHPs", 
+    "(C) PTACs"]
+  site_energy: true
+  no_scnd_lgt: true
+  alt_regions: State
+  alt_ref_carb: MidCase
+  detail_brkout: [regions, buildings]
+  tsv_metrics:
+    tsv_type: power
+    tsv_daily_hr_restrict: peak
+    tsv_sys_shape_case: total reference
+    tsv_season: summer
+    tsv_power_agg: peak
+  report_stk:
+    cap_invest: true
+  adopt_scn_restrict: Technical potential
+  
+run:
+  no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

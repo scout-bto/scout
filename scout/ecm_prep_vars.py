@@ -183,6 +183,7 @@ class UsefulVars(object):
         # Derive time horizon from min/max years
         self.aeo_years = [
             str(i) for i in range(aeo_min, aeo_max + 1)]
+        self.aeo_years_set = set(self.aeo_years)
         self.aeo_years_summary = ["2030", "2050"]
         # Set early retrofit rate assumptions
 
@@ -521,7 +522,7 @@ class UsefulVars(object):
             # Use RTU HP fuel switching rates for furnace and/or small electric
             # resistance + AC tech.
             self.com_RTU_fs_tech = [
-                "gas_furnace", "oil_furnace", "electric_res-heat",
+                "gas_furnace", "oil_furnace", "electric_res-heat", "elec_res-heater",
                 "rooftop_AC", "wall-window_room_AC", "res_type_central_AC",
                 "pkg_terminal_AC-cool"]
             # Use non-RTU HP fuel switching rates for boiler/chiller tech.
@@ -539,7 +540,7 @@ class UsefulVars(object):
         elif opts.fugitive_emissions is not False:
             self.hp_rates = None
             self.com_RTU_fs_tech = [
-                "gas_furnace", "oil_furnace", "electric_res-heat",
+                "gas_furnace", "oil_furnace", "electric_res-heat", "elec_res-heater",
                 "rooftop_AC", "wall-window_room_AC", "res_type_central_AC",
                 "pkg_terminal_AC-cool"]
             self.com_nRTU_fs_tech = [

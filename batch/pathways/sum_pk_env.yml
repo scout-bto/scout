@@ -1,0 +1,37 @@
+description: Runs to assess annual operational energy.
+ecm_prep:
+  ecm_directory: ../../ecm_definitions/pathways
+  ecm_files: [
+    "(C) Ground and Floor (Elec.)",
+    "(C) Infiltration (Elec.)",
+    "(C) Internal Gains (Elec.)",
+    "(C) Roofs (Elec.)",
+    "(C) Ventilation (Elec.)",
+    "(C) Walls (Elec.)",
+    "(C) Windows Conduction (Elec.)",
+    "(C) Windows Solar (Elec.)",
+    "(R) Ground (Elec.)",
+    "(R) Infiltration (Elec.)",
+    "(R) Internal Gains (Elec.)",
+    "(R) Roofs (Elec.)",
+    "(R) Walls (Elec.)",
+    "(R) Windows Conduction (Elec.)",
+    "(R) Windows Solar (Elec.)"]
+  site_energy: true
+  no_scnd_lgt: true
+  alt_regions: State
+  alt_ref_carb: MidCase
+  detail_brkout: [regions, buildings]
+  tsv_metrics:
+    tsv_type: power
+    tsv_daily_hr_restrict: peak
+    tsv_sys_shape_case: total reference
+    tsv_season: summer
+    tsv_power_agg: peak
+  report_stk:
+    cap_invest: true
+  adopt_scn_restrict: Technical potential
+  
+run:
+  no_comp: true
+  report_custom_yrs: [2026, 2035, 2050]

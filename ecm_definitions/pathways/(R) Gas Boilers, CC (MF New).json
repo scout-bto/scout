@@ -1,0 +1,38 @@
+{
+  "name": "(R) Gas Boilers, CC (MF New)",
+  "climate_zone": "cold climates",
+  "bldg_type": "all residential",
+  "structure_type": "new",
+  "end_use": ["heating"],
+  "fuel_type": "natural gas",
+  "technology": ["boiler (NG)"],
+  "market_entry_year": 2023,
+  "market_entry_year_source": null,
+  "market_exit_year": null,
+  "market_exit_year_source": null,
+  "energy_efficiency": 1,
+  "energy_efficiency_units": "relative savings (constant)",
+  "energy_efficiency_source": null,
+  "installed_cost": 0,
+  "cost_units": "2023$/ft^2 floor",
+  "installed_cost_source": null,
+  "product_lifetime": 50,
+  "product_lifetime_units": "years",
+  "product_lifetime_source": null,
+  "measure_type": "add-on",
+  "fuel_switch_to": null,
+  "market_scaling_fractions": {
+    "single family home": 0,
+    "mobile home": 0,
+    "multi family home": 0.85},
+  "market_scaling_fractions_source": "RECS 2020 microtables, map to NEMS building types, restrict EQUIPM to steam/hot water and fuel to gas, then find portion space heat BTUs by building type that serves multiple housing units (HEAT APT)",
+  "_description": "Measure for segmentation analysis - boiler is shared",
+  "_notes": null,
+  "_added_by": {
+    "name": "Jared Langevin",
+    "organization": "Lawrence Berkeley National Lab",
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "Mon Jun 12 10:07:30 EDT 2023"
+  },
+  "_updated_by": null
+}
