@@ -278,11 +278,13 @@ jobs:
             # Drop transient diff reports before committing new baseline files.
             rm -f ./tests/integration_testing/results/*_diffs.csv
             rm -f ./tests/integration_testing/results/*_key_diffs.csv
+            # Guard against generated placeholder files being committed.
+            find ./tests/integration_testing/results/plots -type f -name '.gitignore' -delete 2>/dev/null || true
 
             git add ./tests/integration_testing/results/agg_results.json
             git add ./tests/integration_testing/results/ecm_results.json
             if [[ -d ./tests/integration_testing/results/plots ]]; then
-              git add ./tests/integration_testing/results/plots/
+              git add -- ./tests/integration_testing/results/plots/ ':(exclude)tests/integration_testing/results/plots/**/.gitignore'
             fi
             if [[ -d ./tests/integration_testing/results/plot_images ]]; then
               git add ./tests/integration_testing/results/plot_images/
