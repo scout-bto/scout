@@ -135,7 +135,7 @@ jobs:
             python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
           fi
 
-          rm -rf ./tests/integration_testing/results/*
+          find ./tests/integration_testing/results -mindepth 1 -delete
           mv ./results/* ./tests/integration_testing/results/
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
       - name: Capture profiler comparison output
@@ -280,11 +280,15 @@ jobs:
             rm -f ./tests/integration_testing/results/*_key_diffs.csv
             # Guard against generated placeholder files being committed.
             find ./tests/integration_testing/results/plots -type f -name '.gitignore' -delete 2>/dev/null || true
+            # Temporary debug: confirm no .gitignore files remain before staging.
+            echo "Remaining .gitignore files under tests/integration_testing/results (if any):"
+            find ./tests/integration_testing/results -type f -name '.gitignore' -print || true
 
             git add ./tests/integration_testing/results/agg_results.json
             git add ./tests/integration_testing/results/ecm_results.json
             if [[ -d ./tests/integration_testing/results/plots ]]; then
-              git add -- ./tests/integration_testing/results/plots/ ':(exclude)tests/integration_testing/results/plots/**/.gitignore'
+              # Stage plot updates, including deletions of removed placeholder files.
+              git add ./tests/integration_testing/results/plots/
             fi
             if [[ -d ./tests/integration_testing/results/plot_images ]]; then
               git add ./tests/integration_testing/results/plot_images/
@@ -644,7 +648,7 @@ jobs:
       - name: Move results
         shell: bash
         run: |
-          rm -rf ./tests/integration_testing/results/*
+          find ./tests/integration_testing/results -mindepth 1 -delete
           mv ./results/* ./tests/integration_testing/results/
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
       - name: Compare results against master
