@@ -64,29 +64,42 @@ END_USE_MAP = {
                 "out.natural_gas.interior_equipment.energy_consumption"
             ]
         },
-        # NOTE: ComStock 2025's out.other_fuel.* columns are entirely zero for
-        # every commercial building sample (not just missing end-use detail --
-        # the whole fuel is unmodeled in that release). heating/water heating
-        # are therefore sourced from 2024 ComStock instead, which still has
-        # real, nonzero other_fuel data (see the dedicated 2024 preload in
-        # main()). cooling has no out.other_fuel.cooling.energy_consumption
-        # column in either vintage -- genuine zero-stock omission, zero-filled
-        # by ensure_columns().
+        # NOTE: ComStock 2024 lumped fuel oil and propane together into a
+        # single "other_fuel" bucket. Starting with ComStock 2025, that
+        # bucket is disaggregated into separate out.fuel_oil.* and
+        # out.propane.* columns (mirroring the naming convention residential
+        # ResStock already uses below) -- out.other_fuel.* itself is still
+        # present in 2025 parquets but is entirely zero for every commercial
+        # sample. distillate/other-fuel therefore source directly from
+        # fuel_oil/propane, which is real 2025 data; on 2024 data those
+        # columns don't exist and ensure_columns() zero-fills them instead
+        # (2024 disaggregation for these two fuels is unsupported -- run
+        # generate_geo_maps.py --year 2024 if that's ever needed). Neither
+        # vintage has a fuel_oil/propane cooling column (genuine zero-stock
+        # omission) or a raw (non-intensity) interior_equipment consumption
+        # column, so cooling zero-fills and misc keeps pointing at the
+        # natural_gas placeholder below.
         "distillate": {
-            "heating": ["out.other_fuel.heating.energy_consumption"],
-            "cooling": ["out.other_fuel.cooling.energy_consumption"],
+            "heating": ["out.fuel_oil.heating.energy_consumption"],
+            "cooling": ["out.fuel_oil.cooling.energy_consumption"],
             "water heating": [
-                "out.other_fuel.water_systems.energy_consumption"
+                "out.fuel_oil.water_systems.energy_consumption"
             ],
             # FIXME: distillate "misc" points at a natural_gas column. Likely
-            # should be out.other_fuel.interior_equipment.energy_consumption,
+            # should be out.fuel_oil.interior_equipment.energy_consumption,
             # but that column doesn't exist as raw consumption (only as
-            # _savings/_intensity variants) in either ComStock vintage.
+            # _savings/_intensity variants) in ComStock 2025, and doesn't
+            # exist at all in ComStock 2024.
             "misc": [
                 "out.natural_gas.interior_equipment.energy_consumption"
             ]
         },
         "other fuel": {
+            "heating": ["out.propane.heating.energy_consumption"],
+            "cooling": ["out.propane.cooling.energy_consumption"],
+            "water heating": [
+                "out.propane.water_systems.energy_consumption"
+            ],
             # FIXME: "other fuel" misc points at the same natural_gas column as
             # distillate misc, so gas interior equipment is double-counted.
             # Confirm intended source column.
@@ -1072,34 +1085,6 @@ def main():
                 engine='pyarrow')
             com_dfs[weath] = normalize_columns(raw)
 
-    # ComStock releases after 2024 zeroed out out.other_fuel.* for every
-    # commercial sample (the whole fuel is unmodeled, not just missing
-    # end-use detail -- see the note on END_USE_MAP["commercial"]["distillate"]).
-    # When not already running on 2024 data, pull a lightweight, columns-only
-    # preload of 2024 ComStock so commercial distillate disaggregation still
-    # has a real geographic signal instead of an all-zero one.
-    com_dfs_2024_distillate = {}
-    if args.sector in ('commercial', 'both') and args.year != '2024':
-        comstock_2024_data_path = os.path.join(
-            'input/2024_comstock', args.weather_year, 'baseline.parquet')
-        if os.path.exists(comstock_2024_data_path):
-            distillate_cols = [
-                'in.nhgis_county_gisjoin', 'in.state', 'calc.weighted.sqft..ft2',
-                'out.other_fuel.heating.energy_consumption..kwh',
-                'out.other_fuel.water_systems.energy_consumption..kwh',
-                'out.natural_gas.interior_equipment.energy_consumption..kwh']
-            for weath in weathers:
-                print(f"Pre-loading 2024 ComStock other_fuel data for commercial "
-                      f"distillate disaggregation ({weath})...")
-                raw = pd.read_parquet(
-                    comstock_2024_data_path, engine='pyarrow',
-                    columns=distillate_cols)
-                com_dfs_2024_distillate[weath] = normalize_columns(raw)
-        else:
-            print(f"WARNING: 2024 ComStock data not found at "
-                  f"{comstock_2024_data_path}; commercial distillate "
-                  f"disaggregation will fall back to {args.year} data.")
-
     # Define all fuel types to process
     fuel_types = ['electricity', 'natural gas', 'distillate', 'other fuel']
 
@@ -1184,20 +1169,10 @@ def main():
 
                     fuel_end_uses = END_USE_MAP['commercial'][fuel]
 
-                    # Commercial distillate falls back to a 2024 ComStock
-                    # preload when available (see note above); every other
-                    # fuel uses the primary --year data.
-                    if fuel == 'distillate' and com_dfs_2024_distillate:
-                        fuel_filedir = 'input/2024_comstock/'
-                        fuel_preloaded_dfs = com_dfs_2024_distillate
-                    else:
-                        fuel_filedir = f"{args.comstock_path}/"
-                        fuel_preloaded_dfs = com_dfs
-
                     try:
                         process_end_use_energy(
                             sector='commercial',
-                            filedir=fuel_filedir,
+                            filedir=f"{args.comstock_path}/",
                             filename='baseline.parquet',
                             weathers=weathers,
                             mymap=fuel_end_uses,
@@ -1205,7 +1180,7 @@ def main():
                             geos=geos,
                             outdir=end_use_outdir,
                             fueltype=fuel,
-                            preloaded_dfs=fuel_preloaded_dfs
+                            preloaded_dfs=com_dfs
                         )
                     except Exception as e:
                         print(f"    ERROR processing commercial {fuel} energy ({geo_name}): {e}")
@@ -1213,7 +1188,7 @@ def main():
                     try:
                         process_end_use_stock(
                             sector='commercial',
-                            filedir=fuel_filedir,
+                            filedir=f"{args.comstock_path}/",
                             filename='baseline.parquet',
                             weathers=weathers,
                             mymap=fuel_end_uses,
@@ -1221,7 +1196,7 @@ def main():
                             geos=geos,
                             outdir=end_use_outdir,
                             fueltype=fuel,
-                            preloaded_dfs=fuel_preloaded_dfs
+                            preloaded_dfs=com_dfs
                         )
                     except Exception as e:
                         print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
