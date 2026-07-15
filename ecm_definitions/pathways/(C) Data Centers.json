@@ -1,9 +1,9 @@
 {
-  "name": "(C) Electronics",
+  "name": "(C) Data Centers",
   "climate_zone": "all",
   "bldg_type": "all commercial",
   "structure_type": "all",
-  "end_use": ["office equipment"],
+  "end_use": ["data center"],
   "fuel_type": ["electricity"],
   "technology": null,
   "market_entry_year": 2023,
