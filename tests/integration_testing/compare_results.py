@@ -2,7 +2,6 @@ import pandas as pd
 import argparse
 import json
 import re
-import math
 from pathlib import Path
 import logging
 from scout.config import LogConfig
@@ -208,7 +207,6 @@ class ScoutCompare():
                       json1_path: Path,
                       json2_path: Path,
                       percent_threshold: float,
-                      top_n: int = 10,
                       output_dir: Path = None):
         """Compare two jsons and report differences in keys and in values
 
@@ -216,13 +214,8 @@ class ScoutCompare():
             json1_path (Path): baseline json file to compare
             json2_path (Path): new json file to compare
             percent_threshold (float): threshold for reporting percent difference if values
-            top_n (int, optional): number of largest value diffs to show in logs/summary.
-                                   Defaults to 10.
             output_dir (Path, optional): output directory where comparison reports are saved.
                                          Defaults to None.
-
-        Returns:
-            dict: Summary with key/value diff counts and top value diffs.
         """
         json1 = self.load_json(json1_path)
         json2 = self.load_json(json2_path)
@@ -236,47 +229,6 @@ class ScoutCompare():
         # Compare differences in json values
         val_diffs = self.compare_dict_values(json1, json2, percent_threshold=percent_threshold)
         self.write_dict_value_report(val_diffs, output_dir / f"{json2_path.stem}_value_diffs.csv")
-
-        # Summarize value diffs so CI logs include concrete diagnostics.
-        sorted_val_diffs = sorted(
-            val_diffs.items(),
-            key=lambda item: float("inf") if math.isinf(item[1]["percent_diff"])
-            else abs(item[1]["percent_diff"]),
-            reverse=True
-        )
-        top_diffs = sorted_val_diffs[:top_n]
-
-        logger.info(
-            "JSON diff summary for %s: %s key diff row(s), %s changed value field(s) at "
-            "or above %.6f%% threshold",
-            json2_path.name,
-            len(key_diffs.index),
-            len(val_diffs),
-            percent_threshold,
-        )
-        if top_diffs:
-            logger.info("Top %s largest JSON value diffs for %s:", len(top_diffs), json2_path.name)
-            for i, (results_path, diff_dict) in enumerate(top_diffs, start=1):
-                logger.info(
-                    "%s. %s | base=%s | new=%s | percent_diff=%s%%",
-                    i,
-                    results_path,
-                    diff_dict["base"],
-                    diff_dict["new"],
-                    round(diff_dict["percent_diff"], 6) if not math.isinf(diff_dict["percent_diff"])
-                    else "inf",
-                )
-        else:
-            logger.info("No JSON value diffs exceeded the %.6f%% threshold for %s",
-                        percent_threshold,
-                        json2_path.name)
-
-        return {
-            "json_file": json2_path.name,
-            "key_diff_rows": len(key_diffs.index),
-            "value_diff_count": len(val_diffs),
-            "top_diffs": top_diffs,
-        }
 
     def compare_summary_reports(self,
                                 report1_path: Path,
@@ -315,8 +267,6 @@ def main():
     parser.add_argument("--base-dir", type=Path, help="Directory containing files to compare")
     parser.add_argument("--threshold", type=float, default=10,
                         help="Threshold for percent difference")
-    parser.add_argument("--top-n", type=int, default=10,
-                        help="Number of largest JSON value diffs to summarize")
     args = parser.parse_args()
 
     compare = ScoutCompare()
@@ -326,66 +276,16 @@ def main():
         new_dir = args.new_dir.resolve()
         agg_json_base = base_dir / "agg_results.json"
         agg_json_new = new_dir / "agg_results.json"
-        agg_summary = compare.compare_jsons(agg_json_base,
-                                            agg_json_new,
-                                            percent_threshold=args.threshold,
-                                            top_n=args.top_n,
-                                            output_dir=new_dir)
+        compare.compare_jsons(agg_json_base,
+                              agg_json_new,
+                              percent_threshold=args.threshold,
+                              output_dir=new_dir)
         ecm_json_base = base_dir / "ecm_results.json"
         ecm_json_new = new_dir / "ecm_results.json"
-        ecm_summary = compare.compare_jsons(ecm_json_base,
-                                            ecm_json_new,
-                                            percent_threshold=args.threshold,
-                                            top_n=args.top_n,
-                                            output_dir=new_dir)
-
-        # Persist a concise summary file that CI can surface in logs and comments.
-        summary_lines = [
-            f"JSON diff threshold: {args.threshold}%",
-            f"agg_results.json changed value fields: {agg_summary['value_diff_count']}",
-            f"agg_results.json key diff rows: {agg_summary['key_diff_rows']}",
-            f"ecm_results.json changed value fields: {ecm_summary['value_diff_count']}",
-            f"ecm_results.json key diff rows: {ecm_summary['key_diff_rows']}",
-            f"Total changed value fields: "
-            f"{agg_summary['value_diff_count'] + ecm_summary['value_diff_count']}",
-            "",
-            f"Top {args.top_n} largest JSON value diffs (across both files):"
-        ]
-
-        combined_top = sorted(
-            [
-                (agg_summary["json_file"], results_path, diff_dict)
-                for results_path, diff_dict in agg_summary["top_diffs"]
-            ] + [
-                (ecm_summary["json_file"], results_path, diff_dict)
-                for results_path, diff_dict in ecm_summary["top_diffs"]
-            ],
-            key=lambda item: float("inf") if math.isinf(item[2]["percent_diff"])
-            else abs(item[2]["percent_diff"]),
-            reverse=True,
-        )[:args.top_n]
-
-        if combined_top:
-            for i, (json_name, results_path, diff_dict) in enumerate(combined_top, start=1):
-                percent_diff = (
-                    round(diff_dict["percent_diff"], 6)
-                    if not math.isinf(diff_dict["percent_diff"]) else "inf"
-                )
-                summary_lines.append(
-                    f"{i}. {json_name} :: {results_path} | "
-                    f"base={diff_dict['base']} | new={diff_dict['new']} | "
-                    f"percent_diff={percent_diff}%"
-                )
-        else:
-            summary_lines.append("No value diffs exceeded the threshold.")
-
-        summary_path = new_dir / "json_diff_summary.txt"
-        with open(summary_path, "w") as summary_file:
-            summary_file.write("\n".join(summary_lines) + "\n")
-        logger.info("Wrote JSON diff summary to %s", summary_path)
-
-        for line in summary_lines:
-            logger.info(line)
+        compare.compare_jsons(ecm_json_base,
+                              ecm_json_new,
+                              percent_threshold=args.threshold,
+                              output_dir=new_dir)
 
         summary_tp_base = base_dir / "Summary_Data-TP.xlsx"
         summary_tp_new = new_dir / "plots" / "tech_potential" / "Summary_Data-TP.xlsx"
@@ -398,8 +298,7 @@ def main():
         if args.json_baseline and args.json_new:
             compare.compare_jsons(args.json_baseline,
                                   args.json_new,
-                                  percent_threshold=args.threshold,
-                                  top_n=args.top_n)
+                                  percent_threshold=args.threshold)
         if args.summary_baseline and args.summary_new:
             compare.compare_summary_reports(args.summary_baseline, args.summary_new)
 
