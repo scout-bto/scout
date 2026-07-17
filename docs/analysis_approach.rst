@@ -161,8 +161,8 @@ Calculating total efficient energy, |CO2|, and cost (uncompeted)
 
 .. __: http://www.eia.gov/forecasts/aeo/nems/documentation/residential/pdf/m067(2013).pdf
 .. __: http://www.eia.gov/forecasts/aeo/nems/documentation/commercial/pdf/m066(2013).pdf
-.. __: http://www.raponline.org/wp-content/uploads/2016/05/rap-neme-residentialefficiencyretrofits-2011-05.pdf
-.. __: http://www.rmi.org/Knowledge-Center/Library/2010-11_WholeBuildingRetrofits
+.. __: https://www.raponline.org/knowledge-center/residential-efficiency-retrofits-a-roadmap-for-the-future/
+.. __: https://rmi.org/insight/whole-building-retrofits-a-gateway-to-climate-stabilization/
 
    * _`ECM diffusion` into baseline markets is modeled under technical potential and maximum adoption potential scenarios. In both cases, the available market portion is entirely captured by ECMs (e.g., no competed stock remains with a "business-as-usual" technology). [#]_ The primary difference between the two scenarios is in how they define competed stock for the first year of ECM market entry:
 
