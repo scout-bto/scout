@@ -1777,15 +1777,12 @@ The results figures from the plot generation script |html-filepath| plots.py |ht
 
 .. Note that the extremely inelegant link substitution here is to get around the problem that reStructuredText does not support nested inline markup, thus preventing the use of the |CO2| substitution within a standard :ref:`text <pointer>` internal hyperlink; see the emphasized hyperlink example here: http://docutils.sourceforge.net/FAQ.html#is-nested-inline-markup-possible; see also http://stackoverflow.com/questions/4743845/format-text-in-a-link-in-restructuredtext
 
-1. Internal rate of return, simple payback, cost of conserved energy, and cost of conserved |CO2| plotted against a metric of interest.|_
+1. :ref:`Internal rate of return, simple payback, cost of conserved energy, and cost of conserved carbon plotted against a metric of interest. <results-cost-effectiveness>`
 2. :ref:`A metric of interest aggregated by climate zone, building class, and end use. <results-aggregated>`
 3. :ref:`Both uncompeted and competed results for a metric of interest presented separately for each ECM. <results-by-ecm>`
 
-.. |Internal rate of return, simple payback, cost of conserved energy, and cost of conserved CO2 plotted against a metric of interest.| replace:: Internal rate of return, simple payback, cost of conserved energy, and cost of conserved CO\ :sub:`2` plotted against a metric of interest.
-
 Within each of the plots sub-folders (i.e., |html-filepath| ./results/plots/(adoption scenario)/(metric of interest)\ |html-fp-end|), each of these sets of plots is contained within a single PDF file.
 
-.. _Internal rate of return, simple payback, cost of conserved energy, and cost of conserved CO2 plotted against a metric of interest.:
 .. _results-cost-effectiveness:
 
 Cost-effectiveness figures
