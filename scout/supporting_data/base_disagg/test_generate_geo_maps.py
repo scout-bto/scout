@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import subprocess
 import os
+import glob
 import json
 
 # Define paths and constants
@@ -144,6 +145,53 @@ def test_json_output_structure(run_generation_script, geography):
         OUTPUT_DIR, f"mseg_res_com_{geography}_2024_tech_factors.json")
     assert os.path.exists(file_path)
     validate_json_structure(file_path)
+
+NON_STATE_COLS = {"Technology", "End use", "CDIV", "Total"}
+
+
+def _state_geo_csv_paths():
+    """Locate every Cdiv/State-geography output file (across fuels, the
+    Stock variant, and the tech-level variant), skipping the Cdiv/EMM
+    files -- those share the same CDIV row label but their columns are
+    EMM regions, not states.
+    """
+    paths = []
+    for subdir in ("end_use", "technology"):
+        pattern = os.path.join(OUTPUT_DIR, f"*_{subdir}", "*_Cdiv_State_*.csv")
+        paths.extend(glob.glob(pattern))
+    return sorted(paths)
+
+
+def test_state_shares_sum_to_one(run_generation_script):
+    """Each row disaggregates a Census-division-level value out to its
+    member states, so the state-column shares in a given row (one
+    End use, or one Technology/End use, within one CDIV) must sum to 1.
+    """
+    csv_paths = _state_geo_csv_paths()
+    assert csv_paths, (
+        f"No Cdiv/State output files found under {OUTPUT_DIR} to check."
+    )
+
+    for csv_path in csv_paths:
+        df = pd.read_csv(csv_path)
+        state_cols = [c for c in df.columns if c not in NON_STATE_COLS]
+        row_sums = df[state_cols].sum(axis=1)
+
+        # A row with every state column at 0 means there was no data at
+        # all for that End use/CDIV(/Technology) combination -- a real
+        # degenerate case (e.g. a fuel with no consumption in that
+        # division), not a disaggregation bug -- so it's excluded rather
+        # than asserted to sum to 1.
+        nonzero = row_sums[row_sums.abs() > 1e-9]
+        bad = nonzero[(nonzero - 1).abs() > 1e-6]
+
+        id_cols = [c for c in ("Technology", "End use", "CDIV")
+                   if c in df.columns]
+        assert bad.empty, (
+            f"{os.path.basename(csv_path)}: state shares do not sum to "
+            f"1 for these rows:\n{df.loc[bad.index, id_cols].assign(sum=bad)}"
+        )
+
 
 # This is a starting point. The complex comparisons from the notebooks,
 # especially the plotting, are better suited for manual validation or a more
