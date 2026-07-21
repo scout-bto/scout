@@ -175,12 +175,6 @@ jobs:
             --new-dir tests/integration_testing/results \
             --threshold 0.0001
 
-          if [[ -f tests/integration_testing/results/json_diff_summary.txt ]]; then
-            json_diff_summary="$(cat tests/integration_testing/results/json_diff_summary.txt)"
-            echo "JSON difference summary:"
-            cat tests/integration_testing/results/json_diff_summary.txt
-          fi
-
           # Check if any meaningful diffs were reported (csv files with actual content)
           for csv_file in tests/integration_testing/results/*_diffs.csv tests/integration_testing/results/*_key_diffs.csv; do
             if [[ -f "$csv_file" ]]; then
@@ -280,9 +274,6 @@ jobs:
             rm -f ./tests/integration_testing/results/*_key_diffs.csv
             # Guard against generated placeholder files being committed.
             find ./tests/integration_testing/results/plots -type f -name '.gitignore' -delete 2>/dev/null || true
-            # Temporary debug: confirm no .gitignore files remain before staging.
-            echo "Remaining .gitignore files under tests/integration_testing/results (if any):"
-            find ./tests/integration_testing/results -type f -name '.gitignore' -print || true
 
             git add ./tests/integration_testing/results/agg_results.json
             git add ./tests/integration_testing/results/ecm_results.json
