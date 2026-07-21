@@ -10,7 +10,11 @@ import json
 BASE_DIR = os.path.dirname(__file__)
 SCRIPT_PATH = os.path.join(BASE_DIR, "generate_geo_maps.py")
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
-# Assuming a dir with golden files exists
+# "Golden files" = a previously generated, manually-verified copy of the
+# output CSVs, checked into `reference_output/`. They are the expected
+# baseline that test_csv_outputs_against_reference (below, currently
+# commented out) diffs newly generated output against, to catch
+# unintended regressions in later runs.
 REFERENCE_DIR = os.path.join(BASE_DIR, "reference_output")
 FILE_LIST = [
     "Com_Cdiv_EMM_amy2018.csv", "Com_Cdiv_State_amy2018.csv",
@@ -88,8 +92,16 @@ def compare_csv_files(file1_path, file2_path, tolerance=1e-6):
         rtol=tolerance
     )
 
-# To use this test, you would need to create a `reference_output` directory
-# and populate it with the "golden" versions of the output files.
+# This is a regression/snapshot test: it doesn't check correctness from
+# first principles, only that output hasn't drifted from a trusted
+# baseline. To use it, populate `reference_output/` once with a golden
+# copy of the output: run generate_geo_maps.py --all --force, manually
+# verify that run's output/ is correct (e.g. via the test0x_*.ipynb
+# notebooks in this dir, spot-checks against RECS/SEDS, and the
+# sum-to-1 check in test_state_shares_sum_to_one), then copy that
+# verified output/ tree into reference_output/ as the new baseline.
+# Repeat the copy step deliberately whenever a change is expected to
+# alter the numbers (e.g. an intentional mapping update).
 # @pytest.mark.parametrize("filename", FILE_LIST)
 # def test_csv_outputs_against_reference(run_generation_script, filename):
 #     """Compares generated CSVs against a reference 'golden' version."""
