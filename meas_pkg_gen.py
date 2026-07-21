@@ -62,6 +62,9 @@ def main(base_dir):
     # Set JSON output folder
     fpo = os.path.join(base_dir, meas_gen_folder, "outputs")
 
+    # Ensure the output directory exists
+    os.makedirs(fpo, exist_ok=True)
+
     # Load individual measure data
     fpi = os.path.join(base_dir, meas_gen_folder, "inputs/meas_in.csv")
     m_in = pd.read_csv(fpi)
