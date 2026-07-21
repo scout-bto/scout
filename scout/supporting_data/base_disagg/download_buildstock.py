@@ -10,6 +10,7 @@ import json
 import os
 import re
 import boto3
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from botocore import UNSIGNED
@@ -147,6 +148,46 @@ def download_comstock(out_path):
     print("ComStock assembly done.")
 
 
+def download_comstock_gap(out_path):
+    """Download the ComStock gap model's per-county electricity timeseries and
+    collapse each county's 8760 hourly values to a single annual total.
+
+    Only the annual totals (~3000 rows) are kept, not the raw hourly data
+    (~1.3GB) -- generate_geo_maps.py only needs the annual county total to
+    build the CDIV -> EMM/state disaggregation weights for the "gap" row.
+    """
+    cfg = CONFIGS[YEAR]["comstock"]
+    prefix = cfg["prefix"] + "commercial_gap_model/by_county/upgrade=0/"
+    paginator = s3.get_paginator("list_objects_v2")
+    keys = []
+    for page in paginator.paginate(Bucket=BUCKET, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            if obj["Key"].endswith("-gap.csv"):
+                keys.append(obj["Key"])
+    if not keys:
+        raise RuntimeError(f"No gap model county files under {prefix}")
+    keys = sorted(keys)
+    print(f"ComStock gap model: summing {len(keys)} county files -> {out_path}")
+
+    rows = []
+    for i, key in enumerate(keys, 1):
+        buf = io.BytesIO()
+        s3.download_fileobj(BUCKET, key, buf)
+        buf.seek(0)
+        df = pd.read_csv(buf, usecols=[
+            "out.electricity.total.energy_consumption..kwh", "in.county"])
+        county = df["in.county"].iloc[0]
+        annual_kwh = df["out.electricity.total.energy_consumption..kwh"].sum()
+        rows.append((county, annual_kwh))
+        if i % 200 == 0:
+            print(f"  {i}/{len(keys)}")
+
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    pd.DataFrame(rows, columns=["county", "annual_electricity_kwh"]).to_csv(
+        out_path, index=False)
+    print("ComStock gap model assembly done.")
+
+
 def _promote(t1, t2):
     """Pick a common pyarrow type when two files disagree."""
     if t1 == t2:
@@ -219,6 +260,14 @@ def main():
         else:
             download_comstock(out_path)
         write_sdr_version(out_dir, ds)
+
+    print("\n=== comstock gap model ===")
+    gap_out_dir = os.path.join(INDIR, f"{YEAR}_comstock", "gap")
+    gap_out_path = os.path.join(gap_out_dir, "annual_electricity_by_county.csv")
+    try:
+        download_comstock_gap(gap_out_path)
+    except RuntimeError as e:
+        print(f"  Skipping gap model download: {e}")
 
 
 if __name__ == "__main__":

@@ -547,7 +547,8 @@ class UsefulVars(object):
 def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
               com_convert_array, cpl, flag_map_dat, first_cd_flag,
               cd_to_cz_factor=0, bldg_flag=None, fuel_flag=None, eu_flag=None,
-              tech_typ_flag=None, tech_flag=None, stock_energy_flag=None, key_list=None):
+              tech_typ_flag=None, tech_flag=None, stock_energy_flag=None, key_list=None,
+              com_bldgtype_flag=None):
     """Calculate values to restructure census division data to custom regions.
 
     Two dicts with identical structure, 'base_dict' and 'add_dict' are
@@ -614,6 +615,9 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
         key_list (list): Keys that specify the current location in the
             microsegments database structure and thus indicate what
             data should be returned by this function.
+        com_bldgtype_flag (NoneType): Flag for the commercial building type
+            currently being looped through (relevant only to EMM/state
+            custom region convert, for blending in ComStock "gap" factors).
 
     Returns:
         A dict with the same form as base_dict and add_dict, with the
@@ -696,6 +700,7 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
                 elif k in flag_map_dat["com_bldg_types"]:
                     cd_to_cz_factor = com_convert_array
                     bldg_flag = "com"
+                    com_bldgtype_flag = k
             # Flag the current fuel type being updated, which is relevant
             # to ultimate selection of conversion factor from the conversion
             # array when translating to EMM region or state, in which case
@@ -821,7 +826,7 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
                           com_convert_array, cpl, flag_map_dat, first_cd_flag,
                           cd_to_cz_factor, bldg_flag, fuel_flag, eu_flag,
                           tech_typ_flag, tech_flag, stock_energy_flag=current_stock_energy_flag,
-                          key_list=key_list + [k])
+                          key_list=key_list + [k], com_bldgtype_flag=com_bldgtype_flag)
             elif type(base_dict[k]) is not str:
                 # Check whether the conversion array needs to be further keyed
                 # by fuel type and by end use, as is the case when converting to EMM region or
@@ -846,7 +851,30 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
                             # Case where technology-specific factors are not available
                             else:
                                 convert_fact_init = float(convert_array[cd_num][reg_name])
-                            convert_fact = convert_fact_init
+                            # Blend in the ComStock "gap" disaggregation factor
+                            # for this commercial building type/fuel combo, if
+                            # any of its consumption falls in the gap (i.e.,
+                            # buildings/loads ComStock doesn't simulate; see
+                            # flag_map_dat["com_gap_fracs"]). Distillate and
+                            # other fuel reuse the natural gas fraction and
+                            # the electricity gap row, since no fuel-specific
+                            # gap data exists for them.
+                            gap_frac = 0
+                            if bldg_flag == "com":
+                                gap_col = "electricity" if fuel_flag == "electricity" \
+                                    else "natural gas"
+                                gap_frac = flag_map_dat.get(
+                                    "com_gap_fracs", {}).get(
+                                    com_bldgtype_flag, {}).get(gap_col, 0)
+                            if gap_frac:
+                                gap_array = cd_to_cz_factor["electricity"][
+                                    current_stock_energy_flag]["gap"]
+                                convert_fact_gap = float(gap_array[cd_num][reg_name])
+                                convert_fact = (
+                                    gap_frac * convert_fact_gap +
+                                    (1 - gap_frac) * convert_fact_init)
+                            else:
+                                convert_fact = convert_fact_init
                         except IndexError:
                             raise ValueError(
                                 "End use: " + bldg_flag + " " + fuel_flag +
@@ -1984,8 +2012,20 @@ def main():
         # EULP data
         "eulp_other_tech": [
             "dishwasher", "clothes washing", "freezers",
-            "pool heaters", "pool pumps", "portable electric spas"]
-
+            "pool heaters", "pool pumps", "portable electric spas"],
+        # Fraction of each commercial building type's electricity/natural
+        # gas consumption that falls in the ComStock "gap" (buildings and
+        # non-building loads DOE's ComStock model doesn't simulate). Used by
+        # merge_sum to blend the "gap" disaggregation factors in with the
+        # regular end-use-level factors for EMM/state conversion. Distillate
+        # and other fuel reuse the natural gas fraction; no fuel-specific
+        # gap data exists for them.
+        "com_gap_fracs": {
+            row["building type"]: {
+                "electricity": row["electricity"],
+                "natural gas": row["natural gas"]}
+            for _, row in pd.read_csv(
+                fp.CONVERT_DATA / "com_gap_fracs.csv").iterrows()}
     }
 
     # Set list of regions that is consistent with inputs
@@ -2041,6 +2081,12 @@ def main():
                     com_convert_byeu_dict[disagg_type][k] = com_elec_disag_dat[
                         disagg_type][com_elec_disag_dat[disagg_type]["End use"] == k].to_records(
                             index=False)
+                # Also pull the ComStock "gap" row (commercial only -- no
+                # residential equivalent) so merge_sum can blend gap vs.
+                # non-gap disaggregation factors for commercial segments
+                com_convert_byeu_dict[disagg_type]["gap"] = com_elec_disag_dat[
+                    disagg_type][com_elec_disag_dat[disagg_type]["End use"] == "gap"].to_records(
+                        index=False)
 
             # Set up final residential and commercial conversion data by fuel.
             # For electricity, used data prepared above. For other fuels,
@@ -2107,6 +2153,14 @@ def main():
                         com_convert_byeu_dict[fuel][disagg_type][k] = (
                             com_disag_dat[fuel][disagg_type][com_disag_dat[
                                 fuel][disagg_type]["End use"] == k].to_records(index=False))
+                    # Also pull the ComStock "gap" row (electricity only --
+                    # no fuel-specific gap geography exists for gas/
+                    # distillate/other fuel, so merge_sum always blends in
+                    # the electricity gap row regardless of current fuel)
+                    com_convert_byeu_dict["electricity"][disagg_type]["gap"] = (
+                        com_disag_dat["electricity"][disagg_type][com_disag_dat[
+                            "electricity"][disagg_type]["End use"] == "gap"].to_records(
+                                index=False))
 
             # Set up final residential and commercial conversion data by fuel.
             # For electricity, used data prepared above. For other fuels,

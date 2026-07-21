@@ -397,6 +397,49 @@ def output_state(df):
     return sorted_matrix
 
 
+def finalize_eu_matrix(conversion_matrix, output_func, geo_label, eu,
+                       drop_total=False):
+    """Normalize a raw (geo x geo) conversion matrix for one end use and
+    format it into the 'End use'/geo_label-indexed row block used by all of
+    the output CSVs.
+
+    Shared by process_end_use_energy, process_end_use_stock, and
+    process_gap_end_use so the normalization/output formatting (including
+    the CDIV/EMM/state sort order from output_emm/output_state) stays
+    identical across all three, even though how each one builds the raw
+    conversion_matrix differs.
+    """
+    normalized_matrix = conversion_matrix.div(
+        conversion_matrix.sum(axis=0), axis=1).reset_index()
+    normalized_matrix = output_func(normalized_matrix)
+    normalized_matrix = normalized_matrix.fillna(0)
+    normalized_matrix.columns = normalized_matrix.iloc[0]
+    normalized_matrix.rename(
+        columns={normalized_matrix.columns[-1]: 'Total'}, inplace=True)
+    normalized_matrix = normalized_matrix.iloc[1:]
+    normalized_matrix.insert(0, geo_label, normalized_matrix.index)
+    normalized_matrix.insert(0, 'End use', eu)
+    if drop_total:
+        normalized_matrix.drop(columns=['Total'], inplace=True)
+    return normalized_matrix
+
+
+def geo_pivot_settings(geos):
+    """Return the (group_cols, pivot_index, pivot_col, output_func,
+    geo_label, filename_geo) tuple for a given geos combination, matching
+    the branching already duplicated across process_end_use_energy and
+    process_end_use_stock.
+    """
+    if 'emm' in geos and 'state' in geos:
+        return (['emm', 'state'], 'emm', 'state', output_emm, 'State', 'EMM')
+    elif 'cdiv' in geos and 'state' in geos:
+        return (['cdiv', 'state'], 'state', 'cdiv', output_state, 'CDIV', 'State')
+    elif 'cdiv' in geos and 'emm' in geos:
+        return (['cdiv', 'emm'], 'emm', 'cdiv', output_emm, 'CDIV', 'EMM')
+    else:
+        raise ValueError(f"Unsupported geography combination: {geos}")
+
+
 def replace_col_vals(df, tech):
     df = df.copy()
     df.drop(columns=['Technology'], inplace=True)
@@ -442,29 +485,8 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
         df = df[geos + mykeys]
 
         # Determine groupby columns based on geos
-        if 'emm' in geos and 'state' in geos:
-            group_cols = ['emm', 'state']
-            pivot_index = 'emm'
-            pivot_col = 'state'
-            output_func = output_emm
-            geo_label = 'State'
-            filename_geo = 'EMM'
-        elif 'cdiv' in geos and 'state' in geos:
-            group_cols = ['cdiv', 'state']
-            pivot_index = 'state'
-            pivot_col = 'cdiv'
-            output_func = output_state
-            geo_label = 'CDIV'
-            filename_geo = 'State'
-        elif 'cdiv' in geos and 'emm' in geos:
-            group_cols = ['cdiv', 'emm']
-            pivot_index = 'emm'
-            pivot_col = 'cdiv'
-            output_func = output_emm
-            geo_label = 'CDIV'
-            filename_geo = 'EMM'
-        else:
-            raise ValueError(f"Unsupported geography combination: {geos}")
+        group_cols, pivot_index, pivot_col, output_func, geo_label, \
+            filename_geo = geo_pivot_settings(geos)
 
         df = df.groupby(group_cols).sum().reset_index()
 
@@ -472,18 +494,8 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
         for eu in mykeys:
             conversion_matrix = df.pivot(index=pivot_index, columns=pivot_col,
                                          values=eu)
-            normalized_matrix = conversion_matrix.div(
-                conversion_matrix.sum(axis=0), axis=1).reset_index()
-            normalized_matrix = output_func(normalized_matrix)
-            normalized_matrix = normalized_matrix.fillna(0)
-            normalized_matrix.columns = normalized_matrix.iloc[0]
-            normalized_matrix.rename(
-                columns={normalized_matrix.columns[-1]: 'Total'},
-                inplace=True)
-            normalized_matrix = normalized_matrix.iloc[1:]
-            normalized_matrix.insert(0, geo_label, normalized_matrix.index)
-            normalized_matrix.insert(0, 'End use', eu)
-            normalized_matrix.drop(columns=['Total'], inplace=True)
+            normalized_matrix = finalize_eu_matrix(
+                conversion_matrix, output_func, geo_label, eu, drop_total=True)
             norm_pd = (normalized_matrix if norm_pd.empty
                        else pd.concat([norm_pd, normalized_matrix],
                                       ignore_index=False))
@@ -557,26 +569,8 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
         norm_pd = pd.DataFrame()
 
         # Determine groupby columns based on geos
-        if 'emm' in geos and 'state' in geos:
-            pivot_index = 'emm'
-            pivot_col = 'state'
-            output_func = output_emm
-            geo_label = 'State'
-            filename_geo = 'EMM'
-        elif 'cdiv' in geos and 'state' in geos:
-            pivot_index = 'state'
-            pivot_col = 'cdiv'
-            output_func = output_state
-            geo_label = 'CDIV'
-            filename_geo = 'State'
-        elif 'cdiv' in geos and 'emm' in geos:
-            pivot_index = 'emm'
-            pivot_col = 'cdiv'
-            output_func = output_emm
-            geo_label = 'CDIV'
-            filename_geo = 'EMM'
-        else:
-            raise ValueError(f"Unsupported geography combination: {geos}")
+        _, pivot_index, pivot_col, output_func, geo_label, filename_geo = \
+            geo_pivot_settings(geos)
 
         for eu in mykeys:
             df = eu_rows(alldf, eu, conditions_dict)
@@ -588,18 +582,9 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
                 aggfunc='sum')
             del df
             gc.collect()
-            normalized_matrix = conversion_matrix.div(
-                conversion_matrix.sum(axis=0), axis=1).reset_index()
+            normalized_matrix = finalize_eu_matrix(
+                conversion_matrix, output_func, geo_label, eu, drop_total=False)
             del conversion_matrix
-            normalized_matrix = output_func(normalized_matrix)
-            normalized_matrix = normalized_matrix.fillna(0)
-            normalized_matrix.columns = normalized_matrix.iloc[0]
-            normalized_matrix.rename(
-                columns={normalized_matrix.columns[-1]: 'Total'},
-                inplace=True)
-            normalized_matrix = normalized_matrix.iloc[1:]
-            normalized_matrix.insert(0, geo_label, normalized_matrix.index)
-            normalized_matrix.insert(0, 'End use', eu)
             norm_pd = (normalized_matrix if norm_pd.empty
                        else pd.concat([norm_pd, normalized_matrix],
                                       ignore_index=False))
@@ -617,6 +602,47 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
         norm_pd.to_csv(f"{outdir}/{sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}_Stock.csv",
                        index=False)
         print(f"    Saved {sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}_Stock.csv")
+
+
+def process_gap_end_use(gap_csv_path, scoutgeo_df, geos, target_paths):
+    """Compute a normalized 'gap' End-use row from the ComStock gap model's
+    annual county electricity totals, and append it to each already-written
+    commercial electricity disaggregation CSV in target_paths.
+
+    Real ComStock gap SDR data (commercial_gap_model/by_county/upgrade=0/ on
+    the OEDI bucket, see download_buildstock.download_comstock_gap) only
+    covers electricity. final_mseg_converter.py reuses this same 'gap' row
+    as the geographic proxy for gap blending across all fuels, since no
+    fuel-specific gap geography exists in the source data.
+    """
+    if not os.path.exists(gap_csv_path):
+        print(f"    WARNING: gap model data not found at {gap_csv_path}; "
+              "skipping 'gap' row (run download_buildstock.py to fetch it).")
+        return
+
+    df = pd.read_csv(gap_csv_path)
+    df = apply_geographies(df, scoutgeo_df, geos)
+    df = df.dropna(subset=geos)
+
+    _, pivot_index, pivot_col, output_func, geo_label, _ = \
+        geo_pivot_settings(geos)
+
+    grouped = df.groupby([pivot_index, pivot_col])[
+        'annual_electricity_kwh'].sum().reset_index()
+    conversion_matrix = grouped.pivot(
+        index=pivot_index, columns=pivot_col, values='annual_electricity_kwh')
+    gap_row = finalize_eu_matrix(
+        conversion_matrix, output_func, geo_label, 'gap', drop_total=False)
+
+    for path in target_paths:
+        if not os.path.exists(path):
+            print(f"    WARNING: {path} not found; skipping 'gap' row append.")
+            continue
+        existing = pd.read_csv(path)
+        row = gap_row.reindex(columns=existing.columns, fill_value=0.0)
+        combined = pd.concat([existing, row], ignore_index=True)
+        combined.to_csv(path, index=False)
+        print(f"    Appended 'gap' row to {os.path.basename(path)}")
 
 
 def _apply_tech_map(df, map_df):
@@ -1245,6 +1271,33 @@ def main():
                         )
                     except Exception as e:
                         print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
+
+            # Append the ComStock gap model's electricity "gap" row (see
+            # process_gap_end_use) to the commercial electricity CSVs just
+            # written above. Real gap SDR data only covers electricity;
+            # final_mseg_converter.py reuses this row for all fuels' gap
+            # blending, so no other fuel's files get a "gap" row.
+            gap_csv_path = os.path.join(
+                args.comstock_path, 'gap', 'annual_electricity_by_county.csv')
+            for geos, geo_name in geo_combinations:
+                print(f"\n  Adding ComStock gap row to {geo_name} "
+                      "electricity outputs...")
+                _, _, _, _, _, filename_geo = geo_pivot_settings(geos)
+                for weath in weathers:
+                    target_paths = [
+                        os.path.join(
+                            end_use_outdir,
+                            f"Com_Cdiv_{filename_geo}_{weath}_electricity.csv"),
+                        os.path.join(
+                            end_use_outdir,
+                            f"Com_Cdiv_{filename_geo}_{weath}_electricity_Stock.csv"),
+                    ]
+                    try:
+                        process_gap_end_use(
+                            gap_csv_path, scoutgeo_df, geos, target_paths)
+                    except Exception as e:
+                        print(f"    ERROR processing commercial gap row "
+                              f"({geo_name}): {e}")
 
     if args.data_type in ('technology', 'both'):
         if args.sector not in ('residential', 'both'):
