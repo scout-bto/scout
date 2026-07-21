@@ -179,6 +179,16 @@ def _conform(table, schema):
 
 
 def main():
+    resstock_prefix = CONFIGS[YEAR]["resstock"]["prefix"]
+    comstock_prefix = CONFIGS[YEAR]["comstock"]["prefix"]
+    print(
+        f"Pulling SDR release {YEAR}:\n"
+        f"  ResStock: {resstock_prefix}\n"
+        f"  ComStock: {comstock_prefix}\n"
+        "To pull a different SDR version, change the YEAR variable "
+        "(and CONFIGS if the new release isn't listed yet) near the top "
+        "of download_buildstock.py."
+    )
     for ds in ["resstock", "comstock"]:
         subdir = f"{YEAR}_{ds}"
         out_dir = os.path.join(INDIR, subdir, WEATHER)
