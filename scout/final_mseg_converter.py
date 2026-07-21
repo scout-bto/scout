@@ -2052,6 +2052,19 @@ def main():
 
     # Settings for EMM or state regions and stock/energy data
     elif input_var[0] == '1' and input_var[1] in ['2', '3']:
+        def _com_gap_file(disagg_type):
+            """Always source the ComStock "gap" row from the end-use-level
+            commercial electricity file, regardless of whether tech-level
+            or end-use-level electricity disaggregation was selected (see
+            final_disagg_method) -- no fuel- or technology-specific gap SDR
+            data exists to source it from instead, and only the end-use-
+            level electricity files have a "gap" row.
+            """
+            geo_label = "EMM" if input_var[1] == '2' else "State"
+            suffix = "_Stock" if disagg_type == "stock" else ""
+            return (fp.CONVERT_DATA / "geo_map" /
+                    f"Com_Cdiv_{geo_label}_amy2018_electricity{suffix}.csv")
+
         if input_var[2] == '1':
             # Import CSV data with the fractions of end-use electricity in
             # each CDIV that is attributable to each EMM or state, based on
@@ -2084,9 +2097,9 @@ def main():
                 # Also pull the ComStock "gap" row (commercial only -- no
                 # residential equivalent) so merge_sum can blend gap vs.
                 # non-gap disaggregation factors for commercial segments
-                com_convert_byeu_dict[disagg_type]["gap"] = com_elec_disag_dat[
-                    disagg_type][com_elec_disag_dat[disagg_type]["End use"] == "gap"].to_records(
-                        index=False)
+                com_gap_dat = pd.read_csv(_com_gap_file(disagg_type), index_col=False)
+                com_convert_byeu_dict[disagg_type]["gap"] = com_gap_dat[
+                    com_gap_dat["End use"] == "gap"].to_records(index=False)
 
             # Set up final residential and commercial conversion data by fuel.
             # For electricity, used data prepared above. For other fuels,
@@ -2157,10 +2170,9 @@ def main():
                     # no fuel-specific gap geography exists for gas/
                     # distillate/other fuel, so merge_sum always blends in
                     # the electricity gap row regardless of current fuel)
-                    com_convert_byeu_dict["electricity"][disagg_type]["gap"] = (
-                        com_disag_dat["electricity"][disagg_type][com_disag_dat[
-                            "electricity"][disagg_type]["End use"] == "gap"].to_records(
-                                index=False))
+                    com_gap_dat = pd.read_csv(_com_gap_file(disagg_type), index_col=False)
+                    com_convert_byeu_dict["electricity"][disagg_type]["gap"] = com_gap_dat[
+                        com_gap_dat["End use"] == "gap"].to_records(index=False)
 
             # Set up final residential and commercial conversion data by fuel.
             # For electricity, used data prepared above. For other fuels,
