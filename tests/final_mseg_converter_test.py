@@ -534,7 +534,7 @@ class ComStockGapBlendingTest(CommonUnitTest):
             "stock": {"water heating": com_cd_cz_array_emm,
                       "gap": com_cd_cz_array_gap_emm},
             "energy": {"water heating": com_cd_cz_array_emm,
-                      "gap": com_cd_cz_array_gap_emm}}}
+                       "gap": com_cd_cz_array_gap_emm}}}
 
     # com_gap_fracs.csv, in dict form, for "assembly" (fully gap, matching
     # the real file's 100% assembly gap fraction) and "food service"
