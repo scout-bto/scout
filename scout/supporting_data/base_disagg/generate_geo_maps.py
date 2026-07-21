@@ -3,6 +3,7 @@ import gc
 import pandas as pd
 import os
 import re
+import json
 import warnings
 import argparse
 import shutil
@@ -961,6 +962,39 @@ def fill_na_with_zeros(output_dir, year="2025"):
     print("NA filling complete.")
 
 
+SDR_VERSION_FILENAME = "sdr_version.json"
+
+
+def read_sdr_version(dataset_path, weather_year):
+    """Read the SDR release download_buildstock.py recorded for a dataset.
+
+    Returns "unknown" if the dataset predates that metadata file (e.g.
+    it was downloaded before this tracking was added), so older data
+    can still be processed without erroring here.
+    """
+    meta_path = os.path.join(dataset_path, weather_year, SDR_VERSION_FILENAME)
+    if not os.path.exists(meta_path):
+        return "unknown"
+    with open(meta_path) as f:
+        return json.load(f)["version"]
+
+
+def write_combined_sdr_version(output_dir, resstock_path, comstock_path,
+                               weather_year):
+    """Combine the residential/commercial SDR versions into one file
+    alongside the generated CSVs, so final_mseg_converter.py can report
+    which SDR release the disaggregation factors it reads came from.
+    """
+    combined = {
+        "residential": read_sdr_version(resstock_path, weather_year),
+        "commercial": read_sdr_version(comstock_path, weather_year),
+    }
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, SDR_VERSION_FILENAME), "w") as f:
+        json.dump(combined, f, indent=2)
+    print(f"  Saved {SDR_VERSION_FILENAME}: {combined}")
+
+
 def install_files(output_dir, install_dir, year="2025"):
     print(f"Installing generated files to {install_dir}...")
     if not os.path.exists(install_dir):
@@ -979,6 +1013,13 @@ def install_files(output_dir, install_dir, year="2025"):
                     dest_file = os.path.join(install_dir, filename)
                     shutil.copy2(source_file, dest_file)
                     print(f"  Copied {filename}")
+
+    sdr_version_file = os.path.join(output_dir, SDR_VERSION_FILENAME)
+    if os.path.exists(sdr_version_file):
+        shutil.copy2(sdr_version_file,
+                     os.path.join(install_dir, SDR_VERSION_FILENAME))
+        print(f"  Copied {SDR_VERSION_FILENAME}")
+
     print("Installation complete.")
 
 
@@ -1054,6 +1095,10 @@ def main():
         os.makedirs(tech_outdir, exist_ok=True)
     if args.data_type in ('end_use', 'both'):
         os.makedirs(end_use_outdir, exist_ok=True)
+
+    write_combined_sdr_version(
+        args.output_dir, args.resstock_path, args.comstock_path,
+        args.weather_year)
 
     scoutgeo_df = get_scout_geo(script_dir)
 

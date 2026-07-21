@@ -34,6 +34,29 @@ import pandas as pd
 from scout import mseg, com_mseg as cm
 from scout.config import FilePaths as fp
 
+# Human-readable labels for the user-selected disaggregation options
+# (see main(), Steps 3-4) that get reported alongside the EMM/state
+# stock and energy data in cdiv_disagg_info -> prep_settings, so the
+# choices behind a given mseg_res_com_emm/state.json are reproducible
+# after the fact instead of only living in the terminal at generation
+# time (see issue #576).
+GEN_DISAGG_LABELS = {"1": "1 (electricity only)", "2": "2 (all fuels)"}
+ELEC_DISAGG_LABELS = {"1": "1 (technology)", "2": "2 (end use)"}
+
+
+def load_sdr_version():
+    """Read the ResStock/ComStock SDR release used to build the Cdiv/EMM
+    and Cdiv/State disaggregation factors currently installed under
+    convert_data/geo_map (written by download_buildstock.py and
+    generate_geo_maps.py). Falls back to "unknown" per sector if those
+    factors were installed before this tracking existed.
+    """
+    meta_path = fp.CONVERT_DATA / "geo_map" / "sdr_version.json"
+    if not meta_path.exists():
+        return {"residential": "unknown", "commercial": "unknown"}
+    with open(meta_path, 'r') as f:
+        return json.load(f)
+
 
 class UsefulVars(object):
     """Class for useful variables to make them available to external scripts.
@@ -2216,6 +2239,22 @@ def main():
                 result = walk(
                     jscpl_data, jsconv_data, env_perf_convert, years, result,
                     aia_list, cdiv_list, emm_list)
+
+    # Record the disaggregation choices and source data version behind
+    # the EMM/state stock and energy data, for reproducibility (issue
+    # #576) -- these are the only outputs for which input_var[2]/[3]
+    # (the electricity-only-vs-all-fuels and technology-vs-end-use
+    # disaggregation choices) were actually prompted for and used.
+    if handyvars.json_out in ('mseg_res_com_emm.json', 'mseg_res_com_state.json'):
+        result["cdiv_disagg_info"] = {
+            "prep_settings": {
+                "gen_disagg_level": GEN_DISAGG_LABELS.get(
+                    input_var[2], input_var[2]),
+                "elec_disagg_level": ELEC_DISAGG_LABELS.get(
+                    input_var[3], input_var[3]),
+            },
+            "sdr_version": load_sdr_version(),
+        }
 
     # Write the updated dict of data to a new JSON file
     with open(handyvars.json_out, 'w') as jso:

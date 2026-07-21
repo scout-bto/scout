@@ -6,7 +6,9 @@ Public bucket -> UNSIGNED, no AWS credentials required.
 Set YEAR = "2025" (default) or "2024" to select the release.
 """
 import io
+import json
 import os
+import re
 import boto3
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -178,6 +180,23 @@ def _conform(table, schema):
     return pa.Table.from_arrays(arrays, schema=schema)
 
 
+def write_sdr_version(out_dir, ds):
+    """Record which SDR release this dataset came from.
+
+    generate_geo_maps.py reads this back in to stamp the SDR version
+    into the mseg_res_com_emm/state.json outputs (cdiv_disagg_info ->
+    sdr_version), so the disaggregation factors' provenance survives
+    past this download step.
+    """
+    prefix = CONFIGS[YEAR][ds]["prefix"]
+    release_match = re.search(r"release_(\d+)", prefix)
+    release = release_match.group(1) if release_match else "unknown"
+    with open(os.path.join(out_dir, "sdr_version.json"), "w") as f:
+        json.dump(
+            {"version": f"{YEAR}.{release}", "source_prefix": prefix}, f,
+            indent=2)
+
+
 def main():
     resstock_prefix = CONFIGS[YEAR]["resstock"]["prefix"]
     comstock_prefix = CONFIGS[YEAR]["comstock"]["prefix"]
@@ -199,6 +218,7 @@ def main():
             download_resstock(out_path)
         else:
             download_comstock(out_path)
+        write_sdr_version(out_dir, ds)
 
 
 if __name__ == "__main__":
