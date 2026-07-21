@@ -7,10 +7,7 @@ import numpy
 import math
 import threading
 import concurrent.futures
-<<<<<<< HEAD
 mpl.use("Agg")
-=======
->>>>>>> bss-develop-25-backup
 
 # Lock that serialises all pyplot global-state operations (subplots / savefig /
 # close).  The Agg backend is thread-safe at the C level but pyplot's Python

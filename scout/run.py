@@ -2,10 +2,6 @@
 from __future__ import annotations
 import json
 import numpy
-<<<<<<< HEAD
-=======
-import copy  # noqa: F401
->>>>>>> bss-develop-25-backup
 from numpy.linalg import LinAlgError
 from collections import OrderedDict, defaultdict
 import gzip
@@ -14,10 +10,6 @@ from ast import literal_eval
 import math
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy_financial as npf
-import threading
-# Use the Agg (non-interactive) backend so that matplotlib can safely be used
-# from background threads without touching the macOS main-thread UI context.
-import matplotlib
 from scout.plots import run_plot
 from scout.config import Config, FilePaths as fp
 from scout.utils import PrintFormat as fmt
@@ -26,7 +18,6 @@ import itertools
 import pandas as pd
 from operator import itemgetter
 import os
-matplotlib.use("Agg")
 
 
 class UsefulInputFiles(object):
@@ -682,11 +673,8 @@ class Codes_BPS_Measure(object):
                 "efficient": _fast_copy_nested_dict(out_break_in),
                 "savings": _fast_copy_nested_dict(out_break_in)}
                 for key in handyvars.brk_vars}
-<<<<<<< HEAD
-=======
         # Initialize gap weights (may or may not be needed, depending on user settings)
         self.gap_wts = {}
->>>>>>> bss-develop-25-backup
 
 
 class Measure(object):
@@ -840,7 +828,6 @@ def _fast_copy_nested_dict(d):
     Significantly faster than copy.deepcopy for dicts whose leaf values are
     plain Python floats/ints or numpy scalars, as is the case for the
     output-breakout fraction dicts used in finalize_outputs.
-<<<<<<< HEAD
     error for numpy arrays, which are not supported by this function;
     if numpy arrays are present, copy.deepcopy should be used instead.
     """
@@ -855,28 +842,16 @@ def _fast_copy_nested_dict(d):
             )
         else:
             out[k] = v
-=======
-    """
-    out = {}
-    for k, v in d.items():
-        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
->>>>>>> bss-develop-25-backup
     return out
 
 
 def _fast_copy_markets(d):
     """Iterative deep-copy of a nested markets dict.
 
-<<<<<<< HEAD
     Handles the value types that appear in measure market dicts:
       - nested dicts  → recurse (via explicit stack — no Python call overhead)
       - numpy.ndarray → copy via .copy()
       - list          → shallow copy via .copy() (elements are scalars in practice)
-=======
-    Handles the three value types that appear in measure market dicts:
-      - nested dicts  → recurse (via explicit stack — no Python call overhead)
-      - numpy.ndarray → copy via .copy()
->>>>>>> bss-develop-25-backup
       - scalars / None / str / bool → shared reference (immutable, safe)
 
     Uses an explicit stack instead of recursion to eliminate the ~91 M
@@ -897,11 +872,6 @@ def _fast_copy_markets(d):
                 stack.append((v, child))
             elif isinstance(v, numpy.ndarray):
                 dst[k] = v.copy()
-<<<<<<< HEAD
-            elif isinstance(v, list):
-                dst[k] = v.copy()
-=======
->>>>>>> bss-develop-25-backup
             else:
                 dst[k] = v
     return result
@@ -2035,11 +2005,7 @@ class Engine(object):
             unit_cost_e_in = [m.financial_metrics["unit cost"]["energy cost"][
                 "residential"] for m in measures_adj]
             # Shorthand for mseg information to use in pulling consumer choice weights later
-<<<<<<< HEAD
             choice_mseg = [mseg_key] * len(measures_adj)
-=======
-            choice_mseg = [mseg_key for m in measures_adj]
->>>>>>> bss-develop-25-backup
         else:
             # Shorthand for mseg-specific stock/cost data; use mseg info. pulled above
             try:
@@ -2066,12 +2032,8 @@ class Engine(object):
                         "mseg_adjust"]["contributing mseg keys and values"][
                             mseg_key] for m_ind, m in enumerate(measures_adj)]
                     # Shorthand for mseg information to use in pulling consumer choice weights later
-<<<<<<< HEAD
                     choice_mseg = [mseg_key] * len(measures_adj)
-=======
-                    choice_mseg = [mseg_key for m in measures_adj]
 
->>>>>>> bss-develop-25-backup
             # Shorthand for linked stock and energy costs, to be added to unit costs below
             lnk_costs_in = [m.markets["Technical potential"]["uncompeted"]["mseg_adjust"][
                             "linked mseg values"] for m in measures_adj]
@@ -2129,10 +2091,6 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
-        # Pre-compute str(mseg_key) once – it is used inside every
-        # (ind × yr) iteration of the choice-parameter lookup below.
-        mseg_key_str = str(mseg_key)
-
         # Loop through competing measures and calculate market shares for
         # each based on their annualized capital and operating costs
         for ind, m in enumerate(measures_adj):
@@ -2142,11 +2100,7 @@ class Engine(object):
             # (avoids re-traversing the full dict on every year iteration).
             try:
                 _choice_params = m.markets[adopt_scheme]["competed"][
-<<<<<<< HEAD
                     "mseg_adjust"]["competed choice parameters"][str(choice_mseg[ind])]
-=======
-                    "mseg_adjust"]["competed choice parameters"][mseg_key_str]
->>>>>>> bss-develop-25-backup
             except KeyError:
                 _choice_params = None
 
@@ -2264,7 +2218,6 @@ class Engine(object):
             # Pre-compute vs_list_init once per measure/mseg (depends on all
             # years but is constant across year iterations).
             _energy_brk = adj_out_break["base fuel"]["energy"]
-<<<<<<< HEAD
             # Include variant only if its energy breakout data is present.
             # The zero-value check was intended but was a no-op due to a bug
             # (bare generator expression is always truthy); simplified here since
@@ -2272,16 +2225,6 @@ class Engine(object):
             vs_list_init = [
                 v if _energy_brk[v] is not None else ""
                 for v in ["baseline", "efficient"]]
-=======
-            vs_list_init = [
-                v if (_energy_brk[v] is not None and (
-                    (not isinstance(_energy_brk[v][_yr], numpy.ndarray) and
-                     any([_energy_brk[v][_yr] != 0])) or (
-                        isinstance(_energy_brk[v][_yr], numpy.ndarray) and
-                        any([any([_energy_brk[v][_yr] != 0])]))
-                    for _yr in _energy_brk[v].keys()))
-                else "" for v in ["baseline", "efficient"]]
->>>>>>> bss-develop-25-backup
             for yr in self.handyvars.aeo_years:
                 # Make the adjustment to the measure's stock/energy/carbon/
                 # cost totals and breakouts based on its updated competed
@@ -2340,11 +2283,7 @@ class Engine(object):
             # rate bins; flag for handling below
             op_cost_rate_bins = True
             # Shorthand for mseg information to use in pulling consumer choice weights later
-<<<<<<< HEAD
             choice_mseg = [mseg_key] * len(measures_adj)
-=======
-            choice_mseg = [mseg_key for m in measures_adj]
->>>>>>> bss-develop-25-backup
         else:
             # Shorthand for mseg-specific stock/stock cost data; use mseg info. pulled above
             try:
@@ -2372,13 +2311,9 @@ class Engine(object):
                         "Technical potential"]["uncompeted"]["mseg_adjust"][x][
                             mseg_key] for m_ind, m in enumerate(measures_adj)] for x in [
                         "contributing mseg keys and values", "capacity factor"]]
-<<<<<<< HEAD
                     # Shorthand for mseg information to use in pulling consumer choice weights later
                     choice_mseg = [mseg_key] * len(measures_adj)
 
-=======
-                    choice_mseg = [mseg_key for m in measures_adj]
->>>>>>> bss-develop-25-backup
             # Shorthand for number of units captured by measure
             n_units = [markets_uc_stk[m_ind]["stock"]["competed"]["measure"]
                        for m_ind, m in enumerate(measures_adj)]
@@ -2630,12 +2565,6 @@ class Engine(object):
                 list(zip(result[c_l], counts_arr[c_l]))
                 for c_l in range(n_samples)]
 
-<<<<<<< HEAD
-=======
-        # Pre-compute str(mseg_key) once – used in every (ind × yr) iteration.
-        mseg_key_str = str(mseg_key)
-
->>>>>>> bss-develop-25-backup
         # Loop through competing measures and use total annualized capital
         # + operating costs to determine the overall share of the market
         # that is captured by each measure; use market shares to make
@@ -2649,11 +2578,8 @@ class Engine(object):
             try:
                 _rate_dist_all = m.markets[adopt_scheme]["competed"][
                     "mseg_adjust"]["competed choice parameters"][
-<<<<<<< HEAD
                         str(choice_mseg[ind])]["rate distribution"]
-=======
-                        mseg_key_str]["rate distribution"]
->>>>>>> bss-develop-25-backup
+
             except KeyError:
                 _rate_dist_all = None
 
@@ -2668,10 +2594,7 @@ class Engine(object):
                     # each discount rate category for this particular
                     # microsegment
                     mkt_dists = _rate_dist_all[yr] if _rate_dist_all is not None else {}
-<<<<<<< HEAD
 
-=======
->>>>>>> bss-develop-25-backup
                     # For each discount rate category, find which measure has
                     # the lowest annualized cost and assign that measure the
                     # share of commercial market adopters defined for that
@@ -4658,31 +4581,11 @@ class Engine(object):
         if int(yr) < min_mkt_entry_yr:
             adj_frac_t = adj_fracs[yr] + added_sbmkt_fracs[yr]
         else:
-<<<<<<< HEAD
             # Use pre-computed weighting years for this yr
             weighting_yrs = weighting_yrs_map[yr]
 
             # Loop through the above set of years, successively updating the
             # weighted market share using a simple moving average.
-=======
-            # Use pre-computed weighting years for this yr when available,
-            # otherwise fall back to computing them (e.g. secondary mseg path).
-            if weighting_yrs_map is not None and yr in weighting_yrs_map:
-                weighting_yrs = weighting_yrs_map[yr]
-            else:
-                weighting_yrs = sorted([
-                    x for x in adj_fracs.keys() if
-                    (int(x) <= int(yr) and int(x) >= min_mkt_entry_yr)])
-
-            # Loop through the above set of years, successively updating the
-            # weighted market share using a simple moving average.
-            # Pre-flag whether the market share value will be a numpy array
-            # so the isinstance check inside the hot inner loop is avoided.
-            _first_wyr = weighting_yrs[0]
-            _adj_frac_is_array = isinstance(
-                adj_fracs[_first_wyr] + added_sbmkt_fracs[_first_wyr],
-                numpy.ndarray)
->>>>>>> bss-develop-25-backup
             for ind, wyr in enumerate(weighting_yrs):
                 # For non-technical potential cases, calculate the market
                 # share weight based on competed stock turnover in the given
@@ -4769,13 +4672,7 @@ class Engine(object):
                     adj_frac_t = (1 - wt_comp_wyr) * adj_frac_t + \
                         wt_comp_wyr * mms_lr
                     # Ensure that total weighted market share is never above 1.
-<<<<<<< HEAD
                     if isinstance(adj_frac_t, numpy.ndarray):
-=======
-                    # Check type once via a pre-set flag rather than two
-                    # isinstance() calls on every iteration of the hot loop.
-                    if _adj_frac_is_array:
->>>>>>> bss-develop-25-backup
                         adj_frac_t[numpy.where(adj_frac_t > 1)] = 1
                     elif adj_frac_t > 1:
                         adj_frac_t = 1
@@ -4895,11 +4792,7 @@ class Engine(object):
 
         # Pre-compute filtered vs_list once per compete_adj call (avoids
         # repeated .copy() + list-comprehension filter on every mast_vars
-<<<<<<< HEAD
         # iteration).
-=======
-        # iteration – 8.4M calls in the profile).
->>>>>>> bss-develop-25-backup
         _vs_filtered = [x for x in vs_list_init if x]
         _has_efficient = "efficient" in vs_list_init
         _energy_brk_keys = adj_out_break["base fuel"]["energy"].keys()
@@ -5949,7 +5842,7 @@ class Engine(object):
             # measure stock totals to avoid manipulation via "frac_eff_stk"
             # calculation
             if all([x for x in [self.opts.mkt_fracs, report_stk_units]]):
-                eff_stk = copy.deepcopy(m.markets[adopt_scheme][
+                eff_stk = _fast_copy_nested_dict(m.markets[adopt_scheme][
                     "competed"]["mseg_out_break"]["stock"]["efficient"])
             else:
                 eff_stk = m.markets[adopt_scheme][
@@ -5983,12 +5876,6 @@ class Engine(object):
             # loop through below in finalizing baseline/efficient breakouts
             mkt_keys = mkt_base_keys + mkt_eff_keys
 
-<<<<<<< HEAD
-=======
-            def _fast_copy_frac(d):
-                return _fast_copy_nested_dict(d)
-
->>>>>>> bss-develop-25-backup
             # Pre-build per-key copies of the frac_* dicts so out_break_walk
             # (which mutates its first argument) gets a fresh copy each time
             # without redundant deepcopy inside the loop.
@@ -5996,7 +5883,6 @@ class Engine(object):
             for k in mkt_keys:
                 if "Baseline" in k:
                     if "Stock" in k and report_stk_units:
-<<<<<<< HEAD
                         _frac_copies[k] = _fast_copy_nested_dict(frac_base_stk)
                     elif "Capital" in k and report_stk_costs:
                         _frac_copies[k] = _fast_copy_nested_dict(frac_base_stk_cost)
@@ -6019,30 +5905,6 @@ class Engine(object):
                         _frac_copies[k] = _fast_copy_nested_dict(frac_eff_cost)
                     else:
                         _frac_copies[k] = _fast_copy_nested_dict(frac_eff_carb)
-=======
-                        _frac_copies[k] = _fast_copy_frac(frac_base_stk)
-                    elif "Capital" in k and report_stk_costs:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_stk_cost)
-                    elif "Energy Use" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_energy)
-                    elif "Energy Cost" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_cost)
-                    else:
-                        _frac_copies[k] = _fast_copy_frac(frac_base_carb)
-                elif any([x in k for x in ["Efficient", "Measure"]]):
-                    if "Stock" in k and report_stk_units:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk)
-                    elif "Capital" in k and report_stk_costs:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_stk_cost)
-                    elif "Energy Use" in k and "Measure" not in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy)
-                    elif eff_capt and "Energy Use" in k and "Measure" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_energy_capt)
-                    elif "Energy Cost" in k:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_cost)
-                    else:
-                        _frac_copies[k] = _fast_copy_frac(frac_eff_carb)
->>>>>>> bss-develop-25-backup
             # Apply output breakout fractions to total baseline and efficient
             # stock, energy, carbon, and cost results initialized above
             for k in mkt_keys:
@@ -6113,11 +5975,7 @@ class Engine(object):
             for ind_k, k in enumerate(save_keys):
                 # Copy baseline breakouts dict to use in establishing the
                 # structure of the final savings output breakouts dict
-<<<<<<< HEAD
                 orig_dict_struct = _fast_copy_nested_dict(
-=======
-                orig_dict_struct = _fast_copy_frac(
->>>>>>> bss-develop-25-backup
                     mkt_save_brk[mkt_base_keys[ind_k]])
                 # Loop through all nested levels of the dict above; when
                 # reaching terminal nodes, finalize savings values as
@@ -8567,34 +8425,9 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     if all([x is False for x in [trim_out, trim_yrs]]):
         # Notify user that the output data are being plotted
         print("Plotting output data...", end="", flush=True)
-<<<<<<< HEAD
         run_plot(meas_summary, a_run, handyvars, measures_objlist,
                  regions, cbpslist, trim_out)
         print("Plotting complete")
-=======
-        # Execute plots in a background thread so main() can return while
-        # matplotlib renders/saves PDFs (plotting has no downstream callers).
-        # The Agg backend (set at module import time) is thread-safe.
-
-        def _run_plot_bg():
-            try:
-                run_plot(meas_summary, a_run, handyvars, measures_objlist,
-                         regions, cbpslist, trim_out)
-                print("Plotting complete")
-            except Exception as exc:
-                plot_thread._exc = exc
-                raise
-
-        plot_thread = threading.Thread(target=_run_plot_bg, daemon=False)
-        plot_thread._exc = None
-        plot_thread.start()
-        # Force the main script to wait until the plotting thread is completely done
-        plot_thread.join()
-
-        # Re-raise any exceptions that happened inside the thread
-        if plot_thread._exc:
-            raise plot_thread._exc
->>>>>>> bss-develop-25-backup
 
 
 def parse_args(args: list = None) -> argparse.NameSpace:  # noqa: F821
