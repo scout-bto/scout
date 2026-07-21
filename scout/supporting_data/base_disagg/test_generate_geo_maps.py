@@ -158,6 +158,7 @@ def test_json_output_structure(run_generation_script, geography):
     assert os.path.exists(file_path)
     validate_json_structure(file_path)
 
+
 NON_STATE_COLS = {"Technology", "End use", "CDIV", "Total"}
 
 
