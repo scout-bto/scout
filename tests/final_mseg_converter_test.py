@@ -605,6 +605,59 @@ class ComStockGapBlendingTest(CommonUnitTest):
             "energy": {"2009": 200 * nongap_fact}}}}}
         self.dict_check(result, expected)
 
+    # Technology-level non-gap and gap disaggregation factors, matching the
+    # shape final_mseg_converter.py builds from a "cooling"/"rooftop_AC" row
+    # and a "gap"/"all" row in the Com_Cdiv_EMM_*_electricity_Tech.csv files
+    com_cd_cz_array_tech_emm = np.array([
+        (1, "rooftop_AC", 0.3, 0.7, 0.0, 0.0, 0.0),
+        (2, "rooftop_AC", 0.4, 0.2, 0.4, 0.0, 0.0)],
+        dtype=[('CDIV', '<i4'), ('Technology', 'U20'), ('TRE', '<f8'),
+               ('FRCC', '<f8'), ('ISNE', '<f8'), ('NWPP', '<f8'), ('MISE', '<f8')])
+    com_cd_cz_array_gap_tech_emm = np.array([
+        (1, "all", 0.9, 0.1, 0.0, 0.0, 0.0),
+        (2, "all", 0.2, 0.3, 0.5, 0.0, 0.0)],
+        dtype=[('CDIV', '<i4'), ('Technology', 'U20'), ('TRE', '<f8'),
+               ('FRCC', '<f8'), ('ISNE', '<f8'), ('NWPP', '<f8'), ('MISE', '<f8')])
+
+    com_cd_cz_array_fuelsplit_tech_gap = {
+        "electricity": {
+            "stock": {"cooling": com_cd_cz_array_tech_emm,
+                      "gap": com_cd_cz_array_gap_tech_emm},
+            "energy": {"cooling": com_cd_cz_array_tech_emm,
+                       "gap": com_cd_cz_array_gap_tech_emm}}}
+
+    def test_partial_gap_technology_level(self):
+        # When reading from a technology-level file, the gap row is tagged
+        # Technology == "all" (it has no real per-technology breakdown) and
+        # should be matched on that tag rather than on the current tech_flag
+        # ("rooftop_AC" here) -- confirms merge_sum's Technology-aware gap
+        # array indexing, on top of the usual gap/non-gap fraction blend.
+        base_input = {
+            "food service": {
+                "electricity": {
+                    "cooling": {
+                        "supply": {
+                            "rooftop_AC": {
+                                "stock": {"2009": 100},
+                                "energy": {"2009": 200}}}}}}}
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_tech_gap,
+            self.com_cd_cz_array_fuelsplit_tech_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        nongap_fact = float(self.com_cd_cz_array_tech_emm[
+            self.com_cd_cz_array_tech_emm['Technology'] == 'rooftop_AC'][0]['TRE'])
+        gap_fact = float(self.com_cd_cz_array_gap_tech_emm[
+            self.com_cd_cz_array_gap_tech_emm['Technology'] == 'all'][0]['TRE'])
+        blended = 0.5 * gap_fact + 0.5 * nongap_fact
+        expected = {"food service": {"electricity": {"cooling": {"supply": {
+            "rooftop_AC": {
+                "stock": {"2009": 100 * blended},
+                "energy": {"2009": 200 * blended}}}}}}}
+        self.dict_check(result, expected)
+
 
 class ToClimateZoneConversionTest(CommonUnitTest):
     """ Test the operation of the full climate conversion function

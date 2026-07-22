@@ -607,13 +607,21 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
 def process_gap_end_use(gap_csv_path, scoutgeo_df, geos, target_paths):
     """Compute a normalized 'gap' End-use row from the ComStock gap model's
     annual county electricity totals, and append it to each already-written
-    commercial electricity disaggregation CSV in target_paths.
+    commercial electricity end-use-level disaggregation CSV in target_paths.
 
     Real ComStock gap SDR data (commercial_gap_model/by_county/upgrade=0/ on
     the OEDI bucket, see download_buildstock.download_comstock_gap) only
-    covers electricity. final_mseg_converter.py reuses this same 'gap' row
-    as the geographic proxy for gap blending across all fuels, since no
+    covers electricity. final_mseg_converter.py reuses this same row as the
+    geographic proxy for gap blending across all fuels, since no
     fuel-specific gap geography exists in the source data.
+
+    Only end-use-level files are targeted here -- combine_hvac_and_other()
+    (run after this, as part of the `--data-type both` post-processing
+    step) already copies every technology-less end-use row, tagged
+    Technology == "all", into the corresponding technology-level file; the
+    "gap" row added here rides along automatically the same way "misc",
+    "lighting", etc. do, without needing its own separate technology-level
+    handling.
     """
     if not os.path.exists(gap_csv_path):
         print(f"    WARNING: gap model data not found at {gap_csv_path}; "
@@ -639,6 +647,11 @@ def process_gap_end_use(gap_csv_path, scoutgeo_df, geos, target_paths):
             print(f"    WARNING: {path} not found; skipping 'gap' row append.")
             continue
         existing = pd.read_csv(path)
+        # Idempotent: drop any previously-appended gap row(s) first, so
+        # re-running this step (e.g. a --data-type technology-only rerun
+        # against end-use files left over from an earlier run) doesn't pile
+        # up duplicates.
+        existing = existing[existing['End use'] != 'gap']
         row = gap_row.reindex(columns=existing.columns, fill_value=0.0)
         combined = pd.concat([existing, row], ignore_index=True)
         combined.to_csv(path, index=False)
@@ -1272,33 +1285,6 @@ def main():
                     except Exception as e:
                         print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
 
-            # Append the ComStock gap model's electricity "gap" row (see
-            # process_gap_end_use) to the commercial electricity CSVs just
-            # written above. Real gap SDR data only covers electricity;
-            # final_mseg_converter.py reuses this row for all fuels' gap
-            # blending, so no other fuel's files get a "gap" row.
-            gap_csv_path = os.path.join(
-                args.comstock_path, 'gap', 'annual_electricity_by_county.csv')
-            for geos, geo_name in geo_combinations:
-                print(f"\n  Adding ComStock gap row to {geo_name} "
-                      "electricity outputs...")
-                _, _, _, _, _, filename_geo = geo_pivot_settings(geos)
-                for weath in weathers:
-                    target_paths = [
-                        os.path.join(
-                            end_use_outdir,
-                            f"Com_Cdiv_{filename_geo}_{weath}_electricity.csv"),
-                        os.path.join(
-                            end_use_outdir,
-                            f"Com_Cdiv_{filename_geo}_{weath}_electricity_Stock.csv"),
-                    ]
-                    try:
-                        process_gap_end_use(
-                            gap_csv_path, scoutgeo_df, geos, target_paths)
-                    except Exception as e:
-                        print(f"    ERROR processing commercial gap row "
-                              f"({geo_name}): {e}")
-
     if args.data_type in ('technology', 'both'):
         if args.sector not in ('residential', 'both'):
             print("Skipping residential technology processing (--sector commercial).")
@@ -1385,6 +1371,38 @@ def main():
                     traceback.print_exc()
 
     print("\nDisaggregation process finished.")
+
+    # Append the ComStock gap model's electricity "gap" row (see
+    # process_gap_end_use) to the commercial electricity end-use-level CSVs
+    # (energy + stock, EMM + State). Must run before combine_hvac_and_other
+    # below, which copies every technology-less end-use row (tagged
+    # Technology == "all") -- now including "gap" -- into the corresponding
+    # technology-level file, exactly the way it already does for "misc",
+    # "lighting", etc. Real gap SDR data only covers electricity;
+    # final_mseg_converter.py reuses this row for all fuels' gap blending,
+    # so no other fuel's files get a "gap" row.
+    if args.sector in ('commercial', 'both'):
+        gap_csv_path = os.path.join(
+            args.comstock_path, 'gap', 'annual_electricity_by_county.csv')
+        for geos, geo_name in geo_combinations:
+            print(f"\nAdding ComStock gap row to {geo_name} "
+                  "commercial electricity outputs...")
+            _, _, _, _, _, filename_geo = geo_pivot_settings(geos)
+            for weath in weathers:
+                target_paths = [
+                    os.path.join(
+                        end_use_outdir,
+                        f"Com_Cdiv_{filename_geo}_{weath}_electricity.csv"),
+                    os.path.join(
+                        end_use_outdir,
+                        f"Com_Cdiv_{filename_geo}_{weath}_electricity_Stock.csv"),
+                ]
+                try:
+                    process_gap_end_use(
+                        gap_csv_path, scoutgeo_df, geos, target_paths)
+                except Exception as e:
+                    print(f"    ERROR processing commercial gap row "
+                          f"({geo_name}): {e}")
 
     # Post-processing steps
     if args.data_type == 'both':
