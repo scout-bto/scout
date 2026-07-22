@@ -135,3 +135,4 @@ scout.egg-info/
 ######################
 
 scout/supporting_data/base_disagg/input
+scout/supporting_data/base_disagg/output
