@@ -177,20 +177,26 @@ def test_state_shares_sum_to_one(run_generation_script):
 
 def test_gap_row_present_and_sums_to_one(run_generation_script):
     """The ComStock "gap" row (see generate_geo_maps.process_gap_end_use)
-    should be present in the commercial electricity end-use/stock outputs
-    for both EMM and State geographies and sum to 1 across regions per
-    CDIV, just like every other End-use row. Real gap SDR data only covers
-    electricity, so no other fuel's files -- or the Tech-level files, which
-    have no natural "gap" technology -- should carry a "gap" row.
+    should be present in the commercial electricity outputs -- both
+    end-use-level and technology-level, EMM and State, energy and stock --
+    and sum to 1 across regions per CDIV, just like every other row. Real
+    gap SDR data only covers electricity and has no per-technology
+    breakdown, so the technology-level "gap" row is tagged Technology ==
+    "all"; no other fuel's files should carry a "gap" row.
     """
     elec_paths = glob.glob(os.path.join(
         OUTPUT_DIR, "*_end_use", "Com_Cdiv_*_electricity*.csv"))
-    assert elec_paths, "No commercial electricity end-use output files found."
+    elec_paths += glob.glob(os.path.join(
+        OUTPUT_DIR, "*_technology", "Com_Cdiv_*_electricity*.csv"))
+    assert elec_paths, "No commercial electricity output files found."
 
     for path in elec_paths:
         df = pd.read_csv(path)
         gap_rows = df[df["End use"] == "gap"]
         assert not gap_rows.empty, f"No 'gap' row found in {path}"
+        if "Technology" in df.columns:
+            assert (gap_rows["Technology"] == "all").all(), (
+                f"'gap' row(s) in {path} should be tagged Technology == 'all'")
 
         region_cols = [c for c in df.columns if c not in NON_STATE_COLS]
         row_sums = gap_rows[region_cols].sum(axis=1)
@@ -199,10 +205,11 @@ def test_gap_row_present_and_sums_to_one(run_generation_script):
         assert bad.empty, f"'gap' row shares don't sum to 1 in {path}:\n{bad}"
 
     other_paths = [
-        p for p in glob.glob(os.path.join(OUTPUT_DIR, "*_end_use", "Com_Cdiv_*.csv"))
+        p for p in (
+            glob.glob(os.path.join(OUTPUT_DIR, "*_end_use", "Com_Cdiv_*.csv")) +
+            glob.glob(os.path.join(OUTPUT_DIR, "*_technology", "Com_Cdiv_*.csv")))
         if "electricity" not in os.path.basename(p)]
-    tech_paths = glob.glob(os.path.join(OUTPUT_DIR, "*_technology", "Com_Cdiv_*.csv"))
-    for path in other_paths + tech_paths:
+    for path in other_paths:
         df = pd.read_csv(path)
         assert (df["End use"] != "gap").all(), f"Unexpected 'gap' row found in {path}"
 
