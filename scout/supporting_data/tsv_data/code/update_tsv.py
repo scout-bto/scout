@@ -1,6 +1,7 @@
 import pandas as pd
 import boto3
 import json
+import gzip
 import datetime
 import numpy as np
 import warnings
@@ -21,9 +22,15 @@ MAP_DIR = "map"
 SQL_DIR = "sql"
 OUTPUT_DIR = "csv"
 JSON_DIR = "json"
+# Base template lives alongside this script (not in JSON_DIR), since
+# JSON_DIR holds only large generated output that's gitignored.
+BASE_TEMPLATE = "tsv_load_in_2024.json"
 EXTERNAL_S3_DIR = "datasets"
-DATABASE_NAME = "euss_oedi"
-BUCKET_NAME = 'handibucket'
+DATABASE_NAME = "scout_tsv" # dedicated Athena database for Scout's tsv data
+BUCKET_NAME = 'yujie-bucket'
+# Final gzipped load shape files consumed directly by Scout's ecm_prep.py
+# live one level up from this script, in supporting_data/tsv_data/
+TSV_DATA_DIR = ".."
 
 
 building_map = {
@@ -98,31 +105,12 @@ def wait_for_query_to_complete(client, query_execution_id):
         time.sleep(5)
 
 
-def get_var_char_values(data_dict):
-    return [obj['VarCharValue'] for obj in data_dict['Data']]
-
-
-def fetch_query_results(client, query_execution_id):
-    query_result = client.get_query_results(
-        QueryExecutionId=query_execution_id)
-    result_data = query_result['ResultSet']
-
-    headers = get_var_char_values(result_data['Rows'][0])
-    result_rows = []
-
-    while True:
-        for row in result_data['Rows'][1:]:
-            result_rows.append(dict(zip(headers, get_var_char_values(row))))
-        
-        if 'NextToken' not in query_result:
-            break
-        
-        query_result = client.get_query_results(
-            QueryExecutionId=query_execution_id,
-            NextToken=query_result['NextToken'])
-        result_data = query_result['ResultSet']
-    
-    return result_rows
+def download_query_result(s3_client, result_loc, local_path):
+    """ Download an Athena query's CSV result directly from S3. Far faster
+    than paginating GetQueryResults row-by-row for large result sets
+    (Athena already writes the full CSV to result_loc on completion). """
+    bucket, key = result_loc[len("s3://"):].split("/", 1)
+    s3_client.download_file(bucket, key, local_path)
 
 
 def read_sql_file(sql_file):
@@ -153,30 +141,32 @@ def execute_athena_query(client, query, is_create, wait=True):
         result_loc = query_status['QueryExecution'][
             'ResultConfiguration']['OutputLocation']
         print(f"SQL query succeeded and results are stored in {result_loc}")
-        if is_create:
-            return result_loc, None
-        else:
-            data_rows = \
-                fetch_query_results(client, query_execution_id)
-            return result_loc, data_rows
+        return result_loc, query_execution_id
 
 
-def sql_to_csvout(s3_client, athena_client, sql_file):
+def sql_to_csvout(s3_client, athena_client, sql_file, out_name=None):
+    fname = out_name or os.path.splitext(sql_file)[0]
+    out_path = f"{OUTPUT_DIR}/{fname}.csv"
+    if os.path.isfile(out_path):
+        print(f"{out_path} already exists, skipping re-query "
+              "(delete the file to force a re-run).")
+        return
+    query_start = time.time()
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "
+          f"Starting Athena query: {sql_file}")
     query = read_sql_file(sql_file)
-    fname = os.path.splitext(sql_file)[0]
-    s3_location, query_results = execute_athena_query(
+    s3_location, query_execution_id = execute_athena_query(
         athena_client, query, False, wait=True)
-    if query_results:
-        df = pd.DataFrame(query_results)
-        df.to_csv(f"{OUTPUT_DIR}/{fname}.csv", index=False)
-        print(f"{fname}.csv is successfully saved!")
+    elapsed = time.time() - query_start
+    if query_execution_id:
+        download_query_result(s3_client, s3_location, out_path)
+        print(f"{out_path} is successfully saved! ({elapsed:.0f}s)")
         print(f"Query results stored: {s3_location}")
-
     elif s3_location:
-        print(f"""Query completed but no results. 
+        print(f"""Query completed but no results.
               Results path: {s3_location}""")
     else:
-        print("Query {fname} failed or was cancelled.")     
+        print(f"Query {sql_file} failed or was cancelled.")
 
 
 def upload_file_to_s3(client, local_path, bucket, s3_path):
@@ -217,6 +207,15 @@ def nested_set(adict, keys, value):
     adict[keys[-1]] = value
 
 
+def write_gzip_json(data, filename):
+    """ Gzip-compress a JSON-serializable dict to supporting_data/tsv_data/,
+    matching the format Scout's ecm_prep.py reads via gzip.GzipFile. """
+    out_path = os.path.join(TSV_DATA_DIR, filename)
+    with gzip.GzipFile(out_path, 'w') as gz_file:
+        gz_file.write(json.dumps(data, indent=2).encode('utf-8'))
+    print(f"{filename} is successfully saved!")
+
+
 def round_floats(obj):
     """ Recursively round floats in a JSON object to 6 decimal places. """
     if isinstance(obj, float):
@@ -250,7 +249,7 @@ def insert_scouttsv_emm0(opts):
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
 
     df = replace_strings_in_dataframe(df, replacements)
-    json_file = f"{JSON_DIR}/tsv_load_in_2024.json"
+    json_file = BASE_TEMPLATE
     if opts.bstock == 'residential':
         json_file = f"{JSON_DIR}/tsv_load_emm_2024_com.json"
     with open(json_file, "r") as jsi:
@@ -329,7 +328,7 @@ def insert_scouttsv_usstate0(opts):
         df = df[df['building_type'].isin(values_to_keep)]
 
     df = replace_strings_in_dataframe(df, replacements)
-    json_file = f"{JSON_DIR}/tsv_load_in_2024.json"
+    json_file = BASE_TEMPLATE
     if opts.bstock == 'residential':
         json_file = f"{JSON_DIR}/tsv_load_state_2024_com.json"
     with open(json_file, "r") as jsi:
@@ -406,7 +405,7 @@ def insert_scouttsv_emm(opts):
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
 
     df = replace_strings_in_dataframe(df, replacements)
-    json_file = f"{JSON_DIR}/tsv_load_in_2024.json"
+    json_file = BASE_TEMPLATE
     if opts.bstock == 'residential':
         json_file = f"{JSON_DIR}/tsv_load_emm_2024_com.json"
     with open(json_file, "r") as jsi:
@@ -420,11 +419,34 @@ def insert_scouttsv_emm(opts):
         lsh = df[df['building_type'
                     ].str.contains("|".join(bm_vals))]
         for eu in enduse_map[opts.bstock]:
+            print(f"  {bldg} - {eu} ({len(emm_regions)} EMM regions)")
+            # Whether this (building type, end use) combination is actually
+            # kept: nested_set discards commercial combos outside the list
+            # below, and MF/MH pool heaters & pumps get overwritten with
+            # SF's values further down regardless of what's computed here.
+            will_write = (
+                opts.bstock == 'residential' and not (
+                    bldg in ('MF', 'MH') and
+                    eu in ('pool heaters', 'pool pumps'))
+            ) or (
+                opts.bstock == 'commercial' and (
+                    (bldg == 'MediumOfficeDetailed' and eu in (
+                        'heating', 'lighting', 'plug loads',
+                        'water heating', 'other')) or
+                    (bldg == 'LargeHotel' and eu == 'refrigeration') or
+                    eu in ('cooling', 'ventilation', 'pumps')))
             for emm in emm_regions:
                 es60 = lsh.loc[lsh.loc[:, 'emm'] == emm, eu].to_frame()
                 es60 = es60.sum(axis=1)
                 es60 = es60 / es60.sum()
-                if abs(sum(es60) - 1) > 0.01:
+                es60 = findNan(emm, eu, es60)
+
+                llen = len(es60)
+                if llen != 8760:
+                    print(f"{emm} {eu} {llen}")
+                    es60 = [0] * 8760
+
+                if will_write and abs(sum(es60) - 1) > 0.01:
                     print(f"""LOAD SHAPE DOESN'T SUM TO ONE! {sum(es60)}
                           for {eu} {emm} {opts.bstock}""")
                 # es60 = round_floats(es60)
@@ -459,6 +481,7 @@ def insert_scouttsv_emm(opts):
     if opts.bstock == 'residential':
         json.dump(lsjson, open(
             f"{JSON_DIR}/tsv_load_emm_2024.json", 'w'), indent=2)
+        write_gzip_json(lsjson, "tsv_load_EMM.gz")
     if opts.bstock == 'commercial':
         json.dump(lsjson, open(
             f"{JSON_DIR}/tsv_load_emm_2024_com.json", 'w'), indent=2)
@@ -478,7 +501,7 @@ def insert_scouttsv_usstate(opts):
         df = df[df['building_type'].isin(values_to_keep)]
 
     df = replace_strings_in_dataframe(df, replacements)
-    json_file = f"{JSON_DIR}/tsv_load_in_2024.json"
+    json_file = BASE_TEMPLATE
     if opts.bstock == 'residential':
         json_file = f"{JSON_DIR}/tsv_load_state_2024_com.json"
     with open(json_file, "r") as jsi:
@@ -491,11 +514,34 @@ def insert_scouttsv_usstate(opts):
         lsh = df[df['building_type'
                     ].str.contains("|".join(bm_vals))]
         for eu in enduse_map[opts.bstock]:
+            print(f"  {bldg} - {eu} ({len(us_states)} states)")
+            # Whether this (building type, end use) combination is actually
+            # kept: nested_set discards commercial combos outside the list
+            # below, and MF/MH pool heaters & pumps get overwritten with
+            # SF's values further down regardless of what's computed here.
+            will_write = (
+                opts.bstock == 'residential' and not (
+                    bldg in ('MF', 'MH') and
+                    eu in ('pool heaters', 'pool pumps'))
+            ) or (
+                opts.bstock == 'commercial' and (
+                    (bldg == 'MediumOfficeDetailed' and eu in (
+                        'heating', 'lighting', 'plug loads',
+                        'water heating', 'other')) or
+                    (bldg == 'LargeHotel' and eu == 'refrigeration') or
+                    eu in ('cooling', 'ventilation', 'pumps')))
             for state in us_states:
                 es60 = lsh.loc[lsh.loc[:, 'state'] == state, eu].to_frame()
                 es60 = es60.sum(axis=1)
                 es60 = es60 / es60.sum()
-                if abs(sum(es60) - 1) > 0.01:
+                es60 = findNan(state, eu, es60)
+
+                llen = len(es60)
+                if llen != 8760:
+                    print(f"{state} {eu} {llen}")
+                    es60 = [0] * 8760
+
+                if will_write and abs(sum(es60) - 1) > 0.01:
                     print(f"""LOAD SHAPE DOESN'T SUM TO ONE! {sum(es60)}
                           for {eu} {state} {opts.bstock}""")
                 # es60 = round_floats(es60)
@@ -530,6 +576,7 @@ def insert_scouttsv_usstate(opts):
     if opts.bstock == 'residential':
         json.dump(lsjson, open(
             f"{JSON_DIR}/tsv_load_state_2024.json", 'w'), indent=2)
+        write_gzip_json(lsjson, "tsv_load_State.gz")
     if opts.bstock == 'commercial':
         json.dump(lsjson, open(
             f"{JSON_DIR}/tsv_load_state_2024_com.json", 'w'), indent=2)
@@ -575,18 +622,33 @@ def main(base_dir):
         session = boto3.Session()
         s3_client = session.client('s3')
         athena_client = session.client('athena')
-        # s3_create_tables_from_csv(s3_client, athena_client, MAP_DIR, "geo_map.csv")
+        print("Uploading geo_map.csv and creating Athena table...")
+        s3_create_tables_from_csv(s3_client, athena_client, MAP_DIR, "geo_map.csv")
         # RUN the SQL queries directly on AWS Athena as using Python may risk of losing datapoints due to connection issue
-        sql_to_csvout(s3_client, athena_client, "comstock_data_emm.sql")
-        sql_to_csvout(s3_client, athena_client, "resstock_data_emm.sql")
-
-        sql_to_csvout(s3_client, athena_client, "comstock_data_state.sql")
-        sql_to_csvout(s3_client, athena_client, "resstock_data_state.sql")
+        # The four queries are independent (different sources, different
+        # output files), so run them concurrently instead of waiting on
+        # each one in turn; boto3 clients are thread-safe for API calls.
+        # out_name matches the {bstock}_{emm|state}.csv naming that
+        # insert_scouttsv_emm/usstate expect.
+        sql_files = [("comstock_data_emm.sql", "commercial_emm"),
+                     ("resstock_data_emm.sql", "residential_emm"),
+                     ("comstock_data_state.sql", "commercial_state"),
+                     ("resstock_data_state.sql", "residential_state")]
+        print(f"Running {len(sql_files)} Athena queries concurrently: "
+              f"{', '.join(f for f, _ in sql_files)}")
+        with ThreadPoolExecutor(max_workers=len(sql_files)) as executor:
+            futures = [executor.submit(
+                sql_to_csvout, s3_client, athena_client, f, out_name)
+                for f, out_name in sql_files]
+            for future in futures:
+                future.result()
 
     if opts.insert_scouttsv is True:
         # python update_tsv.py --insert_scouttsv --bstock residential
         if opts.bstock in ['commercial', 'residential']:
+            print(f"Inserting {opts.bstock} data into EMM regions...")
             insert_scouttsv_emm(opts)
+            print(f"Inserting {opts.bstock} data into US states...")
             insert_scouttsv_usstate(opts)
         else:
             print('Missing correct arguments')
