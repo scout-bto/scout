@@ -27,6 +27,8 @@ WITH meta_combined AS (
 		ON ts.bldg_id = meta.bldg_id
 		WHERE meta.upgrade = 0 AND ts.upgrade = '0'
 		    AND ts."state" NOT IN ('AK', 'HI')
+		    AND meta."in.geometry_building_type_recs" IN (
+		        'Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached')
 	),
 geomap_combined AS (
 	SELECT mc.*,
