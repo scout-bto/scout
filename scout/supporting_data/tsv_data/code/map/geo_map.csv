@@ -1,0 +1,3110 @@
+state_abbr,county_name,stock.county,emm2020_county,population,subregion,region
+AL,Autauga,G0100010,SRSE,55416,autauga,alabama
+AL,Baldwin,G0100030,SRSE,208563,baldwin,alabama
+AL,Barbour,G0100050,SRSE,25965,barbour,alabama
+AL,Bibb,G0100070,SRSE,22643,bibb,alabama
+AL,Blount,G0100090,SRSE,57704,blount,alabama
+AL,Bullock,G0100110,SRSE,10362,bullock,alabama
+AL,Butler,G0100130,SRSE,19998,butler,alabama
+AL,Calhoun,G0100150,SRSE,114611,calhoun,alabama
+AL,Chambers,G0100170,SRSE,33843,chambers,alabama
+AL,Cherokee,G0100190,SRSE,25725,cherokee,alabama
+AL,Chilton,G0100210,SRSE,43941,chilton,alabama
+AL,Choctaw,G0100230,SRSE,12993,choctaw,alabama
+AL,Clarke,G0100250,SRSE,24392,clarke,alabama
+AL,Clay,G0100270,SRSE,13492,clay,alabama
+AL,Cleburne,G0100290,SRSE,14924,cleburne,alabama
+AL,Coffee,G0100310,SRSE,51226,coffee,alabama
+AL,Colbert,G0100330,SRSE,54216,colbert,alabama
+AL,Conecuh,G0100350,SRSE,12395,conecuh,alabama
+AL,Coosa,G0100370,SRSE,10581,coosa,alabama
+AL,Covington,G0100390,SRSE,37458,covington,alabama
+AL,Crenshaw,G0100410,SRSE,13913,crenshaw,alabama
+AL,Cullman,G0100430,SRSE,82471,cullman,alabama
+AL,Dale,G0100450,SRSE,49226,dale,alabama
+AL,Dallas,G0100470,SRSE,40008,dallas,alabama
+AL,DeKalb,G0100490,SRCE,70900,de kalb,alabama
+AL,Elmore,G0100510,SRSE,81799,elmore,alabama
+AL,Escambia,G0100530,SRSE,37728,escambia,alabama
+AL,Etowah,G0100550,SRSE,102564,etowah,alabama
+AL,Fayette,G0100570,SRSE,16546,fayette,alabama
+AL,Franklin,G0100590,SRSE,31628,franklin,alabama
+AL,Geneva,G0100610,SRSE,26614,geneva,alabama
+AL,Greene,G0100630,SRSE,8422,greene,alabama
+AL,Hale,G0100650,SRSE,14952,hale,alabama
+AL,Henry,G0100670,SRSE,17164,henry,alabama
+AL,Houston,G0100690,SRSE,104056,houston,alabama
+AL,Jackson,G0100710,SRCE,52138,jackson,alabama
+AL,Jefferson,G0100730,SRSE,659521,jefferson,alabama
+AL,Lamar,G0100750,SRSE,13918,lamar,alabama
+AL,Lauderdale,G0100770,SRCE,92318,lauderdale,alabama
+AL,Lawrence,G0100790,SRSE,33244,lawrence,alabama
+AL,Lee,G0100810,SRSE,158991,lee,alabama
+AL,Limestone,G0100830,SRCE,92753,limestone,alabama
+AL,Lowndes,G0100850,SRSE,10358,lowndes,alabama
+AL,Macon,G0100870,SRSE,18963,macon,alabama
+AL,Madison,G0100890,SRCE,356967,madison,alabama
+AL,Marengo,G0100910,SRSE,19673,marengo,alabama
+AL,Marion,G0100930,SRSE,29998,marion,alabama
+AL,Marshall,G0100950,SRSE,95157,marshall,alabama
+AL,Mobile,G0100970,SRSE,414836,mobile,alabama
+AL,Monroe,G0100990,SRSE,21530,monroe,alabama
+AL,Montgomery,G0101010,SRSE,226349,montgomery,alabama
+AL,Morgan,G0101030,SRCE,119012,morgan,alabama
+AL,Perry,G0101050,SRSE,9574,perry,alabama
+AL,Pickens,G0101070,SRSE,20324,pickens,alabama
+AL,Pike,G0101090,SRSE,33286,pike,alabama
+AL,Randolph,G0101110,SRSE,22652,randolph,alabama
+AL,Russell,G0101130,SRSE,58172,russell,alabama
+AL,Shelby,G0101170,SRSE,210622,shelby,alabama
+AL,St. Clair,G0101150,SRSE,88019,st clair,alabama
+AL,Sumter,G0101190,SRSE,13040,sumter,alabama
+AL,Talladega,G0101210,SRSE,80103,talladega,alabama
+AL,Tallapoosa,G0101230,SRSE,40727,tallapoosa,alabama
+AL,Tuscaloosa,G0101250,SRSE,206102,tuscaloosa,alabama
+AL,Walker,G0101270,SRSE,64967,walker,alabama
+AL,Washington,G0101290,SRSE,16756,washington,alabama
+AL,Wilcox,G0101310,SRSE,10986,wilcox,alabama
+AL,Winston,G0101330,SRSE,23805,winston,alabama
+AR,Arkansas,G0500010,MISS,18214,arkansas,arkansas
+AR,Ashley,G0500030,MISS,20492,ashley,arkansas
+AR,Baxter,G0500050,MISS,41062,baxter,arkansas
+AR,Benton,G0500070,SPPS,258291,benton,arkansas
+AR,Boone,G0500090,MISS,37304,boone,arkansas
+AR,Bradley,G0500110,MISS,10996,bradley,arkansas
+AR,Calhoun,G0500130,MISS,5144,calhoun,arkansas
+AR,Carroll,G0500150,SPPS,27646,carroll,arkansas
+AR,Chicot,G0500170,MISS,10945,chicot,arkansas
+AR,Clark,G0500190,MISS,22657,clark,arkansas
+AR,Clay,G0500210,MISS,14920,clay,arkansas
+AR,Cleburne,G0500230,MISS,25264,cleburne,arkansas
+AR,Cleveland,G0500250,MISS,8241,cleveland,arkansas
+AR,Columbia,G0500270,MISS,23901,columbia,arkansas
+AR,Conway,G0500290,MISS,20937,conway,arkansas
+AR,Craighead,G0500310,MISS,105835,craighead,arkansas
+AR,Crawford,G0500330,SPPS,62267,crawford,arkansas
+AR,Crittenden,G0500350,MISS,49235,crittenden,arkansas
+AR,Cross,G0500370,MISS,17037,cross,arkansas
+AR,Dallas,G0500390,MISS,7469,dallas,arkansas
+AR,Desha,G0500410,MISS,11876,desha,arkansas
+AR,Drew,G0500430,MISS,18651,drew,arkansas
+AR,Faulkner,G0500450,MISS,122227,faulkner,arkansas
+AR,Franklin,G0500470,SPPS,17626,franklin,arkansas
+AR,Fulton,G0500490,MISS,12123,fulton,arkansas
+AR,Garland,G0500510,MISS,97477,garland,arkansas
+AR,Grant,G0500530,MISS,18082,grant,arkansas
+AR,Greene,G0500550,MISS,44598,greene,arkansas
+AR,Hempstead,G0500570,SPPS,21974,hempstead,arkansas
+AR,Hot Spring,G0500590,MISS,33374,hot spring,arkansas
+AR,Howard,G0500610,SPPS,13377,howard,arkansas
+AR,Independence,G0500630,MISS,37168,independence,arkansas
+AR,Izard,G0500650,MISS,13433,izard,arkansas
+AR,Jackson,G0500670,MISS,17221,jackson,arkansas
+AR,Jefferson,G0500690,MISS,70016,jefferson,arkansas
+AR,Johnson,G0500710,SPPS,26176,johnson,arkansas
+AR,Lafayette,G0500730,SPPS,6847,lafayette,arkansas
+AR,Lawrence,G0500750,MISS,16735,lawrence,arkansas
+AR,Lee,G0500770,MISS,9310,lee,arkansas
+AR,Lincoln,G0500790,MISS,13705,lincoln,arkansas
+AR,Little River,G0500810,SPPS,12451,little river,arkansas
+AR,Logan,G0500830,SPPS,21792,logan,arkansas
+AR,Lonoke,G0500850,MISS,72228,lonoke,arkansas
+AR,Madison,G0500870,SPPS,16072,madison,arkansas
+AR,Marion,G0500890,MISS,16325,marion,arkansas
+AR,Miller,G0500910,SPPS,43787,miller,arkansas
+AR,Mississippi,G0500930,MISS,42835,mississippi,arkansas
+AR,Monroe,G0500950,MISS,7169,monroe,arkansas
+AR,Montgomery,G0500970,SPPS,8879,montgomery,arkansas
+AR,Nevada,G0500990,MISS,8398,nevada,arkansas
+AR,Newton,G0501010,SPPS,7936,newton,arkansas
+AR,Ouachita,G0501030,MISS,24098,ouachita,arkansas
+AR,Perry,G0501050,MISS,10132,perry,arkansas
+AR,Phillips,G0501070,MISS,18975,phillips,arkansas
+AR,Pike,G0501090,SPPS,10832,pike,arkansas
+AR,Poinsett,G0501110,MISS,24023,poinsett,arkansas
+AR,Polk,G0501130,SPPS,20173,polk,arkansas
+AR,Pope,G0501150,MISS,63779,pope,arkansas
+AR,Prairie,G0501170,MISS,8251,prairie,arkansas
+AR,Pulaski,G0501190,MISS,393250,pulaski,arkansas
+AR,Randolph,G0501210,MISS,17448,randolph,arkansas
+AR,Saline,G0501250,MISS,118703,saline,arkansas
+AR,Scott,G0501270,SPPS,10277,scott,arkansas
+AR,Searcy,G0501290,MISS,7967,searcy,arkansas
+AR,Sebastian,G0501310,SPPS,127793,sebastian,arkansas
+AR,Sevier,G0501330,SPPS,16910,sevier,arkansas
+AR,Sharp,G0501350,MISS,17157,sharp,arkansas
+AR,St. Francis,G0501230,MISS,26196,st francis,arkansas
+AR,Stone,G0501370,MISS,12539,stone,arkansas
+AR,Union,G0501390,MISS,39887,union,arkansas
+AR,Van Buren,G0501410,MISS,16628,van buren,arkansas
+AR,Washington,G0501430,SPPS,228049,washington,arkansas
+AR,White,G0501450,MISS,79263,white,arkansas
+AR,Woodruff,G0501470,MISS,6641,woodruff,arkansas
+AR,Yell,G0501490,SPPS,21552,yell,arkansas
+AZ,Apache,G0400010,SRSG,73112,apache,arizona
+AZ,Cochise,G0400030,SRSG,125770,cochise,arizona
+AZ,Coconino,G0400050,SRSG,140908,coconino,arizona
+AZ,Gila,G0400070,SRSG,53556,gila,arizona
+AZ,Graham,G0400090,SRSG,37599,graham,arizona
+AZ,Greenlee,G0400110,SRSG,9613,greenlee,arizona
+AZ,La Paz,G0400120,SRSG,20317,la paz,arizona
+AZ,Maricopa,G0400130,SRSG,4242997,maricopa,arizona
+AZ,Mohave,G0400150,SRSG,205249,mohave,arizona
+AZ,Navajo,G0400170,SRSG,110026,navajo,arizona
+AZ,Pima,G0400190,SRSG,1016206,pima,arizona
+AZ,Pinal,G0400210,SRSG,418540,pinal,arizona
+AZ,Santa Cruz,G0400230,SRSG,45985,santa cruz,arizona
+AZ,Yavapai,G0400250,SRSG,225562,yavapai,arizona
+AZ,Yuma,G0400270,SRSG,205631,yuma,arizona
+CA,Alameda,G0600010,CANO,1647704,alameda,california
+CA,Alpine,G0600030,CANO,1071,alpine,california
+CA,Amador,G0600050,CANO,37383,amador,california
+CA,Butte,G0600070,CANO,226864,butte,california
+CA,Calaveras,G0600090,CANO,45171,calaveras,california
+CA,Colusa,G0600110,CANO,21588,colusa,california
+CA,Contra Costa,G0600130,CANO,1135127,contra costa,california
+CA,Del Norte,G0600150,NWPP,27540,del norte,california
+CA,El Dorado,G0600170,CANO,185625,el dorado,california
+CA,Fresno,G0600190,CANO,979915,fresno,california
+CA,Glenn,G0600210,CANO,28085,glenn,california
+CA,Humboldt,G0600230,CANO,136646,humboldt,california
+CA,Imperial,G0600250,SRSG,180883,imperial,california
+CA,Inyo,G0600270,CASO,18144,inyo,california
+CA,Kern,G0600290,CASO,884788,kern,california
+CA,Kings,G0600310,CANO,149785,kings,california
+CA,Lake,G0600330,CANO,64116,lake,california
+CA,Lassen,G0600350,NWPP,30870,lassen,california
+CA,Los Angeles,G0600370,CASO,10137915,los angeles,california
+CA,Madera,G0600390,CANO,154697,madera,california
+CA,Marin,G0600410,CANO,260651,marin,california
+CA,Mariposa,G0600430,CANO,17410,mariposa,california
+CA,Mendocino,G0600450,CANO,87628,mendocino,california
+CA,Merced,G0600470,CANO,268672,merced,california
+CA,Modoc,G0600490,NWPP,8795,modoc,california
+CA,Mono,G0600510,CASO,13981,mono,california
+CA,Monterey,G0600530,CANO,435232,monterey,california
+CA,Napa,G0600550,CANO,142166,napa,california
+CA,Nevada,G0600570,CANO,99107,nevada,california
+CA,Orange,G0600590,CASO,3172532,orange,california
+CA,Placer,G0600610,CANO,380531,placer,california
+CA,Plumas,G0600630,CANO,18627,plumas,california
+CA,Riverside,G0600650,CASO,2387741,riverside,california
+CA,Sacramento,G0600670,CANO,1514460,sacramento,california
+CA,San Benito,G0600690,CANO,59414,san benito,california
+CA,San Bernardino,G0600710,CASO,2140096,san bernardino,california
+CA,San Diego,G0600730,CASO,3317749,san diego,california
+CA,San Francisco,G0600750,CANO,870887,san francisco,california
+CA,San Joaquin,G0600770,CANO,733709,san joaquin,california
+CA,San Luis Obispo,G0600790,CANO,282887,san luis obispo,california
+CA,San Mateo,G0600810,CANO,764797,san mateo,california
+CA,Santa Barbara,G0600830,CANO,446170,santa barbara,california
+CA,Santa Clara,G0600850,CANO,1919402,santa clara,california
+CA,Santa Cruz,G0600870,CANO,274673,santa cruz,california
+CA,Shasta,G0600890,CANO,179631,shasta,california
+CA,Sierra,G0600910,CANO,2947,sierra,california
+CA,Siskiyou,G0600930,NWPP,43603,siskiyou,california
+CA,Solano,G0600950,CANO,440207,solano,california
+CA,Sonoma,G0600970,CANO,503070,sonoma,california
+CA,Stanislaus,G0600990,CANO,541560,stanislaus,california
+CA,Sutter,G0601010,CANO,96651,sutter,california
+CA,Tehama,G0601030,CANO,63276,tehama,california
+CA,Trinity,G0601050,CANO,12782,trinity,california
+CA,Tulare,G0601070,CASO,460437,tulare,california
+CA,Tuolumne,G0601090,CANO,53804,tuolumne,california
+CA,Ventura,G0601110,CASO,849738,ventura,california
+CA,Yolo,G0601130,CANO,215802,yolo,california
+CA,Yuba,G0601150,CANO,75275,yuba,california
+CO,Adams,G0800010,RMRG,498187,adams,colorado
+CO,Alamosa,G0800030,RMRG,16654,alamosa,colorado
+CO,Arapahoe,G0800050,RMRG,637068,arapahoe,colorado
+CO,Archuleta,G0800070,RMRG,12854,archuleta,colorado
+CO,Baca,G0800090,RMRG,3568,baca,colorado
+CO,Bent,G0800110,RMRG,5861,bent,colorado
+CO,Boulder,G0800130,RMRG,322226,boulder,colorado
+CO,Broomfield,G0800140,RMRG,66529,broomfield,colorado
+CO,Chaffee,G0800150,RMRG,19058,chaffee,colorado
+CO,Cheyenne,G0800170,RMRG,1848,cheyenne,colorado
+CO,Clear Creek,G0800190,RMRG,9436,clear creek,colorado
+CO,Conejos,G0800210,RMRG,8129,conejos,colorado
+CO,Costilla,G0800230,RMRG,3721,costilla,colorado
+CO,Crowley,G0800250,RMRG,5694,crowley,colorado
+CO,Custer,G0800270,RMRG,4602,custer,colorado
+CO,Delta,G0800290,RMRG,30442,delta,colorado
+CO,Denver,G0800310,RMRG,693060,denver,colorado
+CO,Dolores,G0800330,RMRG,2056,dolores,colorado
+CO,Douglas,G0800350,RMRG,328632,douglas,colorado
+CO,Eagle,G0800370,RMRG,53989,eagle,colorado
+CO,El Paso,G0800410,RMRG,688284,el paso,colorado
+CO,Elbert,G0800390,RMRG,25231,elbert,colorado
+CO,Fremont,G0800430,RMRG,47446,fremont,colorado
+CO,Garfield,G0800450,RMRG,58887,garfield,colorado
+CO,Gilpin,G0800470,RMRG,5931,gilpin,colorado
+CO,Grand,G0800490,RMRG,15008,grand,colorado
+CO,Gunnison,G0800510,RMRG,16408,gunnison,colorado
+CO,Hinsdale,G0800530,RMRG,788,hinsdale,colorado
+CO,Huerfano,G0800550,RMRG,6677,huerfano,colorado
+CO,Jackson,G0800570,RMRG,1357,jackson,colorado
+CO,Jefferson,G0800590,RMRG,571837,jefferson,colorado
+CO,Kiowa,G0800610,RMRG,1373,kiowa,colorado
+CO,Kit Carson,G0800630,RMRG,8195,kit carson,colorado
+CO,La Plata,G0800670,RMRG,55623,la plata,colorado
+CO,Lake,G0800650,RMRG,7618,lake,colorado
+CO,Larimer,G0800690,RMRG,339993,larimer,colorado
+CO,Las Animas,G0800710,RMRG,14103,las animas,colorado
+CO,Lincoln,G0800730,RMRG,5643,lincoln,colorado
+CO,Logan,G0800750,RMRG,21919,logan,colorado
+CO,Mesa,G0800770,RMRG,150083,mesa,colorado
+CO,Mineral,G0800790,RMRG,732,mineral,colorado
+CO,Moffat,G0800810,RMRG,13109,moffat,colorado
+CO,Montezuma,G0800830,RMRG,26999,montezuma,colorado
+CO,Montrose,G0800850,RMRG,41471,montrose,colorado
+CO,Morgan,G0800870,RMRG,28274,morgan,colorado
+CO,Otero,G0800890,RMRG,18295,otero,colorado
+CO,Ouray,G0800910,RMRG,4857,ouray,colorado
+CO,Park,G0800930,RMRG,17166,park,colorado
+CO,Phillips,G0800950,RMRG,4288,phillips,colorado
+CO,Pitkin,G0800970,RMRG,17752,pitkin,colorado
+CO,Prowers,G0800990,RMRG,11922,prowers,colorado
+CO,Pueblo,G0801010,RMRG,165123,pueblo,colorado
+CO,Rio Blanco,G0801030,RMRG,6545,rio blanco,colorado
+CO,Rio Grande,G0801050,RMRG,11479,rio grande,colorado
+CO,Routt,G0801070,RMRG,24648,routt,colorado
+CO,Saguache,G0801090,RMRG,6389,saguache,colorado
+CO,San Juan,G0801110,RMRG,694,san juan,colorado
+CO,San Miguel,G0801130,RMRG,8017,san miguel,colorado
+CO,Sedgwick,G0801150,RMRG,2407,sedgwick,colorado
+CO,Summit,G0801170,RMRG,30374,summit,colorado
+CO,Teller,G0801190,RMRG,24043,teller,colorado
+CO,Washington,G0801210,RMRG,4908,washington,colorado
+CO,Weld,G0801230,RMRG,294932,weld,colorado
+CO,Yuma,G0801250,RMRG,10103,yuma,colorado
+CT,Fairfield,G0900010,ISNE,944177,fairfield,connecticut
+CT,Hartford,G0900030,ISNE,892389,hartford,connecticut
+CT,Litchfield,G0900050,ISNE,182571,litchfield,connecticut
+CT,Middlesex,G0900070,ISNE,163329,middlesex,connecticut
+CT,New Haven,G0900090,ISNE,856875,new haven,connecticut
+CT,New London,G0900110,ISNE,269801,new london,connecticut
+CT,Tolland,G0900130,ISNE,151118,tolland,connecticut
+CT,Windham,G0900150,ISNE,116192,windham,connecticut
+DC,District of Columbia,G1100010,PJMD,681170,washington,district of columbia
+DE,Kent,G1000010,PJME,174827,kent,delaware
+DE,New Castle,G1000030,PJME,556987,new castle,delaware
+DE,Sussex,G1000050,PJME,220251,sussex,delaware
+FL,Alachua,G1200010,FRCC,263496,alachua,florida
+FL,Baker,G1200030,FRCC,27937,baker,florida
+FL,Bay,G1200050,SRSE,183974,bay,florida
+FL,Bradford,G1200070,FRCC,26926,bradford,florida
+FL,Brevard,G1200090,FRCC,579130,brevard,florida
+FL,Broward,G1200110,FRCC,1909632,broward,florida
+FL,Calhoun,G1200130,SRSE,14423,calhoun,florida
+FL,Charlotte,G1200150,FRCC,178465,charlotte,florida
+FL,Citrus,G1200170,FRCC,143621,citrus,florida
+FL,Clay,G1200190,FRCC,208311,clay,florida
+FL,Collier,G1200210,FRCC,365136,collier,florida
+FL,Columbia,G1200230,FRCC,69299,columbia,florida
+FL,DeSoto,G1200270,FRCC,35800,de soto,florida
+FL,Dixie,G1200290,FRCC,16300,dixie,florida
+FL,Duval,G1200310,FRCC,926255,duval,florida
+FL,Escambia,G1200330,SRSE,315187,escambia,florida
+FL,Flagler,G1200350,FRCC,108310,flagler,florida
+FL,Franklin,G1200370,FRCC,11901,franklin,florida
+FL,Gadsden,G1200390,FRCC,46006,gadsden,florida
+FL,Gilchrist,G1200410,FRCC,17212,gilchrist,florida
+FL,Glades,G1200430,FRCC,13970,glades,florida
+FL,Gulf,G1200450,SRSE,15990,gulf,florida
+FL,Hamilton,G1200470,FRCC,14361,hamilton,florida
+FL,Hardee,G1200490,FRCC,27360,hardee,florida
+FL,Hendry,G1200510,FRCC,39290,hendry,florida
+FL,Hernando,G1200530,FRCC,182835,hernando,florida
+FL,Highlands,G1200550,FRCC,100917,highlands,florida
+FL,Hillsborough,G1200570,FRCC,1376238,hillsborough,florida
+FL,Holmes,G1200590,SRSE,19487,holmes,florida
+FL,Indian River,G1200610,FRCC,151563,indian river,florida
+FL,Jackson,G1200630,SRSE,48229,jackson,florida
+FL,Jefferson,G1200650,FRCC,13906,jefferson,florida
+FL,Lafayette,G1200670,FRCC,8617,lafayette,florida
+FL,Lake,G1200690,FRCC,335396,lake,florida
+FL,Lee,G1200710,FRCC,722336,lee,florida
+FL,Leon,G1200730,FRCC,287822,leon,florida
+FL,Levy,G1200750,FRCC,39961,levy,florida
+FL,Liberty,G1200770,FRCC,8202,liberty,florida
+FL,Madison,G1200790,FRCC,18224,madison,florida
+FL,Manatee,G1200810,FRCC,375888,manatee,florida
+FL,Marion,G1200830,FRCC,349020,marion,florida
+FL,Martin,G1200850,FRCC,158701,martin,florida
+FL,Miami-Dade,G1200860,FRCC,2712945,miami-dade,florida
+FL,Monroe,G1200870,FRCC,79077,monroe,florida
+FL,Nassau,G1200890,FRCC,80622,nassau,florida
+FL,Okaloosa,G1200910,SRSE,201170,okaloosa,florida
+FL,Okeechobee,G1200930,FRCC,40314,okeechobee,florida
+FL,Orange,G1200950,FRCC,1314367,orange,florida
+FL,Osceola,G1200970,FRCC,336015,osceola,florida
+FL,Palm Beach,G1200990,FRCC,1443810,palm beach,florida
+FL,Pasco,G1201010,FRCC,512368,pasco,florida
+FL,Pinellas,G1201030,FRCC,960730,pinellas,florida
+FL,Polk,G1201050,FRCC,666149,polk,florida
+FL,Putnam,G1201070,FRCC,72277,putnam,florida
+FL,Santa Rosa,G1201130,SRSE,170497,santa rosa,florida
+FL,Sarasota,G1201150,FRCC,412569,sarasota,florida
+FL,Seminole,G1201170,FRCC,455479,seminole,florida
+FL,St. Johns,G1201090,FRCC,235087,st johns,florida
+FL,St. Lucie,G1201110,FRCC,306507,st lucie,florida
+FL,Sumter,G1201190,FRCC,123996,sumter,florida
+FL,Suwannee,G1201210,FRCC,43794,suwannee,florida
+FL,Taylor,G1201230,FRCC,22175,taylor,florida
+FL,Union,G1201250,FRCC,15142,union,florida
+FL,Volusia,G1201270,FRCC,529364,volusia,florida
+FL,Wakulla,G1201290,FRCC,31893,wakulla,florida
+FL,Walton,G1201310,SRSE,65889,walton,florida
+FL,Washington,G1201330,SRSE,24569,washington,florida
+GA,Appling,G1300010,SRSE,18428,appling,georgia
+GA,Atkinson,G1300030,SRSE,8273,atkinson,georgia
+GA,Bacon,G1300050,SRSE,11372,bacon,georgia
+GA,Baker,G1300070,SRSE,3150,baker,georgia
+GA,Baldwin,G1300090,SRSE,45144,baldwin,georgia
+GA,Banks,G1300110,SRSE,18397,banks,georgia
+GA,Barrow,G1300130,SRSE,77126,barrow,georgia
+GA,Bartow,G1300150,SRSE,103807,bartow,georgia
+GA,Ben Hill,G1300170,SRSE,17243,ben hill,georgia
+GA,Berrien,G1300190,SRSE,18993,berrien,georgia
+GA,Bibb,G1300210,SRSE,152760,bibb,georgia
+GA,Bleckley,G1300230,SRSE,12970,bleckley,georgia
+GA,Brantley,G1300250,SRSE,18355,brantley,georgia
+GA,Brooks,G1300270,SRSE,15687,brooks,georgia
+GA,Bryan,G1300290,SRSE,36230,bryan,georgia
+GA,Bulloch,G1300310,SRSE,74722,bulloch,georgia
+GA,Burke,G1300330,SRSE,22688,burke,georgia
+GA,Butts,G1300350,SRSE,23817,butts,georgia
+GA,Calhoun,G1300370,SRSE,6324,calhoun,georgia
+GA,Camden,G1300390,SRSE,53008,camden,georgia
+GA,Candler,G1300430,SRSE,10910,candler,georgia
+GA,Carroll,G1300450,SRSE,116261,carroll,georgia
+GA,Catoosa,G1300470,SRSE,66398,catoosa,georgia
+GA,Charlton,G1300490,SRSE,12497,charlton,georgia
+GA,Chatham,G1300510,SRSE,289082,chatham,georgia
+GA,Chattahoochee,G1300530,SRSE,10922,chattahoochee,georgia
+GA,Chattooga,G1300550,SRSE,24824,chattooga,georgia
+GA,Cherokee,G1300570,SRSE,241689,cherokee,georgia
+GA,Clarke,G1300590,SRSE,124707,clarke,georgia
+GA,Clay,G1300610,SRSE,3020,clay,georgia
+GA,Clayton,G1300630,SRSE,279462,clayton,georgia
+GA,Clinch,G1300650,SRSE,6829,clinch,georgia
+GA,Cobb,G1300670,SRSE,748150,cobb,georgia
+GA,Coffee,G1300690,SRSE,43012,coffee,georgia
+GA,Colquitt,G1300710,SRSE,45708,colquitt,georgia
+GA,Columbia,G1300730,SRSE,147450,columbia,georgia
+GA,Cook,G1300750,SRSE,17167,cook,georgia
+GA,Coweta,G1300770,SRSE,140526,coweta,georgia
+GA,Crawford,G1300790,SRSE,12322,crawford,georgia
+GA,Crisp,G1300810,SRSE,22721,crisp,georgia
+GA,Dade,G1300830,SRCE,16257,dade,georgia
+GA,Dawson,G1300850,SRSE,23604,dawson,georgia
+GA,Decatur,G1300870,SRSE,26822,decatur,georgia
+GA,DeKalb,G1300890,SRSE,740321,de kalb,georgia
+GA,Dodge,G1300910,SRSE,20563,dodge,georgia
+GA,Dooly,G1300930,SRSE,13763,dooly,georgia
+GA,Dougherty,G1300950,SRSE,90017,dougherty,georgia
+GA,Douglas,G1300970,SRSE,142224,douglas,georgia
+GA,Early,G1300990,SRSE,10339,early,georgia
+GA,Echols,G1301010,SRSE,3962,echols,georgia
+GA,Effingham,G1301030,SRSE,58712,effingham,georgia
+GA,Elbert,G1301050,SRSE,19143,elbert,georgia
+GA,Emanuel,G1301070,SRSE,22635,emanuel,georgia
+GA,Evans,G1301090,SRSE,10670,evans,georgia
+GA,Fannin,G1301110,SRSE,24900,fannin,georgia
+GA,Fayette,G1301130,SRSE,111627,fayette,georgia
+GA,Floyd,G1301150,SRSE,96560,floyd,georgia
+GA,Forsyth,G1301170,SRSE,221009,forsyth,georgia
+GA,Franklin,G1301190,SRSE,22320,franklin,georgia
+GA,Fulton,G1301210,SRSE,1023336,fulton,georgia
+GA,Gilmer,G1301230,SRSE,29733,gilmer,georgia
+GA,Glascock,G1301250,SRSE,3006,glascock,georgia
+GA,Glynn,G1301270,SRSE,84502,glynn,georgia
+GA,Gordon,G1301290,SRSE,56904,gordon,georgia
+GA,Grady,G1301310,SRSE,24808,grady,georgia
+GA,Greene,G1301330,SRSE,17003,greene,georgia
+GA,Gwinnett,G1301350,SRSE,907135,gwinnett,georgia
+GA,Habersham,G1301370,SRSE,44246,habersham,georgia
+GA,Hall,G1301390,SRSE,196637,hall,georgia
+GA,Hancock,G1301410,SRSE,8640,hancock,georgia
+GA,Haralson,G1301430,SRSE,29042,haralson,georgia
+GA,Harris,G1301450,SRSE,33652,harris,georgia
+GA,Hart,G1301470,SRSE,25553,hart,georgia
+GA,Heard,G1301490,SRSE,11487,heard,georgia
+GA,Henry,G1301510,SRSE,221768,henry,georgia
+GA,Houston,G1301530,SRSE,152122,houston,georgia
+GA,Irwin,G1301550,SRSE,9422,irwin,georgia
+GA,Jackson,G1301570,SRSE,64615,jackson,georgia
+GA,Jasper,G1301590,SRSE,13654,jasper,georgia
+GA,Jeff Davis,G1301610,SRSE,14877,jeff davis,georgia
+GA,Jefferson,G1301630,SRSE,15916,jefferson,georgia
+GA,Jenkins,G1301650,SRSE,8849,jenkins,georgia
+GA,Johnson,G1301670,SRSE,9505,johnson,georgia
+GA,Jones,G1301690,SRSE,28623,jones,georgia
+GA,Lamar,G1301710,SRSE,18469,lamar,georgia
+GA,Lanier,G1301730,SRSE,10399,lanier,georgia
+GA,Laurens,G1301750,SRSE,47516,laurens,georgia
+GA,Lee,G1301770,SRSE,29337,lee,georgia
+GA,Liberty,G1301790,SRSE,62570,liberty,georgia
+GA,Lincoln,G1301810,SRSE,7828,lincoln,georgia
+GA,Long,G1301830,SRSE,18437,long,georgia
+GA,Lowndes,G1301850,SRSE,114628,lowndes,georgia
+GA,Lumpkin,G1301870,SRSE,31445,lumpkin,georgia
+GA,Macon,G1301930,SRSE,13450,macon,georgia
+GA,Madison,G1301950,SRSE,28824,madison,georgia
+GA,Marion,G1301970,SRSE,8524,marion,georgia
+GA,McDuffie,G1301890,SRSE,21490,mcduffie,georgia
+GA,McIntosh,G1301910,SRSE,13927,mcintosh,georgia
+GA,Meriwether,G1301990,SRSE,21074,meriwether,georgia
+GA,Miller,G1302010,SRSE,5926,miller,georgia
+GA,Mitchell,G1302050,SRSE,22459,mitchell,georgia
+GA,Monroe,G1302070,SRSE,27306,monroe,georgia
+GA,Montgomery,G1302090,SRSE,9060,montgomery,georgia
+GA,Morgan,G1302110,SRSE,18170,morgan,georgia
+GA,Murray,G1302130,SRSE,39315,murray,georgia
+GA,Muscogee,G1302150,SRSE,197485,muscogee,georgia
+GA,Newton,G1302170,SRSE,106999,newton,georgia
+GA,Oconee,G1302190,SRSE,36838,oconee,georgia
+GA,Oglethorpe,G1302210,SRSE,14921,oglethorpe,georgia
+GA,Paulding,G1302230,SRSE,155825,paulding,georgia
+GA,Peach,G1302250,SRSE,26655,peach,georgia
+GA,Pickens,G1302270,SRSE,30832,pickens,georgia
+GA,Pierce,G1302290,SRSE,19171,pierce,georgia
+GA,Pike,G1302310,SRSE,17941,pike,georgia
+GA,Polk,G1302330,SRSE,41776,polk,georgia
+GA,Pulaski,G1302350,SRSE,11251,pulaski,georgia
+GA,Putnam,G1302370,SRSE,21477,putnam,georgia
+GA,Quitman,G1302390,SRSE,2335,quitman,georgia
+GA,Rabun,G1302410,SRSE,16559,rabun,georgia
+GA,Randolph,G1302430,SRSE,7177,randolph,georgia
+GA,Richmond,G1302450,SRSE,201647,richmond,georgia
+GA,Rockdale,G1302470,SRSE,89355,rockdale,georgia
+GA,Schley,G1302490,SRSE,5098,schley,georgia
+GA,Screven,G1302510,SRSE,14044,screven,georgia
+GA,Seminole,G1302530,SRSE,8468,seminole,georgia
+GA,Spalding,G1302550,SRSE,64806,spalding,georgia
+GA,Stephens,G1302570,SRSE,25751,stephens,georgia
+GA,Stewart,G1302590,SRSE,5705,stewart,georgia
+GA,Sumter,G1302610,SRSE,30389,sumter,georgia
+GA,Talbot,G1302630,SRSE,6171,talbot,georgia
+GA,Taliaferro,G1302650,SRSE,1593,taliaferro,georgia
+GA,Tattnall,G1302670,SRSE,25092,tattnall,georgia
+GA,Taylor,G1302690,SRSE,8232,taylor,georgia
+GA,Telfair,G1302710,SRSE,15965,telfair,georgia
+GA,Terrell,G1302730,SRSE,8967,terrell,georgia
+GA,Thomas,G1302750,SRSE,45248,thomas,georgia
+GA,Tift,G1302770,SRSE,40828,tift,georgia
+GA,Toombs,G1302790,SRSE,27196,toombs,georgia
+GA,Towns,G1302810,SRCE,11391,towns,georgia
+GA,Treutlen,G1302830,SRSE,6637,treutlen,georgia
+GA,Troup,G1302850,SRSE,70005,troup,georgia
+GA,Turner,G1302870,SRSE,8030,turner,georgia
+GA,Twiggs,G1302890,SRSE,8171,twiggs,georgia
+GA,Union,G1302910,SRCE,22928,union,georgia
+GA,Upson,G1302930,SRSE,26335,upson,georgia
+GA,Walker,G1302950,SRSE,67896,walker,georgia
+GA,Walton,G1302970,SRSE,90184,walton,georgia
+GA,Ware,G1302990,SRSE,35738,ware,georgia
+GA,Warren,G1303010,SRSE,5442,warren,georgia
+GA,Washington,G1303030,SRSE,20457,washington,georgia
+GA,Wayne,G1303050,SRSE,30104,wayne,georgia
+GA,Webster,G1303070,SRSE,2599,webster,georgia
+GA,Wheeler,G1303090,SRSE,7978,wheeler,georgia
+GA,White,G1303110,SRSE,28884,white,georgia
+GA,Whitfield,G1303130,SRSE,104589,whitfield,georgia
+GA,Wilcox,G1303150,SRSE,8761,wilcox,georgia
+GA,Wilkes,G1303170,SRSE,9805,wilkes,georgia
+GA,Wilkinson,G1303190,SRSE,9104,wilkinson,georgia
+GA,Worth,G1303210,SRSE,20748,worth,georgia
+IA,Adair,G1900010,SPPN,7092,adair,iowa
+IA,Adams,G1900030,MISW,3693,adams,iowa
+IA,Allamakee,G1900050,MISW,13884,allamakee,iowa
+IA,Appanoose,G1900070,MISW,12462,appanoose,iowa
+IA,Audubon,G1900090,SPPN,5678,audubon,iowa
+IA,Benton,G1900110,MISW,25699,benton,iowa
+IA,Black Hawk,G1900130,MISW,132904,black hawk,iowa
+IA,Boone,G1900150,MISW,26532,boone,iowa
+IA,Bremer,G1900170,MISW,24798,bremer,iowa
+IA,Buchanan,G1900190,MISW,20992,buchanan,iowa
+IA,Buena Vista,G1900210,SPPN,20332,buena vista,iowa
+IA,Butler,G1900230,MISW,14791,butler,iowa
+IA,Calhoun,G1900250,MISW,9846,calhoun,iowa
+IA,Carroll,G1900270,SPPN,20437,carroll,iowa
+IA,Cass,G1900290,SPPN,13157,cass,iowa
+IA,Cedar,G1900310,MISW,18454,cedar,iowa
+IA,Cerro Gordo,G1900330,MISW,43070,cerro gordo,iowa
+IA,Cherokee,G1900350,SPPN,11508,cherokee,iowa
+IA,Chickasaw,G1900370,MISW,12023,chickasaw,iowa
+IA,Clarke,G1900390,MISW,9309,clarke,iowa
+IA,Clay,G1900410,SPPN,16333,clay,iowa
+IA,Clayton,G1900430,MISW,17590,clayton,iowa
+IA,Clinton,G1900450,MISW,47309,clinton,iowa
+IA,Crawford,G1900470,SPPN,16940,crawford,iowa
+IA,Dallas,G1900490,MISW,84516,dallas,iowa
+IA,Davis,G1900510,MISW,8860,davis,iowa
+IA,Decatur,G1900530,MISW,8141,decatur,iowa
+IA,Delaware,G1900550,MISW,17327,delaware,iowa
+IA,Des Moines,G1900570,MISW,39739,des moines,iowa
+IA,Dickinson,G1900590,SPPN,17243,dickinson,iowa
+IA,Dubuque,G1900610,MISW,97003,dubuque,iowa
+IA,Emmet,G1900630,SPPN,9658,emmet,iowa
+IA,Fayette,G1900650,MISW,20054,fayette,iowa
+IA,Floyd,G1900670,MISW,15873,floyd,iowa
+IA,Franklin,G1900690,MISW,10170,franklin,iowa
+IA,Fremont,G1900710,MISW,6950,fremont,iowa
+IA,Greene,G1900730,MISW,9011,greene,iowa
+IA,Grundy,G1900750,MISW,12313,grundy,iowa
+IA,Guthrie,G1900770,SPPN,10625,guthrie,iowa
+IA,Hamilton,G1900790,MISW,15076,hamilton,iowa
+IA,Hancock,G1900810,MISW,10835,hancock,iowa
+IA,Hardin,G1900830,MISW,17226,hardin,iowa
+IA,Harrison,G1900850,SPPN,14149,harrison,iowa
+IA,Henry,G1900870,MISW,19773,henry,iowa
+IA,Howard,G1900890,MISW,9332,howard,iowa
+IA,Humboldt,G1900910,MISW,9487,humboldt,iowa
+IA,Ida,G1900930,SPPN,6985,ida,iowa
+IA,Iowa,G1900950,MISW,16311,iowa,iowa
+IA,Jackson,G1900970,MISW,19472,jackson,iowa
+IA,Jasper,G1900990,MISW,36708,jasper,iowa
+IA,Jefferson,G1901010,MISW,18090,jefferson,iowa
+IA,Johnson,G1901030,MISW,146547,johnson,iowa
+IA,Jones,G1901050,MISW,20439,jones,iowa
+IA,Keokuk,G1901070,MISW,10119,keokuk,iowa
+IA,Kossuth,G1901090,SPPN,15114,kossuth,iowa
+IA,Lee,G1901110,MISW,34615,lee,iowa
+IA,Linn,G1901130,MISW,221661,linn,iowa
+IA,Louisa,G1901150,MISW,11142,louisa,iowa
+IA,Lucas,G1901170,MISW,8647,lucas,iowa
+IA,Lyon,G1901190,SPPN,11754,lyon,iowa
+IA,Madison,G1901210,MISW,15848,madison,iowa
+IA,Mahaska,G1901230,MISW,22181,mahaska,iowa
+IA,Marion,G1901250,MISW,33189,marion,iowa
+IA,Marshall,G1901270,MISW,40312,marshall,iowa
+IA,Mills,G1901290,MISW,14972,mills,iowa
+IA,Mitchell,G1901310,MISW,10763,mitchell,iowa
+IA,Monona,G1901330,SPPN,8898,monona,iowa
+IA,Monroe,G1901350,MISW,7870,monroe,iowa
+IA,Montgomery,G1901370,MISW,10225,montgomery,iowa
+IA,Muscatine,G1901390,MISW,42940,muscatine,iowa
+IA,O'Brien,G1901410,SPPN,14020,obrien,iowa
+IA,Osceola,G1901430,SPPN,6064,osceola,iowa
+IA,Page,G1901450,MISW,15391,page,iowa
+IA,Palo Alto,G1901470,SPPN,9047,palo alto,iowa
+IA,Plymouth,G1901490,SPPN,25200,plymouth,iowa
+IA,Pocahontas,G1901510,SPPN,6886,pocahontas,iowa
+IA,Polk,G1901530,MISW,474045,polk,iowa
+IA,Pottawattamie,G1901550,SPPN,93582,pottawattamie,iowa
+IA,Poweshiek,G1901570,MISW,18533,poweshiek,iowa
+IA,Ringgold,G1901590,SPPN,5068,ringgold,iowa
+IA,Sac,G1901610,SPPN,9876,sac,iowa
+IA,Scott,G1901630,MISW,172474,scott,iowa
+IA,Shelby,G1901650,SPPN,11800,shelby,iowa
+IA,Sioux,G1901670,SPPN,34898,sioux,iowa
+IA,Story,G1901690,MISW,97090,story,iowa
+IA,Tama,G1901710,MISW,17319,tama,iowa
+IA,Taylor,G1901730,SPPN,6216,taylor,iowa
+IA,Union,G1901750,SPPN,12420,union,iowa
+IA,Van Buren,G1901770,MISW,7271,van buren,iowa
+IA,Wapello,G1901790,MISW,34982,wapello,iowa
+IA,Warren,G1901810,MISW,49691,warren,iowa
+IA,Washington,G1901830,MISW,22281,washington,iowa
+IA,Wayne,G1901850,MISW,6452,wayne,iowa
+IA,Webster,G1901870,MISW,36769,webster,iowa
+IA,Winnebago,G1901890,MISW,10631,winnebago,iowa
+IA,Winneshiek,G1901910,MISW,20561,winneshiek,iowa
+IA,Woodbury,G1901930,SPPN,102779,woodbury,iowa
+IA,Worth,G1901950,MISW,7572,worth,iowa
+IA,Wright,G1901970,MISW,12779,wright,iowa
+ID,Ada,G1600010,BASN,444028,ada,idaho
+ID,Adams,G1600030,BASN,3900,adams,idaho
+ID,Bannock,G1600050,BASN,84377,bannock,idaho
+ID,Bear Lake,G1600070,BASN,5945,bear lake,idaho
+ID,Benewah,G1600090,NWPP,9092,benewah,idaho
+ID,Bingham,G1600110,BASN,45201,bingham,idaho
+ID,Blaine,G1600130,BASN,21791,blaine,idaho
+ID,Boise,G1600150,BASN,7124,boise,idaho
+ID,Bonner,G1600170,NWPP,42536,bonner,idaho
+ID,Bonneville,G1600190,BASN,112232,bonneville,idaho
+ID,Boundary,G1600210,NWPP,11681,boundary,idaho
+ID,Butte,G1600230,BASN,2501,butte,idaho
+ID,Camas,G1600250,BASN,1072,camas,idaho
+ID,Canyon,G1600270,BASN,211698,canyon,idaho
+ID,Caribou,G1600290,BASN,6887,caribou,idaho
+ID,Cassia,G1600310,BASN,23504,cassia,idaho
+ID,Clark,G1600330,BASN,860,clark,idaho
+ID,Clearwater,G1600350,NWPP,8497,clearwater,idaho
+ID,Custer,G1600370,BASN,4096,custer,idaho
+ID,Elmore,G1600390,BASN,26018,elmore,idaho
+ID,Franklin,G1600410,BASN,13406,franklin,idaho
+ID,Fremont,G1600430,BASN,12943,fremont,idaho
+ID,Gem,G1600450,BASN,17184,gem,idaho
+ID,Gooding,G1600470,BASN,15185,gooding,idaho
+ID,Idaho,G1600490,BASN,16156,idaho,idaho
+ID,Jefferson,G1600510,BASN,27839,jefferson,idaho
+ID,Jerome,G1600530,BASN,22994,jerome,idaho
+ID,Kootenai,G1600550,NWPP,154311,kootenai,idaho
+ID,Latah,G1600570,NWPP,39196,latah,idaho
+ID,Lemhi,G1600590,BASN,7723,lemhi,idaho
+ID,Lewis,G1600610,NWPP,3853,lewis,idaho
+ID,Lincoln,G1600630,BASN,5271,lincoln,idaho
+ID,Madison,G1600650,BASN,39048,madison,idaho
+ID,Minidoka,G1600670,BASN,20616,minidoka,idaho
+ID,Nez Perce,G1600690,NWPP,40369,nez perce,idaho
+ID,Oneida,G1600710,BASN,4343,oneida,idaho
+ID,Owyhee,G1600730,BASN,11389,owyhee,idaho
+ID,Payette,G1600750,BASN,23026,payette,idaho
+ID,Power,G1600770,BASN,7654,power,idaho
+ID,Shoshone,G1600790,NWPP,12452,shoshone,idaho
+ID,Teton,G1600810,BASN,10960,teton,idaho
+ID,Twin Falls,G1600830,BASN,83514,twin falls,idaho
+ID,Valley,G1600850,BASN,10496,valley,idaho
+ID,Washington,G1600870,BASN,10172,washington,idaho
+IL,Adams,G1700010,MISC,66578,adams,illinois
+IL,Alexander,G1700030,MISC,6478,alexander,illinois
+IL,Bond,G1700050,MISC,16824,bond,illinois
+IL,Boone,G1700070,PJMC,53503,boone,illinois
+IL,Brown,G1700090,MISC,6762,brown,illinois
+IL,Bureau,G1700110,MISC,33359,bureau,illinois
+IL,Calhoun,G1700130,MISC,4894,calhoun,illinois
+IL,Carroll,G1700150,PJMC,14539,carroll,illinois
+IL,Cass,G1700170,MISC,12676,cass,illinois
+IL,Champaign,G1700190,MISC,208419,champaign,illinois
+IL,Christian,G1700210,MISC,33309,christian,illinois
+IL,Clark,G1700230,MISC,15938,clark,illinois
+IL,Clay,G1700250,MISC,13300,clay,illinois
+IL,Clinton,G1700270,MISC,37729,clinton,illinois
+IL,Coles,G1700290,MISC,52343,coles,illinois
+IL,Cook,G1700310,PJMC,5203499,cook,illinois
+IL,Crawford,G1700330,MISC,19308,crawford,illinois
+IL,Cumberland,G1700350,MISC,10858,cumberland,illinois
+IL,De Witt,G1700390,MISC,16226,de witt,illinois
+IL,DeKalb,G1700370,PJMC,104528,de kalb,illinois
+IL,Douglas,G1700410,MISC,19630,douglas,illinois
+IL,DuPage,G1700430,PJMC,929368,du page,illinois
+IL,Edgar,G1700450,MISC,17566,edgar,illinois
+IL,Edwards,G1700470,MISC,6523,edwards,illinois
+IL,Effingham,G1700490,MISC,34386,effingham,illinois
+IL,Fayette,G1700510,MISC,21789,fayette,illinois
+IL,Ford,G1700530,MISC,13575,ford,illinois
+IL,Franklin,G1700550,MISC,39156,franklin,illinois
+IL,Fulton,G1700570,MISC,35536,fulton,illinois
+IL,Gallatin,G1700590,MISC,5212,gallatin,illinois
+IL,Greene,G1700610,MISC,13093,greene,illinois
+IL,Grundy,G1700630,MISC,50437,grundy,illinois
+IL,Hamilton,G1700650,MISC,8061,hamilton,illinois
+IL,Hancock,G1700670,MISC,18508,hancock,illinois
+IL,Hardin,G1700690,MISC,4024,hardin,illinois
+IL,Henderson,G1700710,MISC,6869,henderson,illinois
+IL,Henry,G1700730,MISC,49280,henry,illinois
+IL,Iroquois,G1700750,MISC,28334,iroquois,illinois
+IL,Jackson,G1700770,MISC,58870,jackson,illinois
+IL,Jasper,G1700790,MISC,9536,jasper,illinois
+IL,Jefferson,G1700810,MISC,38460,jefferson,illinois
+IL,Jersey,G1700830,MISC,22025,jersey,illinois
+IL,Jo Daviess,G1700850,MISW,21770,jo daviess,illinois
+IL,Johnson,G1700870,MISC,12902,johnson,illinois
+IL,Kane,G1700890,PJMC,531715,kane,illinois
+IL,Kankakee,G1700910,MISC,110008,kankakee,illinois
+IL,Kendall,G1700930,MISC,124695,kendall,illinois
+IL,Knox,G1700950,MISC,50938,knox,illinois
+IL,Lake,G1700970,PJMC,703047,lake,illinois
+IL,LaSalle,G1700990,MISC,110642,la salle,illinois
+IL,Lawrence,G1701010,MISC,16377,lawrence,illinois
+IL,Lee,G1701030,PJMC,34251,lee,illinois
+IL,Livingston,G1701050,MISC,36526,livingston,illinois
+IL,Logan,G1701070,MISC,29527,logan,illinois
+IL,Macon,G1701150,MISC,106550,macon,illinois
+IL,Macoupin,G1701170,MISC,45908,macoupin,illinois
+IL,Madison,G1701190,MISC,265759,madison,illinois
+IL,Marion,G1701210,MISC,38140,marion,illinois
+IL,Marshall,G1701230,MISC,11939,marshall,illinois
+IL,Mason,G1701250,MISC,13507,mason,illinois
+IL,Massac,G1701270,MISC,14658,massac,illinois
+IL,McDonough,G1701090,MISC,30996,mcdonough,illinois
+IL,McHenry,G1701110,PJMC,307004,mchenry,illinois
+IL,McLean,G1701130,MISC,172418,mclean,illinois
+IL,Menard,G1701290,MISC,12516,menard,illinois
+IL,Mercer,G1701310,MISC,15730,mercer,illinois
+IL,Monroe,G1701330,MISC,34068,monroe,illinois
+IL,Montgomery,G1701350,MISC,28952,montgomery,illinois
+IL,Morgan,G1701370,MISC,34277,morgan,illinois
+IL,Moultrie,G1701390,MISC,14827,moultrie,illinois
+IL,Ogle,G1701410,PJMC,51273,ogle,illinois
+IL,Peoria,G1701430,MISC,185006,peoria,illinois
+IL,Perry,G1701450,MISC,21357,perry,illinois
+IL,Piatt,G1701470,MISC,16560,piatt,illinois
+IL,Pike,G1701490,MISC,15950,pike,illinois
+IL,Pope,G1701510,MISC,4157,pope,illinois
+IL,Pulaski,G1701530,MISC,5619,pulaski,illinois
+IL,Putnam,G1701550,MISC,5611,putnam,illinois
+IL,Randolph,G1701570,MISC,32621,randolph,illinois
+IL,Richland,G1701590,MISC,15930,richland,illinois
+IL,Rock Island,G1701610,MISC,144784,rock island,illinois
+IL,Saline,G1701650,MISC,24307,saline,illinois
+IL,Sangamon,G1701670,MISC,197499,sangamon,illinois
+IL,Schuyler,G1701690,MISC,6923,schuyler,illinois
+IL,Scott,G1701710,MISC,5053,scott,illinois
+IL,Shelby,G1701730,MISC,21717,shelby,illinois
+IL,St. Clair,G1701630,MISC,262759,st clair,illinois
+IL,Stark,G1701750,MISC,5776,stark,illinois
+IL,Stephenson,G1701770,PJMC,45624,stephenson,illinois
+IL,Tazewell,G1701790,MISC,134385,tazewell,illinois
+IL,Union,G1701810,MISC,17212,union,illinois
+IL,Vermilion,G1701830,MISC,78111,vermilion,illinois
+IL,Wabash,G1701850,MISC,11492,wabash,illinois
+IL,Warren,G1701870,MISC,17378,warren,illinois
+IL,Washington,G1701890,MISC,14154,washington,illinois
+IL,Wayne,G1701910,MISC,16396,wayne,illinois
+IL,White,G1701930,MISC,14292,white,illinois
+IL,Whiteside,G1701950,PJMC,56536,whiteside,illinois
+IL,Will,G1701970,PJMC,689529,will,illinois
+IL,Williamson,G1701990,MISC,67560,williamson,illinois
+IL,Winnebago,G1702010,PJMC,285873,winnebago,illinois
+IL,Woodford,G1702030,MISC,39140,woodford,illinois
+IN,Adams,G1800010,PJMW,35232,adams,indiana
+IN,Allen,G1800030,PJMW,370404,allen,indiana
+IN,Bartholomew,G1800050,MISC,81402,bartholomew,indiana
+IN,Benton,G1800070,MISC,8650,benton,indiana
+IN,Blackford,G1800090,PJMW,12149,blackford,indiana
+IN,Boone,G1800110,MISC,64653,boone,indiana
+IN,Brown,G1800130,MISC,14912,brown,indiana
+IN,Carroll,G1800150,PJMW,19970,carroll,indiana
+IN,Cass,G1800170,MISC,37946,cass,indiana
+IN,Clark,G1800190,MISC,116031,clark,indiana
+IN,Clay,G1800210,MISC,26309,clay,indiana
+IN,Clinton,G1800230,MISC,32457,clinton,indiana
+IN,Crawford,G1800250,MISC,10539,crawford,indiana
+IN,Daviess,G1800270,MISC,32969,daviess,indiana
+IN,Dearborn,G1800290,MISC,49331,dearborn,indiana
+IN,Decatur,G1800310,MISC,26598,decatur,indiana
+IN,DeKalb,G1800330,PJMW,42746,de kalb,indiana
+IN,Delaware,G1800350,PJMW,115603,delaware,indiana
+IN,Dubois,G1800370,MISC,42552,dubois,indiana
+IN,Elkhart,G1800390,PJMW,203781,elkhart,indiana
+IN,Fayette,G1800410,MISC,23331,fayette,indiana
+IN,Floyd,G1800430,MISC,76990,floyd,indiana
+IN,Fountain,G1800450,MISC,16486,fountain,indiana
+IN,Franklin,G1800470,MISC,22715,franklin,indiana
+IN,Fulton,G1800490,MISC,20139,fulton,indiana
+IN,Gibson,G1800510,MISC,33703,gibson,indiana
+IN,Grant,G1800530,PJMW,66937,grant,indiana
+IN,Greene,G1800550,MISC,32211,greene,indiana
+IN,Hamilton,G1800570,PJMW,316373,hamilton,indiana
+IN,Hancock,G1800590,MISC,73717,hancock,indiana
+IN,Harrison,G1800610,MISC,39826,harrison,indiana
+IN,Hendricks,G1800630,MISC,160610,hendricks,indiana
+IN,Henry,G1800650,PJMW,48521,henry,indiana
+IN,Howard,G1800670,PJMW,82568,howard,indiana
+IN,Huntington,G1800690,PJMW,36400,huntington,indiana
+IN,Jackson,G1800710,MISC,44013,jackson,indiana
+IN,Jasper,G1800730,MISC,33433,jasper,indiana
+IN,Jay,G1800750,PJMW,21046,jay,indiana
+IN,Jefferson,G1800770,MISC,32418,jefferson,indiana
+IN,Jennings,G1800790,MISC,27758,jennings,indiana
+IN,Johnson,G1800810,MISC,151982,johnson,indiana
+IN,Knox,G1800830,MISC,37744,knox,indiana
+IN,Kosciusko,G1800850,PJMW,79092,kosciusko,indiana
+IN,LaGrange,G1800870,PJMW,39110,lagrange,indiana
+IN,Lake,G1800890,MISC,485846,lake,indiana
+IN,LaPorte,G1800910,PJMW,110015,la porte,indiana
+IN,Lawrence,G1800930,MISC,45518,lawrence,indiana
+IN,Madison,G1800950,PJMW,129296,madison,indiana
+IN,Marion,G1800970,MISC,941229,marion,indiana
+IN,Marshall,G1800990,PJMW,46556,marshall,indiana
+IN,Martin,G1801010,MISC,10171,martin,indiana
+IN,Miami,G1801030,PJMW,35883,miami,indiana
+IN,Monroe,G1801050,MISC,145496,monroe,indiana
+IN,Montgomery,G1801070,PJMW,38074,montgomery,indiana
+IN,Morgan,G1801090,MISC,69698,morgan,indiana
+IN,Newton,G1801110,MISC,13924,newton,indiana
+IN,Noble,G1801130,PJMW,47638,noble,indiana
+IN,Ohio,G1801150,MISC,5932,ohio,indiana
+IN,Orange,G1801170,MISC,19335,orange,indiana
+IN,Owen,G1801190,MISC,20840,owen,indiana
+IN,Parke,G1801210,MISC,16800,parke,indiana
+IN,Perry,G1801230,MISC,18966,perry,indiana
+IN,Pike,G1801250,MISC,12431,pike,indiana
+IN,Porter,G1801270,MISC,167791,porter,indiana
+IN,Posey,G1801290,MISC,25476,posey,indiana
+IN,Pulaski,G1801310,MISC,12660,pulaski,indiana
+IN,Putnam,G1801330,MISC,37436,putnam,indiana
+IN,Randolph,G1801350,PJMW,25082,randolph,indiana
+IN,Ripley,G1801370,MISC,28846,ripley,indiana
+IN,Rush,G1801390,MISC,16649,rush,indiana
+IN,Scott,G1801430,MISC,23730,scott,indiana
+IN,Shelby,G1801450,MISC,44324,shelby,indiana
+IN,Spencer,G1801470,MISC,20648,spencer,indiana
+IN,St. Joseph,G1801410,PJMW,269141,st joseph,indiana
+IN,Starke,G1801490,MISC,23009,starke,indiana
+IN,Steuben,G1801510,PJMW,34116,steuben,indiana
+IN,Sullivan,G1801530,MISC,20802,sullivan,indiana
+IN,Switzerland,G1801550,MISC,10527,switzerland,indiana
+IN,Tippecanoe,G1801570,MISC,188059,tippecanoe,indiana
+IN,Tipton,G1801590,PJMW,15182,tipton,indiana
+IN,Union,G1801610,MISC,7212,union,indiana
+IN,Vanderburgh,G1801630,MISC,181721,vanderburgh,indiana
+IN,Vermillion,G1801650,MISC,15645,vermillion,indiana
+IN,Vigo,G1801670,MISC,107931,vigo,indiana
+IN,Wabash,G1801690,PJMW,31762,wabash,indiana
+IN,Warren,G1801710,MISC,8166,warren,indiana
+IN,Warrick,G1801730,MISC,62498,warrick,indiana
+IN,Washington,G1801750,MISC,27670,washington,indiana
+IN,Wayne,G1801770,MISC,66568,wayne,indiana
+IN,Wells,G1801790,PJMW,27949,wells,indiana
+IN,White,G1801810,MISC,23999,white,indiana
+IN,Whitley,G1801830,PJMW,33449,whitley,indiana
+KS,Allen,G2000010,SPPC,12714,allen,kansas
+KS,Anderson,G2000030,SPPC,7827,anderson,kansas
+KS,Atchison,G2000050,SPPC,16380,atchison,kansas
+KS,Barber,G2000070,SPPC,4688,barber,kansas
+KS,Barton,G2000090,SPPC,26775,barton,kansas
+KS,Bourbon,G2000110,SPPC,14617,bourbon,kansas
+KS,Brown,G2000130,SPPC,9684,brown,kansas
+KS,Butler,G2000150,SPPC,67025,butler,kansas
+KS,Chase,G2000170,SPPC,2669,chase,kansas
+KS,Chautauqua,G2000190,SPPC,3374,chautauqua,kansas
+KS,Cherokee,G2000210,SPPC,20246,cherokee,kansas
+KS,Cheyenne,G2000230,SPPC,2661,cheyenne,kansas
+KS,Clark,G2000250,SPPC,2072,clark,kansas
+KS,Clay,G2000270,SPPC,8143,clay,kansas
+KS,Cloud,G2000290,SPPC,9150,cloud,kansas
+KS,Coffey,G2000310,SPPC,8433,coffey,kansas
+KS,Comanche,G2000330,SPPC,1862,comanche,kansas
+KS,Cowley,G2000350,SPPC,35753,cowley,kansas
+KS,Crawford,G2000370,SPPC,39164,crawford,kansas
+KS,Decatur,G2000390,SPPC,2832,decatur,kansas
+KS,Dickinson,G2000410,SPPC,19064,dickinson,kansas
+KS,Doniphan,G2000430,SPPC,7664,doniphan,kansas
+KS,Douglas,G2000450,SPPC,119440,douglas,kansas
+KS,Edwards,G2000470,SPPC,2938,edwards,kansas
+KS,Elk,G2000490,SPPC,2547,elk,kansas
+KS,Ellis,G2000510,SPPC,28893,ellis,kansas
+KS,Ellsworth,G2000530,SPPC,6328,ellsworth,kansas
+KS,Finney,G2000550,SPPC,36722,finney,kansas
+KS,Ford,G2000570,SPPC,33971,ford,kansas
+KS,Franklin,G2000590,SPPC,25560,franklin,kansas
+KS,Geary,G2000610,SPPC,35586,geary,kansas
+KS,Gove,G2000630,SPPC,2589,gove,kansas
+KS,Graham,G2000650,SPPC,2564,graham,kansas
+KS,Grant,G2000670,SPPC,7646,grant,kansas
+KS,Gray,G2000690,SPPC,6034,gray,kansas
+KS,Greeley,G2000710,SPPC,1296,greeley,kansas
+KS,Greenwood,G2000730,SPPC,6151,greenwood,kansas
+KS,Hamilton,G2000750,SPPC,2536,hamilton,kansas
+KS,Harper,G2000770,SPPC,5685,harper,kansas
+KS,Harvey,G2000790,SPPC,34913,harvey,kansas
+KS,Haskell,G2000810,SPPC,4006,haskell,kansas
+KS,Hodgeman,G2000830,SPPC,1870,hodgeman,kansas
+KS,Jackson,G2000850,SPPC,13291,jackson,kansas
+KS,Jefferson,G2000870,SPPC,18897,jefferson,kansas
+KS,Jewell,G2000890,SPPC,2901,jewell,kansas
+KS,Johnson,G2000910,SPPC,584451,johnson,kansas
+KS,Kearny,G2000930,SPPC,3917,kearny,kansas
+KS,Kingman,G2000950,SPPC,7467,kingman,kansas
+KS,Kiowa,G2000970,SPPC,2483,kiowa,kansas
+KS,Labette,G2000990,SPPC,20444,labette,kansas
+KS,Lane,G2001010,SPPC,1636,lane,kansas
+KS,Leavenworth,G2001030,SPPC,80204,leavenworth,kansas
+KS,Lincoln,G2001050,SPPC,3073,lincoln,kansas
+KS,Linn,G2001070,SPPC,9558,linn,kansas
+KS,Logan,G2001090,SPPC,2831,logan,kansas
+KS,Lyon,G2001110,SPPC,33510,lyon,kansas
+KS,Marion,G2001150,SPPC,12112,marion,kansas
+KS,Marshall,G2001170,SPPC,9836,marshall,kansas
+KS,McPherson,G2001130,SPPC,28804,mcpherson,kansas
+KS,Meade,G2001190,SPPC,4216,meade,kansas
+KS,Miami,G2001210,SPPC,32964,miami,kansas
+KS,Mitchell,G2001230,SPPC,6243,mitchell,kansas
+KS,Montgomery,G2001250,SPPC,32746,montgomery,kansas
+KS,Morris,G2001270,SPPC,5573,morris,kansas
+KS,Morton,G2001290,SPPC,2848,morton,kansas
+KS,Nemaha,G2001310,SPPC,10241,nemaha,kansas
+KS,Neosho,G2001330,SPPC,16146,neosho,kansas
+KS,Ness,G2001350,SPPC,2962,ness,kansas
+KS,Norton,G2001370,SPPC,5493,norton,kansas
+KS,Osage,G2001390,SPPC,15843,osage,kansas
+KS,Osborne,G2001410,SPPC,3642,osborne,kansas
+KS,Ottawa,G2001430,SPPC,5920,ottawa,kansas
+KS,Pawnee,G2001450,SPPC,6743,pawnee,kansas
+KS,Phillips,G2001470,SPPC,5428,phillips,kansas
+KS,Pottawatomie,G2001490,SPPC,23661,pottawatomie,kansas
+KS,Pratt,G2001510,SPPC,9584,pratt,kansas
+KS,Rawlins,G2001530,SPPC,2549,rawlins,kansas
+KS,Reno,G2001550,SPPC,63220,reno,kansas
+KS,Republic,G2001570,SPPC,4699,republic,kansas
+KS,Rice,G2001590,SPPC,9831,rice,kansas
+KS,Riley,G2001610,SPPC,73343,riley,kansas
+KS,Rooks,G2001630,SPPC,5076,rooks,kansas
+KS,Rush,G2001650,SPPC,3058,rush,kansas
+KS,Russell,G2001670,SPPC,6988,russell,kansas
+KS,Saline,G2001690,SPPC,55142,saline,kansas
+KS,Scott,G2001710,SPPC,5032,scott,kansas
+KS,Sedgwick,G2001730,SPPC,511995,sedgwick,kansas
+KS,Seward,G2001750,SPPC,22709,seward,kansas
+KS,Shawnee,G2001770,SPPC,178146,shawnee,kansas
+KS,Sheridan,G2001790,SPPC,2509,sheridan,kansas
+KS,Sherman,G2001810,SPPC,5965,sherman,kansas
+KS,Smith,G2001830,SPPC,3632,smith,kansas
+KS,Stafford,G2001850,SPPC,4208,stafford,kansas
+KS,Stanton,G2001870,SPPC,2062,stanton,kansas
+KS,Stevens,G2001890,SPPC,5584,stevens,kansas
+KS,Sumner,G2001910,SPPC,23272,sumner,kansas
+KS,Thomas,G2001930,SPPC,7892,thomas,kansas
+KS,Trego,G2001950,SPPC,2872,trego,kansas
+KS,Wabaunsee,G2001970,SPPC,6891,wabaunsee,kansas
+KS,Wallace,G2001990,SPPC,1497,wallace,kansas
+KS,Washington,G2002010,SPPC,5546,washington,kansas
+KS,Wichita,G2002030,SPPC,2112,wichita,kansas
+KS,Wilson,G2002050,SPPC,8723,wilson,kansas
+KS,Woodson,G2002070,SPPC,3165,woodson,kansas
+KS,Wyandotte,G2002090,SPPC,163831,wyandotte,kansas
+KY,Adair,G2100010,SRCE,19280,adair,kentucky
+KY,Allen,G2100030,SRCE,20631,allen,kentucky
+KY,Anderson,G2100050,SRCE,22158,anderson,kentucky
+KY,Ballard,G2100070,SRCE,8054,ballard,kentucky
+KY,Barren,G2100090,SRCE,43993,barren,kentucky
+KY,Bath,G2100110,SRCE,12327,bath,kentucky
+KY,Bell,G2100130,SRCE,27117,bell,kentucky
+KY,Boone,G2100150,SRCE,128536,boone,kentucky
+KY,Bourbon,G2100170,SRCE,20030,bourbon,kentucky
+KY,Boyd,G2100190,PJMW,48132,boyd,kentucky
+KY,Boyle,G2100210,SRCE,30018,boyle,kentucky
+KY,Bracken,G2100230,SRCE,8400,bracken,kentucky
+KY,Breathitt,G2100250,SRCE,13284,breathitt,kentucky
+KY,Breckinridge,G2100270,SRCE,19961,breckinridge,kentucky
+KY,Bullitt,G2100290,SRCE,79151,bullitt,kentucky
+KY,Butler,G2100310,SRCE,12845,butler,kentucky
+KY,Caldwell,G2100330,SRCE,12568,caldwell,kentucky
+KY,Calloway,G2100350,SRCE,38437,calloway,kentucky
+KY,Campbell,G2100370,PJMW,92211,campbell,kentucky
+KY,Carlisle,G2100390,SRCE,4855,carlisle,kentucky
+KY,Carroll,G2100410,SRCE,10679,carroll,kentucky
+KY,Carter,G2100430,SRCE,27046,carter,kentucky
+KY,Casey,G2100450,SRCE,15815,casey,kentucky
+KY,Christian,G2100470,SRCE,72351,christian,kentucky
+KY,Clark,G2100490,SRCE,35819,clark,kentucky
+KY,Clay,G2100510,SRCE,20766,clay,kentucky
+KY,Clinton,G2100530,SRCE,10177,clinton,kentucky
+KY,Crittenden,G2100550,SRCE,9188,crittenden,kentucky
+KY,Cumberland,G2100570,SRCE,6738,cumberland,kentucky
+KY,Daviess,G2100590,SRCE,99674,daviess,kentucky
+KY,Edmonson,G2100610,SRCE,12114,edmonson,kentucky
+KY,Elliott,G2100630,SRCE,7588,elliott,kentucky
+KY,Estill,G2100650,SRCE,14307,estill,kentucky
+KY,Fayette,G2100670,SRCE,318449,fayette,kentucky
+KY,Fleming,G2100690,SRCE,14507,fleming,kentucky
+KY,Floyd,G2100710,SRCE,37110,floyd,kentucky
+KY,Franklin,G2100730,SRCE,50560,franklin,kentucky
+KY,Fulton,G2100750,SRCE,6179,fulton,kentucky
+KY,Gallatin,G2100770,SRCE,8609,gallatin,kentucky
+KY,Garrard,G2100790,SRCE,17292,garrard,kentucky
+KY,Grant,G2100810,SRCE,24923,grant,kentucky
+KY,Graves,G2100830,SRCE,37182,graves,kentucky
+KY,Grayson,G2100850,SRCE,26184,grayson,kentucky
+KY,Green,G2100870,SRCE,11060,green,kentucky
+KY,Greenup,G2100890,SRCE,35893,greenup,kentucky
+KY,Hancock,G2100910,SRCE,8810,hancock,kentucky
+KY,Hardin,G2100930,SRCE,107316,hardin,kentucky
+KY,Harlan,G2100950,SRCE,27168,harlan,kentucky
+KY,Harrison,G2100970,SRCE,18646,harrison,kentucky
+KY,Hart,G2100990,SRCE,18627,hart,kentucky
+KY,Henderson,G2101010,SRCE,46253,henderson,kentucky
+KY,Henry,G2101030,SRCE,15818,henry,kentucky
+KY,Hickman,G2101050,SRCE,4627,hickman,kentucky
+KY,Hopkins,G2101070,SRCE,45904,hopkins,kentucky
+KY,Jackson,G2101090,SRCE,13368,jackson,kentucky
+KY,Jefferson,G2101110,SRCE,765352,jefferson,kentucky
+KY,Jessamine,G2101130,SRCE,52357,jessamine,kentucky
+KY,Johnson,G2101150,PJMW,22978,johnson,kentucky
+KY,Kenton,G2101170,PJMW,164945,kenton,kentucky
+KY,Knott,G2101190,PJMW,15544,knott,kentucky
+KY,Knox,G2101210,SRCE,31687,knox,kentucky
+KY,Larue,G2101230,SRCE,14096,larue,kentucky
+KY,Laurel,G2101250,SRCE,60250,laurel,kentucky
+KY,Lawrence,G2101270,PJMW,15863,lawrence,kentucky
+KY,Lee,G2101290,SRCE,6580,lee,kentucky
+KY,Leslie,G2101310,SRCE,10538,leslie,kentucky
+KY,Letcher,G2101330,SRCE,22773,letcher,kentucky
+KY,Lewis,G2101350,SRCE,13442,lewis,kentucky
+KY,Lincoln,G2101370,SRCE,24372,lincoln,kentucky
+KY,Livingston,G2101390,SRCE,9269,livingston,kentucky
+KY,Logan,G2101410,SRCE,26593,logan,kentucky
+KY,Lyon,G2101430,SRCE,8069,lyon,kentucky
+KY,Madison,G2101510,SRCE,89547,madison,kentucky
+KY,Magoffin,G2101530,SRCE,12684,magoffin,kentucky
+KY,Marion,G2101550,SRCE,19205,marion,kentucky
+KY,Marshall,G2101570,SRCE,31365,marshall,kentucky
+KY,Martin,G2101590,PJMW,12002,martin,kentucky
+KY,Mason,G2101610,SRCE,17190,mason,kentucky
+KY,McCracken,G2101450,SRCE,65162,mccracken,kentucky
+KY,McCreary,G2101470,SRCE,17511,mccreary,kentucky
+KY,McLean,G2101490,SRCE,9475,mclean,kentucky
+KY,Meade,G2101630,SRCE,28126,meade,kentucky
+KY,Menifee,G2101650,SRCE,6408,menifee,kentucky
+KY,Mercer,G2101670,SRCE,21477,mercer,kentucky
+KY,Metcalfe,G2101690,SRCE,10018,metcalfe,kentucky
+KY,Monroe,G2101710,SRCE,10588,monroe,kentucky
+KY,Montgomery,G2101730,SRCE,27771,montgomery,kentucky
+KY,Morgan,G2101750,SRCE,13298,morgan,kentucky
+KY,Muhlenberg,G2101770,SRCE,31028,muhlenberg,kentucky
+KY,Nelson,G2101790,SRCE,45559,nelson,kentucky
+KY,Nicholas,G2101810,SRCE,7084,nicholas,kentucky
+KY,Ohio,G2101830,SRCE,24378,ohio,kentucky
+KY,Oldham,G2101850,SRCE,65560,oldham,kentucky
+KY,Owen,G2101870,SRCE,10642,owen,kentucky
+KY,Owsley,G2101890,SRCE,4491,owsley,kentucky
+KY,Pendleton,G2101910,SRCE,14560,pendleton,kentucky
+KY,Perry,G2101930,SRCE,27343,perry,kentucky
+KY,Pike,G2101950,PJMW,60555,pike,kentucky
+KY,Powell,G2101970,SRCE,12308,powell,kentucky
+KY,Pulaski,G2101990,SRCE,63956,pulaski,kentucky
+KY,Robertson,G2102010,SRCE,2155,robertson,kentucky
+KY,Rockcastle,G2102030,SRCE,16850,rockcastle,kentucky
+KY,Rowan,G2102050,SRCE,24451,rowan,kentucky
+KY,Russell,G2102070,SRCE,17722,russell,kentucky
+KY,Scott,G2102090,SRCE,53972,scott,kentucky
+KY,Shelby,G2102110,SRCE,46408,shelby,kentucky
+KY,Simpson,G2102130,SRCE,18083,simpson,kentucky
+KY,Spencer,G2102150,SRCE,18274,spencer,kentucky
+KY,Taylor,G2102170,SRCE,25397,taylor,kentucky
+KY,Todd,G2102190,SRCE,12295,todd,kentucky
+KY,Trigg,G2102210,SRCE,14264,trigg,kentucky
+KY,Trimble,G2102230,SRCE,8620,trimble,kentucky
+KY,Union,G2102250,SRCE,14880,union,kentucky
+KY,Warren,G2102270,SRCE,125532,warren,kentucky
+KY,Washington,G2102290,SRCE,12189,washington,kentucky
+KY,Wayne,G2102310,SRCE,20453,wayne,kentucky
+KY,Webster,G2102330,SRCE,13316,webster,kentucky
+KY,Whitley,G2102350,SRCE,36096,whitley,kentucky
+KY,Wolfe,G2102370,SRCE,7159,wolfe,kentucky
+KY,Woodford,G2102390,SRCE,26124,woodford,kentucky
+LA,Acadia,G2200010,MISS,62645,acadia,louisiana
+LA,Allen,G2200030,SPPS,25684,allen,louisiana
+LA,Ascension,G2200050,MISS,121587,ascension,louisiana
+LA,Assumption,G2200070,MISS,22695,assumption,louisiana
+LA,Avoyelles,G2200090,SPPS,41117,avoyelles,louisiana
+LA,Beauregard,G2200110,SPPS,36927,beauregard,louisiana
+LA,Bienville,G2200130,SPPS,13865,bienville,louisiana
+LA,Bossier,G2200150,SPPS,126057,bossier,louisiana
+LA,Caddo,G2200170,SPPS,248851,caddo,louisiana
+LA,Calcasieu,G2200190,MISS,200601,calcasieu,louisiana
+LA,Caldwell,G2200210,MISS,10087,caldwell,louisiana
+LA,Cameron,G2200230,MISS,6882,cameron,louisiana
+LA,Catahoula,G2200250,MISS,9921,catahoula,louisiana
+LA,Claiborne,G2200270,MISS,16132,claiborne,louisiana
+LA,Concordia,G2200290,MISS,19920,concordia,louisiana
+LA,De Soto,G2200310,SPPS,27149,de soto,louisiana
+LA,East Baton Rouge,G2200330,MISS,447037,east baton rouge,louisiana
+LA,East Carroll,G2200350,MISS,7271,east carroll,louisiana
+LA,East Feliciana,G2200370,MISS,19683,east feliciana,louisiana
+LA,Evangeline,G2200390,SPPS,33709,evangeline,louisiana
+LA,Franklin,G2200410,MISS,20330,franklin,louisiana
+LA,Grant,G2200430,SPPS,22365,grant,louisiana
+LA,Iberia,G2200450,MISS,73273,iberia,louisiana
+LA,Iberville,G2200470,MISS,32920,iberville,louisiana
+LA,Jackson,G2200490,SPPS,15808,jackson,louisiana
+LA,Jefferson,G2200510,MISS,436523,jefferson,louisiana
+LA,Jefferson Davis,G2200530,MISS,31413,jefferson davis,louisiana
+LA,Lafayette,G2200550,MISS,241398,lafayette,louisiana
+LA,Lafourche,G2200570,MISS,98305,lafourche,louisiana
+LA,LaSalle,G2200590,SPPS,15052,la salle,louisiana
+LA,Lincoln,G2200610,MISS,47745,lincoln,louisiana
+LA,Livingston,G2200630,MISS,140138,livingston,louisiana
+LA,Madison,G2200650,MISS,11528,madison,louisiana
+LA,Morehouse,G2200670,MISS,26071,morehouse,louisiana
+LA,Natchitoches,G2200690,SPPS,39162,natchitoches,louisiana
+LA,Orleans,G2200710,MISS,391495,orleans,louisiana
+LA,Ouachita,G2200730,MISS,156983,ouachita,louisiana
+LA,Plaquemines,G2200750,MISS,23464,plaquemines,louisiana
+LA,Pointe Coupee,G2200770,MISS,22159,pointe coupee,louisiana
+LA,Rapides,G2200790,SPPS,132424,rapides,louisiana
+LA,Red River,G2200810,SPPS,8550,red river,louisiana
+LA,Richland,G2200830,MISS,20430,richland,louisiana
+LA,Sabine,G2200850,SPPS,23977,sabine,louisiana
+LA,St. Bernard,G2200870,MISS,45688,st bernard,louisiana
+LA,St. Charles,G2200890,MISS,52923,st charles,louisiana
+LA,St. Helena,G2200910,MISS,10512,st helena,louisiana
+LA,St. James,G2200930,MISS,21557,st james,louisiana
+LA,St. John the Baptist,G2200950,MISS,43631,st john the baptist,louisiana
+LA,St. Landry,G2200970,MISS,83883,st landry,louisiana
+LA,St. Martin,G2200990,MISS,54007,st martin,louisiana
+LA,St. Mary,G2201010,MISS,52093,st mary,louisiana
+LA,St. Tammany,G2201030,MISS,253602,st tammany,louisiana
+LA,Tangipahoa,G2201050,MISS,130710,tangipahoa,louisiana
+LA,Tensas,G2201070,MISS,4597,tensas,louisiana
+LA,Terrebonne,G2201090,MISS,113220,terrebonne,louisiana
+LA,Union,G2201110,MISS,22487,union,louisiana
+LA,Vermilion,G2201130,MISS,60205,vermilion,louisiana
+LA,Vernon,G2201150,SPPS,50569,vernon,louisiana
+LA,Washington,G2201170,MISS,46310,washington,louisiana
+LA,Webster,G2201190,SPPS,39710,webster,louisiana
+LA,West Baton Rouge,G2201210,MISS,25795,west baton rouge,louisiana
+LA,West Carroll,G2201230,MISS,11114,west carroll,louisiana
+LA,West Feliciana,G2201250,MISS,15344,west feliciana,louisiana
+LA,Winn,G2201270,SPPS,14376,winn,louisiana
+MA,Barnstable,G2500010,ISNE,214276,barnstable,massachusetts
+MA,Berkshire,G2500030,ISNE,126903,berkshire,massachusetts
+MA,Bristol,G2500050,ISNE,558324,bristol,massachusetts
+MA,Dukes,G2500070,ISNE,17246,dukes,massachusetts
+MA,Essex,G2500090,ISNE,779018,essex,massachusetts
+MA,Franklin,G2500110,ISNE,70382,franklin,massachusetts
+MA,Hampden,G2500130,ISNE,468467,hampden,massachusetts
+MA,Hampshire,G2500150,ISNE,161816,hampshire,massachusetts
+MA,Middlesex,G2500170,ISNE,1589774,middlesex,massachusetts
+MA,Nantucket,G2500190,ISNE,11008,nantucket,massachusetts
+MA,Norfolk,G2500210,ISNE,697181,norfolk,massachusetts
+MA,Plymouth,G2500230,ISNE,513565,plymouth,massachusetts
+MA,Suffolk,G2500250,ISNE,784230,suffolk,massachusetts
+MA,Worcester,G2500270,ISNE,819589,worcester,massachusetts
+MD,Allegany,G2400010,PJMW,72130,allegany,maryland
+MD,Anne Arundel,G2400030,PJME,568346,anne arundel,maryland
+MD,Baltimore,G2400050,PJME,831026,baltimore,maryland
+MD,Baltimore City,G2405100,PJME,614664,baltimore city,maryland
+MD,Calvert,G2400090,PJME,91251,calvert,maryland
+MD,Caroline,G2400110,PJME,32850,caroline,maryland
+MD,Carroll,G2400130,PJME,167656,carroll,maryland
+MD,Cecil,G2400150,PJME,102603,cecil,maryland
+MD,Charles,G2400170,PJME,157705,charles,maryland
+MD,Dorchester,G2400190,PJME,32258,dorchester,maryland
+MD,Frederick,G2400210,PJMW,247591,frederick,maryland
+MD,Garrett,G2400230,PJMW,29425,garrett,maryland
+MD,Harford,G2400250,PJME,251032,harford,maryland
+MD,Howard,G2400270,PJME,317233,howard,maryland
+MD,Kent,G2400290,PJME,19730,kent,maryland
+MD,Montgomery,G2400310,PJMW,1043863,montgomery,maryland
+MD,Prince George's,G2400330,PJME,908049,prince georges,maryland
+MD,Queen Anne's,G2400350,PJME,48929,queen annes,maryland
+MD,Somerset,G2400390,PJME,25928,somerset,maryland
+MD,St. Mary's,G2400370,PJME,112587,st marys,maryland
+MD,Talbot,G2400410,PJME,37278,talbot,maryland
+MD,Washington,G2400430,PJMW,150292,washington,maryland
+MD,Wicomico,G2400450,PJME,102577,wicomico,maryland
+MD,Worcester,G2400470,PJME,51444,worcester,maryland
+ME,Androscoggin,G2300010,ISNE,107319,androscoggin,maine
+ME,Aroostook,G2300030,ISNE,67959,aroostook,maine
+ME,Cumberland,G2300050,ISNE,292041,cumberland,maine
+ME,Franklin,G2300070,ISNE,30001,franklin,maine
+ME,Hancock,G2300090,ISNE,54419,hancock,maine
+ME,Kennebec,G2300110,ISNE,120569,kennebec,maine
+ME,Knox,G2300130,ISNE,39744,knox,maine
+ME,Lincoln,G2300150,ISNE,34216,lincoln,maine
+ME,Oxford,G2300170,ISNE,57217,oxford,maine
+ME,Penobscot,G2300190,ISNE,151806,penobscot,maine
+ME,Piscataquis,G2300210,ISNE,16843,piscataquis,maine
+ME,Sagadahoc,G2300230,ISNE,35273,sagadahoc,maine
+ME,Somerset,G2300250,ISNE,50915,somerset,maine
+ME,Waldo,G2300270,ISNE,39364,waldo,maine
+ME,Washington,G2300290,ISNE,31450,washington,maine
+ME,York,G2300310,ISNE,202343,york,maine
+MI,Alcona,G2600010,MISE,10352,alcona,michigan
+MI,Alger,G2600030,MISW,9219,alger,michigan
+MI,Allegan,G2600050,PJMW,115548,allegan,michigan
+MI,Alpena,G2600070,MISE,28704,alpena,michigan
+MI,Antrim,G2600090,MISE,23144,antrim,michigan
+MI,Arenac,G2600110,MISE,15122,arenac,michigan
+MI,Baraga,G2600130,MISW,8503,baraga,michigan
+MI,Barry,G2600150,MISE,59702,barry,michigan
+MI,Bay,G2600170,MISE,104747,bay,michigan
+MI,Benzie,G2600190,MISE,17572,benzie,michigan
+MI,Berrien,G2600210,PJMW,154010,berrien,michigan
+MI,Branch,G2600230,MISE,43427,branch,michigan
+MI,Calhoun,G2600250,MISE,134386,calhoun,michigan
+MI,Cass,G2600270,PJMW,51599,cass,michigan
+MI,Charlevoix,G2600290,MISE,26174,charlevoix,michigan
+MI,Cheboygan,G2600310,MISE,25401,cheboygan,michigan
+MI,Chippewa,G2600330,MISW,37724,chippewa,michigan
+MI,Clare,G2600350,MISE,30358,clare,michigan
+MI,Clinton,G2600370,MISE,77888,clinton,michigan
+MI,Crawford,G2600390,MISE,13744,crawford,michigan
+MI,Delta,G2600410,MISW,36202,delta,michigan
+MI,Dickinson,G2600430,MISW,25535,dickinson,michigan
+MI,Eaton,G2600450,MISE,109160,eaton,michigan
+MI,Emmet,G2600470,MISE,33182,emmet,michigan
+MI,Genesee,G2600490,MISE,408615,genesee,michigan
+MI,Gladwin,G2600510,MISE,25122,gladwin,michigan
+MI,Gogebic,G2600530,MISW,15243,gogebic,michigan
+MI,Grand Traverse,G2600550,MISE,92084,grand traverse,michigan
+MI,Gratiot,G2600570,MISE,41202,gratiot,michigan
+MI,Hillsdale,G2600590,MISE,45774,hillsdale,michigan
+MI,Houghton,G2600610,MISW,36555,houghton,michigan
+MI,Huron,G2600630,MISE,31481,huron,michigan
+MI,Ingham,G2600650,MISE,288051,ingham,michigan
+MI,Ionia,G2600670,MISE,64232,ionia,michigan
+MI,Iosco,G2600690,MISE,25327,iosco,michigan
+MI,Iron,G2600710,MISW,11195,iron,michigan
+MI,Isabella,G2600730,MISE,71282,isabella,michigan
+MI,Jackson,G2600750,MISE,158460,jackson,michigan
+MI,Kalamazoo,G2600770,PJMW,261654,kalamazoo,michigan
+MI,Kalkaska,G2600790,MISE,17263,kalkaska,michigan
+MI,Kent,G2600810,MISE,642173,kent,michigan
+MI,Keweenaw,G2600830,MISW,2199,keweenaw,michigan
+MI,Lake,G2600850,MISE,11496,lake,michigan
+MI,Lapeer,G2600870,MISE,88340,lapeer,michigan
+MI,Leelanau,G2600890,MISE,21765,leelanau,michigan
+MI,Lenawee,G2600910,MISE,98504,lenawee,michigan
+MI,Livingston,G2600930,MISE,188624,livingston,michigan
+MI,Luce,G2600950,MISW,6358,luce,michigan
+MI,Mackinac,G2600970,MISW,10820,mackinac,michigan
+MI,Macomb,G2600990,MISE,867730,macomb,michigan
+MI,Manistee,G2601010,MISE,24373,manistee,michigan
+MI,Marquette,G2601030,MISW,66435,marquette,michigan
+MI,Mason,G2601050,MISE,28876,mason,michigan
+MI,Mecosta,G2601070,MISE,43221,mecosta,michigan
+MI,Menominee,G2601090,MISW,23281,menominee,michigan
+MI,Midland,G2601110,MISE,83462,midland,michigan
+MI,Missaukee,G2601130,MISE,15102,missaukee,michigan
+MI,Monroe,G2601150,MISE,149208,monroe,michigan
+MI,Montcalm,G2601170,MISE,62974,montcalm,michigan
+MI,Montmorency,G2601190,MISE,9173,montmorency,michigan
+MI,Muskegon,G2601210,MISE,173408,muskegon,michigan
+MI,Newaygo,G2601230,MISE,47938,newaygo,michigan
+MI,Oakland,G2601250,MISE,1243970,oakland,michigan
+MI,Oceana,G2601270,MISE,26027,oceana,michigan
+MI,Ogemaw,G2601290,MISE,20904,ogemaw,michigan
+MI,Ontonagon,G2601310,MISW,5911,ontonagon,michigan
+MI,Osceola,G2601330,MISE,23110,osceola,michigan
+MI,Oscoda,G2601350,MISE,8264,oscoda,michigan
+MI,Otsego,G2601370,MISE,24470,otsego,michigan
+MI,Ottawa,G2601390,MISE,282250,ottawa,michigan
+MI,Presque Isle,G2601410,MISE,12762,presque isle,michigan
+MI,Roscommon,G2601430,MISE,23700,roscommon,michigan
+MI,Saginaw,G2601450,MISE,192326,saginaw,michigan
+MI,Sanilac,G2601510,MISE,41409,sanilac,michigan
+MI,Schoolcraft,G2601530,MISW,8001,schoolcraft,michigan
+MI,Shiawassee,G2601550,MISE,68554,shiawassee,michigan
+MI,St. Clair,G2601470,MISE,159587,st clair,michigan
+MI,St. Joseph,G2601490,PJMW,60853,st joseph,michigan
+MI,Tuscola,G2601570,MISE,53338,tuscola,michigan
+MI,Van Buren,G2601590,PJMW,75223,van buren,michigan
+MI,Washtenaw,G2601610,MISE,364709,washtenaw,michigan
+MI,Wayne,G2601630,MISE,1749366,wayne,michigan
+MI,Wexford,G2601650,MISE,33163,wexford,michigan
+MN,Aitkin,G2700010,MISW,15583,aitkin,minnesota
+MN,Anoka,G2700030,MISW,345957,anoka,minnesota
+MN,Becker,G2700050,MISW,33734,becker,minnesota
+MN,Beltrami,G2700070,MISW,46106,beltrami,minnesota
+MN,Benton,G2700090,MISW,39992,benton,minnesota
+MN,Big Stone,G2700110,MISW,5050,big stone,minnesota
+MN,Blue Earth,G2700130,MISW,66441,blue earth,minnesota
+MN,Brown,G2700150,MISW,25331,brown,minnesota
+MN,Carlton,G2700170,MISW,35738,carlton,minnesota
+MN,Carver,G2700190,MISW,100262,carver,minnesota
+MN,Cass,G2700210,MISW,28993,cass,minnesota
+MN,Chippewa,G2700230,SPPN,12133,chippewa,minnesota
+MN,Chisago,G2700250,MISW,54748,chisago,minnesota
+MN,Clay,G2700270,SPPN,62875,clay,minnesota
+MN,Clearwater,G2700290,MISW,8827,clearwater,minnesota
+MN,Cook,G2700310,MISW,5286,cook,minnesota
+MN,Cottonwood,G2700330,MISW,11470,cottonwood,minnesota
+MN,Crow Wing,G2700350,MISW,63940,crow wing,minnesota
+MN,Dakota,G2700370,MISW,417486,dakota,minnesota
+MN,Dodge,G2700390,MISW,20506,dodge,minnesota
+MN,Douglas,G2700410,MISW,37456,douglas,minnesota
+MN,Faribault,G2700430,MISW,13935,faribault,minnesota
+MN,Fillmore,G2700450,MISW,21003,fillmore,minnesota
+MN,Freeborn,G2700470,MISW,30446,freeborn,minnesota
+MN,Goodhue,G2700490,MISW,46676,goodhue,minnesota
+MN,Grant,G2700510,SPPN,5956,grant,minnesota
+MN,Hennepin,G2700530,MISW,1232483,hennepin,minnesota
+MN,Houston,G2700550,MISW,18814,houston,minnesota
+MN,Hubbard,G2700570,MISW,20718,hubbard,minnesota
+MN,Isanti,G2700590,MISW,39025,isanti,minnesota
+MN,Itasca,G2700610,MISW,45242,itasca,minnesota
+MN,Jackson,G2700630,MISW,9944,jackson,minnesota
+MN,Kanabec,G2700650,MISW,15830,kanabec,minnesota
+MN,Kandiyohi,G2700670,MISW,42495,kandiyohi,minnesota
+MN,Kittson,G2700690,MISW,4333,kittson,minnesota
+MN,Koochiching,G2700710,MISW,12628,koochiching,minnesota
+MN,Lac qui Parle,G2700730,MISW,6715,lac qui parle,minnesota
+MN,Lake,G2700750,MISW,10625,lake,minnesota
+MN,Lake of the Woods,G2700770,MISW,3814,lake of the woods,minnesota
+MN,Le Sueur,G2700790,MISW,27591,le sueur,minnesota
+MN,Lincoln,G2700810,SPPN,5783,lincoln,minnesota
+MN,Lyon,G2700830,SPPN,25699,lyon,minnesota
+MN,Mahnomen,G2700870,MISW,5465,mahnomen,minnesota
+MN,Marshall,G2700890,MISW,9324,marshall,minnesota
+MN,Martin,G2700910,MISW,19829,martin,minnesota
+MN,McLeod,G2700850,MISW,35842,mcleod,minnesota
+MN,Meeker,G2700930,MISW,23110,meeker,minnesota
+MN,Mille Lacs,G2700950,MISW,25866,mille lacs,minnesota
+MN,Morrison,G2700970,MISW,32821,morrison,minnesota
+MN,Mower,G2700990,MISW,39163,mower,minnesota
+MN,Murray,G2701010,SPPN,8329,murray,minnesota
+MN,Nicollet,G2701030,MISW,33575,nicollet,minnesota
+MN,Nobles,G2701050,MISW,21848,nobles,minnesota
+MN,Norman,G2701070,MISW,6579,norman,minnesota
+MN,Olmsted,G2701090,MISW,153102,olmsted,minnesota
+MN,Otter Tail,G2701110,SPPN,58085,otter tail,minnesota
+MN,Pennington,G2701130,MISW,14235,pennington,minnesota
+MN,Pine,G2701150,MISW,28874,pine,minnesota
+MN,Pipestone,G2701170,SPPN,9202,pipestone,minnesota
+MN,Polk,G2701190,SPPN,31660,polk,minnesota
+MN,Pope,G2701210,MISW,11049,pope,minnesota
+MN,Ramsey,G2701230,MISW,540649,ramsey,minnesota
+MN,Red Lake,G2701250,MISW,4007,red lake,minnesota
+MN,Redwood,G2701270,MISW,15263,redwood,minnesota
+MN,Renville,G2701290,MISW,14660,renville,minnesota
+MN,Rice,G2701310,MISW,65622,rice,minnesota
+MN,Rock,G2701330,MISW,9564,rock,minnesota
+MN,Roseau,G2701350,MISW,15626,roseau,minnesota
+MN,Scott,G2701390,MISW,143680,scott,minnesota
+MN,Sherburne,G2701410,MISW,93528,sherburne,minnesota
+MN,Sibley,G2701430,MISW,14827,sibley,minnesota
+MN,St. Louis,G2701370,MISW,199980,st louis,minnesota
+MN,Stearns,G2701450,MISW,155652,stearns,minnesota
+MN,Steele,G2701470,MISW,36805,steele,minnesota
+MN,Stevens,G2701490,SPPN,9693,stevens,minnesota
+MN,Swift,G2701510,SPPN,9419,swift,minnesota
+MN,Todd,G2701530,MISW,24233,todd,minnesota
+MN,Traverse,G2701550,SPPN,3356,traverse,minnesota
+MN,Wabasha,G2701570,MISW,21273,wabasha,minnesota
+MN,Wadena,G2701590,MISW,13761,wadena,minnesota
+MN,Waseca,G2701610,MISW,18911,waseca,minnesota
+MN,Washington,G2701630,MISW,253117,washington,minnesota
+MN,Watonwan,G2701650,MISW,10908,watonwan,minnesota
+MN,Wilkin,G2701670,SPPN,6358,wilkin,minnesota
+MN,Winona,G2701690,MISW,50948,winona,minnesota
+MN,Wright,G2701710,MISW,132550,wright,minnesota
+MN,Yellow Medicine,G2701730,SPPN,9935,yellow medicine,minnesota
+MO,Adair,G2900010,MISC,25359,adair,missouri
+MO,Andrew,G2900030,SPPC,17350,andrew,missouri
+MO,Atchison,G2900050,SPPC,5293,atchison,missouri
+MO,Audrain,G2900070,MISC,26021,audrain,missouri
+MO,Barry,G2900090,SPPC,35732,barry,missouri
+MO,Barton,G2900110,SPPC,11908,barton,missouri
+MO,Bates,G2900130,SPPC,16417,bates,missouri
+MO,Benton,G2900150,SPPC,18839,benton,missouri
+MO,Bollinger,G2900170,MISC,12052,bollinger,missouri
+MO,Boone,G2900190,MISC,176594,boone,missouri
+MO,Buchanan,G2900210,SPPC,88938,buchanan,missouri
+MO,Butler,G2900230,MISC,42739,butler,missouri
+MO,Caldwell,G2900250,SPPC,9062,caldwell,missouri
+MO,Callaway,G2900270,MISC,45078,callaway,missouri
+MO,Camden,G2900290,MISC,44497,camden,missouri
+MO,Cape Girardeau,G2900310,MISC,78913,cape girardeau,missouri
+MO,Carroll,G2900330,SPPC,8913,carroll,missouri
+MO,Carter,G2900350,MISC,6168,carter,missouri
+MO,Cass,G2900370,SPPC,102845,cass,missouri
+MO,Cedar,G2900390,SPPC,14016,cedar,missouri
+MO,Chariton,G2900410,MISC,7516,chariton,missouri
+MO,Christian,G2900430,SPPC,84401,christian,missouri
+MO,Clark,G2900450,MISC,6723,clark,missouri
+MO,Clay,G2900470,SPPC,239085,clay,missouri
+MO,Clinton,G2900490,SPPC,20610,clinton,missouri
+MO,Cole,G2900510,MISC,76631,cole,missouri
+MO,Cooper,G2900530,MISC,17712,cooper,missouri
+MO,Crawford,G2900550,MISC,24302,crawford,missouri
+MO,Dade,G2900570,SPPC,7631,dade,missouri
+MO,Dallas,G2900590,SPPC,16448,dallas,missouri
+MO,Daviess,G2900610,SPPC,8209,daviess,missouri
+MO,DeKalb,G2900630,SPPC,12613,de kalb,missouri
+MO,Dent,G2900650,MISC,15387,dent,missouri
+MO,Douglas,G2900670,SPPC,13358,douglas,missouri
+MO,Dunklin,G2900690,MISC,30535,dunklin,missouri
+MO,Franklin,G2900710,MISC,102838,franklin,missouri
+MO,Gasconade,G2900730,MISC,14808,gasconade,missouri
+MO,Gentry,G2900750,SPPC,6661,gentry,missouri
+MO,Greene,G2900770,SPPC,288690,greene,missouri
+MO,Grundy,G2900790,SPPC,10165,grundy,missouri
+MO,Harrison,G2900810,SPPC,8556,harrison,missouri
+MO,Henry,G2900830,SPPC,21594,henry,missouri
+MO,Hickory,G2900850,SPPC,9269,hickory,missouri
+MO,Holt,G2900870,SPPC,4448,holt,missouri
+MO,Howard,G2900890,MISC,10058,howard,missouri
+MO,Howell,G2900910,MISC,40210,howell,missouri
+MO,Iron,G2900930,MISC,10022,iron,missouri
+MO,Jackson,G2900950,SPPC,691801,jackson,missouri
+MO,Jasper,G2900970,SPPC,119111,jasper,missouri
+MO,Jefferson,G2900990,MISC,224226,jefferson,missouri
+MO,Johnson,G2901010,SPPC,53942,johnson,missouri
+MO,Knox,G2901030,MISC,3934,knox,missouri
+MO,Laclede,G2901050,MISC,35490,laclede,missouri
+MO,Lafayette,G2901070,SPPC,32618,lafayette,missouri
+MO,Lawrence,G2901090,SPPC,38381,lawrence,missouri
+MO,Lewis,G2901110,MISC,10134,lewis,missouri
+MO,Lincoln,G2901130,MISC,55267,lincoln,missouri
+MO,Linn,G2901150,MISC,12164,linn,missouri
+MO,Livingston,G2901170,SPPC,15235,livingston,missouri
+MO,Macon,G2901210,MISC,15170,macon,missouri
+MO,Madison,G2901230,MISC,12443,madison,missouri
+MO,Maries,G2901250,MISC,8858,maries,missouri
+MO,Marion,G2901270,MISC,28894,marion,missouri
+MO,McDonald,G2901190,SPPC,22620,mcdonald,missouri
+MO,Mercer,G2901290,SPPC,3699,mercer,missouri
+MO,Miller,G2901310,MISC,25206,miller,missouri
+MO,Mississippi,G2901330,MISC,13799,mississippi,missouri
+MO,Moniteau,G2901350,MISC,16018,moniteau,missouri
+MO,Monroe,G2901370,MISC,8558,monroe,missouri
+MO,Montgomery,G2901390,MISC,11620,montgomery,missouri
+MO,Morgan,G2901410,MISC,20213,morgan,missouri
+MO,New Madrid,G2901430,MISC,17915,new madrid,missouri
+MO,Newton,G2901450,SPPC,58694,newton,missouri
+MO,Nodaway,G2901470,SPPC,22670,nodaway,missouri
+MO,Oregon,G2901490,MISC,10789,oregon,missouri
+MO,Osage,G2901510,MISC,13664,osage,missouri
+MO,Ozark,G2901530,SPPC,9237,ozark,missouri
+MO,Pemiscot,G2901550,MISC,17073,pemiscot,missouri
+MO,Perry,G2901570,MISC,19285,perry,missouri
+MO,Pettis,G2901590,SPPC,42213,pettis,missouri
+MO,Phelps,G2901610,MISC,44608,phelps,missouri
+MO,Pike,G2901630,MISC,18438,pike,missouri
+MO,Platte,G2901650,SPPC,98309,platte,missouri
+MO,Polk,G2901670,SPPC,31285,polk,missouri
+MO,Pulaski,G2901690,MISC,52654,pulaski,missouri
+MO,Putnam,G2901710,MISC,4853,putnam,missouri
+MO,Ralls,G2901730,MISC,10224,ralls,missouri
+MO,Randolph,G2901750,MISC,24989,randolph,missouri
+MO,Ray,G2901770,SPPC,22754,ray,missouri
+MO,Reynolds,G2901790,MISC,6455,reynolds,missouri
+MO,Ripley,G2901810,MISC,13817,ripley,missouri
+MO,Saline,G2901950,SPPC,22980,saline,missouri
+MO,Schuyler,G2901970,MISC,4394,schuyler,missouri
+MO,Scotland,G2901990,MISC,4932,scotland,missouri
+MO,Scott,G2902010,MISC,38745,scott,missouri
+MO,Shannon,G2902030,MISC,8168,shannon,missouri
+MO,Shelby,G2902050,MISC,6082,shelby,missouri
+MO,St. Charles,G2901830,MISC,390918,st charles,missouri
+MO,St. Clair,G2901850,SPPC,9272,st clair,missouri
+MO,St. Francois,G2901870,MISC,66627,st francois,missouri
+MO,St. Louis,G2901890,MISC,998581,st louis,missouri
+MO,St. Louis City,G2905100,MISC,311404,st louis city,missouri
+MO,Ste. Genevieve,G2901860,MISC,18030,ste genevieve,missouri
+MO,Stoddard,G2902070,MISC,29588,stoddard,missouri
+MO,Stone,G2902090,SPPC,31047,stone,missouri
+MO,Sullivan,G2902110,MISC,6262,sullivan,missouri
+MO,Taney,G2902130,SPPC,54735,taney,missouri
+MO,Texas,G2902150,MISC,25775,texas,missouri
+MO,Vernon,G2902170,SPPC,20723,vernon,missouri
+MO,Warren,G2902190,MISC,33802,warren,missouri
+MO,Washington,G2902210,MISC,24839,washington,missouri
+MO,Wayne,G2902230,MISC,13139,wayne,missouri
+MO,Webster,G2902250,SPPC,38106,webster,missouri
+MO,Worth,G2902270,SPPC,2024,worth,missouri
+MO,Wright,G2902290,MISC,18286,wright,missouri
+MS,Adams,G2800010,MISS,31248,adams,mississippi
+MS,Alcorn,G2800030,SRCE,37304,alcorn,mississippi
+MS,Amite,G2800050,MISS,12458,amite,mississippi
+MS,Attala,G2800070,MISS,18934,attala,mississippi
+MS,Benton,G2800090,SRCE,8264,benton,mississippi
+MS,Bolivar,G2800110,MISS,32737,bolivar,mississippi
+MS,Calhoun,G2800130,MISS,14610,calhoun,mississippi
+MS,Carroll,G2800150,MISS,10255,carroll,mississippi
+MS,Chickasaw,G2800170,SRCE,17246,chickasaw,mississippi
+MS,Choctaw,G2800190,SRCE,8242,choctaw,mississippi
+MS,Claiborne,G2800210,MISS,9139,claiborne,mississippi
+MS,Clarke,G2800230,SRSE,15888,clarke,mississippi
+MS,Clay,G2800250,SRCE,19850,clay,mississippi
+MS,Coahoma,G2800270,MISS,23809,coahoma,mississippi
+MS,Copiah,G2800290,MISS,28482,copiah,mississippi
+MS,Covington,G2800310,SRSE,19569,covington,mississippi
+MS,DeSoto,G2800330,MISS,175611,de soto,mississippi
+MS,Forrest,G2800350,SRSE,75979,forrest,mississippi
+MS,Franklin,G2800370,MISS,7782,franklin,mississippi
+MS,George,G2800390,SRSE,23695,george,mississippi
+MS,Greene,G2800410,SRSE,13408,greene,mississippi
+MS,Grenada,G2800430,MISS,21275,grenada,mississippi
+MS,Hancock,G2800450,SRSE,46791,hancock,mississippi
+MS,Harrison,G2800470,SRSE,203234,harrison,mississippi
+MS,Hinds,G2800490,MISS,241229,hinds,mississippi
+MS,Holmes,G2800510,MISS,17999,holmes,mississippi
+MS,Humphreys,G2800530,MISS,8513,humphreys,mississippi
+MS,Issaquena,G2800550,MISS,1294,issaquena,mississippi
+MS,Itawamba,G2800570,SRCE,23529,itawamba,mississippi
+MS,Jackson,G2800590,SRSE,141241,jackson,mississippi
+MS,Jasper,G2800610,SRSE,16578,jasper,mississippi
+MS,Jefferson,G2800630,MISS,7297,jefferson,mississippi
+MS,Jefferson Davis,G2800650,MISS,11385,jefferson davis,mississippi
+MS,Jones,G2800670,SRSE,67953,jones,mississippi
+MS,Kemper,G2800690,SRSE,9896,kemper,mississippi
+MS,Lafayette,G2800710,SRCE,53796,lafayette,mississippi
+MS,Lamar,G2800730,SRSE,60914,lamar,mississippi
+MS,Lauderdale,G2800750,SRSE,77755,lauderdale,mississippi
+MS,Lawrence,G2800770,MISS,12749,lawrence,mississippi
+MS,Leake,G2800790,MISS,22620,leake,mississippi
+MS,Lee,G2800810,SRCE,85381,lee,mississippi
+MS,Leflore,G2800830,MISS,29856,leflore,mississippi
+MS,Lincoln,G2800850,MISS,34523,lincoln,mississippi
+MS,Lowndes,G2800870,SRCE,59602,lowndes,mississippi
+MS,Madison,G2800890,MISS,105114,madison,mississippi
+MS,Marion,G2800910,MISS,25251,marion,mississippi
+MS,Marshall,G2800930,MISS,35801,marshall,mississippi
+MS,Monroe,G2800950,SRCE,35873,monroe,mississippi
+MS,Montgomery,G2800970,MISS,10187,montgomery,mississippi
+MS,Neshoba,G2800990,SRSE,29403,neshoba,mississippi
+MS,Newton,G2801010,SRSE,21558,newton,mississippi
+MS,Noxubee,G2801030,SRCE,11038,noxubee,mississippi
+MS,Oktibbeha,G2801050,SRCE,49833,oktibbeha,mississippi
+MS,Panola,G2801070,MISS,34164,panola,mississippi
+MS,Pearl River,G2801090,SRSE,55310,pearl river,mississippi
+MS,Perry,G2801110,SRSE,12245,perry,mississippi
+MS,Pike,G2801130,MISS,39667,pike,mississippi
+MS,Pontotoc,G2801150,SRCE,31550,pontotoc,mississippi
+MS,Prentiss,G2801170,SRCE,25256,prentiss,mississippi
+MS,Quitman,G2801190,MISS,7349,quitman,mississippi
+MS,Rankin,G2801210,MISS,150228,rankin,mississippi
+MS,Scott,G2801230,MISS,28207,scott,mississippi
+MS,Sharkey,G2801250,MISS,4552,sharkey,mississippi
+MS,Simpson,G2801270,MISS,26912,simpson,mississippi
+MS,Smith,G2801290,SRSE,15909,smith,mississippi
+MS,Stone,G2801310,SRSE,18012,stone,mississippi
+MS,Sunflower,G2801330,MISS,26407,sunflower,mississippi
+MS,Tallahatchie,G2801350,MISS,14394,tallahatchie,mississippi
+MS,Tate,G2801370,MISS,28201,tate,mississippi
+MS,Tippah,G2801390,SRCE,22190,tippah,mississippi
+MS,Tishomingo,G2801410,SRCE,19491,tishomingo,mississippi
+MS,Tunica,G2801430,MISS,10234,tunica,mississippi
+MS,Union,G2801450,SRCE,28311,union,mississippi
+MS,Walthall,G2801470,MISS,14599,walthall,mississippi
+MS,Warren,G2801490,MISS,47140,warren,mississippi
+MS,Washington,G2801510,MISS,47231,washington,mississippi
+MS,Wayne,G2801530,SRSE,20480,wayne,mississippi
+MS,Webster,G2801550,MISS,9767,webster,mississippi
+MS,Wilkinson,G2801570,MISS,9047,wilkinson,mississippi
+MS,Winston,G2801590,SRCE,18160,winston,mississippi
+MS,Yalobusha,G2801610,MISS,12471,yalobusha,mississippi
+MS,Yazoo,G2801630,MISS,27264,yazoo,mississippi
+MT,Beaverhead,G3000010,NWPP,9401,beaverhead,montana
+MT,Big Horn,G3000030,NWPP,13343,big horn,montana
+MT,Blaine,G3000050,NWPP,6601,blaine,montana
+MT,Broadwater,G3000070,NWPP,5747,broadwater,montana
+MT,Carbon,G3000090,NWPP,10460,carbon,montana
+MT,Carter,G3000110,NWPP,1203,carter,montana
+MT,Cascade,G3000130,NWPP,81755,cascade,montana
+MT,Chouteau,G3000150,NWPP,5759,chouteau,montana
+MT,Custer,G3000170,NWPP,11924,custer,montana
+MT,Daniels,G3000190,MISW,1755,daniels,montana
+MT,Dawson,G3000210,SPPN,9327,dawson,montana
+MT,Deer Lodge,G3000230,NWPP,9085,deer lodge,montana
+MT,Fallon,G3000250,SPPN,3120,fallon,montana
+MT,Fergus,G3000270,NWPP,11413,fergus,montana
+MT,Flathead,G3000290,NWPP,98082,flathead,montana
+MT,Gallatin,G3000310,NWPP,104502,gallatin,montana
+MT,Garfield,G3000330,NWPP,1310,garfield,montana
+MT,Glacier,G3000350,NWPP,13694,glacier,montana
+MT,Golden Valley,G3000370,NWPP,831,golden valley,montana
+MT,Granite,G3000390,NWPP,3368,granite,montana
+MT,Hill,G3000410,NWPP,16542,hill,montana
+MT,Jefferson,G3000430,NWPP,11853,jefferson,montana
+MT,Judith BASN,G3000450,NWPP,1940,judith basin,montana
+MT,Lake,G3000470,NWPP,29758,lake,montana
+MT,Lewis and Clark,G3000490,NWPP,67282,lewis and clark,montana
+MT,Liberty,G3000510,NWPP,2409,liberty,montana
+MT,Lincoln,G3000530,NWPP,19259,lincoln,montana
+MT,Madison,G3000570,NWPP,7924,madison,montana
+MT,McCone,G3000550,MISW,1700,mccone,montana
+MT,Meagher,G3000590,NWPP,1827,meagher,montana
+MT,Mineral,G3000610,NWPP,4184,mineral,montana
+MT,Missoula,G3000630,NWPP,116130,missoula,montana
+MT,Musselshell,G3000650,NWPP,4589,musselshell,montana
+MT,Park,G3000670,NWPP,16114,park,montana
+MT,Petroleum,G3000690,NWPP,489,petroleum,montana
+MT,Phillips,G3000710,NWPP,4133,phillips,montana
+MT,Pondera,G3000730,NWPP,6084,pondera,montana
+MT,Powder River,G3000750,NWPP,1746,powder river,montana
+MT,Powell,G3000770,NWPP,6858,powell,montana
+MT,Prairie,G3000790,SPPN,1182,prairie,montana
+MT,Ravalli,G3000810,NWPP,42088,ravalli,montana
+MT,Richland,G3000830,SPPN,11482,richland,montana
+MT,Roosevelt,G3000850,SPPN,11305,roosevelt,montana
+MT,Rosebud,G3000870,NWPP,9287,rosebud,montana
+MT,Sanders,G3000890,NWPP,11534,sanders,montana
+MT,Sheridan,G3000910,MISW,3648,sheridan,montana
+MT,Silver Bow,G3000930,NWPP,34553,silver bow,montana
+MT,Stillwater,G3000950,NWPP,9406,stillwater,montana
+MT,Sweet Grass,G3000970,NWPP,3623,sweet grass,montana
+MT,Teton,G3000990,NWPP,6056,teton,montana
+MT,Toole,G3001010,NWPP,4977,toole,montana
+MT,Treasure,G3001030,NWPP,692,treasure,montana
+MT,Valley,G3001050,NWPP,7539,valley,montana
+MT,Wheatland,G3001070,NWPP,2117,wheatland,montana
+MT,Wibaux,G3001090,SPPN,1093,wibaux,montana
+MT,Yellowstone,G3001110,NWPP,158437,yellowstone,montana
+MT,Yellowstone,G3001110,NWPP,158437,yellowstone national,montana
+NC,Alamance,G3700010,SRCA,159688,alamance,north carolina
+NC,Alexander,G3700030,SRCA,37428,alexander,north carolina
+NC,Alleghany,G3700050,SRCA,10848,alleghany,north carolina
+NC,Anson,G3700070,SRCA,25448,anson,north carolina
+NC,Ashe,G3700090,SRCA,26924,ashe,north carolina
+NC,Avery,G3700110,SRCA,17516,avery,north carolina
+NC,Beaufort,G3700130,PJMD,47526,beaufort,north carolina
+NC,Bertie,G3700150,PJMD,19854,bertie,north carolina
+NC,Bladen,G3700170,SRCA,33741,bladen,north carolina
+NC,Brunswick,G3700190,SRCA,126953,brunswick,north carolina
+NC,Buncombe,G3700210,SRCA,256088,buncombe,north carolina
+NC,Burke,G3700230,SRCA,88851,burke,north carolina
+NC,Cabarrus,G3700250,SRCA,201590,cabarrus,north carolina
+NC,Caldwell,G3700270,SRCA,81449,caldwell,north carolina
+NC,Camden,G3700290,PJMD,10418,camden,north carolina
+NC,Carteret,G3700310,SRCA,68890,carteret,north carolina
+NC,Caswell,G3700330,SRCA,22910,caswell,north carolina
+NC,Catawba,G3700350,SRCA,156459,catawba,north carolina
+NC,Chatham,G3700370,SRCA,72243,chatham,north carolina
+NC,Cherokee,G3700390,SRCA,27905,cherokee,north carolina
+NC,Chowan,G3700410,PJMD,14383,chowan,north carolina
+NC,Clay,G3700430,SRCA,10915,clay,north carolina
+NC,Cleveland,G3700450,SRCA,97144,cleveland,north carolina
+NC,Columbus,G3700470,SRCA,56505,columbus,north carolina
+NC,Craven,G3700490,SRCA,103445,craven,north carolina
+NC,Cumberland,G3700510,SRCA,327127,cumberland,north carolina
+NC,Currituck,G3700530,PJMD,25809,currituck,north carolina
+NC,Dare,G3700550,PJMD,35964,dare,north carolina
+NC,Davidson,G3700570,SRCA,164926,davidson,north carolina
+NC,Davie,G3700590,SRCA,42013,davie,north carolina
+NC,Duplin,G3700610,SRCA,58969,duplin,north carolina
+NC,Durham,G3700630,SRCA,306212,durham,north carolina
+NC,Edgecombe,G3700650,PJMD,53318,edgecombe,north carolina
+NC,Forsyth,G3700670,SRCA,371511,forsyth,north carolina
+NC,Franklin,G3700690,SRCA,64705,franklin,north carolina
+NC,Gaston,G3700710,SRCA,216965,gaston,north carolina
+NC,Gates,G3700730,PJMD,11478,gates,north carolina
+NC,Graham,G3700750,SRCA,8558,graham,north carolina
+NC,Granville,G3700770,PJMD,59031,granville,north carolina
+NC,Greene,G3700790,SRCA,21168,greene,north carolina
+NC,Guilford,G3700810,SRCA,521330,guilford,north carolina
+NC,Halifax,G3700830,PJMD,51766,halifax,north carolina
+NC,Harnett,G3700850,SRCA,130881,harnett,north carolina
+NC,Haywood,G3700870,SRCA,60682,haywood,north carolina
+NC,Henderson,G3700890,SRCA,114209,henderson,north carolina
+NC,Hertford,G3700910,PJMD,24136,hertford,north carolina
+NC,Hoke,G3700930,SRCA,53262,hoke,north carolina
+NC,Hyde,G3700950,PJMD,5517,hyde,north carolina
+NC,Iredell,G3700970,SRCA,172916,iredell,north carolina
+NC,Jackson,G3700990,SRCA,42241,jackson,north carolina
+NC,Johnston,G3701010,SRCA,191450,johnston,north carolina
+NC,Jones,G3701030,SRCA,9845,jones,north carolina
+NC,Lee,G3701050,SRCA,59616,lee,north carolina
+NC,Lenoir,G3701070,SRCA,57307,lenoir,north carolina
+NC,Lincoln,G3701090,SRCA,81168,lincoln,north carolina
+NC,Macon,G3701130,SRCA,34376,macon,north carolina
+NC,Madison,G3701150,SRCA,21340,madison,north carolina
+NC,Martin,G3701170,PJMD,23172,martin,north carolina
+NC,McDowell,G3701110,SRCA,45075,mcdowell,north carolina
+NC,Mecklenburg,G3701190,SRCA,1054835,mecklenburg,north carolina
+NC,Mitchell,G3701210,SRCA,15126,mitchell,north carolina
+NC,Montgomery,G3701230,SRCA,27418,montgomery,north carolina
+NC,Moore,G3701250,SRCA,95776,moore,north carolina
+NC,Nash,G3701270,PJMD,94005,nash,north carolina
+NC,New Hanover,G3701290,SRCA,223483,new hanover,north carolina
+NC,Northampton,G3701310,PJMD,20000,northampton,north carolina
+NC,Onslow,G3701330,SRCA,187136,onslow,north carolina
+NC,Orange,G3701350,SRCA,141796,orange,north carolina
+NC,Pamlico,G3701370,SRCA,12821,pamlico,north carolina
+NC,Pasquotank,G3701390,PJMD,39864,pasquotank,north carolina
+NC,Pender,G3701410,SRCA,59090,pender,north carolina
+NC,Perquimans,G3701430,PJMD,13335,perquimans,north carolina
+NC,Person,G3701450,PJMD,39284,person,north carolina
+NC,Pitt,G3701470,PJMD,177220,pitt,north carolina
+NC,Polk,G3701490,SRCA,20334,polk,north carolina
+NC,Randolph,G3701510,SRCA,143416,randolph,north carolina
+NC,Richmond,G3701530,SRCA,44939,richmond,north carolina
+NC,Robeson,G3701550,SRCA,133235,robeson,north carolina
+NC,Rockingham,G3701570,SRCA,91393,rockingham,north carolina
+NC,Rowan,G3701590,SRCA,139933,rowan,north carolina
+NC,Rutherford,G3701610,SRCA,66421,rutherford,north carolina
+NC,Sampson,G3701630,SRCA,63124,sampson,north carolina
+NC,Scotland,G3701650,SRCA,35244,scotland,north carolina
+NC,Stanly,G3701670,SRCA,60791,stanly,north carolina
+NC,Stokes,G3701690,SRCA,46097,stokes,north carolina
+NC,Surry,G3701710,SRCA,72113,surry,north carolina
+NC,Swain,G3701730,SRCA,14346,swain,north carolina
+NC,Transylvania,G3701750,SRCA,33482,transylvania,north carolina
+NC,Tyrrell,G3701770,PJMD,4141,tyrrell,north carolina
+NC,Union,G3701790,SRCA,226606,union,north carolina
+NC,Vance,G3701810,SRCA,44244,vance,north carolina
+NC,Wake,G3701830,SRCA,1046791,wake,north carolina
+NC,Warren,G3701850,PJMD,19907,warren,north carolina
+NC,Washington,G3701870,PJMD,12195,washington,north carolina
+NC,Watauga,G3701890,SRCA,53922,watauga,north carolina
+NC,Wayne,G3701910,SRCA,124150,wayne,north carolina
+NC,Wilkes,G3701930,SRCA,68740,wilkes,north carolina
+NC,Wilson,G3701950,SRCA,81661,wilson,north carolina
+NC,Yadkin,G3701970,SRCA,37532,yadkin,north carolina
+NC,Yancey,G3701990,SRCA,17678,yancey,north carolina
+ND,Adams,G3800010,SPPN,2305,adams,north dakota
+ND,Barnes,G3800030,SPPN,10926,barnes,north dakota
+ND,Benson,G3800050,SPPN,6739,benson,north dakota
+ND,Billings,G3800070,SPPN,934,billings,north dakota
+ND,Bottineau,G3800090,SPPN,6579,bottineau,north dakota
+ND,Bowman,G3800110,SPPN,3241,bowman,north dakota
+ND,Burke,G3800130,SPPN,2198,burke,north dakota
+ND,Burleigh,G3800150,SPPN,94487,burleigh,north dakota
+ND,Cass,G3800170,SPPN,175249,cass,north dakota
+ND,Cavalier,G3800190,MISW,3827,cavalier,north dakota
+ND,Dickey,G3800210,SPPN,5064,dickey,north dakota
+ND,Divide,G3800230,SPPN,2413,divide,north dakota
+ND,Dunn,G3800250,SPPN,4366,dunn,north dakota
+ND,Eddy,G3800270,SPPN,2358,eddy,north dakota
+ND,Emmons,G3800290,SPPN,3346,emmons,north dakota
+ND,Foster,G3800310,SPPN,3303,foster,north dakota
+ND,Golden Valley,G3800330,SPPN,1817,golden valley,north dakota
+ND,Grand Forks,G3800350,SPPN,71083,grand forks,north dakota
+ND,Grant,G3800370,SPPN,2377,grant,north dakota
+ND,Griggs,G3800390,SPPN,2277,griggs,north dakota
+ND,Hettinger,G3800410,SPPN,2629,hettinger,north dakota
+ND,Kidder,G3800430,SPPN,2414,kidder,north dakota
+ND,LaMoure,G3800450,SPPN,4111,la moure,north dakota
+ND,Logan,G3800470,SPPN,1941,logan,north dakota
+ND,McHenry,G3800490,SPPN,5963,mchenry,north dakota
+ND,McIntosh,G3800510,SPPN,2656,mcintosh,north dakota
+ND,McKenzie,G3800530,SPPN,12621,mckenzie,north dakota
+ND,McLean,G3800550,SPPN,9729,mclean,north dakota
+ND,Mercer,G3800570,SPPN,8694,mercer,north dakota
+ND,Morton,G3800590,SPPN,30809,morton,north dakota
+ND,Mountrail,G3800610,SPPN,10242,mountrail,north dakota
+ND,Nelson,G3800630,SPPN,2960,nelson,north dakota
+ND,Oliver,G3800650,SPPN,1870,oliver,north dakota
+ND,Pembina,G3800670,MISW,7069,pembina,north dakota
+ND,Pierce,G3800690,SPPN,4267,pierce,north dakota
+ND,Ramsey,G3800710,SPPN,11547,ramsey,north dakota
+ND,Ransom,G3800730,SPPN,5404,ransom,north dakota
+ND,Renville,G3800750,SPPN,2550,renville,north dakota
+ND,Richland,G3800770,SPPN,16353,richland,north dakota
+ND,Rolette,G3800790,MISW,14659,rolette,north dakota
+ND,Sargent,G3800810,SPPN,3890,sargent,north dakota
+ND,Sheridan,G3800830,SPPN,1322,sheridan,north dakota
+ND,Sioux,G3800850,SPPN,4469,sioux,north dakota
+ND,Slope,G3800870,SPPN,763,slope,north dakota
+ND,Stark,G3800890,SPPN,31199,stark,north dakota
+ND,Steele,G3800910,SPPN,1962,steele,north dakota
+ND,Stutsman,G3800930,SPPN,21128,stutsman,north dakota
+ND,Towner,G3800950,SPPN,2263,towner,north dakota
+ND,Traill,G3800970,SPPN,8030,traill,north dakota
+ND,Walsh,G3800990,MISW,10904,walsh,north dakota
+ND,Ward,G3801010,SPPN,70210,ward,north dakota
+ND,Wells,G3801030,SPPN,4098,wells,north dakota
+ND,Williams,G3801050,MISW,34337,williams,north dakota
+NE,Adams,G3100010,SPPN,31684,adams,nebraska
+NE,Antelope,G3100030,SPPN,6329,antelope,nebraska
+NE,Arthur,G3100050,SPPN,469,arthur,nebraska
+NE,Banner,G3100070,RMRG,798,banner,nebraska
+NE,Blaine,G3100090,SPPN,484,blaine,nebraska
+NE,Boone,G3100110,SPPN,5332,boone,nebraska
+NE,Box Butte,G3100130,SPPN,11194,box butte,nebraska
+NE,Boyd,G3100150,SPPN,1982,boyd,nebraska
+NE,Brown,G3100170,SPPN,2960,brown,nebraska
+NE,Buffalo,G3100190,SPPN,49383,buffalo,nebraska
+NE,Burt,G3100210,SPPN,6546,burt,nebraska
+NE,Butler,G3100230,SPPN,8052,butler,nebraska
+NE,Cass,G3100250,SPPN,25767,cass,nebraska
+NE,Cedar,G3100270,SPPN,8671,cedar,nebraska
+NE,Chase,G3100290,SPPN,3937,chase,nebraska
+NE,Cherry,G3100310,SPPN,5832,cherry,nebraska
+NE,Cheyenne,G3100330,RMRG,10051,cheyenne,nebraska
+NE,Clay,G3100350,SPPN,6163,clay,nebraska
+NE,Colfax,G3100370,SPPN,10414,colfax,nebraska
+NE,Cuming,G3100390,SPPN,9016,cuming,nebraska
+NE,Custer,G3100410,SPPN,10807,custer,nebraska
+NE,Dakota,G3100430,SPPN,20465,dakota,nebraska
+NE,Dawes,G3100450,RMRG,8979,dawes,nebraska
+NE,Dawson,G3100470,SPPN,23640,dawson,nebraska
+NE,Deuel,G3100490,SPPN,1873,deuel,nebraska
+NE,Dixon,G3100510,SPPN,5762,dixon,nebraska
+NE,Dodge,G3100530,SPPN,36757,dodge,nebraska
+NE,Douglas,G3100550,SPPN,554995,douglas,nebraska
+NE,Dundy,G3100570,SPPN,1831,dundy,nebraska
+NE,Fillmore,G3100590,SPPN,5720,fillmore,nebraska
+NE,Franklin,G3100610,SPPN,3014,franklin,nebraska
+NE,Frontier,G3100630,SPPN,2621,frontier,nebraska
+NE,Furnas,G3100650,SPPN,4787,furnas,nebraska
+NE,Gage,G3100670,SPPN,21799,gage,nebraska
+NE,Garden,G3100690,SPPN,1930,garden,nebraska
+NE,Garfield,G3100710,SPPN,2011,garfield,nebraska
+NE,Gosper,G3100730,SPPN,1971,gosper,nebraska
+NE,Grant,G3100750,SPPN,641,grant,nebraska
+NE,Greeley,G3100770,SPPN,2399,greeley,nebraska
+NE,Hall,G3100790,SPPN,61705,hall,nebraska
+NE,Hamilton,G3100810,SPPN,9186,hamilton,nebraska
+NE,Harlan,G3100830,SPPN,3473,harlan,nebraska
+NE,Hayes,G3100850,SPPN,897,hayes,nebraska
+NE,Hitchcock,G3100870,SPPN,2825,hitchcock,nebraska
+NE,Holt,G3100890,SPPN,10250,holt,nebraska
+NE,Hooker,G3100910,SPPN,708,hooker,nebraska
+NE,Howard,G3100930,SPPN,6429,howard,nebraska
+NE,Jefferson,G3100950,SPPN,7177,jefferson,nebraska
+NE,Johnson,G3100970,SPPN,5171,johnson,nebraska
+NE,Kearney,G3100990,SPPN,6552,kearney,nebraska
+NE,Keith,G3101010,SPPN,8018,keith,nebraska
+NE,Keya Paha,G3101030,SPPN,791,keya paha,nebraska
+NE,Kimball,G3101050,RMRG,3679,kimball,nebraska
+NE,Knox,G3101070,SPPN,8571,knox,nebraska
+NE,Lancaster,G3101090,SPPN,309637,lancaster,nebraska
+NE,Lincoln,G3101110,SPPN,35550,lincoln,nebraska
+NE,Logan,G3101130,SPPN,772,logan,nebraska
+NE,Loup,G3101150,SPPN,591,loup,nebraska
+NE,Madison,G3101190,SPPN,35015,madison,nebraska
+NE,McPherson,G3101170,SPPN,493,mcpherson,nebraska
+NE,Merrick,G3101210,SPPN,7828,merrick,nebraska
+NE,Morrill,G3101230,SPPN,4787,morrill,nebraska
+NE,Nance,G3101250,SPPN,3576,nance,nebraska
+NE,Nemaha,G3101270,SPPN,6971,nemaha,nebraska
+NE,Nuckolls,G3101290,SPPN,4265,nuckolls,nebraska
+NE,Otoe,G3101310,SPPN,16081,otoe,nebraska
+NE,Pawnee,G3101330,SPPN,2652,pawnee,nebraska
+NE,Perkins,G3101350,SPPN,2898,perkins,nebraska
+NE,Phelps,G3101370,SPPN,9266,phelps,nebraska
+NE,Pierce,G3101390,SPPN,7159,pierce,nebraska
+NE,Platte,G3101410,SPPN,32861,platte,nebraska
+NE,Polk,G3101430,SPPN,5203,polk,nebraska
+NE,Red Willow,G3101450,SPPN,10722,red willow,nebraska
+NE,Richardson,G3101470,SPPN,8060,richardson,nebraska
+NE,Rock,G3101490,SPPN,1390,rock,nebraska
+NE,Saline,G3101510,SPPN,14331,saline,nebraska
+NE,Sarpy,G3101530,SPPN,179023,sarpy,nebraska
+NE,Saunders,G3101550,SPPN,21038,saunders,nebraska
+NE,Scotts Bluff,G3101570,SPPN,36422,scotts bluff,nebraska
+NE,Seward,G3101590,SPPN,17284,seward,nebraska
+NE,Sheridan,G3101610,SPPN,5234,sheridan,nebraska
+NE,Sherman,G3101630,SPPN,3054,sherman,nebraska
+NE,Sioux,G3101650,RMRG,1242,sioux,nebraska
+NE,Stanton,G3101670,SPPN,5944,stanton,nebraska
+NE,Thayer,G3101690,SPPN,5101,thayer,nebraska
+NE,Thomas,G3101710,SPPN,716,thomas,nebraska
+NE,Thurston,G3101730,SPPN,7127,thurston,nebraska
+NE,Valley,G3101750,SPPN,4184,valley,nebraska
+NE,Washington,G3101770,SPPN,20603,washington,nebraska
+NE,Wayne,G3101790,SPPN,9365,wayne,nebraska
+NE,Webster,G3101810,SPPN,3603,webster,nebraska
+NE,Wheeler,G3101830,SPPN,776,wheeler,nebraska
+NE,York,G3101850,SPPN,13794,york,nebraska
+NH,Belknap,G3300010,ISNE,60779,belknap,new hampshire
+NH,Carroll,G3300030,ISNE,47289,carroll,new hampshire
+NH,Cheshire,G3300050,ISNE,75774,cheshire,new hampshire
+NH,Coos,G3300070,ISNE,32039,coos,new hampshire
+NH,Grafton,G3300090,ISNE,88888,grafton,new hampshire
+NH,Hillsborough,G3300110,ISNE,407761,hillsborough,new hampshire
+NH,Merrimack,G3300130,ISNE,148582,merrimack,new hampshire
+NH,Rockingham,G3300150,ISNE,303251,rockingham,new hampshire
+NH,Strafford,G3300170,ISNE,127428,strafford,new hampshire
+NH,Sullivan,G3300190,ISNE,43004,sullivan,new hampshire
+NJ,Atlantic,G3400010,PJME,270991,atlantic,new jersey
+NJ,Bergen,G3400030,PJME,939151,bergen,new jersey
+NJ,Burlington,G3400050,PJME,449284,burlington,new jersey
+NJ,Camden,G3400070,PJME,510150,camden,new jersey
+NJ,Cape May,G3400090,PJME,94430,cape may,new jersey
+NJ,Cumberland,G3400110,PJME,153797,cumberland,new jersey
+NJ,Essex,G3400130,PJME,796914,essex,new jersey
+NJ,Gloucester,G3400150,PJME,292330,gloucester,new jersey
+NJ,Hudson,G3400170,PJME,677983,hudson,new jersey
+NJ,Hunterdon,G3400190,PJME,124676,hunterdon,new jersey
+NJ,Mercer,G3400210,PJME,371023,mercer,new jersey
+NJ,Middlesex,G3400230,PJME,837073,middlesex,new jersey
+NJ,Monmouth,G3400250,PJME,625846,monmouth,new jersey
+NJ,Morris,G3400270,PJME,498423,morris,new jersey
+NJ,Ocean,G3400290,PJME,592497,ocean,new jersey
+NJ,Passaic,G3400310,PJME,507945,passaic,new jersey
+NJ,Salem,G3400330,PJME,63436,salem,new jersey
+NJ,Somerset,G3400350,PJME,333751,somerset,new jersey
+NJ,Sussex,G3400370,PJME,142522,sussex,new jersey
+NJ,Union,G3400390,PJME,555630,union,new jersey
+NJ,Warren,G3400410,PJME,106617,warren,new jersey
+NM,Bernalillo,G3500010,SRSG,676953,bernalillo,new mexico
+NM,Catron,G3500030,SRSG,3508,catron,new mexico
+NM,Chaves,G3500050,SPPS,65282,chaves,new mexico
+NM,Cibola,G3500060,SRSG,27487,cibola,new mexico
+NM,Colfax,G3500070,SRSG,12253,colfax,new mexico
+NM,Curry,G3500090,SPPS,50280,curry,new mexico
+NM,De Baca,G3500110,SRSG,1793,de baca,new mexico
+NM,Doña Ana,G3500130,SRSG,214207,dona ana,new mexico
+NM,Eddy,G3500150,SPPS,57621,eddy,new mexico
+NM,Grant,G3500170,SRSG,28280,grant,new mexico
+NM,Guadalupe,G3500190,SRSG,4376,guadalupe,new mexico
+NM,Harding,G3500210,SRSG,665,harding,new mexico
+NM,Hidalgo,G3500230,SRSG,4302,hidalgo,new mexico
+NM,Lea,G3500250,SPPS,69749,lea,new mexico
+NM,Lincoln,G3500270,SRSG,19429,lincoln,new mexico
+NM,Los Alamos,G3500280,SRSG,18147,los alamos,new mexico
+NM,Luna,G3500290,SRSG,24450,luna,new mexico
+NM,McKinley,G3500310,SRSG,74923,mckinley,new mexico
+NM,Mora,G3500330,SRSG,4504,mora,new mexico
+NM,Otero,G3500350,SRSG,65410,otero,new mexico
+NM,Quay,G3500370,SPPS,8365,quay,new mexico
+NM,Rio Arriba,G3500390,SRSG,40040,rio arriba,new mexico
+NM,Roosevelt,G3500410,SPPS,19082,roosevelt,new mexico
+NM,San Juan,G3500450,RMRG,115079,san juan,new mexico
+NM,San Miguel,G3500470,SRSG,27760,san miguel,new mexico
+NM,Sandoval,G3500430,SRSG,142025,sandoval,new mexico
+NM,Santa Fe,G3500490,SRSG,148651,santa fe,new mexico
+NM,Sierra,G3500510,SRSG,11191,sierra,new mexico
+NM,Socorro,G3500530,SRSG,17027,socorro,new mexico
+NM,Taos,G3500550,SRSG,33065,taos,new mexico
+NM,Torrance,G3500570,SRSG,15302,torrance,new mexico
+NM,Union,G3500590,SRSG,4183,union,new mexico
+NM,Valencia,G3500610,SRSG,75626,valencia,new mexico
+NV,Carson City,G3205100,BASN,54742,carson city,nevada
+NV,Churchill,G3200010,BASN,24198,churchill,nevada
+NV,Clark,G3200030,BASN,2155664,clark,nevada
+NV,Douglas,G3200050,BASN,48020,douglas,nevada
+NV,Elko,G3200070,BASN,52168,elko,nevada
+NV,Esmeralda,G3200090,BASN,790,esmeralda,nevada
+NV,Eureka,G3200110,BASN,1917,eureka,nevada
+NV,Humboldt,G3200130,BASN,16842,humboldt,nevada
+NV,Lander,G3200150,BASN,5702,lander,nevada
+NV,Lincoln,G3200170,BASN,5055,lincoln,nevada
+NV,Lyon,G3200190,BASN,53179,lyon,nevada
+NV,Mineral,G3200210,BASN,4449,mineral,nevada
+NV,Nye,G3200230,BASN,43423,nye,nevada
+NV,Pershing,G3200270,BASN,6560,pershing,nevada
+NV,Storey,G3200290,BASN,4051,storey,nevada
+NV,Washoe,G3200310,BASN,453616,washoe,nevada
+NV,White Pine,G3200330,BASN,9682,white pine,nevada
+NY,Albany,G3600010,NYUP,308846,albany,new york
+NY,Allegany,G3600030,NYUP,47077,allegany,new york
+NY,Bronx,G3600050,NYCW,1455720,bronx,new york
+NY,Broome,G3600070,NYUP,195334,broome,new york
+NY,Cattaraugus,G3600090,NYUP,77677,cattaraugus,new york
+NY,Cayuga,G3600110,NYUP,77861,cayuga,new york
+NY,Chautauqua,G3600130,NYUP,129504,chautauqua,new york
+NY,Chemung,G3600150,NYUP,86322,chemung,new york
+NY,Chenango,G3600170,NYUP,48579,chenango,new york
+NY,Clinton,G3600190,NYUP,81073,clinton,new york
+NY,Columbia,G3600210,NYUP,60989,columbia,new york
+NY,Cortland,G3600230,NYUP,48070,cortland,new york
+NY,Delaware,G3600250,NYUP,45523,delaware,new york
+NY,Dutchess,G3600270,NYUP,294473,dutchess,new york
+NY,Erie,G3600290,NYUP,921046,erie,new york
+NY,Essex,G3600310,NYUP,38102,essex,new york
+NY,Franklin,G3600330,NYUP,50409,franklin,new york
+NY,Fulton,G3600350,NYUP,53828,fulton,new york
+NY,Genesee,G3600370,NYUP,58482,genesee,new york
+NY,Greene,G3600390,NYUP,47508,greene,new york
+NY,Hamilton,G3600410,NYUP,4542,hamilton,new york
+NY,Herkimer,G3600430,NYUP,62613,herkimer,new york
+NY,Jefferson,G3600450,NYUP,114006,jefferson,new york
+NY,Kings,G3600470,NYCW,2629150,kings,new york
+NY,Lewis,G3600490,NYUP,26865,lewis,new york
+NY,Livingston,G3600510,NYUP,64257,livingston,new york
+NY,Madison,G3600530,NYUP,71329,madison,new york
+NY,Monroe,G3600550,NYUP,747727,monroe,new york
+NY,Montgomery,G3600570,NYUP,49276,montgomery,new york
+NY,Nassau,G3600590,NYCW,1361500,nassau,new york
+NY,New York,G3600610,NYCW,1643734,new york,new york
+NY,Niagara,G3600630,NYUP,211758,niagara,new york
+NY,Oneida,G3600650,NYUP,231190,oneida,new york
+NY,Onondaga,G3600670,NYUP,466194,onondaga,new york
+NY,Ontario,G3600690,NYUP,109828,ontario,new york
+NY,Orange,G3600710,NYUP,379210,orange,new york
+NY,Orleans,G3600730,NYUP,41346,orleans,new york
+NY,Oswego,G3600750,NYUP,118987,oswego,new york
+NY,Otsego,G3600770,NYUP,60097,otsego,new york
+NY,Putnam,G3600790,NYUP,98900,putnam,new york
+NY,Queens,G3600810,NYCW,2333054,queens,new york
+NY,Rensselaer,G3600830,NYUP,160070,rensselaer,new york
+NY,Richmond,G3600850,PJME,476015,richmond,new york
+NY,Rockland,G3600870,NYUP,326780,rockland,new york
+NY,Saratoga,G3600910,NYUP,227053,saratoga,new york
+NY,Schenectady,G3600930,NYUP,154553,schenectady,new york
+NY,Schoharie,G3600950,NYUP,31317,schoharie,new york
+NY,Schuyler,G3600970,NYUP,18099,schuyler,new york
+NY,Seneca,G3600990,NYUP,34777,seneca,new york
+NY,St. Lawrence,G3600890,NYUP,110038,st lawrence,new york
+NY,Steuben,G3601010,NYUP,96940,steuben,new york
+NY,Suffolk,G3601030,NYCW,1492583,suffolk,new york
+NY,Sullivan,G3601050,NYUP,74801,sullivan,new york
+NY,Tioga,G3601070,NYUP,48760,tioga,new york
+NY,Tompkins,G3601090,NYUP,104871,tompkins,new york
+NY,Ulster,G3601110,NYUP,179225,ulster,new york
+NY,Warren,G3601130,NYUP,64567,warren,new york
+NY,Washington,G3601150,NYUP,61800,washington,new york
+NY,Wayne,G3601170,NYUP,90798,wayne,new york
+NY,Westchester,G3601190,NYCW,974542,westchester,new york
+NY,Wyoming,G3601210,NYUP,40791,wyoming,new york
+NY,Yates,G3601230,NYUP,24923,yates,new york
+OH,Adams,G3900010,PJMW,27907,adams,ohio
+OH,Allen,G3900030,PJMW,103742,allen,ohio
+OH,Ashland,G3900050,PJMW,53652,ashland,ohio
+OH,Ashtabula,G3900070,PJMW,98231,ashtabula,ohio
+OH,Athens,G3900090,PJMW,66186,athens,ohio
+OH,Auglaize,G3900110,PJMW,45894,auglaize,ohio
+OH,Belmont,G3900130,PJMW,68673,belmont,ohio
+OH,Brown,G3900150,PJMW,43759,brown,ohio
+OH,Butler,G3900170,PJMW,377537,butler,ohio
+OH,Carroll,G3900190,PJMW,27669,carroll,ohio
+OH,Champaign,G3900210,PJMW,38747,champaign,ohio
+OH,Clark,G3900230,PJMW,134786,clark,ohio
+OH,Clermont,G3900250,PJMW,203022,clermont,ohio
+OH,Clinton,G3900270,PJMW,41902,clinton,ohio
+OH,Columbiana,G3900290,PJMW,103685,columbiana,ohio
+OH,Coshocton,G3900310,PJMW,36602,coshocton,ohio
+OH,Crawford,G3900330,PJMW,42083,crawford,ohio
+OH,Cuyahoga,G3900350,PJMW,1249352,cuyahoga,ohio
+OH,Darke,G3900370,PJMW,51778,darke,ohio
+OH,Defiance,G3900390,PJMW,38158,defiance,ohio
+OH,Delaware,G3900410,PJMW,196463,delaware,ohio
+OH,Erie,G3900430,PJMW,75107,erie,ohio
+OH,Fairfield,G3900450,PJMW,152597,fairfield,ohio
+OH,Fayette,G3900470,PJMW,28676,fayette,ohio
+OH,Franklin,G3900490,PJMW,1264518,franklin,ohio
+OH,Fulton,G3900510,PJMW,42514,fulton,ohio
+OH,Gallia,G3900530,PJMW,30015,gallia,ohio
+OH,Geauga,G3900550,PJMW,94060,geauga,ohio
+OH,Greene,G3900570,PJMW,164765,greene,ohio
+OH,Guernsey,G3900590,PJMW,39063,guernsey,ohio
+OH,Hamilton,G3900610,PJMW,809099,hamilton,ohio
+OH,Hancock,G3900630,PJMW,75872,hancock,ohio
+OH,Hardin,G3900650,PJMW,31474,hardin,ohio
+OH,Harrison,G3900670,PJMW,15307,harrison,ohio
+OH,Henry,G3900690,PJMW,27629,henry,ohio
+OH,Highland,G3900710,PJMW,43029,highland,ohio
+OH,Hocking,G3900730,PJMW,28340,hocking,ohio
+OH,Holmes,G3900750,PJMW,43936,holmes,ohio
+OH,Huron,G3900770,PJMW,58439,huron,ohio
+OH,Jackson,G3900790,PJMW,32505,jackson,ohio
+OH,Jefferson,G3900810,PJMW,66704,jefferson,ohio
+OH,Knox,G3900830,PJMW,60814,knox,ohio
+OH,Lake,G3900850,PJMW,228614,lake,ohio
+OH,Lawrence,G3900870,PJMW,60872,lawrence,ohio
+OH,Licking,G3900890,PJMW,172198,licking,ohio
+OH,Logan,G3900910,PJMW,45165,logan,ohio
+OH,Lorain,G3900930,PJMW,306365,lorain,ohio
+OH,Lucas,G3900950,PJMW,432488,lucas,ohio
+OH,Madison,G3900970,PJMW,43419,madison,ohio
+OH,Mahoning,G3900990,PJMW,230008,mahoning,ohio
+OH,Marion,G3901010,PJMW,65096,marion,ohio
+OH,Medina,G3901030,PJMW,177221,medina,ohio
+OH,Meigs,G3901050,PJMW,23125,meigs,ohio
+OH,Mercer,G3901070,PJMW,40909,mercer,ohio
+OH,Miami,G3901090,PJMW,104679,miami,ohio
+OH,Monroe,G3901110,PJMW,14210,monroe,ohio
+OH,Montgomery,G3901130,PJMW,531239,montgomery,ohio
+OH,Morgan,G3901150,PJMW,14804,morgan,ohio
+OH,Morrow,G3901170,PJMW,35036,morrow,ohio
+OH,Muskingum,G3901190,PJMW,86068,muskingum,ohio
+OH,Noble,G3901210,PJMW,14294,noble,ohio
+OH,Ottawa,G3901230,PJMW,40636,ottawa,ohio
+OH,Paulding,G3901250,PJMW,18865,paulding,ohio
+OH,Perry,G3901270,PJMW,35927,perry,ohio
+OH,Pickaway,G3901290,PJMW,57565,pickaway,ohio
+OH,Pike,G3901310,PJMW,28160,pike,ohio
+OH,Portage,G3901330,PJMW,161921,portage,ohio
+OH,Preble,G3901350,PJMW,41247,preble,ohio
+OH,Putnam,G3901370,PJMW,34056,putnam,ohio
+OH,Richland,G3901390,PJMW,121107,richland,ohio
+OH,Ross,G3901410,PJMW,77000,ross,ohio
+OH,Sandusky,G3901430,PJMW,59330,sandusky,ohio
+OH,Scioto,G3901450,PJMW,76088,scioto,ohio
+OH,Seneca,G3901470,PJMW,55353,seneca,ohio
+OH,Shelby,G3901490,PJMW,48623,shelby,ohio
+OH,Stark,G3901510,PJMW,373612,stark,ohio
+OH,Summit,G3901530,PJMW,540300,summit,ohio
+OH,Trumbull,G3901550,PJMW,201825,trumbull,ohio
+OH,Tuscarawas,G3901570,PJMW,92420,tuscarawas,ohio
+OH,Union,G3901590,PJMW,55457,union,ohio
+OH,Van Wert,G3901610,PJMW,28362,van wert,ohio
+OH,Vinton,G3901630,PJMW,12921,vinton,ohio
+OH,Warren,G3901650,PJMW,227063,warren,ohio
+OH,Washington,G3901670,PJMW,60610,washington,ohio
+OH,Wayne,G3901690,PJMW,116470,wayne,ohio
+OH,Williams,G3901710,PJMW,37017,williams,ohio
+OH,Wood,G3901730,PJMW,130219,wood,ohio
+OH,Wyandot,G3901750,PJMW,22118,wyandot,ohio
+OK,Adair,G4000010,SPPS,22098,adair,oklahoma
+OK,Alfalfa,G4000030,SPPS,5827,alfalfa,oklahoma
+OK,Atoka,G4000050,SPPS,13810,atoka,oklahoma
+OK,Beaver,G4000070,SPPS,5382,beaver,oklahoma
+OK,Beckham,G4000090,SPPS,22519,beckham,oklahoma
+OK,Blaine,G4000110,SPPS,9643,blaine,oklahoma
+OK,Bryan,G4000130,SPPS,45573,bryan,oklahoma
+OK,Caddo,G4000150,SPPS,29557,caddo,oklahoma
+OK,Canadian,G4000170,SPPS,136532,canadian,oklahoma
+OK,Carter,G4000190,SPPS,48556,carter,oklahoma
+OK,Cherokee,G4000210,SPPS,48700,cherokee,oklahoma
+OK,Choctaw,G4000230,SPPS,14885,choctaw,oklahoma
+OK,Cimarron,G4000250,SPPS,2162,cimarron,oklahoma
+OK,Cleveland,G4000270,SPPS,278655,cleveland,oklahoma
+OK,Coal,G4000290,SPPS,5651,coal,oklahoma
+OK,Comanche,G4000310,SPPS,122136,comanche,oklahoma
+OK,Cotton,G4000330,SPPS,5941,cotton,oklahoma
+OK,Craig,G4000350,SPPS,14625,craig,oklahoma
+OK,Creek,G4000370,SPPS,71312,creek,oklahoma
+OK,Custer,G4000390,SPPS,29293,custer,oklahoma
+OK,Delaware,G4000410,SPPS,41598,delaware,oklahoma
+OK,Dewey,G4000430,SPPS,4819,dewey,oklahoma
+OK,Ellis,G4000450,SPPS,4080,ellis,oklahoma
+OK,Garfield,G4000470,SPPS,62603,garfield,oklahoma
+OK,Garvin,G4000490,SPPS,27838,garvin,oklahoma
+OK,Grady,G4000510,SPPS,54655,grady,oklahoma
+OK,Grant,G4000530,SPPS,4465,grant,oklahoma
+OK,Greer,G4000550,SPPS,5998,greer,oklahoma
+OK,Harmon,G4000570,SPPS,2704,harmon,oklahoma
+OK,Harper,G4000590,SPPS,3717,harper,oklahoma
+OK,Haskell,G4000610,SPPS,12747,haskell,oklahoma
+OK,Hughes,G4000630,SPPS,13566,hughes,oklahoma
+OK,Jackson,G4000650,SPPS,25497,jackson,oklahoma
+OK,Jefferson,G4000670,SPPS,6230,jefferson,oklahoma
+OK,Johnston,G4000690,SPPS,11087,johnston,oklahoma
+OK,Kay,G4000710,SPPS,44943,kay,oklahoma
+OK,Kingfisher,G4000730,SPPS,15638,kingfisher,oklahoma
+OK,Kiowa,G4000750,SPPS,9077,kiowa,oklahoma
+OK,Latimer,G4000770,SPPS,10414,latimer,oklahoma
+OK,Le Flore,G4000790,SPPS,49873,le flore,oklahoma
+OK,Lincoln,G4000810,SPPS,35129,lincoln,oklahoma
+OK,Logan,G4000830,SPPS,46588,logan,oklahoma
+OK,Love,G4000850,SPPS,9997,love,oklahoma
+OK,Major,G4000930,SPPS,7772,major,oklahoma
+OK,Marshall,G4000950,SPPS,16191,marshall,oklahoma
+OK,Mayes,G4000970,SPPS,40920,mayes,oklahoma
+OK,McClain,G4000870,SPPS,38682,mcclain,oklahoma
+OK,McCurtain,G4000890,SPPS,32822,mccurtain,oklahoma
+OK,McIntosh,G4000910,SPPS,19815,mcintosh,oklahoma
+OK,Murray,G4000990,SPPS,13918,murray,oklahoma
+OK,Muskogee,G4001010,SPPS,69477,muskogee,oklahoma
+OK,Noble,G4001030,SPPS,11384,noble,oklahoma
+OK,Nowata,G4001050,SPPS,10419,nowata,oklahoma
+OK,Okfuskee,G4001070,SPPS,12167,okfuskee,oklahoma
+OK,Oklahoma,G4001090,SPPS,782970,oklahoma,oklahoma
+OK,Okmulgee,G4001110,SPPS,39213,okmulgee,oklahoma
+OK,Osage,G4001130,SPPS,47806,osage,oklahoma
+OK,Ottawa,G4001150,SPPS,31691,ottawa,oklahoma
+OK,Pawnee,G4001170,SPPS,16485,pawnee,oklahoma
+OK,Payne,G4001190,SPPS,81131,payne,oklahoma
+OK,Pittsburg,G4001210,SPPS,44173,pittsburg,oklahoma
+OK,Pontotoc,G4001230,SPPS,38330,pontotoc,oklahoma
+OK,Pottawatomie,G4001250,SPPS,72290,pottawatomie,oklahoma
+OK,Pushmataha,G4001270,SPPS,11057,pushmataha,oklahoma
+OK,Roger Mills,G4001290,SPPS,3640,roger mills,oklahoma
+OK,Rogers,G4001310,SPPS,91766,rogers,oklahoma
+OK,Seminole,G4001330,SPPS,25207,seminole,oklahoma
+OK,Sequoyah,G4001350,SPPS,41294,sequoyah,oklahoma
+OK,Stephens,G4001370,SPPS,44090,stephens,oklahoma
+OK,Texas,G4001390,SPPS,21098,texas,oklahoma
+OK,Tillman,G4001410,SPPS,7465,tillman,oklahoma
+OK,Tulsa,G4001430,SPPS,642940,tulsa,oklahoma
+OK,Wagoner,G4001450,SPPS,77679,wagoner,oklahoma
+OK,Washington,G4001470,SPPS,52087,washington,oklahoma
+OK,Washita,G4001490,SPPS,11447,washita,oklahoma
+OK,Woods,G4001510,SPPS,9201,woods,oklahoma
+OK,Woodward,G4001530,SPPS,20814,woodward,oklahoma
+OR,Baker,G4100010,NWPP,16059,baker,oregon
+OR,Benton,G4100030,NWPP,89385,benton,oregon
+OR,Clackamas,G4100050,NWPP,408062,clackamas,oregon
+OR,Clatsop,G4100070,NWPP,38632,clatsop,oregon
+OR,Columbia,G4100090,NWPP,50785,columbia,oregon
+OR,Coos,G4100110,NWPP,63761,coos,oregon
+OR,Crook,G4100130,NWPP,22570,crook,oregon
+OR,Curry,G4100150,NWPP,22713,curry,oregon
+OR,Deschutes,G4100170,NWPP,181307,deschutes,oregon
+OR,Douglas,G4100190,NWPP,108457,douglas,oregon
+OR,Gilliam,G4100210,NWPP,1854,gilliam,oregon
+OR,Grant,G4100230,NWPP,7158,grant,oregon
+OR,Harney,G4100250,NWPP,7292,harney,oregon
+OR,Hood River,G4100270,NWPP,23232,hood river,oregon
+OR,Jackson,G4100290,NWPP,216527,jackson,oregon
+OR,Jefferson,G4100310,NWPP,23080,jefferson,oregon
+OR,Josephine,G4100330,NWPP,85904,josephine,oregon
+OR,Klamath,G4100350,NWPP,66443,klamath,oregon
+OR,Lake,G4100370,NWPP,7837,lake,oregon
+OR,Lane,G4100390,NWPP,369519,lane,oregon
+OR,Lincoln,G4100410,NWPP,47806,lincoln,oregon
+OR,Linn,G4100430,NWPP,122849,linn,oregon
+OR,Malheur,G4100450,NWPP,30439,malheur,oregon
+OR,Marion,G4100470,NWPP,336316,marion,oregon
+OR,Morrow,G4100490,NWPP,11274,morrow,oregon
+OR,Multnomah,G4100510,NWPP,799766,multnomah,oregon
+OR,Polk,G4100530,NWPP,81823,polk,oregon
+OR,Sherman,G4100550,NWPP,1710,sherman,oregon
+OR,Tillamook,G4100570,NWPP,26143,tillamook,oregon
+OR,Umatilla,G4100590,NWPP,76456,umatilla,oregon
+OR,Union,G4100610,NWPP,26087,union,oregon
+OR,Wallowa,G4100630,NWPP,6946,wallowa,oregon
+OR,Wasco,G4100650,NWPP,26115,wasco,oregon
+OR,Washington,G4100670,NWPP,582779,washington,oregon
+OR,Wheeler,G4100690,NWPP,1344,wheeler,oregon
+OR,Yamhill,G4100710,NWPP,105035,yamhill,oregon
+PA,Adams,G4200010,PJME,102180,adams,pennsylvania
+PA,Allegheny,G4200030,PJMW,1225365,allegheny,pennsylvania
+PA,Armstrong,G4200050,PJMW,66486,armstrong,pennsylvania
+PA,Beaver,G4200070,PJMW,167429,beaver,pennsylvania
+PA,Bedford,G4200090,PJMW,48325,bedford,pennsylvania
+PA,Berks,G4200110,PJME,414812,berks,pennsylvania
+PA,Blair,G4200130,PJME,124650,blair,pennsylvania
+PA,Bradford,G4200150,PJME,60770,bradford,pennsylvania
+PA,Bucks,G4200170,PJME,626399,bucks,pennsylvania
+PA,Butler,G4200190,PJMW,186847,butler,pennsylvania
+PA,Cambria,G4200210,PJME,134732,cambria,pennsylvania
+PA,Cameron,G4200230,PJME,4677,cameron,pennsylvania
+PA,Carbon,G4200250,PJME,63594,carbon,pennsylvania
+PA,Centre,G4200270,PJME,161464,centre,pennsylvania
+PA,Chester,G4200290,PJME,516312,chester,pennsylvania
+PA,Clarion,G4200310,PJME,38513,clarion,pennsylvania
+PA,Clearfield,G4200330,PJME,80596,clearfield,pennsylvania
+PA,Clinton,G4200350,PJME,39233,clinton,pennsylvania
+PA,Columbia,G4200370,PJME,66420,columbia,pennsylvania
+PA,Crawford,G4200390,PJME,86257,crawford,pennsylvania
+PA,Cumberland,G4200410,PJME,248506,cumberland,pennsylvania
+PA,Dauphin,G4200430,PJME,273707,dauphin,pennsylvania
+PA,Delaware,G4200450,PJME,563402,delaware,pennsylvania
+PA,Elk,G4200470,PJME,30480,elk,pennsylvania
+PA,Erie,G4200490,PJME,276207,erie,pennsylvania
+PA,Fayette,G4200510,PJMW,132733,fayette,pennsylvania
+PA,Forest,G4200530,PJME,7321,forest,pennsylvania
+PA,Franklin,G4200550,PJMW,153851,franklin,pennsylvania
+PA,Fulton,G4200570,PJMW,14640,fulton,pennsylvania
+PA,Greene,G4200590,PJMW,37197,greene,pennsylvania
+PA,Huntingdon,G4200610,PJME,45634,huntingdon,pennsylvania
+PA,Indiana,G4200630,PJME,86364,indiana,pennsylvania
+PA,Jefferson,G4200650,PJME,44073,jefferson,pennsylvania
+PA,Juniata,G4200670,PJME,24863,juniata,pennsylvania
+PA,Lackawanna,G4200690,PJME,211321,lackawanna,pennsylvania
+PA,Lancaster,G4200710,PJME,538500,lancaster,pennsylvania
+PA,Lawrence,G4200730,PJMW,87294,lawrence,pennsylvania
+PA,Lebanon,G4200750,PJME,138863,lebanon,pennsylvania
+PA,Lehigh,G4200770,PJME,363147,lehigh,pennsylvania
+PA,Luzerne,G4200790,PJME,316383,luzerne,pennsylvania
+PA,Lycoming,G4200810,PJME,115248,lycoming,pennsylvania
+PA,McKean,G4200830,PJME,41883,mckean,pennsylvania
+PA,Mercer,G4200850,PJMW,112913,mercer,pennsylvania
+PA,Mifflin,G4200870,PJME,46342,mifflin,pennsylvania
+PA,Monroe,G4200890,PJME,166098,monroe,pennsylvania
+PA,Montgomery,G4200910,PJME,821725,montgomery,pennsylvania
+PA,Montour,G4200930,PJME,18343,montour,pennsylvania
+PA,Northampton,G4200950,PJME,302294,northampton,pennsylvania
+PA,Northumberland,G4200970,PJME,92541,northumberland,pennsylvania
+PA,Perry,G4200990,PJME,45820,perry,pennsylvania
+PA,Philadelphia,G4201010,PJME,1567872,philadelphia,pennsylvania
+PA,Pike,G4201030,PJME,55562,pike,pennsylvania
+PA,Potter,G4201050,PJME,16885,potter,pennsylvania
+PA,Schuylkill,G4201070,PJME,143573,schuylkill,pennsylvania
+PA,Snyder,G4201090,PJME,40468,snyder,pennsylvania
+PA,Somerset,G4201110,PJME,75061,somerset,pennsylvania
+PA,Sullivan,G4201130,PJME,6137,sullivan,pennsylvania
+PA,Susquehanna,G4201150,PJME,40862,susquehanna,pennsylvania
+PA,Tioga,G4201170,PJME,41467,tioga,pennsylvania
+PA,Union,G4201190,PJME,45565,union,pennsylvania
+PA,Venango,G4201210,PJME,52582,venango,pennsylvania
+PA,Warren,G4201230,PJME,40025,warren,pennsylvania
+PA,Washington,G4201250,PJMW,207981,washington,pennsylvania
+PA,Wayne,G4201270,PJME,50710,wayne,pennsylvania
+PA,Westmoreland,G4201290,PJMW,355458,westmoreland,pennsylvania
+PA,Wyoming,G4201310,PJME,27521,wyoming,pennsylvania
+PA,York,G4201330,PJME,443744,york,pennsylvania
+RI,Bristol,G4400010,ISNE,49067,bristol,rhode island
+RI,Kent,G4400030,ISNE,164614,kent,rhode island
+RI,Newport,G4400050,ISNE,82784,newport,rhode island
+RI,Providence,G4400070,ISNE,633673,providence,rhode island
+RI,Washington,G4400090,ISNE,126288,washington,rhode island
+SC,Abbeville,G4500010,SRCA,24872,abbeville,south carolina
+SC,Aiken,G4500030,SRCA,167458,aiken,south carolina
+SC,Allendale,G4500050,SRCA,9045,allendale,south carolina
+SC,Anderson,G4500070,SRCA,196569,anderson,south carolina
+SC,Bamberg,G4500090,SRCA,14434,bamberg,south carolina
+SC,Barnwell,G4500110,SRCA,21483,barnwell,south carolina
+SC,Beaufort,G4500130,SRCA,183149,beaufort,south carolina
+SC,Berkeley,G4500150,SRCA,210898,berkeley,south carolina
+SC,Calhoun,G4500170,SRCA,14796,calhoun,south carolina
+SC,Charleston,G4500190,SRCA,396484,charleston,south carolina
+SC,Cherokee,G4500210,SRCA,56646,cherokee,south carolina
+SC,Chester,G4500230,SRCA,32181,chester,south carolina
+SC,Chesterfield,G4500250,SRCA,46013,chesterfield,south carolina
+SC,Clarendon,G4500270,SRCA,33951,clarendon,south carolina
+SC,Colleton,G4500290,SRCA,37923,colleton,south carolina
+SC,Darlington,G4500310,SRCA,67234,darlington,south carolina
+SC,Dillon,G4500330,SRCA,30858,dillon,south carolina
+SC,Dorchester,G4500350,SRCA,153773,dorchester,south carolina
+SC,Edgefield,G4500370,SRCA,26358,edgefield,south carolina
+SC,Fairfield,G4500390,SRCA,22653,fairfield,south carolina
+SC,Florence,G4500410,SRCA,138742,florence,south carolina
+SC,Georgetown,G4500430,SRCA,61399,georgetown,south carolina
+SC,Greenville,G4500450,SRCA,498766,greenville,south carolina
+SC,Greenwood,G4500470,SRCA,70133,greenwood,south carolina
+SC,Hampton,G4500490,SRCA,19922,hampton,south carolina
+SC,Horry,G4500510,SRCA,322342,horry,south carolina
+SC,Jasper,G4500530,SRCA,28465,jasper,south carolina
+SC,Kershaw,G4500550,SRCA,64097,kershaw,south carolina
+SC,Lancaster,G4500570,SRCA,89594,lancaster,south carolina
+SC,Laurens,G4500590,SRCA,66777,laurens,south carolina
+SC,Lee,G4500610,SRCA,17635,lee,south carolina
+SC,Lexington,G4500630,SRCA,286196,lexington,south carolina
+SC,Marion,G4500670,SRCA,31726,marion,south carolina
+SC,Marlboro,G4500690,SRCA,26945,marlboro,south carolina
+SC,McCormick,G4500650,SRCA,9643,mccormick,south carolina
+SC,Newberry,G4500710,SRCA,38079,newberry,south carolina
+SC,Oconee,G4500730,SRCA,76355,oconee,south carolina
+SC,Orangeburg,G4500750,SRCA,87903,orangeburg,south carolina
+SC,Pickens,G4500770,SRCA,122863,pickens,south carolina
+SC,Richland,G4500790,SRCA,409549,richland,south carolina
+SC,Saluda,G4500810,SRCA,20197,saluda,south carolina
+SC,Spartanburg,G4500830,SRCA,301463,spartanburg,south carolina
+SC,Sumter,G4500850,SRCA,107396,sumter,south carolina
+SC,Union,G4500870,SRCA,27673,union,south carolina
+SC,Williamsburg,G4500890,SRCA,31955,williamsburg,south carolina
+SC,York,G4500910,SRCA,258526,york,south carolina
+SD,Aurora,G4600030,SPPN,2736,aurora,south dakota
+SD,Beadle,G4600050,SPPN,18101,beadle,south dakota
+SD,Bennett,G4600070,SPPN,3460,bennett,south dakota
+SD,Bon Homme,G4600090,SPPN,6984,bon homme,south dakota
+SD,Brookings,G4600110,SPPN,34135,brookings,south dakota
+SD,Brown,G4600130,SPPN,39128,brown,south dakota
+SD,Brule,G4600150,SPPN,5238,brule,south dakota
+SD,Buffalo,G4600170,SPPN,2043,buffalo,south dakota
+SD,Butte,G4600190,RMRG,10205,butte,south dakota
+SD,Campbell,G4600210,SPPN,1378,campbell,south dakota
+SD,Charles Mix,G4600230,SPPN,9396,charles mix,south dakota
+SD,Clark,G4600250,SPPN,3656,clark,south dakota
+SD,Clay,G4600270,SPPN,14086,clay,south dakota
+SD,Codington,G4600290,SPPN,28063,codington,south dakota
+SD,Corson,G4600310,SPPN,4132,corson,south dakota
+SD,Custer,G4600330,RMRG,8596,custer,south dakota
+SD,Davison,G4600350,SPPN,19903,davison,south dakota
+SD,Day,G4600370,SPPN,5571,day,south dakota
+SD,Deuel,G4600390,SPPN,4231,deuel,south dakota
+SD,Dewey,G4600410,SPPN,5742,dewey,south dakota
+SD,Douglas,G4600430,SPPN,2932,douglas,south dakota
+SD,Edmunds,G4600450,SPPN,3952,edmunds,south dakota
+SD,Fall River,G4600470,RMRG,6849,fall river,south dakota
+SD,Faulk,G4600490,SPPN,2354,faulk,south dakota
+SD,Grant,G4600510,SPPN,7148,grant,south dakota
+SD,Gregory,G4600530,SPPN,4171,gregory,south dakota
+SD,Haakon,G4600550,SPPN,1892,haakon,south dakota
+SD,Hamlin,G4600570,SPPN,6028,hamlin,south dakota
+SD,Hand,G4600590,SPPN,3319,hand,south dakota
+SD,Hanson,G4600610,SPPN,3374,hanson,south dakota
+SD,Harding,G4600630,SPPN,1278,harding,south dakota
+SD,Hughes,G4600650,SPPN,17600,hughes,south dakota
+SD,Hutchinson,G4600670,SPPN,7368,hutchinson,south dakota
+SD,Hyde,G4600690,SPPN,1352,hyde,south dakota
+SD,Jackson,G4600710,SPPN,3326,jackson,south dakota
+SD,Jerauld,G4600730,SPPN,2004,jerauld,south dakota
+SD,Jones,G4600750,SPPN,927,jones,south dakota
+SD,Kingsbury,G4600770,SPPN,5001,kingsbury,south dakota
+SD,Lake,G4600790,SPPN,12909,lake,south dakota
+SD,Lawrence,G4600810,RMRG,25281,lawrence,south dakota
+SD,Lincoln,G4600830,SPPN,54469,lincoln,south dakota
+SD,Lyman,G4600850,SPPN,3894,lyman,south dakota
+SD,Marshall,G4600910,SPPN,4801,marshall,south dakota
+SD,McCook,G4600870,SPPN,5625,mccook,south dakota
+SD,McPherson,G4600890,SPPN,2438,mcpherson,south dakota
+SD,Meade,G4600930,SPPN,27693,meade,south dakota
+SD,Mellette,G4600950,SPPN,2102,mellette,south dakota
+SD,Miner,G4600970,SPPN,2281,miner,south dakota
+SD,Minnehaha,G4600990,SPPN,187318,minnehaha,south dakota
+SD,Moody,G4601010,SPPN,6505,moody,south dakota
+SD,Oglala Lakota,G4601020,SPPN,14415,oglala lakota,south dakota
+SD,Pennington,G4601030,SPPN,109372,pennington,south dakota
+SD,Perkins,G4601050,SPPN,2983,perkins,south dakota
+SD,Potter,G4601070,SPPN,2299,potter,south dakota
+SD,Roberts,G4601090,SPPN,10255,roberts,south dakota
+SD,Sanborn,G4601110,SPPN,2396,sanborn,south dakota
+SD,Spink,G4601150,SPPN,6420,spink,south dakota
+SD,Stanley,G4601170,SPPN,2993,stanley,south dakota
+SD,Sully,G4601190,SPPN,1421,sully,south dakota
+SD,Todd,G4601210,SPPN,10155,todd,south dakota
+SD,Tripp,G4601230,SPPN,5492,tripp,south dakota
+SD,Turner,G4601250,SPPN,8317,turner,south dakota
+SD,Union,G4601270,SPPN,14934,union,south dakota
+SD,Walworth,G4601290,SPPN,5610,walworth,south dakota
+SD,Yankton,G4601350,SPPN,22616,yankton,south dakota
+SD,Ziebach,G4601370,SPPN,2801,ziebach,south dakota
+TN,Anderson,G4700010,SRCE,75936,anderson,tennessee
+TN,Bedford,G4700030,SRCE,47484,bedford,tennessee
+TN,Benton,G4700050,SRCE,16014,benton,tennessee
+TN,Bledsoe,G4700070,SRCE,14675,bledsoe,tennessee
+TN,Blount,G4700090,SRCE,128670,blount,tennessee
+TN,Bradley,G4700110,SRCE,104490,bradley,tennessee
+TN,Campbell,G4700130,SRCE,39714,campbell,tennessee
+TN,Cannon,G4700150,SRCE,14027,cannon,tennessee
+TN,Carroll,G4700170,SRCE,28092,carroll,tennessee
+TN,Carter,G4700190,SRCE,56502,carter,tennessee
+TN,Cheatham,G4700210,SRCE,39880,cheatham,tennessee
+TN,Chester,G4700230,SRCE,17453,chester,tennessee
+TN,Claiborne,G4700250,SRCE,31757,claiborne,tennessee
+TN,Clay,G4700270,SRCE,7752,clay,tennessee
+TN,Cocke,G4700290,SRCE,35219,cocke,tennessee
+TN,Coffee,G4700310,SRCE,54682,coffee,tennessee
+TN,Crockett,G4700330,SRCE,14411,crockett,tennessee
+TN,Cumberland,G4700350,SRCE,58655,cumberland,tennessee
+TN,Davidson,G4700370,SRCE,684410,davidson,tennessee
+TN,Decatur,G4700390,SRCE,11769,decatur,tennessee
+TN,DeKalb,G4700410,SRCE,19361,de kalb,tennessee
+TN,Dickson,G4700430,SRCE,52170,dickson,tennessee
+TN,Dyer,G4700450,SRCE,37708,dyer,tennessee
+TN,Fayette,G4700470,SRCE,39590,fayette,tennessee
+TN,Fentress,G4700490,SRCE,18033,fentress,tennessee
+TN,Franklin,G4700510,SRCE,41700,franklin,tennessee
+TN,Gibson,G4700530,SRCE,49401,gibson,tennessee
+TN,Giles,G4700550,SRCE,29307,giles,tennessee
+TN,Grainger,G4700570,SRCE,23072,grainger,tennessee
+TN,Greene,G4700590,SRCE,68615,greene,tennessee
+TN,Grundy,G4700610,SRCE,13389,grundy,tennessee
+TN,Hamblen,G4700630,SRCE,63785,hamblen,tennessee
+TN,Hamilton,G4700650,SRCE,357738,hamilton,tennessee
+TN,Hancock,G4700670,SRCE,6577,hancock,tennessee
+TN,Hardeman,G4700690,SRCE,25435,hardeman,tennessee
+TN,Hardin,G4700710,SRCE,25679,hardin,tennessee
+TN,Hawkins,G4700730,SRCE,56563,hawkins,tennessee
+TN,Haywood,G4700750,SRCE,17853,haywood,tennessee
+TN,Henderson,G4700770,SRCE,27822,henderson,tennessee
+TN,Henry,G4700790,SRCE,32310,henry,tennessee
+TN,Hickman,G4700810,SRCE,24295,hickman,tennessee
+TN,Houston,G4700830,SRCE,8134,houston,tennessee
+TN,Humphreys,G4700850,SRCE,18347,humphreys,tennessee
+TN,Jackson,G4700870,SRCE,11566,jackson,tennessee
+TN,Jefferson,G4700890,SRCE,53535,jefferson,tennessee
+TN,Johnson,G4700910,SRCE,17754,johnson,tennessee
+TN,Knox,G4700930,SRCE,456132,knox,tennessee
+TN,Lake,G4700950,SRCE,7560,lake,tennessee
+TN,Lauderdale,G4700970,SRCE,26773,lauderdale,tennessee
+TN,Lawrence,G4700990,SRCE,43081,lawrence,tennessee
+TN,Lewis,G4701010,SRCE,11904,lewis,tennessee
+TN,Lincoln,G4701030,SRCE,33645,lincoln,tennessee
+TN,Loudon,G4701050,SRCE,51454,loudon,tennessee
+TN,Macon,G4701110,SRCE,23450,macon,tennessee
+TN,Madison,G4701130,SRCE,97663,madison,tennessee
+TN,Marion,G4701150,SRCE,28446,marion,tennessee
+TN,Marshall,G4701170,SRCE,31915,marshall,tennessee
+TN,Maury,G4701190,SRCE,89981,maury,tennessee
+TN,McMinn,G4701070,SRCE,52850,mcminn,tennessee
+TN,McNairy,G4701090,SRCE,25935,mcnairy,tennessee
+TN,Meigs,G4701210,SRCE,12005,meigs,tennessee
+TN,Monroe,G4701230,SRCE,45970,monroe,tennessee
+TN,Montgomery,G4701250,SRCE,195734,montgomery,tennessee
+TN,Moore,G4701270,SRCE,6323,moore,tennessee
+TN,Morgan,G4701290,SRCE,21554,morgan,tennessee
+TN,Obion,G4701310,SRCE,30578,obion,tennessee
+TN,Overton,G4701330,SRCE,22051,overton,tennessee
+TN,Perry,G4701350,SRCE,7964,perry,tennessee
+TN,Pickett,G4701370,SRCE,5142,pickett,tennessee
+TN,Polk,G4701390,SRCE,16772,polk,tennessee
+TN,Putnam,G4701410,SRCE,75931,putnam,tennessee
+TN,Rhea,G4701430,SRCE,32442,rhea,tennessee
+TN,Roane,G4701450,SRCE,52874,roane,tennessee
+TN,Robertson,G4701470,SRCE,69165,robertson,tennessee
+TN,Rutherford,G4701490,SRCE,308251,rutherford,tennessee
+TN,Scott,G4701510,SRCE,21947,scott,tennessee
+TN,Sequatchie,G4701530,SRCE,14897,sequatchie,tennessee
+TN,Sevier,G4701550,SRCE,96673,sevier,tennessee
+TN,Shelby,G4701570,SRCE,934603,shelby,tennessee
+TN,Smith,G4701590,SRCE,19447,smith,tennessee
+TN,Stewart,G4701610,SRCE,13182,stewart,tennessee
+TN,Sullivan,G4701630,SRCE,156667,sullivan,tennessee
+TN,Sumner,G4701650,SRCE,180063,sumner,tennessee
+TN,Tipton,G4701670,SRCE,61303,tipton,tennessee
+TN,Trousdale,G4701690,SRCE,8271,trousdale,tennessee
+TN,Unicoi,G4701710,SRCE,17719,unicoi,tennessee
+TN,Union,G4701730,SRCE,19140,union,tennessee
+TN,Van Buren,G4701750,SRCE,5689,van buren,tennessee
+TN,Warren,G4701770,SRCE,40516,warren,tennessee
+TN,Washington,G4701790,SRCE,127440,washington,tennessee
+TN,Wayne,G4701810,SRCE,16713,wayne,tennessee
+TN,Weakley,G4701830,SRCE,33507,weakley,tennessee
+TN,White,G4701850,SRCE,26653,white,tennessee
+TN,Williamson,G4701870,SRCE,219107,williamson,tennessee
+TN,Wilson,G4701890,SRCE,132781,wilson,tennessee
+TX,Anderson,G4800010,TRE,57734,anderson,texas
+TX,Andrews,G4800030,TRE,17760,andrews,texas
+TX,Angelina,G4800050,TRE,87791,angelina,texas
+TX,Aransas,G4800070,TRE,25721,aransas,texas
+TX,Archer,G4800090,TRE,8703,archer,texas
+TX,Armstrong,G4800110,SPPS,1876,armstrong,texas
+TX,Atascosa,G4800130,TRE,48797,atascosa,texas
+TX,Austin,G4800150,TRE,29758,austin,texas
+TX,Bailey,G4800170,SPPS,7181,bailey,texas
+TX,Bandera,G4800190,TRE,21776,bandera,texas
+TX,Bastrop,G4800210,TRE,82733,bastrop,texas
+TX,Baylor,G4800230,TRE,3697,baylor,texas
+TX,Bee,G4800250,TRE,32750,bee,texas
+TX,Bell,G4800270,TRE,340411,bell,texas
+TX,Bexar,G4800290,TRE,1928680,bexar,texas
+TX,Blanco,G4800310,TRE,11392,blanco,texas
+TX,Borden,G4800330,TRE,633,borden,texas
+TX,Bosque,G4800350,TRE,18097,bosque,texas
+TX,Bowie,G4800370,SPPS,93860,bowie,texas
+TX,Brazoria,G4800390,TRE,354195,brazoria,texas
+TX,Brazos,G4800410,MISS,220417,brazos,texas
+TX,Brewster,G4800430,TRE,9200,brewster,texas
+TX,Briscoe,G4800450,SPPS,1474,briscoe,texas
+TX,Brooks,G4800470,TRE,7214,brooks,texas
+TX,Brown,G4800490,TRE,38271,brown,texas
+TX,Burleson,G4800510,MISS,17760,burleson,texas
+TX,Burnet,G4800530,TRE,46243,burnet,texas
+TX,Caldwell,G4800550,TRE,41161,caldwell,texas
+TX,Calhoun,G4800570,TRE,21965,calhoun,texas
+TX,Callahan,G4800590,TRE,13820,callahan,texas
+TX,Cameron,G4800610,TRE,422135,cameron,texas
+TX,Camp,G4800630,SPPS,12867,camp,texas
+TX,Carson,G4800650,SPPS,6057,carson,texas
+TX,Cass,G4800670,SPPS,30375,cass,texas
+TX,Castro,G4800690,SPPS,7669,castro,texas
+TX,Chambers,G4800710,TRE,39899,chambers,texas
+TX,Cherokee,G4800730,TRE,51668,cherokee,texas
+TX,Childress,G4800750,TRE,7052,childress,texas
+TX,Clay,G4800770,TRE,10193,clay,texas
+TX,Cochran,G4800790,SPPS,2882,cochran,texas
+TX,Coke,G4800810,TRE,3264,coke,texas
+TX,Coleman,G4800830,TRE,8420,coleman,texas
+TX,Collin,G4800850,TRE,939585,collin,texas
+TX,Collingsworth,G4800870,TRE,3016,collingsworth,texas
+TX,Colorado,G4800890,TRE,21019,colorado,texas
+TX,Comal,G4800910,TRE,134788,comal,texas
+TX,Comanche,G4800930,TRE,13484,comanche,texas
+TX,Concho,G4800950,TRE,4279,concho,texas
+TX,Cooke,G4800970,TRE,39266,cooke,texas
+TX,Coryell,G4800990,TRE,74686,coryell,texas
+TX,Cottle,G4801010,TRE,1402,cottle,texas
+TX,Crane,G4801030,TRE,4830,crane,texas
+TX,Crockett,G4801050,TRE,3675,crockett,texas
+TX,Crosby,G4801070,SPPS,5992,crosby,texas
+TX,Culberson,G4801090,TRE,2198,culberson,texas
+TX,Dallam,G4801110,SPPS,7056,dallam,texas
+TX,Dallas,G4801130,TRE,2574984,dallas,texas
+TX,Dawson,G4801150,TRE,13111,dawson,texas
+TX,Deaf Smith,G4801170,SPPS,18830,deaf smith,texas
+TX,Delta,G4801190,TRE,5215,delta,texas
+TX,Denton,G4801210,TRE,806180,denton,texas
+TX,DeWitt,G4801230,TRE,20865,de witt,texas
+TX,Dickens,G4801250,TRE,2184,dickens,texas
+TX,Dimmit,G4801270,TRE,10794,dimmit,texas
+TX,Donley,G4801290,TRE,3405,donley,texas
+TX,Duval,G4801310,TRE,11428,duval,texas
+TX,Eastland,G4801330,TRE,18274,eastland,texas
+TX,Ector,G4801350,TRE,157462,ector,texas
+TX,Edwards,G4801370,TRE,1911,edwards,texas
+TX,El Paso,G4801410,SRSG,837918,el paso,texas
+TX,Ellis,G4801390,TRE,168499,ellis,texas
+TX,Erath,G4801430,TRE,41659,erath,texas
+TX,Falls,G4801450,TRE,17273,falls,texas
+TX,Fannin,G4801470,TRE,34031,fannin,texas
+TX,Fayette,G4801490,TRE,25149,fayette,texas
+TX,Fisher,G4801510,TRE,3854,fisher,texas
+TX,Floyd,G4801530,SPPS,5917,floyd,texas
+TX,Foard,G4801550,TRE,1183,foard,texas
+TX,Fort Bend,G4801570,TRE,741237,fort bend,texas
+TX,Franklin,G4801590,SPPS,10607,franklin,texas
+TX,Freestone,G4801610,TRE,19624,freestone,texas
+TX,Frio,G4801630,TRE,18956,frio,texas
+TX,Gaines,G4801650,SPPS,20478,gaines,texas
+TX,Galveston,G4801670,TRE,329431,galveston,texas
+TX,Garza,G4801690,TRE,6442,garza,texas
+TX,Gillespie,G4801710,TRE,26521,gillespie,texas
+TX,Glasscock,G4801730,TRE,1314,glasscock,texas
+TX,Goliad,G4801750,TRE,7517,goliad,texas
+TX,Gonzales,G4801770,TRE,20876,gonzales,texas
+TX,Gray,G4801790,SPPS,22725,gray,texas
+TX,Grayson,G4801810,TRE,128235,grayson,texas
+TX,Gregg,G4801830,SPPS,123745,gregg,texas
+TX,Grimes,G4801850,MISS,27671,grimes,texas
+TX,Guadalupe,G4801870,TRE,155265,guadalupe,texas
+TX,Hale,G4801890,SPPS,34263,hale,texas
+TX,Hall,G4801910,TRE,3138,hall,texas
+TX,Hamilton,G4801930,TRE,8304,hamilton,texas
+TX,Hansford,G4801950,SPPS,5538,hansford,texas
+TX,Hardeman,G4801970,TRE,3906,hardeman,texas
+TX,Hardin,G4801990,MISS,56322,hardin,texas
+TX,Harris,G4802010,TRE,4589928,harris,texas
+TX,Harrison,G4802030,SPPS,66534,harrison,texas
+TX,Hartley,G4802050,SPPS,5747,hartley,texas
+TX,Haskell,G4802070,TRE,5681,haskell,texas
+TX,Hays,G4802090,TRE,204470,hays,texas
+TX,Hemphill,G4802110,SPPS,4129,hemphill,texas
+TX,Henderson,G4802130,TRE,79901,henderson,texas
+TX,Hidalgo,G4802150,TRE,849843,hidalgo,texas
+TX,Hill,G4802170,TRE,35077,hill,texas
+TX,Hockley,G4802190,SPPS,23275,hockley,texas
+TX,Hood,G4802210,TRE,56857,hood,texas
+TX,Hopkins,G4802230,TRE,36400,hopkins,texas
+TX,Houston,G4802250,TRE,22754,houston,texas
+TX,Howard,G4802270,TRE,36708,howard,texas
+TX,Hudspeth,G4802290,SRSG,4053,hudspeth,texas
+TX,Hunt,G4802310,TRE,92073,hunt,texas
+TX,Hutchinson,G4802330,SPPS,21511,hutchinson,texas
+TX,Irion,G4802350,TRE,1557,irion,texas
+TX,Jack,G4802370,TRE,8744,jack,texas
+TX,Jackson,G4802390,TRE,14869,jackson,texas
+TX,Jasper,G4802410,MISS,35648,jasper,texas
+TX,Jeff Davis,G4802430,TRE,2200,jeff davis,texas
+TX,Jefferson,G4802450,MISS,254679,jefferson,texas
+TX,Jim Hogg,G4802470,TRE,5146,jim hogg,texas
+TX,Jim Wells,G4802490,TRE,41149,jim wells,texas
+TX,Johnson,G4802510,TRE,163274,johnson,texas
+TX,Jones,G4802530,TRE,20009,jones,texas
+TX,Karnes,G4802550,TRE,15254,karnes,texas
+TX,Kaufman,G4802570,TRE,118350,kaufman,texas
+TX,Kendall,G4802590,TRE,42540,kendall,texas
+TX,Kenedy,G4802610,TRE,404,kenedy,texas
+TX,Kent,G4802630,TRE,769,kent,texas
+TX,Kerr,G4802650,TRE,51504,kerr,texas
+TX,Kimble,G4802670,TRE,4423,kimble,texas
+TX,King,G4802690,TRE,289,king,texas
+TX,Kinney,G4802710,TRE,3590,kinney,texas
+TX,Kleberg,G4802730,TRE,31690,kleberg,texas
+TX,Knox,G4802750,TRE,3806,knox,texas
+TX,La Salle,G4802830,TRE,7613,la salle,texas
+TX,Lamar,G4802770,TRE,49791,lamar,texas
+TX,Lamb,G4802790,SPPS,13275,lamb,texas
+TX,Lampasas,G4802810,TRE,20760,lampasas,texas
+TX,Lavaca,G4802850,TRE,19809,lavaca,texas
+TX,Lee,G4802870,TRE,17055,lee,texas
+TX,Leon,G4802890,TRE,17299,leon,texas
+TX,Liberty,G4802910,MISS,81704,liberty,texas
+TX,Limestone,G4802930,TRE,23468,limestone,texas
+TX,Lipscomb,G4802950,SPPS,3487,lipscomb,texas
+TX,Live Oak,G4802970,TRE,12056,live oak,texas
+TX,Llano,G4802990,TRE,20362,llano,texas
+TX,Loving,G4803010,TRE,113,loving,texas
+TX,Lubbock,G4803030,SPPS,303137,lubbock,texas
+TX,Lynn,G4803050,SPPS,5711,lynn,texas
+TX,Madison,G4803130,MISS,13987,madison,texas
+TX,Marion,G4803150,SPPS,10147,marion,texas
+TX,Martin,G4803170,TRE,5723,martin,texas
+TX,Mason,G4803190,TRE,4111,mason,texas
+TX,Matagorda,G4803210,TRE,37187,matagorda,texas
+TX,Maverick,G4803230,TRE,57685,maverick,texas
+TX,McCulloch,G4803070,TRE,8172,mcculloch,texas
+TX,McLennan,G4803090,TRE,247934,mclennan,texas
+TX,McMullen,G4803110,TRE,804,mcmullen,texas
+TX,Medina,G4803250,TRE,49283,medina,texas
+TX,Menard,G4803270,TRE,2123,menard,texas
+TX,Midland,G4803290,TRE,162565,midland,texas
+TX,Milam,G4803310,MISS,24871,milam,texas
+TX,Mills,G4803330,TRE,4907,mills,texas
+TX,Mitchell,G4803350,TRE,8720,mitchell,texas
+TX,Montague,G4803370,TRE,19414,montague,texas
+TX,Montgomery,G4803390,MISS,556203,montgomery,texas
+TX,Moore,G4803410,SPPS,22120,moore,texas
+TX,Morris,G4803430,SPPS,12593,morris,texas
+TX,Motley,G4803450,TRE,1160,motley,texas
+TX,Nacogdoches,G4803470,TRE,65806,nacogdoches,texas
+TX,Navarro,G4803490,TRE,48523,navarro,texas
+TX,Newton,G4803510,MISS,14003,newton,texas
+TX,Nolan,G4803530,TRE,14993,nolan,texas
+TX,Nueces,G4803550,TRE,361350,nueces,texas
+TX,Ochiltree,G4803570,SPPS,10306,ochiltree,texas
+TX,Oldham,G4803590,SPPS,2076,oldham,texas
+TX,Orange,G4803610,MISS,84964,orange,texas
+TX,Palo Pinto,G4803630,TRE,28053,palo pinto,texas
+TX,Panola,G4803650,SPPS,23492,panola,texas
+TX,Parker,G4803670,TRE,129441,parker,texas
+TX,Parmer,G4803690,SPPS,9776,parmer,texas
+TX,Pecos,G4803710,TRE,15970,pecos,texas
+TX,Polk,G4803730,MISS,47916,polk,texas
+TX,Potter,G4803750,SPPS,120832,potter,texas
+TX,Presidio,G4803770,TRE,6958,presidio,texas
+TX,Rains,G4803790,TRE,11314,rains,texas
+TX,Randall,G4803810,SPPS,132501,randall,texas
+TX,Reagan,G4803830,TRE,3608,reagan,texas
+TX,Real,G4803850,TRE,3389,real,texas
+TX,Red River,G4803870,TRE,12207,red river,texas
+TX,Reeves,G4803890,TRE,14921,reeves,texas
+TX,Refugio,G4803910,TRE,7321,refugio,texas
+TX,Roberts,G4803930,SPPS,916,roberts,texas
+TX,Robertson,G4803950,MISS,16751,robertson,texas
+TX,Rockwall,G4803970,TRE,93978,rockwall,texas
+TX,Runnels,G4803990,TRE,10448,runnels,texas
+TX,Rusk,G4804010,SPPS,52732,rusk,texas
+TX,Sabine,G4804030,TRE,10303,sabine,texas
+TX,San Augustine,G4804050,TRE,8320,san augustine,texas
+TX,San Jacinto,G4804070,MISS,27707,san jacinto,texas
+TX,San Patricio,G4804090,TRE,67655,san patricio,texas
+TX,San Saba,G4804110,TRE,5944,san saba,texas
+TX,Schleicher,G4804130,TRE,3056,schleicher,texas
+TX,Scurry,G4804150,TRE,17333,scurry,texas
+TX,Shackelford,G4804170,TRE,3315,shackelford,texas
+TX,Shelby,G4804190,SPPS,25579,shelby,texas
+TX,Sherman,G4804210,SPPS,3068,sherman,texas
+TX,Smith,G4804230,TRE,225290,smith,texas
+TX,Somervell,G4804250,TRE,8775,somervell,texas
+TX,Starr,G4804270,TRE,64122,starr,texas
+TX,Stephens,G4804290,TRE,9906,stephens,texas
+TX,Sterling,G4804310,TRE,1367,sterling,texas
+TX,Stonewall,G4804330,TRE,1426,stonewall,texas
+TX,Sutton,G4804350,TRE,3869,sutton,texas
+TX,Swisher,G4804370,SPPS,7466,swisher,texas
+TX,Tarrant,G4804390,TRE,2016872,tarrant,texas
+TX,Taylor,G4804410,TRE,136535,taylor,texas
+TX,Terrell,G4804430,TRE,812,terrell,texas
+TX,Terry,G4804450,SPPS,12799,terry,texas
+TX,Throckmorton,G4804470,TRE,1533,throckmorton,texas
+TX,Titus,G4804490,SPPS,32592,titus,texas
+TX,Tom Green,G4804510,TRE,118386,tom green,texas
+TX,Travis,G4804530,TRE,1199323,travis,texas
+TX,Trinity,G4804550,MISS,14442,trinity,texas
+TX,Tyler,G4804570,MISS,21320,tyler,texas
+TX,Upshur,G4804590,SPPS,40969,upshur,texas
+TX,Upton,G4804610,TRE,3673,upton,texas
+TX,Uvalde,G4804630,TRE,27285,uvalde,texas
+TX,Val Verde,G4804650,TRE,48881,val verde,texas
+TX,Van Zandt,G4804670,TRE,54355,van zandt,texas
+TX,Victoria,G4804690,TRE,92467,victoria,texas
+TX,Walker,G4804710,MISS,71484,walker,texas
+TX,Waller,G4804730,TRE,50115,waller,texas
+TX,Ward,G4804750,TRE,11600,ward,texas
+TX,Washington,G4804770,TRE,35056,washington,texas
+TX,Webb,G4804790,TRE,271193,webb,texas
+TX,Wharton,G4804810,TRE,41735,wharton,texas
+TX,Wheeler,G4804830,SPPS,5546,wheeler,texas
+TX,Wichita,G4804850,TRE,131838,wichita,texas
+TX,Wilbarger,G4804870,TRE,12892,wilbarger,texas
+TX,Willacy,G4804890,TRE,21810,willacy,texas
+TX,Williamson,G4804910,TRE,528718,williamson,texas
+TX,Wilson,G4804930,TRE,48480,wilson,texas
+TX,Winkler,G4804950,TRE,7893,winkler,texas
+TX,Wise,G4804970,TRE,64455,wise,texas
+TX,Wood,G4804990,SPPS,44227,wood,texas
+TX,Yoakum,G4805010,SPPS,8488,yoakum,texas
+TX,Young,G4805030,TRE,18152,young,texas
+TX,Zapata,G4805050,TRE,14349,zapata,texas
+TX,Zavala,G4805070,TRE,12023,zavala,texas
+UT,Beaver,G4900010,BASN,6463,beaver,utah
+UT,Box Elder,G4900030,BASN,53139,box elder,utah
+UT,Cache,G4900050,BASN,122753,cache,utah
+UT,Carbon,G4900070,BASN,20399,carbon,utah
+UT,Daggett,G4900090,BASN,1095,daggett,utah
+UT,Davis,G4900110,BASN,342281,davis,utah
+UT,Duchesne,G4900130,BASN,20337,duchesne,utah
+UT,Emery,G4900150,BASN,10216,emery,utah
+UT,Garfield,G4900170,BASN,4986,garfield,utah
+UT,Grand,G4900190,BASN,9579,grand,utah
+UT,Iron,G4900210,BASN,49937,iron,utah
+UT,Juab,G4900230,BASN,11010,juab,utah
+UT,Kane,G4900250,BASN,7334,kane,utah
+UT,Millard,G4900270,BASN,12694,millard,utah
+UT,Morgan,G4900290,BASN,11437,morgan,utah
+UT,Piute,G4900310,BASN,1466,piute,utah
+UT,Rich,G4900330,BASN,2319,rich,utah
+UT,Salt Lake,G4900350,BASN,1121354,salt lake,utah
+UT,San Juan,G4900370,BASN,16895,san juan,utah
+UT,Sanpete,G4900390,BASN,29409,sanpete,utah
+UT,Sevier,G4900410,BASN,21267,sevier,utah
+UT,Summit,G4900430,BASN,40307,summit,utah
+UT,Tooele,G4900450,BASN,64833,tooele,utah
+UT,Uintah,G4900470,BASN,36373,uintah,utah
+UT,Utah,G4900490,BASN,592299,utah,utah
+UT,Wasatch,G4900510,BASN,30528,wasatch,utah
+UT,Washington,G4900530,BASN,160245,washington,utah
+UT,Wayne,G4900550,BASN,2702,wayne,utah
+UT,Weber,G4900570,BASN,247560,weber,utah
+VA,Accomack,G5100010,PJME,32947,accomack,virginia
+VA,Albemarle,G5100030,PJMD,106878,albemarle,virginia
+VA,Alexandria,G5105100,PJMD,155810,alexandria,virginia
+VA,Alleghany,G5100050,PJMD,15595,alleghany,virginia
+VA,Amelia,G5100070,PJMD,12913,amelia,virginia
+VA,Amherst,G5100090,PJMD,31633,amherst,virginia
+VA,Appomattox,G5100110,PJMD,15475,appomattox,virginia
+VA,Arlington,G5100130,PJMD,230050,arlington,virginia
+VA,Augusta,G5100150,PJMD,74997,augusta,virginia
+VA,Bath,G5100170,PJMD,4476,bath,virginia
+VA,Bedford,G5100190,PJMW,77960,bedford,virginia
+VA,Bland,G5100210,PJMW,6513,bland,virginia
+VA,Botetourt,G5100230,PJMD,33231,botetourt,virginia
+VA,Bristol,G5105200,SRCE,16960,bristol,virginia
+VA,Brunswick,G5100250,PJMD,16243,brunswick,virginia
+VA,Buchanan,G5100270,PJMW,22178,buchanan,virginia
+VA,Buckingham,G5100290,PJMD,17048,buckingham,virginia
+VA,Buena Vista,G5105300,PJMD,6452,buena vista,virginia
+VA,Campbell,G5100310,PJMW,54952,campbell,virginia
+VA,Caroline,G5100330,PJMD,30178,caroline,virginia
+VA,Carroll,G5100350,PJMW,29531,carroll,virginia
+VA,Charles City,G5100360,PJMD,7071,charles city,virginia
+VA,Charlotte,G5100370,PJMD,12129,charlotte,virginia
+VA,Charlottesville,G5105400,PJMD,46912,charlottesville,virginia
+VA,Chesapeake,G5105500,PJMD,237940,chesapeake,virginia
+VA,Chesterfield,G5100410,PJMD,339009,chesterfield,virginia
+VA,Clarke,G5100430,PJMW,14374,clarke,virginia
+VA,Colonial Heights,G5105700,PJMD,17772,colonial heights,virginia
+VA,Covington,G5105800,PJMD,5518,covington,virginia
+VA,Craig,G5100450,PJMD,5158,craig,virginia
+VA,Culpeper,G5100470,PJMW,50083,culpeper,virginia
+VA,Cumberland,G5100490,PJMD,9652,cumberland,virginia
+VA,Danville,G5105900,PJMD,41898,danville,virginia
+VA,Dickenson,G5100510,PJMW,14968,dickenson,virginia
+VA,Dinwiddie,G5100530,PJMD,28144,dinwiddie,virginia
+VA,Emporia,G5105950,PJMD,5305,emporia,virginia
+VA,Essex,G5100570,PJMD,11123,essex,virginia
+VA,Fairfax,G5100590,PJMD,1138652,fairfax,virginia
+VA,Fairfax City,G5106000,PJMD,24164,fairfax city,virginia
+VA,Falls Church,G5106100,PJMD,14014,falls church,virginia
+VA,Fauquier,G5100610,PJMW,69069,fauquier,virginia
+VA,Floyd,G5100630,PJMW,15731,floyd,virginia
+VA,Fluvanna,G5100650,PJMD,26271,fluvanna,virginia
+VA,Franklin,G5100670,PJMW,56069,franklin,virginia
+VA,Franklin City,G5106200,PJMD,8306,franklin city,virginia
+VA,Frederick,G5100690,PJMW,84421,frederick,virginia
+VA,Fredericksburg,G5106300,PJMD,28297,fredericksburg,virginia
+VA,Galax,G5106400,PJMW,6775,galax,virginia
+VA,Giles,G5100710,PJMW,16857,giles,virginia
+VA,Gloucester,G5100730,PJMD,37214,gloucester,virginia
+VA,Goochland,G5100750,PJMD,22668,goochland,virginia
+VA,Grayson,G5100770,PJMW,15107,grayson,virginia
+VA,Greene,G5100790,PJMD,19371,greene,virginia
+VA,Greensville,G5100810,PJMD,11706,greensville,virginia
+VA,Halifax,G5100830,PJMD,34992,halifax,virginia
+VA,Hampton,G5106500,PJMD,135410,hampton,virginia
+VA,Hanover,G5100850,PJMD,104392,hanover,virginia
+VA,Harrisonburg,G5106600,PJMD,53078,harrisonburg,virginia
+VA,Henrico,G5100870,PJMD,326501,henrico,virginia
+VA,Henry,G5100890,PJMW,51445,henry,virginia
+VA,Highland,G5100910,PJMD,2216,highland,virginia
+VA,Hopewell,G5106700,PJMD,22735,hopewell,virginia
+VA,Isle of Wight,G5100930,PJMD,36596,isle of wight,virginia
+VA,James City,G5100950,PJMD,74404,james city,virginia
+VA,King and Queen,G5100970,PJMD,7159,king and queen,virginia
+VA,King George,G5100990,PJMD,25984,king george,virginia
+VA,King William,G5101010,PJMD,16334,king william,virginia
+VA,Lancaster,G5101030,PJMD,10972,lancaster,virginia
+VA,Lee,G5101050,SRCE,24179,lee,virginia
+VA,Lexington,G5106780,PJMD,7045,lexington,virginia
+VA,Loudoun,G5101070,PJMD,385945,loudoun,virginia
+VA,Louisa,G5101090,PJMD,35236,louisa,virginia
+VA,Lunenburg,G5101110,PJMD,12273,lunenburg,virginia
+VA,Lynchburg,G5106800,PJMW,80212,lynchburg,virginia
+VA,Madison,G5101130,PJMD,13078,madison,virginia
+VA,Manassas,G5106830,PJMD,41483,manassas,virginia
+VA,Manassas Park,G5106850,PJMD,15915,manassas park,virginia
+VA,Martinsville,G5106900,PJMW,13445,martinsville,virginia
+VA,Mathews,G5101150,PJMD,8782,mathews,virginia
+VA,Mecklenburg,G5101170,PJMD,30892,mecklenburg,virginia
+VA,Middlesex,G5101190,PJMD,10778,middlesex,virginia
+VA,Montgomery,G5101210,PJMW,98602,montgomery,virginia
+VA,Nelson,G5101250,PJMD,14869,nelson,virginia
+VA,New Kent,G5101270,PJMD,21147,new kent,virginia
+VA,Newport News,G5107000,PJMD,181825,newport news,virginia
+VA,Norfolk,G5107100,PJMD,245115,norfolk,virginia
+VA,Northampton,G5101310,PJME,12139,northampton,virginia
+VA,Northumberland,G5101330,PJMD,12222,northumberland,virginia
+VA,Norton,G5107200,SRCE,3864,norton,virginia
+VA,Nottoway,G5101350,PJMD,15595,nottoway,virginia
+VA,Orange,G5101370,PJMD,35533,orange,virginia
+VA,Page,G5101390,PJMD,23654,page,virginia
+VA,Patrick,G5101410,PJMW,17923,patrick,virginia
+VA,Petersburg,G5107300,PJMD,31882,petersburg,virginia
+VA,Pittsylvania,G5101430,PJMD,61687,pittsylvania,virginia
+VA,Poquoson,G5107350,PJMD,12017,poquoson,virginia
+VA,Portsmouth,G5107400,PJMD,95252,portsmouth,virginia
+VA,Powhatan,G5101450,PJMD,28443,powhatan,virginia
+VA,Prince Edward,G5101470,PJMD,23142,prince edward,virginia
+VA,Prince George,G5101490,PJMD,37845,prince george,virginia
+VA,Prince William,G5101530,PJMD,455210,prince william,virginia
+VA,Pulaski,G5101550,PJMW,34203,pulaski,virginia
+VA,Radford,G5107500,PJMW,17483,radford,virginia
+VA,Rappahannock,G5101570,PJMW,7388,rappahannock,virginia
+VA,Richmond,G5101590,PJMD,8774,richmond,virginia
+VA,Richmond City,G5107600,PJMD,223170,richmond city,virginia
+VA,Roanoke,G5101610,PJMW,94031,roanoke,virginia
+VA,Roanoke City,G5107700,PJMW,99660,roanoke city,virginia
+VA,Rockbridge,G5101630,PJMD,22392,rockbridge,virginia
+VA,Rockingham,G5101650,PJMD,79744,rockingham,virginia
+VA,Russell,G5101670,PJMW,27370,russell,virginia
+VA,Salem,G5107750,PJMW,25549,salem,virginia
+VA,Scott,G5101690,SRCE,21930,scott,virginia
+VA,Shenandoah,G5101710,PJMD,43175,shenandoah,virginia
+VA,Smyth,G5101730,PJMW,31062,smyth,virginia
+VA,Southampton,G5101750,PJMD,18057,southampton,virginia
+VA,Spotsylvania,G5101770,PJMD,132010,spotsylvania,virginia
+VA,Stafford,G5101790,PJMD,144361,stafford,virginia
+VA,Staunton,G5107900,PJMD,24363,staunton,virginia
+VA,Suffolk,G5108000,PJMD,89273,suffolk,virginia
+VA,Surry,G5101810,PJMD,6544,surry,virginia
+VA,Sussex,G5101830,PJMD,11504,sussex,virginia
+VA,Tazewell,G5101850,PJMW,42150,tazewell,virginia
+VA,Virginia Beach,G5108100,PJMD,452602,virginia beach,virginia
+VA,Warren,G5101870,PJMW,39155,warren,virginia
+VA,Washington,G5101910,PJMW,54214,washington,virginia
+VA,Waynesboro,G5108200,PJMD,21887,waynesboro,virginia
+VA,Westmoreland,G5101930,PJMD,17592,westmoreland,virginia
+VA,Williamsburg,G5108300,PJMD,15214,williamsburg,virginia
+VA,Winchester,G5108400,PJMW,27516,winchester,virginia
+VA,Wise,G5101950,SRCE,39228,wise,virginia
+VA,Wythe,G5101970,PJMW,29016,wythe,virginia
+VA,York,G5101990,PJMD,67976,york,virginia
+VT,Addison,G5000010,ISNE,36959,addison,vermont
+VT,Bennington,G5000030,ISNE,36191,bennington,vermont
+VT,Caledonia,G5000050,ISNE,30333,caledonia,vermont
+VT,Chittenden,G5000070,ISNE,161531,chittenden,vermont
+VT,Essex,G5000090,ISNE,6176,essex,vermont
+VT,Franklin,G5000110,ISNE,48915,franklin,vermont
+VT,Grand Isle,G5000130,ISNE,6919,grand isle,vermont
+VT,Lamoille,G5000150,ISNE,25333,lamoille,vermont
+VT,Orange,G5000170,ISNE,28919,orange,vermont
+VT,Orleans,G5000190,ISNE,26863,orleans,vermont
+VT,Rutland,G5000210,ISNE,59310,rutland,vermont
+VT,Washington,G5000230,ISNE,58504,washington,vermont
+VT,Windham,G5000250,ISNE,43145,windham,vermont
+VT,Windsor,G5000270,ISNE,55496,windsor,vermont
+WA,Adams,G5300010,NWPP,19238,adams,washington
+WA,Asotin,G5300030,NWPP,22306,asotin,washington
+WA,Benton,G5300050,NWPP,193686,benton,washington
+WA,Chelan,G5300070,NWPP,76338,chelan,washington
+WA,Clallam,G5300090,NWPP,74570,clallam,washington
+WA,Clark,G5300110,NWPP,467018,clark,washington
+WA,Columbia,G5300130,NWPP,3938,columbia,washington
+WA,Cowlitz,G5300150,NWPP,105160,cowlitz,washington
+WA,Douglas,G5300170,NWPP,41327,douglas,washington
+WA,Ferry,G5300190,NWPP,7614,ferry,washington
+WA,Franklin,G5300210,NWPP,90160,franklin,washington
+WA,Garfield,G5300230,NWPP,2247,garfield,washington
+WA,Grant,G5300250,NWPP,93546,grant,washington
+WA,Grays Harbor,G5300270,NWPP,71628,grays harbor,washington
+WA,Island,G5300290,NWPP,82636,island,washington
+WA,Jefferson,G5300310,NWPP,31139,jefferson,washington
+WA,King,G5300330,NWPP,2149970,king,washington
+WA,Kitsap,G5300350,NWPP,264811,kitsap,washington
+WA,Kittitas,G5300370,NWPP,44866,kittitas,washington
+WA,Klickitat,G5300390,NWPP,21301,klickitat,washington
+WA,Lewis,G5300410,NWPP,77066,lewis,washington
+WA,Lincoln,G5300430,NWPP,10350,lincoln,washington
+WA,Mason,G5300450,NWPP,62198,mason,washington
+WA,Okanogan,G5300470,NWPP,41554,okanogan,washington
+WA,Pacific,G5300490,NWPP,21249,pacific,washington
+WA,Pend Oreille,G5300510,NWPP,13123,pend oreille,washington
+WA,Pierce,G5300530,NWPP,861312,pierce,washington
+WA,San Juan,G5300550,NWPP,16339,san juan,washington
+WA,Skagit,G5300570,NWPP,123681,skagit,washington
+WA,Skamania,G5300590,NWPP,11510,skamania,washington
+WA,Snohomish,G5300610,NWPP,787620,snohomish,washington
+WA,Spokane,G5300630,NWPP,499072,spokane,washington
+WA,Stevens,G5300650,NWPP,44439,stevens,washington
+WA,Thurston,G5300670,NWPP,275222,thurston,washington
+WA,Wahkiakum,G5300690,NWPP,4139,wahkiakum,washington
+WA,Walla Walla,G5300710,NWPP,60340,walla walla,washington
+WA,Whatcom,G5300730,NWPP,216800,whatcom,washington
+WA,Whitman,G5300750,NWPP,48851,whitman,washington
+WA,Yakima,G5300770,NWPP,249636,yakima,washington
+WI,Adams,G5500010,MISW,20069,adams,wisconsin
+WI,Ashland,G5500030,MISW,15714,ashland,wisconsin
+WI,Barron,G5500050,MISW,45412,barron,wisconsin
+WI,Bayfield,G5500070,MISW,14891,bayfield,wisconsin
+WI,Brown,G5500090,MISW,260401,brown,wisconsin
+WI,Buffalo,G5500110,MISW,13099,buffalo,wisconsin
+WI,Burnett,G5500130,MISW,15213,burnett,wisconsin
+WI,Calumet,G5500150,MISW,49553,calumet,wisconsin
+WI,Chippewa,G5500170,MISW,63649,chippewa,wisconsin
+WI,Clark,G5500190,MISW,34557,clark,wisconsin
+WI,Columbia,G5500210,MISW,56927,columbia,wisconsin
+WI,Crawford,G5500230,MISW,16321,crawford,wisconsin
+WI,Dane,G5500250,MISW,531273,dane,wisconsin
+WI,Dodge,G5500270,MISW,88068,dodge,wisconsin
+WI,Door,G5500290,MISW,27587,door,wisconsin
+WI,Douglas,G5500310,MISW,43509,douglas,wisconsin
+WI,Dunn,G5500330,MISW,44704,dunn,wisconsin
+WI,Eau Claire,G5500350,MISW,102965,eau claire,wisconsin
+WI,Florence,G5500370,MISW,4456,florence,wisconsin
+WI,Fond du Lac,G5500390,MISW,102144,fond du lac,wisconsin
+WI,Forest,G5500410,MISW,9064,forest,wisconsin
+WI,Grant,G5500430,MISW,52214,grant,wisconsin
+WI,Green,G5500450,MISW,37075,green,wisconsin
+WI,Green Lake,G5500470,MISW,18719,green lake,wisconsin
+WI,Iowa,G5500490,MISW,23654,iowa,wisconsin
+WI,Iron,G5500510,MISW,5726,iron,wisconsin
+WI,Jackson,G5500530,MISW,20562,jackson,wisconsin
+WI,Jefferson,G5500550,MISW,84625,jefferson,wisconsin
+WI,Juneau,G5500570,MISW,26274,juneau,wisconsin
+WI,Kenosha,G5500590,MISW,168183,kenosha,wisconsin
+WI,Kewaunee,G5500610,MISW,20405,kewaunee,wisconsin
+WI,La Crosse,G5500630,MISW,118122,la crosse,wisconsin
+WI,Lafayette,G5500650,MISW,16753,lafayette,wisconsin
+WI,Langlade,G5500670,MISW,19221,langlade,wisconsin
+WI,Lincoln,G5500690,MISW,27902,lincoln,wisconsin
+WI,Manitowoc,G5500710,MISW,79536,manitowoc,wisconsin
+WI,Marathon,G5500730,MISW,135603,marathon,wisconsin
+WI,Marinette,G5500750,MISW,40491,marinette,wisconsin
+WI,Marquette,G5500770,MISW,15067,marquette,wisconsin
+WI,Menominee,G5500780,MISW,4533,menominee,wisconsin
+WI,Milwaukee,G5500790,MISW,951448,milwaukee,wisconsin
+WI,Monroe,G5500810,MISW,45623,monroe,wisconsin
+WI,Oconto,G5500830,MISW,37430,oconto,wisconsin
+WI,Oneida,G5500850,MISW,35601,oneida,wisconsin
+WI,Outagamie,G5500870,MISW,184526,outagamie,wisconsin
+WI,Ozaukee,G5500890,MISW,88314,ozaukee,wisconsin
+WI,Pepin,G5500910,MISW,7307,pepin,wisconsin
+WI,Pierce,G5500930,MISW,41238,pierce,wisconsin
+WI,Polk,G5500950,MISW,43481,polk,wisconsin
+WI,Portage,G5500970,MISW,70447,portage,wisconsin
+WI,Price,G5500990,MISW,13517,price,wisconsin
+WI,Racine,G5501010,MISW,195140,racine,wisconsin
+WI,Richland,G5501030,MISW,17476,richland,wisconsin
+WI,Rock,G5501050,MISW,161620,rock,wisconsin
+WI,Rusk,G5501070,MISW,14127,rusk,wisconsin
+WI,Sauk,G5501110,MISW,63949,sauk,wisconsin
+WI,Sawyer,G5501130,MISW,16369,sawyer,wisconsin
+WI,Shawano,G5501150,MISW,41062,shawano,wisconsin
+WI,Sheboygan,G5501170,MISW,115427,sheboygan,wisconsin
+WI,St. Croix,G5501090,MISW,88029,st croix,wisconsin
+WI,Taylor,G5501190,MISW,20439,taylor,wisconsin
+WI,Trempealeau,G5501210,MISW,29633,trempealeau,wisconsin
+WI,Vernon,G5501230,MISW,30814,vernon,wisconsin
+WI,Vilas,G5501250,MISW,21435,vilas,wisconsin
+WI,Walworth,G5501270,MISW,102959,walworth,wisconsin
+WI,Washburn,G5501290,MISW,15648,washburn,wisconsin
+WI,Washington,G5501310,MISW,134296,washington,wisconsin
+WI,Waukesha,G5501330,MISW,398424,waukesha,wisconsin
+WI,Waupaca,G5501350,MISW,51533,waupaca,wisconsin
+WI,Waushara,G5501370,MISW,24162,waushara,wisconsin
+WI,Winnebago,G5501390,MISW,169886,winnebago,wisconsin
+WI,Wood,G5501410,MISW,73107,wood,wisconsin
+WV,Barbour,G5400010,PJMW,16831,barbour,west virginia
+WV,Berkeley,G5400030,PJMW,113525,berkeley,west virginia
+WV,Boone,G5400050,PJMW,22816,boone,west virginia
+WV,Braxton,G5400070,PJMW,14471,braxton,west virginia
+WV,Brooke,G5400090,PJMW,22977,brooke,west virginia
+WV,Cabell,G5400110,PJMW,95987,cabell,west virginia
+WV,Calhoun,G5400130,PJMW,7336,calhoun,west virginia
+WV,Clay,G5400150,PJMW,8859,clay,west virginia
+WV,Doddridge,G5400170,PJMW,8413,doddridge,west virginia
+WV,Fayette,G5400190,PJMW,44323,fayette,west virginia
+WV,Gilmer,G5400210,PJMW,8249,gilmer,west virginia
+WV,Grant,G5400230,PJMW,11732,grant,west virginia
+WV,Greenbrier,G5400250,PJMW,35279,greenbrier,west virginia
+WV,Hampshire,G5400270,PJMW,23301,hampshire,west virginia
+WV,Hancock,G5400290,PJMW,29590,hancock,west virginia
+WV,Hardy,G5400310,PJMW,13889,hardy,west virginia
+WV,Harrison,G5400330,PJMW,68400,harrison,west virginia
+WV,Jackson,G5400350,PJMW,29152,jackson,west virginia
+WV,Jefferson,G5400370,PJMW,56368,jefferson,west virginia
+WV,Kanawha,G5400390,PJMW,186241,kanawha,west virginia
+WV,Lewis,G5400410,PJMW,16309,lewis,west virginia
+WV,Lincoln,G5400430,PJMW,21232,lincoln,west virginia
+WV,Logan,G5400450,PJMW,33700,logan,west virginia
+WV,Marion,G5400490,PJMW,56538,marion,west virginia
+WV,Marshall,G5400510,PJMW,31793,marshall,west virginia
+WV,Mason,G5400530,PJMW,26825,mason,west virginia
+WV,McDowell,G5400470,PJMW,19141,mcdowell,west virginia
+WV,Mercer,G5400550,PJMW,60468,mercer,west virginia
+WV,Mineral,G5400570,PJMW,27411,mineral,west virginia
+WV,Mingo,G5400590,PJMW,24647,mingo,west virginia
+WV,Monongalia,G5400610,PJMW,104622,monongalia,west virginia
+WV,Monroe,G5400630,PJMW,13370,monroe,west virginia
+WV,Morgan,G5400650,PJMW,17632,morgan,west virginia
+WV,Nicholas,G5400670,PJMW,25311,nicholas,west virginia
+WV,Ohio,G5400690,PJMW,42516,ohio,west virginia
+WV,Pendleton,G5400710,PJMW,7051,pendleton,west virginia
+WV,Pleasants,G5400730,PJMW,7591,pleasants,west virginia
+WV,Pocahontas,G5400750,PJMW,8501,pocahontas,west virginia
+WV,Preston,G5400770,PJMW,33758,preston,west virginia
+WV,Putnam,G5400790,PJMW,56941,putnam,west virginia
+WV,Raleigh,G5400810,PJMW,76601,raleigh,west virginia
+WV,Randolph,G5400830,PJMW,29006,randolph,west virginia
+WV,Ritchie,G5400850,PJMW,9875,ritchie,west virginia
+WV,Roane,G5400870,PJMW,14208,roane,west virginia
+WV,Summers,G5400890,PJMW,12872,summers,west virginia
+WV,Taylor,G5400910,PJMW,16859,taylor,west virginia
+WV,Tucker,G5400930,PJMW,6926,tucker,west virginia
+WV,Tyler,G5400950,PJMW,8972,tyler,west virginia
+WV,Upshur,G5400970,PJMW,24658,upshur,west virginia
+WV,Wayne,G5400990,PJMW,40531,wayne,west virginia
+WV,Webster,G5401010,PJMW,8646,webster,west virginia
+WV,Wetzel,G5401030,PJMW,15640,wetzel,west virginia
+WV,Wirt,G5401050,PJMW,5806,wirt,west virginia
+WV,Wood,G5401070,PJMW,85643,wood,west virginia
+WV,Wyoming,G5401090,PJMW,21763,wyoming,west virginia
+WY,Albany,G5600010,RMRG,38256,albany,wyoming
+WY,Big Horn,G5600030,BASN,12005,big horn,wyoming
+WY,Campbell,G5600050,RMRG,48803,campbell,wyoming
+WY,Carbon,G5600070,BASN,15618,carbon,wyoming
+WY,Converse,G5600090,RMRG,14191,converse,wyoming
+WY,Crook,G5600110,RMRG,7464,crook,wyoming
+WY,Fremont,G5600130,BASN,40242,fremont,wyoming
+WY,Goshen,G5600150,RMRG,13390,goshen,wyoming
+WY,Hot Springs,G5600170,BASN,4679,hot springs,wyoming
+WY,Johnson,G5600190,RMRG,8486,johnson,wyoming
+WY,Laramie,G5600210,RMRG,98136,laramie,wyoming
+WY,Lincoln,G5600230,BASN,19110,lincoln,wyoming
+WY,Natrona,G5600250,BASN,81039,natrona,wyoming
+WY,Niobrara,G5600270,RMRG,2480,niobrara,wyoming
+WY,Park,G5600290,BASN,29353,park,wyoming
+WY,Platte,G5600310,RMRG,8680,platte,wyoming
+WY,Sheridan,G5600330,RMRG,30200,sheridan,wyoming
+WY,Sublette,G5600350,BASN,9769,sublette,wyoming
+WY,Sweetwater,G5600370,BASN,44165,sweetwater,wyoming
+WY,Teton,G5600390,BASN,23191,teton,wyoming
+WY,Uinta,G5600410,BASN,20773,uinta,wyoming
+WY,Washakie,G5600430,BASN,8235,washakie,wyoming
+WY,Weston,G5600450,RMRG,7236,weston,wyoming
