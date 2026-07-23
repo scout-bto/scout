@@ -20,7 +20,6 @@ jobs:
       has_json_diff: ${{ steps.compare.outputs.has_json_diff }}
       has_plot_diff: ${{ steps.compare.outputs.has_plot_diff }}
       changed_plots: ${{ steps.compare.outputs.changed_plots }}
-      json_diff_summary: ${{ steps.compare.outputs.json_diff_summary }}
       profile_comparison: ${{ steps.profile_comparison.outputs.profile_comparison }}
     steps:
       - uses: actions/checkout@v4
@@ -158,7 +157,6 @@ jobs:
           has_json_diff="false"
           has_plot_diff="false"
           changed_plots=""
-          json_diff_summary=""
 
           # --- JSON comparison: approximate (threshold-based) ---
           # Extract baseline JSONs from master
@@ -222,9 +220,6 @@ jobs:
           # Use delimiter for multiline output
           echo "changed_plots<<EOF" >> $GITHUB_OUTPUT
           echo "$changed_plots" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "json_diff_summary<<EOF" >> $GITHUB_OUTPUT
-          echo "$json_diff_summary" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Convert changed plot PDFs to PNGs
         if: steps.compare.outputs.has_plot_diff == 'true'
@@ -377,7 +372,6 @@ jobs:
         if: steps.compare.outputs.has_diff == 'true'
         env:
           UPDATE_BASELINE: ${{ steps.check-label.outputs.update_baseline }}
-          JSON_DIFF_SUMMARY: ${{ steps.compare.outputs.json_diff_summary }}
         run: |
           HAS_JSON_DIFF="${{ steps.compare.outputs.has_json_diff }}"
           HAS_PLOT_DIFF="${{ steps.compare.outputs.has_plot_diff }}"
@@ -398,16 +392,8 @@ jobs:
           if [[ "$UPDATE_BASELINE" == "true" ]]; then
             echo "::warning::Integration test results differ from master, but 'update-baseline' label is set. Treating as expected change."
             echo "::warning::Differences: $reasons"
-            if [[ "$HAS_JSON_DIFF" == "true" && -n "$JSON_DIFF_SUMMARY" ]]; then
-              echo "::notice::JSON diff summary"
-              echo "$JSON_DIFF_SUMMARY"
-            fi
           else
             echo "::error::Integration test results differ from master: $reasons"
-            if [[ "$HAS_JSON_DIFF" == "true" && -n "$JSON_DIFF_SUMMARY" ]]; then
-              echo "::notice::JSON diff summary"
-              echo "$JSON_DIFF_SUMMARY"
-            fi
             echo "::notice::To accept these changes as the new baseline, add the 'update-baseline' label to this PR and re-run."
             exit 1
           fi
@@ -445,7 +431,6 @@ jobs:
         env:
           HAS_PLOT_DIFF: ${{ needs.run-test.outputs.has_plot_diff }}
           HAS_JSON_DIFF: ${{ needs.run-test.outputs.has_json_diff }}
-          JSON_DIFF_SUMMARY: ${{ needs.run-test.outputs.json_diff_summary }}
           HEAD_REF: ${{ github.head_ref }}
           CROSS_PLATFORM_RESULT: ${{ needs.cross-platform-test.result }}
           PROFILE_COMPARISON: ${{ needs.run-test.outputs.profile_comparison }}
@@ -458,7 +443,6 @@ jobs:
             const hasDiff = '${{ needs.run-test.outputs.has_diff }}';
             const hasJsonDiff = process.env.HAS_JSON_DIFF;
             const hasPlotDiff = process.env.HAS_PLOT_DIFF;
-            const jsonDiffSummary = process.env.JSON_DIFF_SUMMARY || '';
             const headRef = process.env.HEAD_REF;
             const profilerEnabled = '${{ inputs.enable_profiler }}';
             const profileComparison = process.env.PROFILE_COMPARISON || '';
@@ -517,10 +501,6 @@ jobs:
                 body += `Integration test results differ from master:\n`;
                 for (const reason of reasons) {
                   body += `- ${reason}\n`;
-                }
-                if (hasJsonDiff === 'true' && jsonDiffSummary.trim()) {
-                  body += `\n**JSON diff summary**\n\n`;
-                  body += '```\n' + jsonDiffSummary.trim() + '\n```\n';
                 }
                 body += `\nReview the comparison artifacts in the [workflow run](${runUrl}).\n\n`;
                 body += `> **To accept these changes:** Add the \`update-baseline\` label to this PR and re-run CI.\n\n`;
