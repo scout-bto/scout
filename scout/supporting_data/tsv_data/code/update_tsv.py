@@ -6,16 +6,10 @@ import datetime
 import numpy as np
 import warnings
 import time
-from botocore import UNSIGNED
-from botocore.config import Config
 import os
 from os import getcwd
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
-import multiprocessing
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import matplotlib.ticker as mticker
 
 warnings.filterwarnings('ignore')
 MAP_DIR = "map"
@@ -26,7 +20,8 @@ JSON_DIR = "json"
 # JSON_DIR holds only large generated output that's gitignored.
 BASE_TEMPLATE = "tsv_load_in_2024.json"
 EXTERNAL_S3_DIR = "datasets"
-DATABASE_NAME = "scout_tsv" # dedicated Athena database for Scout's tsv data
+# Dedicated Athena database for Scout's tsv data
+DATABASE_NAME = "scout_tsv"
 BUCKET_NAME = 'yujie-bucket'
 # Final gzipped load shape files consumed directly by Scout's ecm_prep.py
 # live one level up from this script, in supporting_data/tsv_data/
@@ -42,28 +37,28 @@ building_map = {
         "Warehouse": ["Warehouse"]
         },
     "residential": {
+        # "MF": also excludes 'multi-family_with_2_-_4_units'
         "MF": ['multi-family_with_5plus_units'],
-               #'multi-family_with_2_-_4_units'],
+        # "SF": also excludes 'single-family_attached'
         "SF": ['single-family_detached'],
-               # 'single-family_attached'],
         "MH": ['mobile_home', 'mobile home']
     }}
 
 
 enduse_map = {
-    "commercial": ["heating","cooling","pumps","ventilation","water heating",
-                   "lighting", "refrigeration", "cooking", "PCs", 
-                   "non-PC office equipment", "plug loads"],
+    "commercial": ["heating", "cooling", "pumps", "ventilation",
+                   "water heating", "lighting", "refrigeration", "cooking",
+                   "PCs", "non-PC office equipment", "plug loads"],
     "residential": ["heating", "cooling", "water heating", "cooking", "drying",
                     "lighting", "refrigeration", "ceiling fan",
-                    "fans and pumps", "plug loads","clothes washing",
-                    "dishwasher","pool heaters", "pool pumps",
+                    "fans and pumps", "plug loads", "clothes washing",
+                    "dishwasher", "pool heaters", "pool pumps",
                     "portable electric spas"]}
 
 replacements = {
     "pcs": "PCs",
     "nonpc_office_equipment": "non-PC office equipment",
-    "other_mels": "plug loads", # "other (MELs)"
+    "other_mels": "plug loads",  # "other (MELs)"
     "water_heating": "water heating",
     "ceiling_fan": "ceiling fan",
     "fans_and_pumps": "fans and pumps",
@@ -80,13 +75,14 @@ replacements = {
     "Mobile Home": "mobile_home"
 }
 
+
 def replace_strings_in_dataframe(df, replacements):
     # Replace strings in column names
     df.rename(columns=replacements, inplace=True)
-    
+
     # Replace strings in the data
     df.replace(replacements, inplace=True)
-    
+
     return df
 
 
@@ -171,7 +167,7 @@ def sql_to_csvout(s3_client, athena_client, sql_file, out_name=None):
 
 def upload_file_to_s3(client, local_path, bucket, s3_path):
     client.upload_file(local_path, bucket, s3_path)
-    print(f"""UPLOADED {os.path.basename(local_path)} 
+    print(f"""UPLOADED {os.path.basename(local_path)}
           to s3://{bucket}/{s3_path}""")
 
 
@@ -226,16 +222,21 @@ def round_floats(obj):
         return [round_floats(i) for i in obj]
     return obj
 
+
 def findNan(reg, eu, example_list):
-    contains_nan = any(isinstance(item, float) and np.isnan(item) for item in example_list)
+    contains_nan = any(
+        isinstance(item, float) and np.isnan(item) for item in example_list)
     if contains_nan:
         # print(f"The list contains NaN. {reg} {eu}")
         # print(example_list)
-        updated_list = [0 if isinstance(item, float) and np.isnan(item) else item for item in example_list]
+        updated_list = [
+            0 if isinstance(item, float) and np.isnan(item) else item
+            for item in example_list]
     else:
         # print("The list does not contain NaN.")
         updated_list = example_list
     return updated_list
+
 
 def insert_scouttsv_emm0(opts):
     emm_file = f"{OUTPUT_DIR}/{opts.bstock}_emm.csv"
@@ -243,7 +244,7 @@ def insert_scouttsv_emm0(opts):
         return print('File does not exist, please run getdata()')
     df = pd.read_csv(emm_file)
     if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units','Single-Family Detached']
+        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
         df = df[df['building_type'].isin(values_to_keep)]
     if opts.bstock == 'commercial':
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
@@ -320,11 +321,11 @@ def insert_scouttsv_usstate0(opts):
     if not os.path.isfile(csv_file):
         return print('File does not exist, please run getdata()')
     df = pd.read_csv(csv_file)
-    
+
     if opts.bstock == 'commercial':
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
     if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units','Single-Family Detached']
+        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
         df = df[df['building_type'].isin(values_to_keep)]
 
     df = replace_strings_in_dataframe(df, replacements)
@@ -346,7 +347,7 @@ def insert_scouttsv_usstate0(opts):
                 es60 = es60.sum(axis=1)
                 es60 = es60 / es60.sum()
                 es60 = findNan(state, eu, es60)
-                
+
                 llen = len(es60)
                 if llen != 8760:
                     print(f"{state} {eu} {llen}")
@@ -399,7 +400,7 @@ def insert_scouttsv_emm(opts):
         return print('File does not exist, please run getdata()')
     df = pd.read_csv(emm_file)
     if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units','Single-Family Detached']
+        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
         df = df[df['building_type'].isin(values_to_keep)]
     if opts.bstock == 'commercial':
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
@@ -493,11 +494,11 @@ def insert_scouttsv_usstate(opts):
     if not os.path.isfile(csv_file):
         return print('File does not exist, please run getdata()')
     df = pd.read_csv(csv_file)
-    
+
     if opts.bstock == 'commercial':
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
     if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units','Single-Family Detached']
+        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
         df = df[df['building_type'].isin(values_to_keep)]
 
     df = replace_strings_in_dataframe(df, replacements)
@@ -616,6 +617,7 @@ def countrows_eu(opts):
             else:
                 print("No missing timestamps found.")
 
+
 def main(base_dir):
 
     if opts.get_stockdata is True:
@@ -623,8 +625,10 @@ def main(base_dir):
         s3_client = session.client('s3')
         athena_client = session.client('athena')
         print("Uploading geo_map.csv and creating Athena table...")
-        s3_create_tables_from_csv(s3_client, athena_client, MAP_DIR, "geo_map.csv")
-        # RUN the SQL queries directly on AWS Athena as using Python may risk of losing datapoints due to connection issue
+        s3_create_tables_from_csv(
+            s3_client, athena_client, MAP_DIR, "geo_map.csv")
+        # RUN the SQL queries directly on AWS Athena, as using Python may
+        # risk losing datapoints due to connection issues.
         # The four queries are independent (different sources, different
         # output files), so run them concurrently instead of waiting on
         # each one in turn; boto3 clients are thread-safe for API calls.
@@ -668,7 +672,7 @@ if __name__ == '__main__':
     parser.add_argument("--insert_scouttsv", action="store_true",
                         help="Insert stock data to tsv_load.json")
     parser.add_argument("--diag", action="store_true",
-                     help="diagnose downloaded data")
+                        help="diagnose downloaded data")
     parser.add_argument("--bstock", type=str,
                         help="Determine building stock ")
     opts = parser.parse_args()
