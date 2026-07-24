@@ -1471,21 +1471,12 @@ class UsefulVars(object):
                 # max/min net system load hours and peak/take net system load
                 # hour windows by season and EMM region
                 peak_take_names = (
-                    "Region", "Year", "SummerMaxHr", "SummerMinHr",
-                    "SummerPeakStartHr", "SummerPeakEndHr",
-                    "SummerTakeStartHr1", "SummerTakeEndHr1",
-                    "SummerTakeStartHr2", "SummerTakeEndHr2",
-                    "SummerTakeStartHr3", "SummerTakeEndHr3",
-                    "WinterMaxHr", "WinterMinHr",
-                    "WinterPeakStartHr", "WinterPeakEndHr",
-                    "WinterTakeStartHr1", "WinterTakeEndHr1",
-                    "WinterTakeStartHr2", "WinterTakeEndHr2",
-                    "WinterTakeStartHr3", "WinterTakeEndHr3",
-                    "InterMaxHr", "InterMinHr",
-                    "InterPeakStartHr", "InterPeakEndHr",
-                    "InterTakeStartHr1", "InterTakeEndHr1",
-                    "InterTakeStartHr2", "InterTakeEndHr2",
-                    "InterTakeStartHr3", "InterTakeEndHr3")
+                    "Region", "Year", "Overall-PeakMonth", "Summer-PeakMonth", "Summer-MaxHr",
+                    "Summer-MinHr", "Summer-PeakStartHr", "Summer-PeakEndHr", "Summer-TakeStartHr",
+                    "Summer-TakeEndHr", "Winter-PeakMonth", "Winter-MaxHr", "Winter-MinHr",
+                    "Winter-PeakStartHr", "Winter-PeakEndHr", "Winter-TakeStartHr",
+                    "Winter-TakeEndHr", "Inter-MaxHr", "Inter-MinHr", "Inter-PeakStartHr",
+                    "Inter-PeakEndHr", "Inter-TakeStartHr", "Inter-TakeEndHr")
 
                 # Choose the appropriate data to use in determining peak/take
                 # windows (total vs. net system load under reference vs. "Low
@@ -1914,52 +1905,24 @@ class UsefulVars(object):
             "min": peak_take_cz["SummerMinHr"][0],
             "peak range": list(range(peak_take_cz["SummerPeakStartHr"][0],
                                      peak_take_cz["SummerPeakEndHr"][0] + 1)),
-            "take range": list(range(peak_take_cz["SummerTakeStartHr1"][0],
-                                     peak_take_cz["SummerTakeEndHr1"][0] + 1))}
+            "take range": list(range(peak_take_cz["SummerTakeStartHr"][0],
+                                     peak_take_cz["SummerTakeEndHr"][0] + 1))}
         # Set winter max load hour, min load hour, and peak/take windows
         wint_peak_take = {
             "max": peak_take_cz["WinterMaxHr"][0],
             "min": peak_take_cz["WinterMinHr"][0],
             "peak range": list(range(peak_take_cz["WinterPeakStartHr"][0],
                                      peak_take_cz["WinterPeakEndHr"][0] + 1)),
-            "take range": list(range(peak_take_cz["WinterTakeStartHr1"][0],
-                                     peak_take_cz["WinterTakeEndHr1"][0] + 1))}
+            "take range": list(range(peak_take_cz["WinterTakeStartHr"][0],
+                                     peak_take_cz["WinterTakeEndHr"][0] + 1))}
         # Set intermediate max load hour, min load hour, and peak/take windows
         inter_peak_take = {
             "max": peak_take_cz["InterMaxHr"][0],
             "min": peak_take_cz["InterMinHr"][0],
             "peak range": list(range(peak_take_cz["InterPeakStartHr"][0],
                                      peak_take_cz["InterPeakEndHr"][0] + 1)),
-            "take range": list(range(peak_take_cz["InterTakeStartHr1"][0],
-                                     peak_take_cz["InterTakeEndHr1"][0] + 1))}
-        # Handle cases where seasonal low demand periods cover two or three
-        # non-contiguous time segments (e.g., 2-6AM, 10AM-2PM)
-
-        # Loop through seasonal take variable names
-        for seas in ["SummerTake", "WinterTake", "InterTake"]:
-            # Loop through segment number in the variable name
-            for seg in ["2", "3"]:
-                # Sandwich start/end hour information between season and
-                # segment information in the variable name
-                st_key = seas + "StartHr" + seg
-                end_key = seas + "EndHr" + seg
-                # Check to see whether data are present for the given season
-                # and segment (use segment starting hour variable as indicator)
-                if numpy.isfinite(peak_take_cz[st_key][0]):
-                    # Append additional low demand periods as appropriate for
-                    # the given season
-                    if "Summer" in seas:
-                        sum_peak_take["take range"].extend(list(
-                            range(peak_take_cz[st_key][0],
-                                  peak_take_cz[end_key][0])))
-                    elif "Winter" in seas:
-                        wint_peak_take["take range"].extend(list(
-                            range(peak_take_cz[st_key][0],
-                                  peak_take_cz[end_key][0])))
-                    else:
-                        inter_peak_take["take range"].extend(list(
-                            range(peak_take_cz[st_key][0],
-                                  peak_take_cz[end_key][0])))
+            "take range": list(range(peak_take_cz["InterTakeStartHr"][0],
+                                     peak_take_cz["InterTakeEndHr"][0] + 1))}
 
         return sum_peak_take, wint_peak_take, inter_peak_take
 
@@ -2199,10 +2162,10 @@ class UsefulInputFiles(object):
         self.cpi_data = fp.CONVERT_DATA / "cpi.csv"
         self.tsv_shape_data = (
             fp.ECM_DEF / "energyplus_data" / "savings_shapes")
-        self.tsv_metrics_data_tot_ref = fp.TSV_DATA / "tsv_hrs_tot_ref.csv"
-        self.tsv_metrics_data_net_ref = fp.TSV_DATA / "tsv_hrs_net_ref.csv"
-        self.tsv_metrics_data_tot_hr = fp.TSV_DATA / "tsv_hrs_tot_hr.csv"
-        self.tsv_metrics_data_net_hr = fp.TSV_DATA / "tsv_hrs_net_hr.csv"
+        self.tsv_metrics_data_tot_ref = fp.TSV_DATA / "tsv_hrs_tot_base.csv"
+        self.tsv_metrics_data_net_ref = fp.TSV_DATA / "tsv_hrs_net_base.csv"
+        self.tsv_metrics_data_tot_hr = fp.TSV_DATA / "tsv_hrs_tot_lowogs.csv"
+        self.tsv_metrics_data_net_hr = fp.TSV_DATA / "tsv_hrs_net_lowogs.csv"
         self.health_data = fp.CONVERT_DATA / "epa_costs.csv"
         self.hp_convert_rates = fp.CONVERT_DATA / "hp_convert_rates.json"
         self.fug_emissions_dat = fp.CONVERT_DATA / "fugitive_emissions_convert.json"

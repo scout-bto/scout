@@ -580,65 +580,63 @@ In this example, the supporting CSV file path is |html-filepath| ./ecm_definitio
 
 * *Hour of Year*. Hour of the simulated year, spanning 1 to 8760. The simulated year must match the `reference year`_ in terms of starting day of the week (Sunday) and total number of days (365).
 * *Climate Zone*. Applicable `ASHRAE 90.1-2016 climate zone`_ (see Table 2); currently, only the 14 contiguous U.S. climate zones (2A through 7) are supported.
-* *Net Load Version*. This column indicates the one or two representative `EIA Electricity Market Module (EMM)`_ net utility system load `profiles`_ for the given climate zone that determine energy flexibility measure characteristics (e.g., targeted shed/shift periods) for that climate zone; this distinction is only relevant to flexibility measures. :numref:`tsv-nl-tab` summarizes default periods of net peak and low system demand under the `AEO Low Renewable Cost` side case for each ASHRAE climate zone in the summer (S) and winter (W); the "Version" column of :numref:`tsv-nl-tab` indicates cases where two system load profiles are used to define these peak/low demand periods for a given climate zone.
+* *Net Load Version*. This column indicates the one or two representative `EIA Electricity Market Module (EMM)`_ net utility system load `profiles`_ for the given climate zone that determine energy flexibility measure characteristics (e.g., targeted shed/shift periods) for that climate zone; this distinction is only relevant to flexibility measures. :numref:`tsv-nl-tab` summarizes default periods of net peak and low system demand under the `AEO Low Oil and Gas Supply` side case for each ASHRAE climate zone in the summer (S) and winter (W); the "Version" column of :numref:`tsv-nl-tab` indicates cases where two system load profiles are used to define these peak/low demand periods for a given climate zone.
 
 .. _tsv-nl-tab:
-.. table:: Net peak and low system demand periods by ASHRAE climate zone in winter (W) and summer (S), using data from the `AEO 2022 Low Renewable Cost` side case for the year 2050.
+.. table:: Net peak and low system demand periods by ASHRAE climate zone in winter (W) and summer (S), using data from the `AEO 2026 Low Oil and Gas Supply` side case for the year 2050.
 
    +---------+---------+----------+----------+---------+---------------+----------------+
    | Climate | Version | EMM Reg. | Peak (W) | Peak (S)| Low (W)       | Low (S)        |
    +=========+=========+==========+==========+=========+===============+================+
-   | 2A      | 1       | FRCC     | 4-8PM    | 4-8PM   | 10AM-3PM      | 8AM-12PM       |
+   | 2A      | 1       | FRCC     | 5-9PM    | 5-9PM   | 10AM-2PM      | 9AM-1PM        |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 2A      | 2       | MISS     | 5-9PM    | 4-8PM   | 11AM-3PM      | 9AM-2PM        |
+   | 2A      | 2       | MISS     | 6-10PM   | 5-9PM   | 12-4PM        | 7-11AM         |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 2B      | 1       | SRSG     | 6-10PM   | 4-8PM   | 10AM-3PM      | 8AM-2PM        |
+   | 2B      | 1       | SRSG     | 5-9PM    | 5-9PM   | 10AM-2PM      | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 3A      | 1       | SRSE     | 4-8PM    | 4-8PM   | 11AM-3PM      | 10AM-1PM       |
+   | 3A      | 1       | SRSE     | 5-9AM    | 5-9PM   | 11AM-3PM      | 8AM-12PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 3A      | 2       | TRE      | 7-11PM   | 5-9PM   | 11AM-4PM      | 10AM-1PM       |
+   | 3A      | 2       | TRE      | 5-9PM    | 5-9PM   | 1-5PM         | 8AM-12PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 3B      | 1       | CASO     | 6-10PM   | 6-10PM  | 11AM-2PM      | 11AM-2PM       |
+   | 3B      | 1       | CASO     | 5-9PM    | 5-9PM   | 9AM-1PM       | 8AM-12PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 3B      | 2       | BASN     | 4-8PM    | 4-8PM   | 10AM-3PM      | 9AM-3PM        |
+   | 3B      | 2       | BASN     | 5-9PM    | 5-9PM   | 11AM-3PM      | 8AM-12PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 3C      | 1       | CANO     | 4-8PM    | 6-10PM  | 11AM-2PM      | 9AM-3PM        |
+   | 3C      | 1       | CANO     | 5-9PM    | 5-9PM   | 9AM-1PM       | 9AM-1PM        |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 4A      | 1       | PJME     | 4-8PM    | 4-8PM   | 10AM-4PM      | 2AM-2PM        |
+   | 4A      | 1       | PJME     | 5-9PM    | 5-9PM   | 1-5PM         | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 4A      | 2       | SRCE     | 4-8PM    | 4-8PM   | 11AM-2PM      | 9AM-1PM        |
+   | 4A      | 2       | SRCE     | 5-9AM    | 5-9PM   | 11AM-3PM      | 8AM-12PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 4B      | 1       | SRSG     | 6-10PM   | 4-8PM   | 10AM-3PM      | 8AM-2PM        |
+   | 4B      | 1       | SRSG     | 5-9PM    | 5-9PM   | 10AM-2PM      | 3AM-7AM        |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 4B      | 2       | CANO     | 4-8PM    | 6-10PM  | 11AM-2PM      | 9AM-3PM        |
+   | 4B      | 2       | CANO     | 5-9PM    | 5-9PM   | 9AM-1PM       | 9AM-1PM        |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 4C      | 1       | NWPP     | 4-8PM    | 4-8PM   | 10AM-2PM      | 9AM-3PM        |
+   | 4C      | 1       | NWPP     | 5-9PM    | 5-9PM   | 2-6PM         | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 4C      | 2       | CANO     | 4-8PM    | 6-10PM  | 11AM-2PM      | 9AM-3PM        |
+   | 4C      | 2       | CANO     | 5-9PM    | 5-9PM   | 9AM-1PM       | 9AM-1PM        |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 5A      | 1       | PJMW     | 5-9PM    | 5-9PM   | 9AM-4PM       | 9AM-3PM        |
+   | 5A      | 1       | PJMW     | 6-10PM   | 5-9PM   | 1-5PM         | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 5A      | 2       | MISE     | 4-8PM    | 6-10PM  | 11AM-4PM      | 10AM-3PM       |
+   | 5A      | 2       | MISE     | 5-9PM    | 5-9PM   | 1-5PM         | 10AM-2PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 5B      | 1       | RMRG     | 4-8PM    | 4-8PM   | 9AM-3PM       | 8-11AM         |
+   | 5B      | 1       | RMRG     | 5-9PM    | 5-9PM   | 2-6AM         | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 5B      | 2       | CANO     | 4-8PM    | 6-10PM  | 11AM-2PM      | 9AM-3PM        |
+   | 5B      | 2       | CANO     | 5-9PM    | 5-9PM   | 9AM-1PM       | 9AM-1PM        |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 5C      | 1       | NWPP     | 4-8PM    | 4-8PM   | 10AM-2PM      | 9AM-3PM        |
+   | 5C      | 1       | NWPP     | 5-9PM    | 5-9PM   | 2-6PM         | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 6A      | 1       | MISW     | 4-8PM    | 5-9PM   | 2-6AM, |br|   | 1-6AM, |br|    |
-   |         |         |          |          |         |               | 12-1PM         |
+   | 6A      | 1       | MISW     | 1-5AM    | 5-9PM   | 12-4PM        | 2-6AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 6A      | 2       | ISNE     | 4-8PM    | 4-8PM   | 9AM-3PM       | 9AM-1PM        |
+   | 6A      | 2       | ISNE     | 11AM-3PM | 12-4PM  | 12-4AM        | 2-6AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 6B      | 1       | NWPP     | 4-8PM    | 4-8PM   | 10AM-2PM      | 9AM-3PM        |
+   | 6B      | 1       | NWPP     | 5-9PM    | 5-9PM   | 2PM-6PM       | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 6B      | 2       | CASO     | 6-10PM   | 6-10PM  | 11AM-2PM      | 11AM-2PM       |
+   | 6B      | 2       | CASO     | 5-9PM    | 5-9PM   | 9AM-1PM       | 8AM-12PM       |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 7       | 1       | MISW     | 4-8PM    | 5-9PM   | 2-6AM, |br|   | 1-6AM, |br|    |
-   |         |         |          |          |         |               | 12-1PM         |
+   | 7       | 1       | MISW     | 1-5AM    | 5-9PM   | 12-4PM        | 2-6AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
-   | 7       | 2       | RMRG     | 4-8PM    | 4-8PM   | 9AM-3PM       | 8AM-11AM       |
+   | 7       | 2       | RMRG     | 5-9PM    | 5-9PM   | 2-6AM         | 3-7AM          |
    +---------+---------+----------+----------+---------+---------------+----------------+
 
 
@@ -1402,7 +1400,7 @@ High electric grid decarbonization
 ``--grid_assessment_timing`` selects whether avoided emissions and costs from non-fuel switching measures should be assessed *before* or *after* accounting for additional grid decarbonization beyond the Reference Case, by specifying either "before" or "after" with this argument. Avoided emissions and costs for fuel switching measures will always be assessed *after* accounting for additional grid decarbonization beyond the Reference Case. This argument is only applicable if ``--grid_decarb_level`` is also provided.
 
 .. note::
-   Annual emissions intensities for the more aggressive grid decarbonization scenarios are drawn from the `NREL Cambium scenarios`_ and the `Scout DECARB scenarios`_ and are found in |html-filepath| ./scout/supporting_data/convert_data |html-fp-end| . Annual electricity price data (also found in |html-filepath| ./scout/supporting_data/convert_data |html-fp-end| ) and hourly electricity emissions and price data for the more aggressive grid decarbonization scenarios (found in |html-filepath| ./scout/supporting_data/tsv_data |html-fp-end| ) are drawn from different sources --- the `EIA Annual Energy Outlook Low Renewable Cost Side Case`_ for the annual electricity price data, and the `NREL Cambium Low Renewable Energy Cost Scenario`_ for the hourly data.
+   Annual emissions intensities for the more aggressive grid decarbonization scenarios are drawn from the `NREL Cambium scenarios`_ and the `Scout DECARB scenarios`_ and are found in |html-filepath| ./scout/supporting_data/convert_data |html-fp-end| . Annual electricity price data (also found in |html-filepath| ./scout/supporting_data/convert_data |html-fp-end| ) and hourly electricity emissions and price data for the more aggressive grid decarbonization scenarios (found in |html-filepath| ./scout/supporting_data/tsv_data |html-fp-end| ) are drawn from different sources --- the `EIA Annual Energy Outlook Low Zero-carbon Technology Cost`_ for the annual electricity price data, and the `NREL Cambium Low Renewable Energy Cost Scenario`_ for the hourly data.
 
 .. note::
    Currently the ``--grid_decarb`` option is not supported for state regions; if state regions are selected alongside the ``--grid_decarb`` option, the code will automatically switch the run to EMM regions while warning the user.
@@ -1532,7 +1530,7 @@ The following time sensitive valuation metrics are used to assess and report out
 
 ``--tsv_daily_hr_restrict`` specifies the daily hour range to restrict tsv metrics to. The time slice can include all 24 hours of a day or be set to specific a daily period of peak demand on the electric grid (e.g., 4--8 PM) or low demand on the electric grid (e.g., 12--4 AM). Valid options include "all", "peak", or "low".
 
-``--tsv_sys_shape_case`` specifies the basis for determining hour range. Periods of peak and low demand are determined using system-level load profiles for a representative set of `EMM regions`_. These profiles and associated periods may be based on *total* system demand, or total system demand *net* renewable energy generation. Furthermore, the system profiles may be based on either the `AEO Reference Case`_ or the `AEO Low Renewable Cost`_ (e.g., higher renewable penetration) side case assumptions. Valid options include "total reference", "total high renewables", "net renewable reference", or "net renewable high renewables". This argument is only applicable if ``--tsv_daily_hr_restrict`` is set to "peak" or "low". [#]_
+``--tsv_sys_shape_case`` specifies the basis for determining hour range. Periods of peak and low demand are determined using system-level load profiles for a representative set of `EMM regions`_. These profiles and associated periods may be based on *total* system demand, or total system demand *net* renewable energy generation. Furthermore, the system profiles may be based on either the `AEO Reference Case`_ or the `AEO Low Oil and Gas Supply`_ (e.g., higher renewable penetration) side case assumptions. Valid options include "total reference", "total high renewables", "net renewable reference", or "net renewable high renewables". This argument is only applicable if ``--tsv_daily_hr_restrict`` is set to "peak" or "low". [#]_
 
 ``--tsv_season`` limits the analysis to one of three seasons: summer (Jun--Sep), winter (Dec--Mar), or intermediate (Oct--Nov, Apr--May). Valid options include "summer", "winter", or "intermediate".
 
@@ -1779,15 +1777,12 @@ The results figures from the plot generation script |html-filepath| plots.py |ht
 
 .. Note that the extremely inelegant link substitution here is to get around the problem that reStructuredText does not support nested inline markup, thus preventing the use of the |CO2| substitution within a standard :ref:`text <pointer>` internal hyperlink; see the emphasized hyperlink example here: http://docutils.sourceforge.net/FAQ.html#is-nested-inline-markup-possible; see also http://stackoverflow.com/questions/4743845/format-text-in-a-link-in-restructuredtext
 
-1. |Internal rate of return, simple payback, cost of conserved energy, and cost of conserved |CO2| plotted against a metric of interest.|_
+1. :ref:`Internal rate of return, simple payback, cost of conserved energy, and cost of conserved carbon plotted against a metric of interest. <results-cost-effectiveness>`
 2. :ref:`A metric of interest aggregated by climate zone, building class, and end use. <results-aggregated>`
 3. :ref:`Both uncompeted and competed results for a metric of interest presented separately for each ECM. <results-by-ecm>`
 
-.. |Internal rate of return, simple payback, cost of conserved energy, and cost of conserved CO2 plotted against a metric of interest.| replace:: Internal rate of return, simple payback, cost of conserved energy, and cost of conserved CO\ :sub:`2` plotted against a metric of interest.
-
 Within each of the plots sub-folders (i.e., |html-filepath| ./results/plots/(adoption scenario)/(metric of interest)\ |html-fp-end|), each of these sets of plots is contained within a single PDF file.
 
-.. _Internal rate of return, simple payback, cost of conserved energy, and cost of conserved CO2 plotted against a metric of interest.:
 .. _results-cost-effectiveness:
 
 Cost-effectiveness figures
@@ -1919,13 +1914,14 @@ In each results tab, rows 2-22 include results summed across the entire ECM port
 .. _this plot: https://drive.google.com/file/d/1PNp47uEneuhREx3-AIwPXufXDNpkrZCp/view?usp=sharing
 .. _NREL Cambium scenarios: https://scenarioviewer.nrel.gov
 .. _Scout DECARB scenarios: https://zenodo.org/records/10653885
-.. _EIA Annual Energy Outlook Low Renewable Cost Side Case: https://www.eia.gov/outlooks/aeo/tables_side.php
+.. _EIA Annual Energy Outlook Low Oil and Gas Supply Side Case: https://www.eia.gov/outlooks/aeo/assumptions/case_descriptions.php
+.. _EIA Annual Energy Outlook Low Zero-carbon Technology Cost: https://www.eia.gov/outlooks/aeo/assumptions/case_descriptions.php 
 .. _NREL Cambium Low Renewable Energy Cost Scenario: https://cambium.nrel.gov/?project=579698fe-5a38-4d7c-8611-d0c5969b2e54&mode=view&layout=Default%20Layout
 .. _IECC climate regions: https://codes.iccsafe.org/content/IECC2021P1/chapter-3-ce-general-requirements
 .. _AIA: https://www.eia.gov/consumption/residential/reports/images/climatezone-lg.jpg
 .. _AEO Reference Case: https://www.eia.gov/outlooks/aeo/tables_ref.php
 .. _Significant New Alternatives Policy (SNAP): https://www.epa.gov/snap
-.. _AEO Low Renewable Cost: https://www.eia.gov/outlooks/aeo/tables_side.php
+.. _AEO Low Oil and Gas Supply: https://www.eia.gov/outlooks/aeo/assumptions/case_descriptions.php
 .. _EIA Reference Case technology documentation: https://www.eia.gov/analysis/studies/buildings/equipcosts/
 .. _E3HP Initiative: https://www.energy.gov/eere/buildings/energy-emissions-and-equity-e3-initiative
 .. _CBECS 2012: https://www.eia.gov/consumption/commercial/data/2012/bc/cfm/b1.php

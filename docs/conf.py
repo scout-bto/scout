@@ -125,20 +125,20 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 # Determine whether the current build environment is the Read the Docs servers
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
+# on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 # Define the theme for HTML rendered output depending on the environment
 # and whether the Read the Docs theme is available locally
-if not on_rtd:
-    try:
-        import sphinx_rtd_theme
-        html_theme = 'sphinx_rtd_theme'
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-    except ImportError:
-        html_theme = 'alabaster'
-else:
-    extensions = ["sphinx_rtd_theme", ]
-    html_theme = "sphinx_rtd_theme"
+# if not on_rtd:
+#     try:
+#         import sphinx_rtd_theme
+#         html_theme = 'sphinx_rtd_theme'
+#         html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+#     except ImportError:
+#         html_theme = 'alabaster'
+# else:
+#     extensions = ["sphinx_rtd_theme", ]
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
