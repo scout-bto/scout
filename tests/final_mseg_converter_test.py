@@ -510,9 +510,11 @@ class DataRestructuringFunctionTest(CommonUnitTest):
 
 class ComStockGapBlendingTest(CommonUnitTest):
     """ Test that merge_sum blends in the ComStock "gap" disaggregation
-    factor for commercial building types/fuels with a nonzero gap fraction
-    (flag_map_dat["com_gap_fracs"]), and leaves building types absent from
-    that table (e.g. "unspecified") unblended. """
+    factor for commercial building types with a nonzero electricity gap
+    fraction (flag_map_dat["com_gap_fracs"]), leaves building types absent
+    from that table (e.g. "unspecified") unblended, and never blends gap
+    into non-electric fuels (natural gas, distillate, other fuel), even for
+    a building type that's 100% gap for electricity. """
 
     # Non-gap and gap EMM disaggregation factors for electricity heating,
     # keyed by CDIV, matching the shape final_mseg_converter.py builds from
@@ -534,7 +536,14 @@ class ComStockGapBlendingTest(CommonUnitTest):
             "stock": {"water heating": com_cd_cz_array_emm,
                       "gap": com_cd_cz_array_gap_emm},
             "energy": {"water heating": com_cd_cz_array_emm,
-                       "gap": com_cd_cz_array_gap_emm}}}
+                       "gap": com_cd_cz_array_gap_emm}},
+        # No "gap" key here -- matches production, where only the
+        # electricity conversion data has a "gap" entry (see
+        # final_mseg_converter.main()). Confirms the non-electric-fuel
+        # path never even tries to look one up.
+        "natural gas": {
+            "stock": {"water heating": com_cd_cz_array_emm},
+            "energy": {"water heating": com_cd_cz_array_emm}}}
 
     # com_gap_fracs.csv, in dict form, for "assembly" (fully gap, matching
     # the real file's 100% assembly gap fraction) and "food service"
@@ -601,6 +610,30 @@ class ComStockGapBlendingTest(CommonUnitTest):
 
         nongap_fact = float(self.com_cd_cz_array_emm[0]["TRE"])
         expected = {"unspecified": {"electricity": {"water heating": {
+            "stock": {"2009": 100 * nongap_fact},
+            "energy": {"2009": 200 * nongap_fact}}}}}
+        self.dict_check(result, expected)
+
+    def test_non_electric_fuel_never_blended(self):
+        # "assembly" is 100% gap for electricity per com_gap_fracs, but gap
+        # blending is restricted to electricity -- a natural gas segment for
+        # the same building type should come out identical to the plain
+        # non-gap factor, unaffected by com_gap_fracs' "natural gas" column.
+        base_input = {
+            "assembly": {
+                "natural gas": {
+                    "water heating": {
+                        "stock": {"2009": 100},
+                        "energy": {"2009": 200}}}}}
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_gap,
+            self.com_cd_cz_array_fuelsplit_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        nongap_fact = float(self.com_cd_cz_array_emm[0]["TRE"])
+        expected = {"assembly": {"natural gas": {"water heating": {
             "stock": {"2009": 100 * nongap_fact},
             "energy": {"2009": 200 * nongap_fact}}}}}
         self.dict_check(result, expected)

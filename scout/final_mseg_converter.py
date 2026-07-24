@@ -852,20 +852,21 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
                             else:
                                 convert_fact_init = float(convert_array[cd_num][reg_name])
                             # Blend in the ComStock "gap" disaggregation factor
-                            # for this commercial building type/fuel combo, if
-                            # any of its consumption falls in the gap (i.e.,
+                            # for this commercial building type, if any of its
+                            # electricity consumption falls in the gap (i.e.,
                             # buildings/loads ComStock doesn't simulate; see
-                            # flag_map_dat["com_gap_fracs"]). Distillate and
-                            # other fuel reuse the natural gas fraction and
-                            # the electricity gap row, since no fuel-specific
-                            # gap data exists for them.
+                            # flag_map_dat["com_gap_fracs"]). Restricted to
+                            # electricity only -- the gap model's geographic
+                            # footprint is only known for electricity, and
+                            # there's no basis for assuming it's a fair proxy
+                            # for natural gas (or other fuels') geography, so
+                            # those fuels are left disaggregated exactly as
+                            # they were before gap blending was introduced.
                             gap_frac = 0
-                            if bldg_flag == "com":
-                                gap_col = "electricity" if fuel_flag == "electricity" \
-                                    else "natural gas"
+                            if bldg_flag == "com" and fuel_flag == "electricity":
                                 gap_frac = flag_map_dat.get(
                                     "com_gap_fracs", {}).get(
-                                    com_bldgtype_flag, {}).get(gap_col, 0)
+                                    com_bldgtype_flag, {}).get("electricity", 0)
                             if gap_frac:
                                 gap_array = cd_to_cz_factor["electricity"][
                                     current_stock_energy_flag]["gap"]
@@ -2023,13 +2024,16 @@ def main():
         "eulp_other_tech": [
             "dishwasher", "clothes washing", "freezers",
             "pool heaters", "pool pumps", "portable electric spas"],
-        # Fraction of each commercial building type's electricity/natural
-        # gas consumption that falls in the ComStock "gap" (buildings and
-        # non-building loads DOE's ComStock model doesn't simulate). Used by
-        # merge_sum to blend the "gap" disaggregation factors in with the
-        # regular end-use-level factors for EMM/state conversion. Distillate
-        # and other fuel reuse the natural gas fraction; no fuel-specific
-        # gap data exists for them.
+        # Fraction of each commercial building type's electricity (and,
+        # unused below, natural gas) consumption that falls in the ComStock
+        # "gap" (buildings and non-building loads DOE's ComStock model
+        # doesn't simulate). Used by merge_sum to blend the "gap"
+        # disaggregation factors in with the regular end-use-level factors
+        # for EMM/state conversion -- electricity only, since the gap
+        # model's geographic footprint is only known for electricity and
+        # isn't assumed to be a fair proxy for natural gas/other fuels'
+        # geography. com_gap_fracs.csv's "natural gas" column is kept here
+        # for reference/future use but not currently read by merge_sum.
         "com_gap_fracs": {
             row["building type"]: {
                 "electricity": row["electricity"],
