@@ -991,7 +991,7 @@ class Engine(object):
                 self.output_ecms[m.name]["Financial Metrics"] = OrderedDict()
             # Report through ComStock gap weights if these are specified for measure
             if hasattr(m, 'gap_wts'):
-                self.output_ecms[m.name]["ComStock Gap Weights"] = m.gap_wts
+                self.output_ecms[m.name]["ComStock Electric Gap Weights"] = m.gap_wts
 
     def trim_code_bps_yrs(self, orig_dict, focus_yrs):
         """Trims code/BPS measure results to reduced year set if specified.
@@ -7738,7 +7738,8 @@ class Engine(object):
                     OrderedDict() for n in range(2))
             # Finalize gap fractions data, if applicable
             if len(cbps.gap_wts.keys()) != 0:
-                codes_bps_dict_out["ComStock Gap Weights"] = self.finalize_gap_wts(cbps.gap_wts)
+                codes_bps_dict_out["ComStock Electric Gap Weights"] = \
+                    self.finalize_gap_wts(cbps.gap_wts)
         # Otherwise update the existing dict for the measure
         else:
             # Set shorthand for dict to update

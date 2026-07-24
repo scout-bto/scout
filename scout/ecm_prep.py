@@ -4212,9 +4212,13 @@ class Measure(object):
                 # energy use data by the service demand/energy that is covered vs. not covered in
                 # ComStock hourly data, to aid in subsequent mapping of Scout data to ComStock data
                 # Ensure that no residential data are pulled in, and that existing commercial
-                # 'unspecified' building type is also ignored (gap segmentation doesn't apply)
-                if self.gap_wts and mskeys[2] not in [
-                        "single family home", "multi family home", "mobile home", "unspecified"]:
+                # 'unspecified' building type is also ignored (gap segmentation doesn't apply);
+                # also ignore any non-electric gap information since the gap shapes are currently
+                # only available for electric loads
+                if self.gap_wts and (
+                        mskeys[2] not in ["single family home", "multi family home",
+                                          "mobile home", "unspecified"] and
+                        mskeys[3] == "electricity"):
                     # Handle case where Scout building type and/or fuel type is not covered in the
                     # gap fractions (currently should cover all but 'unspecified' building type
                     # and electricity and natural gas fuel types)
