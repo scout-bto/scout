@@ -2,7 +2,7 @@
   "name": "(C) Ref. Case Electric Other TS",
   "_description": "Counterfactual commercial other or unspecified electricity use, no savings vs. reference case, switch to same (accounting)",
   "measure_type": "add-on",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": null,
@@ -50,9 +50,9 @@
     "source_data": null
   },
   "_updated_by": {
-    "name": "Aven Satre:Meloy",
+    "name": "Jared Langevin",
     "organization": "LBNL",
-    "email": "asatremeloy@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

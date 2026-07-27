@@ -2,7 +2,7 @@
   "name": "(R) Best HP FS (NG Furnace)",
   "_description": "Best available air source heat pump fully replacing original gas furnace equipment",
   "measure_type": "full service",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": null,
@@ -74,7 +74,7 @@
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Retail (new) and total installed (existing) for 'High' ASHPs in 2023. For new buildings, also add retail cost of typical gas furnace.",
+    "notes": "Retail (new) and total installed (existing) for 'High' ASHPs in 2023.",
     "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "add_elec_infr_cost": {
@@ -149,6 +149,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

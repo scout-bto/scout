@@ -2,7 +2,7 @@
   "name": "(C) Min. Efficiency HP FS (NG Furnace)",
   "_description": "Minimum efficiency residential-style central HP unit, fuel switching from gas furnace.",
   "measure_type": "full service",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": "yes",
   "ref_case_flag": null,
@@ -117,6 +117,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

@@ -2,7 +2,7 @@
   "name": "(R) Best HP FS (Other Fossil Heat, No Cool)",
   "_description": "Best available air source heat pump fully replacing original fuel/oil/propane equipment, no existing cooling.",
   "measure_type": "full service",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": null,
@@ -141,6 +141,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

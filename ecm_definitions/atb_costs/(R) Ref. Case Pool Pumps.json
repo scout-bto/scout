@@ -2,7 +2,7 @@
   "name": "(R) Ref. Case Pool Pumps",
   "_description": "Counterfactual pool pumps measure, no savings vs. reference case",
   "measure_type": "add-on",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": "yes",
@@ -56,9 +56,9 @@
     "source_data": null
   },
   "_updated_by": {
-    "name": "Xinwei Zhuang",
+    "name": "Jared Langevin",
     "organization": "LBNL",
-    "email": "xinweizhuang@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2026-07-27 15:34:29"
   }
 }
