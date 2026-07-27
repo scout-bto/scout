@@ -2,7 +2,7 @@
   "name": "(R) Ref. Case Other Fossil Furnace & AC",
   "_description": "Ref. case fuel oil/propane furnace heating w/ central or window AC",
   "measure_type": "full service",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": "yes",
@@ -40,7 +40,6 @@
     "central AC": 4.28,
     "room AC": 3.52,
     "secondary heater": 0.0,
-    "secondary heater (wood)": 0.0,
     "secondary heater (coal)": 0.0,
     "secondary heater (kerosene)": 0.0,
     "secondary heater (LPG)": 0.0
@@ -52,7 +51,6 @@
     "central AC": "COP",
     "room AC": "COP",
     "secondary heater": "relative savings (constant)",
-    "secondary heater (wood)": "relative savings (constant)",
     "secondary heater (coal)": "relative savings (constant)",
     "secondary heater (kerosene)": "relative savings (constant)",
     "secondary heater (LPG)": "relative savings (constant)"
@@ -86,10 +84,6 @@
       "new": 100.0,
       "existing": 100.0
     },
-    "secondary heater (wood)": {
-      "new": 100.0,
-      "existing": 100.0
-    },
     "secondary heater (coal)": {
       "new": 100.0,
       "existing": 100.0
@@ -116,7 +110,6 @@
     "central AC": 18.0,
     "room AC": 10.0,
     "secondary heater": 10.0,
-    "secondary heater (wood)": 10.0,
     "secondary heater (coal)": 10.0,
     "secondary heater (kerosene)": 10.0,
     "secondary heater (LPG)": 10.0
@@ -192,6 +185,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

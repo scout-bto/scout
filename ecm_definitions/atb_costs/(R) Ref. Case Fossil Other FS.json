@@ -2,7 +2,7 @@
   "name": "(R) Ref. Case Fossil Other FS",
   "_description": "Counterfactual residential other/unknown fossil use, no savings vs. reference case, fuel switch",
   "measure_type": "add-on",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": "yes",
@@ -54,6 +54,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

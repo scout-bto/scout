@@ -2,7 +2,7 @@
   "name": "(R) Ref. Case Bio or No Heat & AC",
   "_description": "Ref. case wood stove heating w/ central or window AC",
   "measure_type": "add-on",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": "yes",
@@ -11,7 +11,8 @@
   "structure_type": "all",
   "end_use": [
     "heating",
-    "cooling"
+    "cooling",
+    "secondary heating"
   ],
   "fuel_type": [
     "other fuel",
@@ -22,7 +23,8 @@
   "technology": [
     "stove (wood)",
     "central AC",
-    "room AC"
+    "room AC",
+    "secondary heater (wood)"
   ],
   "htcl_tech_link": "bio heat+cac&rac",
   "tech_switch_to": null,
@@ -75,6 +77,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "timestamp": "2026-07-27 15:34:29"
   }
 }

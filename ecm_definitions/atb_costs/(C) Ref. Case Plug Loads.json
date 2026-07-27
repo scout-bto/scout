@@ -2,17 +2,14 @@
   "name": "(C) Ref. Case Plug Loads",
   "_description": "Counterfactual commercial plug loads measure, no savings vs. reference case",
   "measure_type": "add-on",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": "yes",
   "climate_zone": "all",
   "bldg_type": "all commercial",
   "structure_type": "all",
-  "end_use": [
-    "PCs",
-    "non-PC office equipment"
-  ],
+  "end_use": "office equipment",
   "fuel_type": "electricity",
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
@@ -56,9 +53,9 @@
     "source_data": null
   },
   "_updated_by": {
-    "name": "Aven Satre:Meloy",
+    "name": "Jared Langevin",
     "organization": "LBNL",
-    "email": "asatremeloy@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2026-07-27 15:34:29"
   }
 }
