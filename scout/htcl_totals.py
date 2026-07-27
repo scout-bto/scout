@@ -269,10 +269,11 @@ def sum_htcl_energy(msegs, aeo_years, ss_conv):
 
     # Loop through all climate zone, building type, and structure type
     # combinations and sum the energy values associated with each
-    for cz in msegs.keys():
+    for cz in [x for x in msegs.keys()]:
         htcl_totals[cz] = {}
         # Skip the "unspecified" building type, which is non-standard
-        for bldg in [b for b in msegs[cz].keys() if b != 'unspecified']:
+        for bldg in [b for b in msegs[cz].keys() if b not in [
+                'unspecified', 'prep_settings', 'sdr_version']]:
             htcl_totals[cz][bldg] = {}
             # Find new vs. existing structure type fraction for bldg. type
             new_exist_frac = set_new_exist_frac(
