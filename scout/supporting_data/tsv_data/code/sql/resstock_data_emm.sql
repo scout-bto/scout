@@ -11,6 +11,14 @@ WITH meta_combined AS (
 		ts."out.electricity.refrigerator.energy_consumption{kwh}" + ts."out.electricity.freezer.energy_consumption{kwh}" as refrigeration,
 		ts."out.electricity.ceiling_fan.energy_consumption{kwh}" as ceiling_fan,
 		ts."out.electricity.heating_fans_pumps.energy_consumption{kwh}" + ts."out.electricity.cooling_fans_pumps.energy_consumption{kwh}" +  ts."out.electricity.well_pump.energy_consumption{kwh}" + ts."out.electricity.heating_hp_bkup_fa.energy_consumption{kwh}" + ts."out.electricity.mech_vent.energy_consumption{kwh}" as fans_and_pumps,
+		-- ResStock doesn't break plug_loads down further, so computers/tvs/
+		-- other are all the same underlying value duplicated under 3 names
+		-- ("cooking" above is a distinct, real column — range_oven — not
+		-- part of this duplication). update_tsv.py's downstream logic only
+		-- ever uses "other" (renamed "plug loads"); anything that sums
+		-- across these columns must pick a single representative one or it
+		-- will multiply-count this load (see compute_peak_days.py's
+		-- RESIDENTIAL_ENERGY_COLS).
 		ts."out.electricity.plug_loads.energy_consumption{kwh}" as computers,
 		ts."out.electricity.plug_loads.energy_consumption{kwh}" as tvs,
 		ts."out.electricity.clothes_washer.energy_consumption{kwh}" as clothes_washing,

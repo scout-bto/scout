@@ -10,6 +10,13 @@ WITH meta_combined AS (
 		ts."out.electricity.water_systems.energy_consumption" as water_heating,
 		ts."out.electricity.interior_lighting.energy_consumption" + ts."out.electricity.exterior_lighting.energy_consumption" as lighting,
 		ts."out.electricity.refrigeration.energy_consumption" as refrigeration,
+		-- ComStock doesn't break interior_equipment down further, so
+		-- cooking/pcs/nonpc_office_equipment/other_mels are all the same
+		-- underlying value duplicated under 4 names. update_tsv.py only
+		-- keeps one of them per building type (see insert_scouttsv_emm's
+		-- will_write logic); anything that sums across these columns must
+		-- pick a single representative one or it will multiply-count this
+		-- load (see compute_peak_days.py's COMMERCIAL_ENERGY_COLS).
 		ts."out.electricity.interior_equipment.energy_consumption" as cooking,
 		ts."out.electricity.interior_equipment.energy_consumption" as "pcs",
 		ts."out.electricity.interior_equipment.energy_consumption" as nonpc_office_equipment,
