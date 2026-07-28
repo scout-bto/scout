@@ -26,6 +26,12 @@ BUCKET_NAME = 'yujie-bucket'
 # Final gzipped load shape files consumed directly by Scout's ecm_prep.py
 # live one level up from this script, in supporting_data/tsv_data/
 TSV_DATA_DIR = ".."
+# ComStock/ResStock release versions queried by --stock_version. 2025 is the
+# default; 2024 is kept for backwards compatibility/comparison.
+STOCK_RELEASES = {
+    "2025": {"comstock": "2025.3", "resstock": "2025.1"},
+    "2024": {"comstock": "2024.2", "resstock": "2024.2"},
+}
 
 
 building_map = {
@@ -109,9 +115,49 @@ def download_query_result(s3_client, result_loc, local_path):
     s3_client.download_file(bucket, key, local_path)
 
 
-def read_sql_file(sql_file):
+def sql_template_vars(bstock_source, version):
+    """ Build the {placeholder}: value substitutions the SQL templates in
+    SQL_DIR need to target a given ResStock/ComStock release. The 2025
+    releases changed relative to 2024 in ways that reach beyond the table
+    name: the by_state "timestamp" column is now a native TIMESTAMP instead
+    of an epoch-nanosecond bigint, and (ResStock only) the metadata table
+    was renamed from "..._metadata" to "..._parquet", its sqft column from
+    "in.sqft" to "in.sqft..ft2", and its energy_consumption columns gained a
+    "..kwh" suffix. """
+    release = STOCK_RELEASES[version][bstock_source]
+    by_state_table = f"{bstock_source}_amy2018_release_{release}_by_state"
+    if version == "2025":
+        ts_trunc = "DATE_TRUNC('hour', ts.\"timestamp\")"
+    else:
+        ts_trunc = ("DATE_TRUNC('hour', "
+                    "from_unixtime(ts.\"timestamp\" / 1000000000))")
+
+    if bstock_source == "comstock":
+        meta_table = f"{bstock_source}_amy2018_release_{release}_parquet"
+        kwh, sqft_col = "", "in.sqft..ft2"
+    else:
+        if version == "2025":
+            meta_table = f"{bstock_source}_amy2018_release_{release}_parquet"
+            kwh, sqft_col = "..kwh", "in.sqft..ft2"
+        else:
+            meta_table = f"{bstock_source}_amy2018_release_{release}_metadata"
+            kwh, sqft_col = "", "in.sqft"
+
+    return {
+        "by_state_table": by_state_table,
+        "meta_table": meta_table,
+        "ts_trunc": ts_trunc,
+        "kwh": kwh,
+        "sqft_col": sqft_col,
+    }
+
+
+def read_sql_file(sql_file, version):
+    bstock_source = "comstock" if sql_file.startswith("comstock") \
+        else "resstock"
     with open(os.path.join(SQL_DIR, sql_file), 'r', encoding='utf-8') as file:
-        return file.read()
+        template = file.read()
+    return template.format(**sql_template_vars(bstock_source, version))
 
 
 def execute_athena_query(client, query, is_create, wait=True):
@@ -140,7 +186,7 @@ def execute_athena_query(client, query, is_create, wait=True):
         return result_loc, query_execution_id
 
 
-def sql_to_csvout(s3_client, athena_client, sql_file, out_name=None):
+def sql_to_csvout(s3_client, athena_client, sql_file, version, out_name=None):
     fname = out_name or os.path.splitext(sql_file)[0]
     out_path = f"{OUTPUT_DIR}/{fname}.csv"
     if os.path.isfile(out_path):
@@ -149,8 +195,8 @@ def sql_to_csvout(s3_client, athena_client, sql_file, out_name=None):
         return
     query_start = time.time()
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "
-          f"Starting Athena query: {sql_file}")
-    query = read_sql_file(sql_file)
+          f"Starting Athena query ({version} release): {sql_file}")
+    query = read_sql_file(sql_file, version)
     s3_location, query_execution_id = execute_athena_query(
         athena_client, query, False, wait=True)
     elapsed = time.time() - query_start
@@ -395,7 +441,7 @@ def insert_scouttsv_usstate0(opts):
 
 
 def insert_scouttsv_emm(opts):
-    emm_file = f"{OUTPUT_DIR}/{opts.bstock}_emm.csv"
+    emm_file = f"{OUTPUT_DIR}/{opts.bstock}_emm_{opts.stock_version}.csv"
     if not os.path.isfile(emm_file):
         return print('File does not exist, please run getdata()')
     df = pd.read_csv(emm_file)
@@ -490,7 +536,7 @@ def insert_scouttsv_emm(opts):
 
 
 def insert_scouttsv_usstate(opts):
-    csv_file = f"{OUTPUT_DIR}/{opts.bstock}_state.csv"
+    csv_file = f"{OUTPUT_DIR}/{opts.bstock}_state_{opts.stock_version}.csv"
     if not os.path.isfile(csv_file):
         return print('File does not exist, please run getdata()')
     df = pd.read_csv(csv_file)
@@ -590,7 +636,7 @@ def countrows_eu(opts):
 
     for geodesc in geodescs:
         # geodesc = 'emm'
-        file = f"{OUTPUT_DIR}/{opts.bstock}_{geodesc}.csv"
+        file = f"{OUTPUT_DIR}/{opts.bstock}_{geodesc}_{opts.stock_version}.csv"
         if not os.path.isfile(file):
             return print('File does not exist, please run getdata()')
         df = pd.read_csv(file)
@@ -632,17 +678,21 @@ def main(base_dir):
         # The four queries are independent (different sources, different
         # output files), so run them concurrently instead of waiting on
         # each one in turn; boto3 clients are thread-safe for API calls.
-        # out_name matches the {bstock}_{emm|state}.csv naming that
-        # insert_scouttsv_emm/usstate expect.
+        # out_name matches the {bstock}_{emm|state}_{version}.csv naming
+        # that insert_scouttsv_emm/usstate expect. The version is baked
+        # into the filename so switching --stock_version can't silently
+        # reuse a CSV cached from a different release.
         sql_files = [("comstock_data_emm.sql", "commercial_emm"),
                      ("resstock_data_emm.sql", "residential_emm"),
                      ("comstock_data_state.sql", "commercial_state"),
                      ("resstock_data_state.sql", "residential_state")]
-        print(f"Running {len(sql_files)} Athena queries concurrently: "
+        print(f"Running {len(sql_files)} Athena queries concurrently "
+              f"against the {opts.stock_version} release: "
               f"{', '.join(f for f, _ in sql_files)}")
         with ThreadPoolExecutor(max_workers=len(sql_files)) as executor:
             futures = [executor.submit(
-                sql_to_csvout, s3_client, athena_client, f, out_name)
+                sql_to_csvout, s3_client, athena_client, f,
+                opts.stock_version, f"{out_name}_{opts.stock_version}")
                 for f, out_name in sql_files]
             for future in futures:
                 future.result()
@@ -675,6 +725,12 @@ if __name__ == '__main__':
                         help="diagnose downloaded data")
     parser.add_argument("--bstock", type=str,
                         help="Determine building stock ")
+    parser.add_argument("--stock_version", type=str, default="2025",
+                        choices=list(STOCK_RELEASES.keys()),
+                        help="ComStock/ResStock release year to query "
+                        "(2025 = ComStock 2025.3/ResStock 2025.1, "
+                        "2024 = ComStock 2024.2/ResStock 2024.2). "
+                        "Defaults to 2025.")
     opts = parser.parse_args()
     base_dir = getcwd()
     main(base_dir)
