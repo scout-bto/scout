@@ -131,7 +131,7 @@ For the purposes of this documentation, the following instructions will step thr
 .. _Sublime Text: http://www.sublimetext.com
 
 1. Download Sublime Text
-************************
+------------------------
 
 To set up Sublime Text for working with Scout, `download Sublime Text 4`_, open the downloaded disk image, and drag the application file to the Applications folder using the shortcut provided.
 
@@ -140,7 +140,7 @@ To set up Sublime Text for working with Scout, `download Sublime Text 4`_, open 
 After installing Sublime Text, there are several additional configuration steps that will help get the editor ready for viewing and editing Python and JSON files.
 
 2. Install Package Control
-**************************
+--------------------------
 
 First, open Sublime Text and, following the directions_ provided by the developer, install Package Control.
 
@@ -153,7 +153,7 @@ Once installed, Package Control is opened via the Command Palette (Tools > Comma
 We will use Package Control to install the additional features needed for checking Python files. 
 
 3. Install SublimeLinter prerequisites
-**************************************
+--------------------------------------
 
 Before proceeding further, open a Terminal window and at the command prompt, use pip3 to install the pycodestyle and pyflakes packages::
 
@@ -161,17 +161,17 @@ Before proceeding further, open a Terminal window and at the command prompt, use
    pip3 install pyflakes
 
 4. Install SublimeLinter
-************************
+------------------------
 
 Return to Sublime Text and open Package Control using the Command Palette (Tools > Command Palette or |cmd|\ |opt|\ P). Begin typing "Package Control: Install Package" in the Command Palette and click that option once it appears in the list. (Arrow keys can also be used to move up and down in the list.) In the search field that appears, begin typing "SublimeLinter" and click the package when it appears in the list to install the package. If installation was successful for this (or any other) package, the package name will appear in the Preferences > Package Settings sub-menu.
 
 5. Install specific code linters
-********************************
+--------------------------------
 
 Open the Command Palette and select "Package Control: Install Package" again to install new packages following the same steps. Install the "SublimeLinter-pycodestyle," "SublimeLinter-json," and "SublimeLinter-pyflakes" packages.
 
 6. Configure Python syntax-specific preferences
-***********************************************
+-----------------------------------------------
 
 Finally, the Python-specific settings for Sublime Text need to be updated. Open a new file in Sublime Text and save it with the file name |html-filepath| asdf.py\ |html-fp-end|. (|html-filepath|\ asdf.py |html-fp-end| will be deleted later.) Open the Python syntax-specific settings (Sublime Text > Preferences > Settings – Syntax Specific) and between the braces, paste::
 
@@ -253,14 +253,14 @@ While Windows comes with a plain text editor, Notepad, there are `many different
 `Sublime Text`_ is an easy to use cross-platform text editor that can be configured to have the necessary features for authoring Python and JSON files. The following instructions are provided to illustrate the steps required to configure a text editor for viewing and modifying Python and JSON files and should not be construed as an endorsement or promotion of Sublime Text.
 
 1. Install Sublime Text
-***********************
+-----------------------
 
 To set up Sublime Text for working with Scout, `download Sublime Text 4`_ and run the installer. The installer will automatically place the application and supporting files in the appropriate locations on your system.
 
 After installing Sublime Text, there are several additional configuration steps that will help get the editor ready for viewing and editing Python and JSON files.
 
 2. Install Package Control
-**************************
+--------------------------
 
 First, open Sublime Text and, following the directions_ provided by the developer, install Package Control.
 
@@ -273,7 +273,7 @@ Once installed, Package Control is opened via the Command Palette (Tools > Comma
 We will use Package Control to install the additional features needed for checking Python files. 
 
 3. Install SublimeLinter prerequisites
-**************************************
+--------------------------------------
 
 Before proceeding further, `open a command prompt`_ window and type the following commands to use pip to install the pycodestyle and pyflakes packages::
 
@@ -283,17 +283,17 @@ Before proceeding further, `open a command prompt`_ window and type the followin
 Once you have 
 
 4. Install SublimeLinter
-************************
+------------------------
 
 Return to Sublime Text and open Package Control using the Command Palette (Tools > Command Palette or Ctrl+Shift+P). Begin typing "Package Control: Install Package" in the Command Palette and click that option once it appears in the list. (Arrow keys can also be used to move up and down in the list.) In the search field that appears, begin typing "SublimeLinter" and click the package name when it appears in the list to install the package. If installation was successful for this (or any other) package, the package name will appear in Preferences > Package Settings.
 
 5. Install specific code linters
-********************************
+--------------------------------
 
 Open the Command Palette and select "Package Control: Install Package" again to install new packages following the same steps. Install the "SublimeLinter-pycodestyle," "SublimeLinter-json," and "SublimeLinter-pyflakes" packages.
 
 6. Configure Python syntax-specific preferences
-***********************************************
+-----------------------------------------------
 
 Finally, the Python-specific settings for Sublime Text need to be updated. Open a new file in Sublime Text and save it with the file name |html-filepath| asdf.py\ |html-fp-end|. (|html-filepath|\ asdf.py |html-fp-end| will be deleted later.) Open the Python syntax-specific settings (Preferences > Settings – Syntax Specific) and between the braces, paste::
 

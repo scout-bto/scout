@@ -134,7 +134,7 @@ jobs:
             python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
           fi
 
-          rm -rf ./tests/integration_testing/results/*
+          find ./tests/integration_testing/results -mindepth 1 -delete
           mv ./results/* ./tests/integration_testing/results/
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
       - name: Capture profiler comparison output
@@ -254,30 +254,84 @@ jobs:
         with:
           name: results
           path: ./tests/integration_testing/results/
-      - name: Commit plot comparison images
-        # Only commit PNG comparison images (for PR comment embedding).
-        # JSON and PDF results are uploaded as artifacts only — committing them
-        # breaks GitHub's diff viewer due to file size.
-        if: steps.compare.outputs.has_plot_diff == 'true'
+      - name: Commit integration result updates
+        # For PRs with the update-baseline label, commit updated integration
+        # results as new baseline files. Otherwise, commit only plot comparison
+        # PNGs to support PR comment embedding.
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.compare.outputs.has_diff == 'true'
         id: commit_results
         run: |
-          # Only commit PNG images for plot diff visualization
-          if [[ -d ./tests/integration_testing/results/plot_images ]]; then
-            git add ./tests/integration_testing/results/plot_images/
+          UPDATE_BASELINE="${{ steps.check-label.outputs.update_baseline }}"
+
+          if [[ "$UPDATE_BASELINE" == "true" ]]; then
+            # Drop transient diff reports before committing new baseline files.
+            rm -f ./tests/integration_testing/results/*_diffs.csv
+            rm -f ./tests/integration_testing/results/*_key_diffs.csv
+            # Guard against generated placeholder files being committed.
+            find ./tests/integration_testing/results/plots -type f -name '.gitignore' -delete 2>/dev/null || true
+
+            git add ./tests/integration_testing/results/agg_results.json
+            git add ./tests/integration_testing/results/ecm_results.json
+            if [[ -d ./tests/integration_testing/results/plots ]]; then
+              # Stage plot updates, including deletions of removed placeholder files.
+              git add ./tests/integration_testing/results/plots/
+            fi
+            if [[ -d ./tests/integration_testing/results/plot_images ]]; then
+              git add ./tests/integration_testing/results/plot_images/
+            fi
+            if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
+              git add ./tests/integration_testing/results/base_plot_images/
+            fi
+            commit_msg="Update integration test baselines from CI"
+          else
+            # Only commit PNG images for plot diff visualization.
+            if [[ -d ./tests/integration_testing/results/plot_images ]]; then
+              git add ./tests/integration_testing/results/plot_images/
+            fi
+            if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
+              git add ./tests/integration_testing/results/base_plot_images/
+            fi
+            commit_msg="Upload plot comparison images from CI build"
           fi
-          if [[ -d ./tests/integration_testing/results/base_plot_images ]]; then
-            git add ./tests/integration_testing/results/base_plot_images/
-          fi
+
           # Only commit if there are staged changes
           if git diff --cached --quiet; then
-            echo "No plot images to commit"
+            echo "No integration result updates to commit"
             exit 0
           fi
           git config --global user.email "github-action@users.noreply.github.com"
           git config --global user.name "GitHub Action"
-          git commit -m "Upload plot comparison images from CI build"
-          echo "Pushing to branch"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          git commit -m "$commit_msg"
+
+          target_branch="${{ github.head_ref || github.ref_name }}"
+          echo "Pushing to branch ${target_branch}"
+
+          # Rebase the generated commit onto the latest remote branch tip in
+          # case the PR was updated while CI was running.
+          for attempt in 1 2 3; do
+            # Some tooling (e.g., filters/LFS) can leave the working tree
+            # dirty after commit in CI; rebase requires a clean tree.
+            git reset --hard HEAD
+            git clean -fd
+
+            git fetch origin "$target_branch"
+            if ! git rebase "origin/$target_branch"; then
+              echo "Failed to rebase CI baseline update onto origin/${target_branch}"
+              git rebase --abort || true
+              exit 1
+            fi
+
+            if git push origin HEAD:"$target_branch"; then
+              break
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "Failed to push CI baseline update after 3 attempts"
+              exit 1
+            fi
+
+            echo "Push rejected; refetching and retrying"
+          done
 
           # Set status checks on the new commit so it inherits parent job statuses
           checks=("code-quality-checks" "Unit Tests (Python 3.10)" "Unit Tests (Python 3.11)" "Unit Tests (Python 3.12)")
@@ -296,13 +350,12 @@ jobs:
               }'
           done
           # Mark integration test status based on update-baseline label
-          UPDATE_BASELINE="${{ steps.check-label.outputs.update_baseline }}"
           if [[ "$UPDATE_BASELINE" == "true" ]]; then
             integ_state="success"
-            integ_desc="Plot images differ from master, but 'update-baseline' label is set"
+            integ_desc="Integration results differ from master and baseline was updated"
           else
             integ_state="failure"
-            integ_desc="Plot images differ from master (pixel-level comparison)"
+            integ_desc="Integration results differ from master"
           fi
           curl -L \
             -X POST \
@@ -566,7 +619,7 @@ jobs:
       - name: Move results
         shell: bash
         run: |
-          rm -rf ./tests/integration_testing/results/*
+          find ./tests/integration_testing/results -mindepth 1 -delete
           mv ./results/* ./tests/integration_testing/results/
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
       - name: Compare results against master
