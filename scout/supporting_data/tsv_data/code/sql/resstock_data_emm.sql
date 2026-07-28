@@ -26,7 +26,6 @@ WITH meta_combined AS (
 		LEFT JOIN "{meta_table}" as meta
 		ON ts.bldg_id = meta.bldg_id
 		WHERE meta.upgrade = 0 AND ts.upgrade = '0'
-		    AND ts."state" NOT IN ('AK', 'HI')
 		    AND meta."in.geometry_building_type_recs" IN (
 		        'Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached')
 	),
@@ -35,7 +34,14 @@ geomap_combined AS (
 		gm.emm2020_county as emm
 	FROM meta_combined as mc
 	LEFT JOIN geo_map as gm
-	ON mc."in.county" = gm."stock.county"
+	-- Lower-48 in.county values are comma-free NHGIS GISJOIN codes (e.g.
+	-- "G0800010"); AK/HI in.county values are instead "ST, County Name"
+	-- strings (e.g. "AK, Yukon-Koyukuk Census Area"). geo_map.csv can't
+	-- store that comma as-is (the geo_map Athena table uses the naive
+	-- Hive CSV SerDe with no quote-escaping), so AK/HI rows are keyed by
+	-- the comma-stripped county string instead; stripping commas here is
+	-- a no-op for the GISJOIN-keyed Lower-48 rows.
+	ON REPLACE(mc."in.county", ',', '') = gm."stock.county"
 )
 SELECT
 	timestamp_hour,

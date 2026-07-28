@@ -3108,3 +3108,67 @@ WY,Teton,G5600390,BASN,23191,teton,wyoming
 WY,Uinta,G5600410,BASN,20773,uinta,wyoming
 WY,Washakie,G5600430,BASN,8235,washakie,wyoming
 WY,Weston,G5600450,RMRG,7236,weston,wyoming
+AK,Aleutians East Borough,G0200130,MISW,3296,aleutians east borough,alaska
+AK,Aleutians West Census Area,G0200160,MISW,5647,aleutians west census area,alaska
+AK,Anchorage Municipality,G0200200,MISW,298192,anchorage municipality,alaska
+AK,Bethel Census Area,G0200500,MISW,17968,bethel census area,alaska
+AK,Bristol Bay Borough,G0200600,MISW,898,bristol bay borough,alaska
+AK,Denali Borough,G0200680,MISW,1953,denali borough,alaska
+AK,Dillingham Census Area,G0200700,MISW,4954,dillingham census area,alaska
+AK,Fairbanks North Star Borough,G0200900,MISW,100605,fairbanks north star borough,alaska
+AK,Haines Borough,G0201000,MISW,2496,haines borough,alaska
+AK,Hoonah-Angoon Census Area,G0201050,MISW,2078,hoonah-angoon census area,alaska
+AK,Juneau City and Borough,G0201100,MISW,32468,juneau city and borough,alaska
+AK,Kenai Peninsula Borough,G0201220,RMRG,58506,kenai peninsula borough,alaska
+AK,Ketchikan Gateway Borough,G0201300,RMRG,13746,ketchikan gateway borough,alaska
+AK,Kodiak Island Borough,G0201500,RMRG,13732,kodiak island borough,alaska
+AK,Lake and Peninsula Borough,G0201640,RMRG,1562,lake and peninsula borough,alaska
+AK,Matanuska-Susitna Borough,G0201700,RMRG,104365,matanuska-susitna borough,alaska
+AK,Nome Census Area,G0201800,RMRG,9917,nome census area,alaska
+AK,North Slope Borough,G0201850,RMRG,9606,north slope borough,alaska
+AK,Northwest Arctic Borough,G0201880,BASN,7673,northwest arctic borough,alaska
+AK,Petersburg Borough,G0201950,BASN,3149,petersburg borough,alaska
+AK,Prince of Wales-Hyder Census Area,G0201980,BASN,6347,prince of wales-hyder census area,alaska
+AK,Sitka City and Borough,G0202200,BASN,8830,sitka city and borough,alaska
+AK,Skagway Municipality,G0202300,BASN,1088,skagway municipality,alaska
+AK,Southeast Fairbanks Census Area,G0202400,BASN,6876,southeast fairbanks census area,alaska
+AK,Wrangell City and Borough,G0202750,BASN,2411,wrangell city and borough,alaska
+AK,Yakutat City and Borough,G0202820,BASN,601,yakutat city and borough,alaska
+AK,Yukon-Koyukuk Census Area,G0202900,BASN,5526,yukon-koyukuk census area,alaska
+HI,Hawaii,G1500010,RMRG,198449,hawaii,hawaii
+HI,Honolulu,G1500030,RMRG,992605,honolulu,hawaii
+HI,Kauai,G1500070,RMRG,72029,kauai,hawaii
+HI,Maui,G1500090,RMRG,165386,maui,hawaii
+AK,Aleutians East Borough,AK Aleutians East Borough,MISW,3296,aleutians east borough,alaska
+AK,Aleutians West Census Area,AK Aleutians West Census Area,MISW,5647,aleutians west census area,alaska
+AK,Anchorage Municipality,AK Anchorage Municipality,MISW,298192,anchorage municipality,alaska
+AK,Bethel Census Area,AK Bethel Census Area,MISW,17968,bethel census area,alaska
+AK,Bristol Bay Borough,AK Bristol Bay Borough,MISW,898,bristol bay borough,alaska
+AK,Denali Borough,AK Denali Borough,MISW,1953,denali borough,alaska
+AK,Dillingham Census Area,AK Dillingham Census Area,MISW,4954,dillingham census area,alaska
+AK,Fairbanks North Star Borough,AK Fairbanks North Star Borough,MISW,100605,fairbanks north star borough,alaska
+AK,Haines Borough,AK Haines Borough,MISW,2496,haines borough,alaska
+AK,Hoonah-Angoon Census Area,AK Hoonah-Angoon Census Area,MISW,2078,hoonah-angoon census area,alaska
+AK,Juneau City and Borough,AK Juneau City and Borough,MISW,32468,juneau city and borough,alaska
+AK,Kenai Peninsula Borough,AK Kenai Peninsula Borough,RMRG,58506,kenai peninsula borough,alaska
+AK,Ketchikan Gateway Borough,AK Ketchikan Gateway Borough,RMRG,13746,ketchikan gateway borough,alaska
+AK,Kodiak Island Borough,AK Kodiak Island Borough,RMRG,13732,kodiak island borough,alaska
+AK,Kusilvak Census Area,AK Kusilvak Census Area,RMRG,8049,kusilvak census area,alaska
+AK,Lake and Peninsula Borough,AK Lake and Peninsula Borough,RMRG,1562,lake and peninsula borough,alaska
+AK,Matanuska-Susitna Borough,AK Matanuska-Susitna Borough,RMRG,104365,matanuska-susitna borough,alaska
+AK,Nome Census Area,AK Nome Census Area,RMRG,9917,nome census area,alaska
+AK,North Slope Borough,AK North Slope Borough,RMRG,9606,north slope borough,alaska
+AK,Northwest Arctic Borough,AK Northwest Arctic Borough,BASN,7673,northwest arctic borough,alaska
+AK,Petersburg Borough,AK Petersburg Borough,BASN,3149,petersburg borough,alaska
+AK,Prince of Wales-Hyder Census Area,AK Prince of Wales-Hyder Census Area,BASN,6347,prince of wales-hyder census area,alaska
+AK,Sitka City and Borough,AK Sitka City and Borough,BASN,8830,sitka city and borough,alaska
+AK,Skagway Municipality,AK Skagway Municipality,BASN,1088,skagway municipality,alaska
+AK,Southeast Fairbanks Census Area,AK Southeast Fairbanks Census Area,BASN,6876,southeast fairbanks census area,alaska
+AK,Valdez-Cordova Census Area,AK Valdez-Cordova Census Area,BASN,9355,valdez-cordova census area,alaska
+AK,Wrangell City and Borough,AK Wrangell City and Borough,BASN,2411,wrangell city and borough,alaska
+AK,Yakutat City and Borough,AK Yakutat City and Borough,BASN,601,yakutat city and borough,alaska
+AK,Yukon-Koyukuk Census Area,AK Yukon-Koyukuk Census Area,BASN,5526,yukon-koyukuk census area,alaska
+HI,Hawaii,HI Hawaii County,RMRG,198449,hawaii,hawaii
+HI,Honolulu,HI Honolulu County,RMRG,992605,honolulu,hawaii
+HI,Kauai,HI Kauai County,RMRG,72029,kauai,hawaii
+HI,Maui,HI Maui County,RMRG,165386,maui,hawaii
