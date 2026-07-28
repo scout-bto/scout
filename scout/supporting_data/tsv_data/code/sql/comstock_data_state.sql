@@ -1,7 +1,7 @@
 WITH meta_combined AS (
 	SELECT ts."state",
-		CASE WHEN extract(YEAR FROM DATE_TRUNC('hour', from_unixtime(ts."timestamp" / 1000000000)) + INTERVAL '1' HOUR) = 2019 THEN DATE_TRUNC('hour', from_unixtime(ts."timestamp" / 1000000000)) - INTERVAL '1' YEAR + INTERVAL '1' HOUR
-		ELSE DATE_TRUNC('hour', from_unixtime(ts."timestamp" / 1000000000)) + INTERVAL '1' HOUR END as timestamp_hour,
+		CASE WHEN extract(YEAR FROM {ts_trunc} + INTERVAL '1' HOUR) = 2019 THEN {ts_trunc} - INTERVAL '1' YEAR + INTERVAL '1' HOUR
+		ELSE {ts_trunc} + INTERVAL '1' HOUR END as timestamp_hour,
 		meta."in.comstock_building_type" as building_type,
 		ts."out.electricity.cooling.energy_consumption" as cooling,
 		ts."out.electricity.heating.energy_consumption" + ts."out.electricity.heat_recovery.energy_consumption" + ts."out.electricity.heat_rejection.energy_consumption" as heating,
@@ -16,8 +16,8 @@ WITH meta_combined AS (
 		ts."out.electricity.interior_equipment.energy_consumption" as other_mels,
 		meta.weight,
 		meta."in.sqft..ft2" as sqft
-		FROM "comstock_amy2018_release_2024.2_by_state" as ts
-		LEFT JOIN "comstock_amy2018_release_2024.2_parquet" as meta
+		FROM "{by_state_table}" as ts
+		LEFT JOIN "{meta_table}" as meta
 		ON ts.bldg_id = meta.bldg_id
 		WHERE meta.upgrade = 0 AND ts.upgrade = '0'
 		    AND ts."state" NOT IN ('AK', 'HI')
