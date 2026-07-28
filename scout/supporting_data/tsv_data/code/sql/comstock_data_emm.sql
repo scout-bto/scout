@@ -20,7 +20,6 @@ WITH meta_combined AS (
 		LEFT JOIN "{meta_table}" as meta
 		ON ts.bldg_id = meta.bldg_id
 		WHERE (meta.upgrade = 0 AND ts.upgrade = '0')
-		    AND ts."state" NOT IN ('AK', 'HI')
 		    AND meta."in.comstock_building_type" IN (
 		        'MediumOffice', 'LargeOffice', 'LargeHotel', 'RetailStandalone', 'Warehouse')
 ),
