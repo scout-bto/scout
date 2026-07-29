@@ -187,8 +187,8 @@ def build_rows(geo):
 
 def main():
     with open(GEO_MAP_FILE, newline="") as f:
-        existing_states = {row["state_abbr"]
-                            for row in csv.DictReader(f)}
+        existing_states = {
+            row["state_abbr"] for row in csv.DictReader(f)}
     if "AK" in existing_states or "HI" in existing_states:
         raise SystemExit(
             f"{GEO_MAP_FILE} already has AK/HI rows -- nothing to do. "
