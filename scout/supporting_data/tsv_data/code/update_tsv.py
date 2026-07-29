@@ -496,7 +496,12 @@ def insert_scouttsv_emm(opts):
                 if will_write and abs(sum(es60) - 1) > 0.01:
                     print(f"""LOAD SHAPE DOESN'T SUM TO ONE! {sum(es60)}
                           for {eu} {emm} {opts.bstock}""")
-                # es60 = round_floats(es60)
+                # Round to 6 decimals: full float64 precision here is far
+                # more than these normalized (sum-to-one) shapes need, and
+                # the extra digits are high-entropy noise that gzip can't
+                # compress, bloating tsv_load_EMM.gz several-fold for no
+                # accuracy benefit.
+                es60 = [round(float(v), 6) for v in es60]
                 if opts.bstock == 'commercial' and (
                      (bldg == 'MediumOfficeDetailed' and (
                       eu == 'heating' or eu == 'lighting' or
@@ -506,14 +511,14 @@ def insert_scouttsv_emm(opts):
                      eu == 'cooling' or eu == 'ventilation' or eu == 'pumps'):
                     nested_set(lsjson,
                                [opts.bstock, eu, bldg, 'load shape', emm],
-                               list(es60))
+                               es60)
                 elif opts.bstock == 'residential':
                     nested_set(lsjson,
                                [opts.bstock, eu, bldg,
                                 'represented building types'], bldg)
                     nested_set(lsjson,
                                [opts.bstock, eu, bldg, 'load shape', emm],
-                               list(es60))
+                               es60)
     if opts.bstock == 'residential':
         # copy values from SF to MF and MH
         poolvars = ['pool heaters', 'pool pumps']
@@ -591,7 +596,12 @@ def insert_scouttsv_usstate(opts):
                 if will_write and abs(sum(es60) - 1) > 0.01:
                     print(f"""LOAD SHAPE DOESN'T SUM TO ONE! {sum(es60)}
                           for {eu} {state} {opts.bstock}""")
-                # es60 = round_floats(es60)
+                # Round to 6 decimals: full float64 precision here is far
+                # more than these normalized (sum-to-one) shapes need, and
+                # the extra digits are high-entropy noise that gzip can't
+                # compress, bloating tsv_load_State.gz several-fold for no
+                # accuracy benefit.
+                es60 = [round(float(v), 6) for v in es60]
                 if opts.bstock == 'commercial' and (
                      (bldg == 'MediumOfficeDetailed' and (
                       eu == 'heating' or eu == 'lighting' or
@@ -601,14 +611,14 @@ def insert_scouttsv_usstate(opts):
                      eu == 'cooling' or eu == 'ventilation' or eu == 'pumps'):
                     nested_set(lsjson,
                                [opts.bstock, eu, bldg, 'load shape', state],
-                               list(es60))
+                               es60)
                 elif opts.bstock == 'residential':
                     nested_set(lsjson,
                                [opts.bstock, eu, bldg,
                                 'represented building types'], bldg)
                     nested_set(lsjson,
                                [opts.bstock, eu, bldg, 'load shape', state],
-                               list(es60))
+                               es60)
     if opts.bstock == 'residential':
         # copy values from SF to MF and MH
         poolvars = ['pool heaters', 'pool pumps']
