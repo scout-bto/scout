@@ -6777,8 +6777,9 @@ class Engine(object):
 
         # Loop through all existing non-code/BPS measures that pertain to the current combination
         # of region, building type and vintage and adjust their data and the code/BPS measure data
-        # to reflect the impacts of code/BPS policy
+        # to reflect the impacts of code/BPS policy; exclude data center measures
         for m in [m_s for m_s in self.measures if (
+                "Data Centers" not in m_s.name and
                 any([x in self.handyvars.out_break_czones[reg] for x in m_s.climate_zone]) and
                 any([x in self.handyvars.out_break_bldgtypes[bldg] for x in m_s.bldg_type]) and
                 vint in m_s.structure_type)]:
@@ -7085,8 +7086,7 @@ class Engine(object):
                                 for yr in focus_yrs:
                                     brk_dat_cdbps_base[reg][bldg][eu][fossil_fuel][yr] = 0
                                 # Initialize gap fractions if needed
-                                if meas_gap_fracs is not None and \
-                                    bldg in meas_gap_fracs.keys() and \
+                                if meas_gap_fracs and bldg in meas_gap_fracs.keys() and \
                                         bldg not in cdbps_gap_fracs.keys():
                                     cdbps_gap_fracs[bldg] = {
                                         "total": {yr: 0 for yr in focus_yrs},
@@ -7156,7 +7156,8 @@ class Engine(object):
                                 brk_dat_cdbps_base[reg][bldg][eu][fossil_fuel][yr] += \
                                     added_elec_base[yr]  # This will be fossil
                                 # Adjust gap fractions if needed
-                                if bldg in cdbps_gap_fracs.keys():
+                                if meas_gap_fracs and bldg in meas_gap_fracs.keys() and \
+                                        bldg in cdbps_gap_fracs.keys():
                                     cdbps_gap_fracs[bldg]["total"][yr] += added_elec_base[yr]
                                     cdbps_gap_fracs[bldg]["gap"][yr] += (
                                         added_elec_base[yr] * meas_gap_fracs[bldg][yr])
