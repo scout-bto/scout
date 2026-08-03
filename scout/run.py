@@ -19,6 +19,9 @@ import pandas as pd
 from operator import itemgetter
 import os
 
+# Initialize a global tracking set for warning about exogenous heat pump rate calculations
+_SHOWN_WARNINGS = set()
+
 
 class UsefulInputFiles(object):
     """Class of input files to be opened by this routine.
@@ -314,13 +317,17 @@ class UsefulVars(object):
         # Initialize conversion fraction output; only calculate and write out conversion fractions
         # for scenarios run with endogenous electrification calculations
         if opts.write_elec_conv_fracs and not exog_rates:
+            # Shorthand for warning for tracking purposes
+            warning_key = "exogenous_switching_rates"
             # Warn user if technical potential outputs are desired; rates will only be produced
-            # for max adoption potential
-            if "Technical potential" in self.adopt_schemes:
+            # for max adoption potential; do not show warning if it has already been shown
+            if "Technical potential" in self.adopt_schemes and warning_key not in _SHOWN_WARNINGS:
                 warnings.warn(
                     "WARNING: Exogenous rates of electric switching are desired by user for "
                     "a run with both Technical potential and Max adoption potential cases. Rates "
                     "will be generated based on Max adoption potential results only.")
+                # Add to warning tracking
+                _SHOWN_WARNINGS.add(warning_key)
             # Set list of possible regions based on output breakout information
             conversion_regions = self.out_break_czones.keys()
             # Set list of possible building types based on output breakout information

@@ -95,19 +95,59 @@ ecm_prep:
     "(C) Induction Range TS",
     "(C) 90.1 Lighting",
     "(C) 90.1 Plug Loads",
-    "(C) Best Refrigeration"
+    "(C) Best Refrigeration",
+    "(R) BTO RDO Walls",
+    "(R) BTO RDO Air Sealing",
+    "(R) BTO RDO Windows",
+    "(R) BTO RDO Foundations",
+    "(C) BTO RDO Walls",
+    "(C) BTO RDO Air Sealing (Exist)",
+    "(C) BTO RDO Roofs",
+    "(C) BTO RDO Windows",
+    "(C) Best HP FS (NG Boiler)"
     ]
   ecm_packages: [
+    "(R) Ref. NG Furnace & AC & Env.",
+    "(R) ES HP Pt. FS (NG Frn.) & Env.",
+    "(R) ES HP FS (NG Frn.) & Env.",
     "(R) Bst. HP FS (NG Frn.) & Env.+",
-    "(C) Bst. HP FS (RTU, NG Ht.) & Env.+"
+    "(R) Brk. HP FS (NG Frn.) & Env.++",
+    "(C) ES HP FS (RTU, NG Ht.) & Env.",
+    "(C) Bst. HP FS (RTU, NG Ht.) & Env.+",
+    "(C) Bst. HP FS (NG Boiler) & Env.++"
     ]
   ecm_field_updates:
-    climate_zone: ["CA", "CO", "MN", "MI", "NY", "MA", "TN", "FL", "TX"]
+    climate_zone: ["CA", "MI", "NY", "FL"]
   alt_regions: State
   pkg_env_costs: include HVAC
   site_energy: true
   rp_persist: true
   no_scnd_lgt: true
+  retrofits:
+    retrofit_type: constant
+    retrofit_multiplier: null
+    retrofit_mult_year: null
+  elec_upgrade_costs: shares
+  sub_fed_policy:
+    low_volume_rate: aggressive
+    state_appl_regs: aggressive
+    bps: aggressive
+    codes: aggressive
+    bps_comply_res: 0.9
+    bps_comply_com: 0.9
+    code_comply_res: 0.9
+    code_comply_com: 0.9
+  incentives:
+    incentive_levels: aggressive
+    incentive_restrictions: null
+  price_sensitivity: lowelec_highfossil
+  split_fuel: true 
+  detail_brkout: [regions, codes/bps, fuel types]
+  report_stk:
+    num_units: true
+    cap_invest: true
 
 run: 
-  None: None
+  high_res_comp: true
+  report_stk: true
+  write_elec_conv_fracs: true
