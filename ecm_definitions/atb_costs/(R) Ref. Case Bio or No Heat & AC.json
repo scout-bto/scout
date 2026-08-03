@@ -61,7 +61,8 @@
   },
   "market_scaling_fractions": {
     "heating": 1.0,
-    "cooling": 0.05
+    "cooling": 0.05,
+    "secondary heating": 1.0
   },
   "market_scaling_fractions_source": {
     "notes": "Note: no scaling fraction for bio heat since it is not included in the complementary measure subset that has heating without any cooling. Cooling multiple of 5% was determined as a proportion of total homes with a cooling system (16,171 homes) where there is heating via wood pellet or NO heating 778 homes.",
@@ -77,6 +78,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-07-27 15:34:29"
+    "timestamp": "2026-07-28 07:19:22"
   }
 }

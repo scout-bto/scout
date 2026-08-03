@@ -20,10 +20,7 @@
     "warehouse"
   ],
   "structure_type": "all",
-  "end_use": [
-    "PCs",
-    "non-PC office equipment"
-  ],
+  "end_use": "office equipment",
   "fuel_type": "electricity",
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
@@ -76,6 +73,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-07-27 15:34:29"
+    "timestamp": "2026-07-28 11:31:55"
   }
 }
