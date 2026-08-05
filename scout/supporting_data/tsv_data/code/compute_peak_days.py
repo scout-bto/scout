@@ -75,11 +75,17 @@ def load_total_hourly(csv_path, region_col, energy_cols, is_commercial):
         [region_col, "timestamp_hour"], as_index=False)["total"].sum()
 
 
-def find_peak_days(combined, region_col):
+def find_peak_days(combined, region_col, keep_extended=False):
     """ Given a region_col/timestamp_hour/total dataframe, find the
     winter and summer peak day (day of year) for each region, flagging
     regions where the in-window peak sits at a season boundary rather than
-    an interior local max (see BOUNDARY_CHECK_BUFFER_DAYS above). """
+    an interior local max (see BOUNDARY_CHECK_BUFFER_DAYS above).
+
+    keep_extended: if True, also keep the *ExtendedPeakDay/*ExtendedPeakLoad
+    columns (the widened-window peak used for the boundary check) in the
+    output instead of dropping them — e.g. so a caller can plot both the
+    official and extended peak. Default False keeps the CSV output schema
+    (tsv_peak_days_{EMM,State}.csv) unchanged. """
     combined = combined.copy()
     combined["dayofyear"] = pd.to_datetime(
         combined["timestamp_hour"]).dt.dayofyear
@@ -124,10 +130,11 @@ def find_peak_days(combined, region_col):
                 f"real interior {season_name.lower()} peak (e.g. load "
                 "ramps straight from winter into the summer cooling "
                 "season).")
-        out_rows.append(peaks.drop(
-            columns=[f"{season_name}ExtendedPeakDay",
-                     f"{season_name}ExtendedPeakLoad"]).set_index(
-            region_col))
+        if not keep_extended:
+            peaks = peaks.drop(
+                columns=[f"{season_name}ExtendedPeakDay",
+                         f"{season_name}ExtendedPeakLoad"])
+        out_rows.append(peaks.set_index(region_col))
 
     result = out_rows[0].join(out_rows[1], how="outer").reset_index()
     for season_name in ("Winter", "Summer"):
@@ -136,15 +143,22 @@ def find_peak_days(combined, region_col):
             lambda d: (datetime.date(2018, 1, 1) +
                        datetime.timedelta(days=int(d) - 1)).strftime(
                 "%b %-d"))
-    return result[[
-        region_col,
-        "WinterPeakDay", "WinterPeakDate", "WinterPeakLoad",
-        "WinterPeakAtWindowBoundary",
-        "SummerPeakDay", "SummerPeakDate", "SummerPeakLoad",
-        "SummerPeakAtWindowBoundary"]]
+    cols = [region_col]
+    for season_name in ("Winter", "Summer"):
+        cols += [f"{season_name}PeakDay", f"{season_name}PeakDate",
+                 f"{season_name}PeakLoad"]
+        if keep_extended:
+            cols += [f"{season_name}ExtendedPeakDay",
+                     f"{season_name}ExtendedPeakLoad"]
+        cols += [f"{season_name}PeakAtWindowBoundary"]
+    return result[cols]
 
 
-def compute_for_geography(geo_label, region_col, stock_version):
+def load_combined_hourly(geo_label, region_col, stock_version):
+    """ Load and sum commercial + residential hourly total load for a
+    geography (matches compute_for_geography's data-loading step; split out
+    so callers that also need the raw hourly series — e.g. update_tsv.py's
+    boundary-trend diagnostic — don't have to recompute it separately). """
     com_path = f"{OUTPUT_DIR}/commercial_{geo_label}_{stock_version}.csv"
     res_path = f"{OUTPUT_DIR}/residential_{geo_label}_{stock_version}.csv"
     for p in (com_path, res_path):
@@ -160,9 +174,12 @@ def compute_for_geography(geo_label, region_col, stock_version):
         res_path, region_col, RESIDENTIAL_ENERGY_COLS, is_commercial=False)
 
     combined = pd.concat([com_hourly, res_hourly], ignore_index=True)
-    combined = combined.groupby(
+    return combined.groupby(
         [region_col, "timestamp_hour"], as_index=False)["total"].sum()
 
+
+def compute_for_geography(geo_label, region_col, stock_version):
+    combined = load_combined_hourly(geo_label, region_col, stock_version)
     return find_peak_days(combined, region_col)
 
 

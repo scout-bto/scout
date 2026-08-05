@@ -13,7 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from compute_peak_days import (
     COMMERCIAL_ENERGY_COLS, RESIDENTIAL_ENERGY_COLS, WINTER_DAYS,
-    SUMMER_DAYS)
+    SUMMER_DAYS, WINTER_DAYS_EXTENDED, SUMMER_DAYS_EXTENDED,
+    load_combined_hourly, find_peak_days)
 
 warnings.filterwarnings('ignore')
 MAP_DIR = "map"
@@ -877,6 +878,143 @@ def plot_peakday_hourly(opts):
             print(f"{out_path} is successfully saved!")
 
 
+def plot_boundary_trend(opts):
+    """ For each region, plot the day-by-day trend of the combined
+    (commercial + residential) load's daily max hourly value across a
+    widened season window, to show directly whether a region's official
+    winter/summer peak day is an interior local max or an artifact of the
+    window edge — i.e. to visualize compute_peak_days.py's
+    PeakAtWindowBoundary flag rather than just take its word for it.
+    Unlike the other --diag plots, this always combines both building
+    sectors to match compute_peak_days.py's own methodology, so it ignores
+    --bstock and needs both raw commercial/residential CSVs cached. """
+    import matplotlib.pyplot as plt
+    from matplotlib import colormaps
+
+    os.makedirs(DIAG_DIR, exist_ok=True)
+    windows = {
+        "Winter": (WINTER_DAYS_EXTENDED,),
+        "Summer": (SUMMER_DAYS_EXTENDED,)}
+    # Official window start/end day(s) a still-rising curve would be
+    # artificially cut off at (see WINTER_DAYS/SUMMER_DAYS in
+    # compute_peak_days.py). Winter is defined as day 1-90 plus day
+    # 335-365, which — on the shifted x-axis below — is one continuous
+    # span from day 335 (x=-30) to day 90 (x=90), so those are its two
+    # edges; summer is a single day 152-273 span.
+    official_edges = {"Winter": [335, 90], "Summer": [152, 273]}
+
+    for geodesc in ('emm', 'state'):
+        try:
+            combined = load_combined_hourly(
+                geodesc, geodesc, opts.stock_version)
+        except FileNotFoundError as e:
+            print(f"{e}, skipping boundary-trend plot.")
+            continue
+        combined = combined.copy()
+        combined['dayofyear'] = pd.to_datetime(
+            combined['timestamp_hour']).dt.dayofyear
+        peaks = find_peak_days(combined, geodesc, keep_extended=True)
+        regions = sorted(combined[geodesc].unique())
+        # 'hsv' cycles hue at constant saturation/value, so no line ends up
+        # near-white (invisible on this white background) or near-black
+        # (indistinguishable from the axes/text) the way sequential-looking
+        # colormaps like 'gist_ncar' do at their endpoints. Sample at
+        # i/n rather than i/(n-1) (what .resampled() does) since hsv wraps
+        # (hue 0 == hue 1 == red), which would otherwise put near-duplicate
+        # colors on the first and last region.
+        hsv = colormaps['hsv']
+        colors = [hsv(i / len(regions)) for i in range(len(regions))]
+
+        for season_name, (ext_days,) in windows.items():
+            # Shift winter's wraparound days (335-365) to negative x values
+            # so its two disjoint day-of-year blocks plot as one continuous
+            # trend leading up to the year boundary; summer's window is
+            # already contiguous, so this is a no-op there.
+            def to_x(d, season_name=season_name):
+                return d - 365 if (season_name == "Winter" and d > 200) \
+                    else d
+
+            season_df = combined[combined['dayofyear'].isin(ext_days)]
+            daily_max = season_df.groupby(
+                [geodesc, 'dayofyear'])['total'].max().reset_index()
+            daily_max['x'] = daily_max['dayofyear'].apply(to_x)
+            flag_col = f"{season_name}PeakAtWindowBoundary"
+            flagged_regions = sorted(
+                peaks.loc[peaks[flag_col], geodesc])
+
+            def _draw(region_subset, out_suffix, title_extra):
+                fig, ax = plt.subplots(figsize=(11, 6))
+                for region in region_subset:
+                    i = regions.index(region)
+                    rdat = daily_max[
+                        daily_max[geodesc] == region].sort_values('x')
+                    if rdat.empty:
+                        continue
+                    color = colors[i]
+                    ax.plot(rdat['x'], rdat['total'], color=color,
+                            linewidth=1, label=region)
+                    prow = peaks[peaks[geodesc] == region]
+                    if prow.empty:
+                        continue
+                    peak_day = prow[f"{season_name}PeakDay"].iloc[0]
+                    peak_load = prow[f"{season_name}PeakLoad"].iloc[0]
+                    is_flagged = prow[flag_col].iloc[0]
+                    # Circle = official (window-constrained) peak — always
+                    # shown, this is what's actually in
+                    # tsv_peak_days_{EMM,State}.csv
+                    ax.plot(
+                        to_x(peak_day), peak_load, marker='o',
+                        markersize=6, markeredgecolor='black',
+                        markerfacecolor=color, zorder=5)
+                    # Star = the higher peak a widened window finds — only
+                    # meaningfully different from the circle when flagged
+                    # (otherwise it's the same point, so skip it)
+                    if is_flagged:
+                        ext_day = prow[
+                            f"{season_name}ExtendedPeakDay"].iloc[0]
+                        ext_load = prow[
+                            f"{season_name}ExtendedPeakLoad"].iloc[0]
+                        ax.plot(
+                            to_x(ext_day), ext_load, marker='*',
+                            markersize=16, markeredgecolor='black',
+                            markerfacecolor=color, zorder=5)
+
+                for edge in official_edges[season_name]:
+                    ax.axvline(to_x(edge), color='black', linestyle='--',
+                               linewidth=1, alpha=0.6)
+                ax.set_xlabel(
+                    "Day of year (winter's Nov-Dec block shown as "
+                    "negative days before Jan 1)"
+                    if season_name == "Winter" else "Day of year")
+                ax.set_ylabel("Daily max hourly total load [kWh]")
+                ax.set_title(
+                    f"{season_name} season daily max hourly load by "
+                    f"region ({geodesc}){title_extra}. Dashed = official "
+                    "window start/end. Circle = official (in-window) "
+                    "peak. Star = higher peak found by a widened window "
+                    "(only shown when flagged as a boundary artifact).")
+                ax.legend(fontsize=6, ncol=3, loc='center left',
+                          bbox_to_anchor=(1.0, 0.5))
+                plt.tight_layout()
+                out_path = (f"{DIAG_DIR}/boundary_trend_"
+                            f"{season_name.lower()}_{geodesc}"
+                            f"{out_suffix}.png")
+                plt.savefig(out_path, dpi=100, bbox_inches='tight')
+                plt.close(fig)
+                print(f"{out_path} is successfully saved!")
+
+            _draw(regions, "", "")
+            if flagged_regions:
+                _draw(
+                    flagged_regions, "_flagged_only",
+                    f" — flagged regions only ({len(flagged_regions)}"
+                    f" of {len(regions)})")
+            else:
+                print(f"No {season_name.lower()}/{geodesc} regions "
+                      "flagged as window-boundary artifacts, skipping "
+                      "flagged-only plot.")
+
+
 def plot_annual_fraction(opts):
     """ Plot cumulative fraction of annual load consumed per (end use,
     building type), one line per region, from the final gzipped
@@ -886,8 +1024,8 @@ def plot_annual_fraction(opts):
     import matplotlib.pyplot as plt
 
     os.makedirs(DIAG_DIR, exist_ok=True)
-    for geodesc, gz_name in (('emm', 'tsv_load_EMM.gz'),
-                              ('state', 'tsv_load_State.gz')):
+    for geodesc, gz_name in (
+            ('emm', 'tsv_load_EMM.gz'), ('state', 'tsv_load_State.gz')):
         gz_path = os.path.join(TSV_DATA_DIR, gz_name)
         if not os.path.isfile(gz_path):
             print(f"{gz_path} not found, skipping annual-fraction plot.")
@@ -932,8 +1070,8 @@ _SEASONAL_MONTH_STARTS = {
     'July': 31 + 28 + 31 + 30 + 31,
     'October': 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
 }
-_SEASONAL_MONTH_DAYS = {'January': 31, 'April': 30, 'July': 31,
-                         'October': 31}
+_SEASONAL_MONTH_DAYS = {
+    'January': 31, 'April': 30, 'July': 31, 'October': 31}
 
 
 def _weekday_hourly_avg(values, month_start_hour, days_in_month):
@@ -945,8 +1083,8 @@ def _weekday_hourly_avg(values, month_start_hour, days_in_month):
     hourly = np.array(
         values[month_start_hour:month_start_hour + days_in_month * 24]
     ).reshape(-1, 24)
-    weekday_mask = [(month_start_day + d) % 7 < 5
-                     for d in range(days_in_month)]
+    weekday_mask = [
+        (month_start_day + d) % 7 < 5 for d in range(days_in_month)]
     return hourly[weekday_mask].mean(axis=0)
 
 
@@ -961,11 +1099,12 @@ def plot_seasonal_factors(opts):
     import matplotlib.pyplot as plt
 
     os.makedirs(DIAG_DIR, exist_ok=True)
-    compare_data = (load_json_maybe_gz(opts.diag_compare_file)
-                     if opts.diag_compare_file else None)
+    compare_data = (
+        load_json_maybe_gz(opts.diag_compare_file)
+        if opts.diag_compare_file else None)
 
-    for geodesc, gz_name in (('emm', 'tsv_load_EMM.gz'),
-                              ('state', 'tsv_load_State.gz')):
+    for geodesc, gz_name in (
+            ('emm', 'tsv_load_EMM.gz'), ('state', 'tsv_load_State.gz')):
         gz_path = os.path.join(TSV_DATA_DIR, gz_name)
         if not os.path.isfile(gz_path):
             print(f"{gz_path} not found, skipping seasonal-factor plot.")
@@ -1062,11 +1201,16 @@ def main(base_dir):
         else:
             print('Missing correct arguments')
     if opts.diag is True:
+        diag_types = set(opts.diag_type)
+        if 'all' in diag_types:
+            diag_types = {'rowcount', 'nan', 'sumcheck', 'peakday_plot',
+                          'annual_plot', 'seasonal_plot', 'boundary_trend'}
+        # boundary_trend always combines both commercial and residential
+        # raw CSVs (to match compute_peak_days.py's own methodology), so
+        # unlike the other diag types it doesn't need --bstock
+        if 'boundary_trend' in diag_types:
+            plot_boundary_trend(opts)
         if opts.bstock in ['commercial', 'residential']:
-            diag_types = set(opts.diag_type)
-            if 'all' in diag_types:
-                diag_types = {'rowcount', 'nan', 'sumcheck', 'peakday_plot',
-                              'annual_plot', 'seasonal_plot'}
             if 'rowcount' in diag_types:
                 countrows_eu(opts)
             if 'nan' in diag_types:
@@ -1079,7 +1223,7 @@ def main(base_dir):
                 plot_annual_fraction(opts)
             if 'seasonal_plot' in diag_types:
                 plot_seasonal_factors(opts)
-        else:
+        elif diag_types - {'boundary_trend'}:
             print('Missing correct arguments')
 
 
@@ -1098,11 +1242,15 @@ if __name__ == '__main__':
     parser.add_argument("--diag_type", nargs="+", default=["all"],
                         choices=["rowcount", "nan", "sumcheck",
                                  "peakday_plot", "annual_plot",
-                                 "seasonal_plot", "all"],
+                                 "seasonal_plot", "boundary_trend", "all"],
                         help="Which diagnostic(s) to run under --diag "
                         "(default: all). rowcount/nan/sumcheck print "
                         "text reports; peakday_plot/annual_plot/"
-                        "seasonal_plot save PNGs to diagnostics/.")
+                        "seasonal_plot/boundary_trend save PNGs to "
+                        "diagnostics/. boundary_trend always combines "
+                        "commercial + residential (matching "
+                        "compute_peak_days.py) and doesn't need --bstock; "
+                        "the others require --bstock.")
     parser.add_argument("--diag_compare_file", type=str, default=None,
                         help="Path to an older tsv_load_*.gz/.json file "
                         "to overlay on seasonal_plot as a before/after "
