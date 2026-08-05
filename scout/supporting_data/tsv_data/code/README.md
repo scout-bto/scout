@@ -123,12 +123,18 @@ python update_tsv.py --diag --bstock residential --diag_type nan sumcheck
 | `peakday_plot` | Hourly load by end use on each region's winter/summer peak day | `csv/...csv` (step 1) | `diagnostics/peakday_*.png` |
 | `annual_plot` | Cumulative fraction of annual load consumed, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/annual_fraction_*.png` |
 | `seasonal_plot` | Weekday-average hourly shape for Jan/Apr/Jul/Oct, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/seasonal_*.png` |
+| `boundary_trend` | Day-by-day trend of daily-max-hourly total load (commercial + residential combined) across a widened season window, one line per region, to visually check `compute_peak_days.py`'s `PeakAtWindowBoundary` flag — is the official peak day an interior local max, or is the curve still rising when the window cuts it off? | `csv/...csv` (step 1), **both** `--bstock` values | `diagnostics/boundary_trend_*.png` |
 
 `nan`, `sumcheck`, `annual_plot`, and `seasonal_plot` read the final gz
 outputs, so they only reflect the current state of `../tsv_load_EMM.gz` /
 `../tsv_load_State.gz` (run step 2 for both `--bstock` values first).
 `rowcount` and `peakday_plot` read the raw per-`--bstock` CSV from step 1
-directly and don't need step 2.
+directly and don't need step 2. `boundary_trend` also reads step 1's raw
+CSVs directly, but — unlike every other `--diag_type`, which is scoped to
+whichever single `--bstock` you pass — it always loads and sums **both**
+`commercial_*` and `residential_*` CSVs itself (to match
+`compute_peak_days.py`'s own combined-sector methodology), so it ignores
+`--bstock` and needs both raw CSVs already cached from step 1.
 To run a subset of the diagnostics:
 `python update_tsv.py --diag --bstock residential --diag_type nan sumcheck`
 To run the full set (note `--bstock` parameter is required):
@@ -171,3 +177,10 @@ in `HandyVars.tsv_metrics_data["season days"]`. Writes
 reference. These replace the single hardcoded national peak days (day 1 /
 day 183) currently used in `HandyVars.tsv_metrics_data["peak days"]` with
 region-specific values.
+
+Regions whose official-window peak looks like a window-boundary artifact
+get a console warning and a `*PeakAtWindowBoundary` flag in the output CSV
+(see the widened-window check in `compute_peak_days.py`). To see *why* a
+region got flagged rather than just trusting the flag, run
+`update_tsv.py --diag --diag_type boundary_trend` (above) — it plots the
+same underlying trend these warnings are based on.
