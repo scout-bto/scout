@@ -108,8 +108,41 @@ python update_tsv.py --diag --bstock commercial
 python update_tsv.py --diag --bstock residential
 ```
 
-Sanity-checks the cached CSVs from step 1 (row counts per region, missing
-hourly timestamps) without touching the JSON output.
+Runs every diagnostic below by default; narrow to specific ones with
+`--diag_type` (space-separated):
+
+```bash
+python update_tsv.py --diag --bstock residential --diag_type nan sumcheck
+```
+
+| `--diag_type` value | What it checks | Reads | Output |
+|---|---|---|---|
+| `rowcount` | Row count per region + missing hourly timestamps, for one representative building type | `csv/..._{stock_version}.csv` (step 1) | printed |
+| `nan` | NaN columns in the raw CSV; NaN values anywhere in the final JSON | `csv/...csv` and `../tsv_load_{EMM,State}.gz` | printed |
+| `sumcheck` | Every load shape is length 8760 and sums to ~1 (only failures are printed) | `../tsv_load_{EMM,State}.gz` | printed |
+| `peakday_plot` | Hourly load by end use on each region's winter/summer peak day | `csv/...csv` (step 1) | `diagnostics/peakday_*.png` |
+| `annual_plot` | Cumulative fraction of annual load consumed, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/annual_fraction_*.png` |
+| `seasonal_plot` | Weekday-average hourly shape for Jan/Apr/Jul/Oct, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/seasonal_*.png` |
+
+`nan`, `sumcheck`, `annual_plot`, and `seasonal_plot` read the final gz
+outputs, so they only reflect the current state of `../tsv_load_EMM.gz` /
+`../tsv_load_State.gz` (run step 2 for both `--bstock` values first).
+`rowcount` and `peakday_plot` read the raw per-`--bstock` CSV from step 1
+directly and don't need step 2.
+To run a subset of the diagnostics:
+`python update_tsv.py --diag --bstock residential --diag_type nan sumcheck`
+To run the full set (note `--bstock` parameter is required):
+`python update_tsv.py --diag --bstock residential`
+
+Pass `--diag_compare_file <path to an older tsv_load_*.gz or .json>` to
+additionally overlay that file's mean ± 1 std dev (across regions) on the
+`seasonal_plot` output, for a before/after comparison against a prior
+release.
+
+These diagnostics were previously spread across four Jupyter notebooks in
+this directory (`_diag_hourly.ipynb`, `_diag_annual_fraction.ipynb`,
+`_diag_length_and_sumtoone.ipynb`, `_diag_factorsplot.ipynb`); their logic
+now lives in `update_tsv.py` under `--diag`.
 
 ## Full example (default 2025 release)
 

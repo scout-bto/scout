@@ -11,11 +11,16 @@ from os import getcwd
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 
+from compute_peak_days import (
+    COMMERCIAL_ENERGY_COLS, RESIDENTIAL_ENERGY_COLS, WINTER_DAYS,
+    SUMMER_DAYS)
+
 warnings.filterwarnings('ignore')
 MAP_DIR = "map"
 SQL_DIR = "sql"
 OUTPUT_DIR = "csv"
 JSON_DIR = "json"
+DIAG_DIR = "diagnostics"
 # Base template lives alongside this script (not in JSON_DIR), since
 # JSON_DIR holds only large generated output that's gitignored.
 BASE_TEMPLATE = "tsv_load_in_2024.json"
@@ -256,6 +261,24 @@ def write_gzip_json(data, filename):
     with gzip.GzipFile(out_path, 'w') as gz_file:
         gz_file.write(json.dumps(data, indent=2).encode('utf-8'))
     print(f"{filename} is successfully saved!")
+
+
+def read_gzip_json(filename):
+    """ Inverse of write_gzip_json: load one of the final
+    tsv_load_{EMM,State}.gz outputs from TSV_DATA_DIR. """
+    with gzip.GzipFile(os.path.join(TSV_DATA_DIR, filename), 'r') as gz_file:
+        return json.loads(gz_file.read().decode('utf-8'))
+
+
+def load_json_maybe_gz(path):
+    """ Load a JSON file that may be gzip-compressed (.gz) or plain,
+    for pointing --diag_compare_file at either a tsv_load_*.gz output or
+    one of the uncompressed json/tsv_load_*_2024*.json intermediates. """
+    if path.endswith('.gz'):
+        with gzip.GzipFile(path, 'r') as gz_file:
+            return json.loads(gz_file.read().decode('utf-8'))
+    with open(path, 'r') as f:
+        return json.load(f)
 
 
 def round_floats(obj):
@@ -674,6 +697,328 @@ def countrows_eu(opts):
                 print("No missing timestamps found.")
 
 
+def check_nan(opts):
+    """ Diagnose NaNs in both the raw stock CSVs (step 1 output) and the
+    final gzipped load-shape JSON outputs (step 2 output). Ported from
+    _diag_length_and_sumtoone.ipynb. NaNs in the raw CSV are expected (they
+    get zeroed out by findNan() during --insert_scouttsv); NaNs surviving
+    into the final gz would indicate that safeguard failed. """
+    for geodesc in ('emm', 'state'):
+        csv_file = (f"{OUTPUT_DIR}/{opts.bstock}_{geodesc}_"
+                    f"{opts.stock_version}.csv")
+        if not os.path.isfile(csv_file):
+            print(f"{csv_file} not found, skipping raw-CSV NaN check.")
+            continue
+        df = pd.read_csv(csv_file)
+        nan_cols = df.columns[df.isna().any()].tolist()
+        if nan_cols:
+            print(f"{csv_file}: columns containing NaN: {nan_cols}")
+        else:
+            print(f"{csv_file}: no NaN columns.")
+
+    def find_nan_keys(d, parent_key=''):
+        found = []
+        if isinstance(d, dict):
+            for key, value in d.items():
+                found += find_nan_keys(
+                    value, f"{parent_key}.{key}" if parent_key else key)
+        elif isinstance(d, list):
+            for i, item in enumerate(d):
+                found += find_nan_keys(item, f"{parent_key}[{i}]")
+        elif isinstance(d, float) and np.isnan(d):
+            found.append(parent_key)
+        return found
+
+    for gz_name in ('tsv_load_EMM.gz', 'tsv_load_State.gz'):
+        gz_path = os.path.join(TSV_DATA_DIR, gz_name)
+        if not os.path.isfile(gz_path):
+            print(f"{gz_path} not found, skipping final-JSON NaN check "
+                  "(run --insert_scouttsv --bstock residential to produce "
+                  "it, since that pass writes the final gz).")
+            continue
+        nan_keys = find_nan_keys(read_gzip_json(gz_name))
+        if nan_keys:
+            print(f"{gz_path}: {len(nan_keys)} NaN values found:")
+            for k in nan_keys:
+                print(f"  {k}")
+        else:
+            print(f"{gz_path}: no NaN values found.")
+
+
+def check_sum_and_length(opts):
+    """ Verify every load shape in the final gzipped JSON outputs is
+    length 8760 and sums to ~1. Ported from
+    _diag_length_and_sumtoone.ipynb; unlike the notebook (which printed
+    every combination checked), only failing combinations are printed here
+    since a full run checks thousands of load shapes. The same sum-to-one
+    check already runs inline during --insert_scouttsv (see "LOAD SHAPE
+    DOESN'T SUM TO ONE!" there); this re-checks the final gz on demand,
+    independent of a fresh insert run. """
+    for gz_name in ('tsv_load_EMM.gz', 'tsv_load_State.gz'):
+        gz_path = os.path.join(TSV_DATA_DIR, gz_name)
+        if not os.path.isfile(gz_path):
+            print(f"{gz_path} not found, skipping.")
+            continue
+        data = read_gzip_json(gz_name)
+        n_checked = n_bad = 0
+        # Top level also carries non-sectional metadata (start day, DST,
+        # leap year, weather basis) alongside the residential/commercial
+        # dicts; only descend into the latter.
+        for sec in ('residential', 'commercial'):
+            sec_v = data.get(sec, {})
+            for eu, eu_v in sec_v.items():
+                for bt, bt_v in eu_v.items():
+                    shapes = bt_v.get('load shape') \
+                        if isinstance(bt_v, dict) else None
+                    if not shapes:
+                        continue
+                    for region, shape in shapes.items():
+                        n_checked += 1
+                        llen = len(shape)
+                        total = sum(shape)
+                        if llen != 8760 or abs(total - 1) > 0.01:
+                            n_bad += 1
+                            print(f"{gz_path}: {sec}/{eu}/{bt}/{region} "
+                                  f"length={llen} sum={total:.4f}")
+        print(f"{gz_path}: checked {n_checked} load shapes, {n_bad} failed "
+              "length/sum-to-one checks.")
+
+
+def _diag_canonical_building_types(bstock):
+    """ The subset of raw (pre-`replacements`) building_type values in the
+    stock CSVs that update_tsv.py actually keeps, as used elsewhere in this
+    script (e.g. insert_scouttsv_emm's values_to_keep filter). """
+    if bstock == 'residential':
+        return ['Mobile Home', 'Multi-Family with 5+ Units',
+                'Single-Family Detached']
+    return sum(building_map['commercial'].values(), [])
+
+
+def plot_peakday_hourly(opts):
+    """ For each region, find the winter/summer peak day (highest total
+    load day in that season's window) in the raw stock CSV and plot every
+    end use's hourly load on that day, one subplot per (end use, building
+    type) pair with regions overlaid as separate lines. Saves PNGs to
+    DIAG_DIR. Ported from _diag_hourly.ipynb, using the same
+    winter/summer windows and duplicate-column-free energy columns as
+    compute_peak_days.py (rather than recomputing them). """
+    import matplotlib.pyplot as plt
+
+    bts = _diag_canonical_building_types(opts.bstock)
+    energy_cols = (RESIDENTIAL_ENERGY_COLS if opts.bstock == 'residential'
+                   else COMMERCIAL_ENERGY_COLS)
+    os.makedirs(DIAG_DIR, exist_ok=True)
+
+    for geodesc in ('emm', 'state'):
+        csv_file = (f"{OUTPUT_DIR}/{opts.bstock}_{geodesc}_"
+                    f"{opts.stock_version}.csv")
+        if not os.path.isfile(csv_file):
+            print(f"{csv_file} not found, skipping peak-day plot.")
+            continue
+        df = pd.read_csv(csv_file)
+        if opts.bstock == 'commercial':
+            df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
+        df = df[df['building_type'].isin(bts)].copy()
+        df['timestamp_hour'] = pd.to_datetime(df['timestamp_hour'])
+        df['dayofyear'] = df['timestamp_hour'].dt.dayofyear
+        df['total'] = df[energy_cols].sum(axis=1)
+        regions = sorted(df[geodesc].unique())
+
+        for season_name, season_days in (
+                ('winter', WINTER_DAYS), ('summer', SUMMER_DAYS)):
+            season_df = df[df['dayofyear'].isin(season_days)]
+            daily = season_df.groupby(
+                [geodesc, 'dayofyear'])['total'].sum().reset_index()
+            if daily.empty:
+                print(f"{csv_file}: no {season_name} data, skipping.")
+                continue
+            peak_day = daily.loc[
+                daily.groupby(geodesc)['total'].idxmax()
+            ].set_index(geodesc)['dayofyear']
+
+            # Pre-slice each region's peak-day rows once (one filter pass
+            # per region over the full df) rather than re-filtering the
+            # full df inside the (end use x building type x region) plot
+            # loop below, which is orders of magnitude slower.
+            peakday_by_region = {}
+            for region in regions:
+                if region not in peak_day.index:
+                    continue
+                region_day_df = df[
+                    (df[geodesc] == region) &
+                    (df['dayofyear'] == peak_day.loc[region])
+                ]
+                peakday_by_region[region] = {
+                    bt: sub.sort_values('timestamp_hour')
+                    for bt, sub in region_day_df.groupby('building_type')}
+
+            nrows, ncols = len(energy_cols), len(bts)
+            fig, ax = plt.subplots(
+                nrows, ncols, figsize=(ncols * 4, nrows * 2.5),
+                sharex=True, sharey=False, squeeze=False)
+            for i, eu in enumerate(energy_cols):
+                for j, bt in enumerate(bts):
+                    axij = ax[i, j]
+                    for region, bt_data in peakday_by_region.items():
+                        data = bt_data.get(bt)
+                        if data is None or data.empty:
+                            continue
+                        axij.plot(range(len(data)), data[eu], label=region)
+                    axij.set_title(f'eu={eu}\nbt={bt}', fontsize=8)
+                    if i == nrows - 1:
+                        axij.set_xlabel("Hour")
+                    if j == 0:
+                        axij.set_ylabel("Load [kWh]")
+            plt.tight_layout()
+            out_path = (f"{DIAG_DIR}/peakday_{opts.bstock[:3]}_"
+                        f"{season_name}_{geodesc}.png")
+            plt.savefig(out_path, dpi=100, bbox_inches='tight')
+            plt.close(fig)
+            print(f"{out_path} is successfully saved!")
+
+
+def plot_annual_fraction(opts):
+    """ Plot cumulative fraction of annual load consumed per (end use,
+    building type), one line per region, from the final gzipped
+    load-shape JSON. Saves PNGs to DIAG_DIR. Ported from
+    _diag_annual_fraction.ipynb (grid size there was hardcoded per bstock;
+    here it's sized dynamically from what's actually in the JSON). """
+    import matplotlib.pyplot as plt
+
+    os.makedirs(DIAG_DIR, exist_ok=True)
+    for geodesc, gz_name in (('emm', 'tsv_load_EMM.gz'),
+                              ('state', 'tsv_load_State.gz')):
+        gz_path = os.path.join(TSV_DATA_DIR, gz_name)
+        if not os.path.isfile(gz_path):
+            print(f"{gz_path} not found, skipping annual-fraction plot.")
+            continue
+        sec_data = read_gzip_json(gz_name).get(opts.bstock, {})
+        combos = [(eu, bt) for eu, eu_v in sec_data.items() for bt in eu_v]
+        if not combos:
+            print(f"{gz_path}: no {opts.bstock} data, skipping.")
+            continue
+        ncols = 4
+        nrows = -(-len(combos) // ncols)
+        fig, ax = plt.subplots(
+            nrows, ncols, figsize=(ncols * 4, nrows * 3),
+            sharex=True, sharey=True, squeeze=False)
+        for idx, (eu, bt) in enumerate(combos):
+            i, j = divmod(idx, ncols)
+            shapes = sec_data[eu][bt].get('load shape', {})
+            for region, vals in shapes.items():
+                ax[i, j].plot(np.cumsum(vals), label=region)
+            ax[i, j].set_title(f'eu={eu}\nbt={bt}', fontsize=8)
+            if i == nrows - 1:
+                ax[i, j].set_xlabel("Hour of Year")
+            if j == 0:
+                ax[i, j].set_ylabel("Fraction Annual Load Consumed")
+        for idx in range(len(combos), nrows * ncols):
+            i, j = divmod(idx, ncols)
+            ax[i, j].axis('off')
+        plt.tight_layout()
+        out_path = (f"{DIAG_DIR}/annual_fraction_{opts.bstock[:3]}_"
+                    f"{geodesc}.png")
+        plt.savefig(out_path, dpi=100, bbox_inches='tight')
+        plt.close(fig)
+        print(f"{out_path} is successfully saved!")
+
+
+# Day-of-year (0-indexed) that each representative month starts on, and
+# each month's length; used by plot_seasonal_factors to pull out weekday
+# hourly averages for Jan/Apr/Jul/Oct without loading a full calendar lib.
+_SEASONAL_MONTH_STARTS = {
+    'January': 0,
+    'April': 31 + 28 + 31,
+    'July': 31 + 28 + 31 + 30 + 31,
+    'October': 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
+}
+_SEASONAL_MONTH_DAYS = {'January': 31, 'April': 30, 'July': 31,
+                         'October': 31}
+
+
+def _weekday_hourly_avg(values, month_start_hour, days_in_month):
+    """ Average hourly profile (24 values) across the weekdays (Mon-Fri)
+    of a `days_in_month`-day block starting at `month_start_hour`. Assumes
+    values[] starts on a Monday (true for 2018, the ComStock/ResStock AMY
+    year), matching _diag_factorsplot.ipynb's day-of-week assumption. """
+    month_start_day = month_start_hour // 24
+    hourly = np.array(
+        values[month_start_hour:month_start_hour + days_in_month * 24]
+    ).reshape(-1, 24)
+    weekday_mask = [(month_start_day + d) % 7 < 5
+                     for d in range(days_in_month)]
+    return hourly[weekday_mask].mean(axis=0)
+
+
+def plot_seasonal_factors(opts):
+    """ Plot weekday-average hourly load shape for Jan/Apr/Jul/Oct, one
+    line per region, for every (end use, building type) present in the
+    final gzipped JSON. Saves PNGs to DIAG_DIR. If opts.diag_compare_file
+    is given, overlay that file's mean +/- 1 std dev across regions for a
+    before/after comparison. Ported from _diag_factorsplot.ipynb
+    (draw_plot/compare_plot), generalized to iterate every combination
+    present instead of a hardcoded call list. """
+    import matplotlib.pyplot as plt
+
+    os.makedirs(DIAG_DIR, exist_ok=True)
+    compare_data = (load_json_maybe_gz(opts.diag_compare_file)
+                     if opts.diag_compare_file else None)
+
+    for geodesc, gz_name in (('emm', 'tsv_load_EMM.gz'),
+                              ('state', 'tsv_load_State.gz')):
+        gz_path = os.path.join(TSV_DATA_DIR, gz_name)
+        if not os.path.isfile(gz_path):
+            print(f"{gz_path} not found, skipping seasonal-factor plot.")
+            continue
+        sec_data = read_gzip_json(gz_name).get(opts.bstock, {})
+        n_saved = 0
+        for eu, eu_v in sec_data.items():
+            for bt, bt_v in eu_v.items():
+                shapes = bt_v.get('load shape', {})
+                if not shapes:
+                    continue
+                cmp_shapes = {}
+                if compare_data:
+                    cmp_shapes = compare_data.get(
+                        opts.bstock, {}).get(eu, {}).get(bt, {}).get(
+                        'load shape', {})
+
+                fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharey=True)
+                for idx, (month_name, month_start_day) in enumerate(
+                        _SEASONAL_MONTH_STARTS.items()):
+                    month_start_hour = month_start_day * 24
+                    days = _SEASONAL_MONTH_DAYS[month_name]
+                    for region, vals in shapes.items():
+                        avg = _weekday_hourly_avg(
+                            vals, month_start_hour, days)
+                        axs[idx].plot(avg, label=region, linewidth=0.8)
+                    if cmp_shapes:
+                        mat = np.array([
+                            _weekday_hourly_avg(v, month_start_hour, days)
+                            for v in cmp_shapes.values()])
+                        mean, std = mat.mean(axis=0), mat.std(axis=0)
+                        axs[idx].plot(mean, '--', color='black',
+                                      label='compare mean', linewidth=1.5)
+                        axs[idx].fill_between(
+                            range(24), mean - std, mean + std,
+                            color='black', alpha=0.15)
+                    axs[idx].set_title(month_name)
+                    axs[idx].set_xlabel('Hour of Day')
+                    axs[idx].set_xticks(np.arange(0, 24, 4))
+                    axs[idx].grid(True)
+                    if idx == 0:
+                        axs[idx].set_ylabel('Fraction')
+                plt.suptitle(f'{opts.bstock} / {eu} / {bt} ({geodesc})')
+                plt.tight_layout()
+                out_path = (f"{DIAG_DIR}/seasonal_{opts.bstock[:3]}_"
+                            f"{geodesc}_{eu.replace(' ', '')}_{bt}.png")
+                plt.savefig(out_path, dpi=100, bbox_inches='tight')
+                plt.close(fig)
+                n_saved += 1
+        print(f"{n_saved} seasonal-factor plots for {opts.bstock}/"
+              f"{geodesc} saved to {DIAG_DIR}/")
+
+
 def main(base_dir):
 
     if opts.get_stockdata is True:
@@ -718,7 +1063,24 @@ def main(base_dir):
             print('Missing correct arguments')
     if opts.diag is True:
         if opts.bstock in ['commercial', 'residential']:
-            countrows_eu(opts)
+            diag_types = set(opts.diag_type)
+            if 'all' in diag_types:
+                diag_types = {'rowcount', 'nan', 'sumcheck', 'peakday_plot',
+                              'annual_plot', 'seasonal_plot'}
+            if 'rowcount' in diag_types:
+                countrows_eu(opts)
+            if 'nan' in diag_types:
+                check_nan(opts)
+            if 'sumcheck' in diag_types:
+                check_sum_and_length(opts)
+            if 'peakday_plot' in diag_types:
+                plot_peakday_hourly(opts)
+            if 'annual_plot' in diag_types:
+                plot_annual_fraction(opts)
+            if 'seasonal_plot' in diag_types:
+                plot_seasonal_factors(opts)
+        else:
+            print('Missing correct arguments')
 
 
 if __name__ == '__main__':
@@ -733,6 +1095,18 @@ if __name__ == '__main__':
                         help="Insert stock data to tsv_load.json")
     parser.add_argument("--diag", action="store_true",
                         help="diagnose downloaded data")
+    parser.add_argument("--diag_type", nargs="+", default=["all"],
+                        choices=["rowcount", "nan", "sumcheck",
+                                 "peakday_plot", "annual_plot",
+                                 "seasonal_plot", "all"],
+                        help="Which diagnostic(s) to run under --diag "
+                        "(default: all). rowcount/nan/sumcheck print "
+                        "text reports; peakday_plot/annual_plot/"
+                        "seasonal_plot save PNGs to diagnostics/.")
+    parser.add_argument("--diag_compare_file", type=str, default=None,
+                        help="Path to an older tsv_load_*.gz/.json file "
+                        "to overlay on seasonal_plot as a before/after "
+                        "comparison (mean +/- 1 std dev across regions).")
     parser.add_argument("--bstock", type=str,
                         help="Determine building stock ")
     parser.add_argument("--stock_version", type=str, default="2025",
