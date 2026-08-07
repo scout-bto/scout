@@ -73,6 +73,8 @@ Use this quick checklist when updating Scout to a new AEO release.
 
 4. **Rebuild microsegment and CPL data products**::
 
+   python tests/com_mseg_test.py
+   
    python -m scout.mseg -y 2026
 
    python -m scout.mseg_techdata -y 2026
@@ -81,7 +83,7 @@ Use this quick checklist when updating Scout to a new AEO release.
 
    python -m scout.com_mseg_tech -y 2026
 
-   python tests/com_mseg_test.py
+   python tests/final_mseg_converter_test.py
 
    python -m scout.final_mseg_converter
    python scout/final_mseg_converter.py Select options 1,1 when prompted
@@ -92,8 +94,6 @@ Use this quick checklist when updating Scout to a new AEO release.
    1,2,2,1
    1,3,2,1
    2,3
-   
-   python tests/final_mseg_converter_test.py
 
    Move these final output files to the
    scout/scout/supporting_data/supporting_data/stock_energy_tech_data folder,
