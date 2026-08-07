@@ -99,22 +99,32 @@ class EIAFiles(object):
         for all 10 columns, including replacing the empty HOUSEHOLDS
         column with a 0.
         """
-        # Read the original RESDBOUT data; rename the original
-        # RESDBOUT.txt file to RESDBOUT-orig.txt to set it aside if
-        # it is not already present so that the modified data can be
-        # written to a new RESDBOUT.txt
-        try:
-            f_dbin = open(self.r_db_in, 'r')
-        except FileNotFoundError:
-            os.rename(self.r_db_out, self.r_db_in)
-            f_dbin = open(self.r_db_in, 'r')
+        # Always read from a backup copy of RESDBOUT and write the
+        # processed output to RDM_DBOUT.txt. This avoids trying to read
+        # and write the same file path simultaneously.
+        if self.r_db_backup.exists():
+            read_path = self.r_db_backup
+        elif self.r_db_in.exists():
+            os.replace(self.r_db_in, self.r_db_backup)
+            read_path = self.r_db_backup
+        else:
+            raise FileNotFoundError(
+                f"Neither {self.r_db_in} nor {self.r_db_backup} was found.")
 
-        with open(self.r_db_out, 'w+', encoding='utf-8', newline='') as f_dbout:
+        with open(read_path, 'r', encoding='utf-8') as f_dbin, \
+            open(
+                self.r_db_out,
+                'w+',
+                encoding='utf-8',
+                newline='') as f_dbout:
             csv_dbin = csv.DictReader(f_dbin)
 
             # Get field names from the file header row as determined
             # by DictReader
             header = csv_dbin.fieldnames
+            if not header:
+                raise ValueError(
+                    f"No header row found in RESDBOUT input file: {read_path}")
 
             # Create corresponding DictWriter object for file outputs
             csv_dbout = csv.DictWriter(f_dbout, fieldnames=header)
@@ -130,8 +140,6 @@ class EIAFiles(object):
                 # Strip off leading and trailing space characters
                 row.update({k: v.strip() for k, v in row.items()})
                 csv_dbout.writerow(row)
-
-        f_dbin.close()
 
     def res_gsl_lt_update(self):
         """Replace 'HAL' with 'INC' for GSL residential lighting.
