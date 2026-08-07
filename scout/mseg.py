@@ -7,6 +7,7 @@ import argparse
 import csv
 from scout import mseg_techdata as rmt
 from scout.config import FilePaths as fp
+from scout.config import AEOInputRegistry as air
 
 
 class EIAData(object):
@@ -17,8 +18,9 @@ class EIAData(object):
             and stock data.
     """
     def __init__(self, data_dir=fp.INPUTS):
-        self.res_energy = data_dir / "RDM_DBOUT.txt"
-        self.res_generation = data_dir / "RDM_DGENOUT.txt"
+        proc = air.path_map("processed", data_dir)
+        self.res_energy = proc["res_db"]
+        self.res_generation = proc["res_dgen"]
 
 
 class UsefulVars(object):
@@ -1489,6 +1491,13 @@ def main():
 
     # Get import year specified by user (if any)
     aeo_import_year = parser.parse_args().year
+
+    # Validate that required processed AEO files are present up front.
+    air.assert_present(
+        "processed",
+        required_keys=["res_db", "res_dgen", "rsmlgt"],
+        hint=("Stage required AEO files in inputs/, then run "
+              "'python -m scout.eia_file' if preprocessing is needed."))
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()
