@@ -12,6 +12,7 @@ import json
 import csv
 import itertools as it
 from scout.config import FilePaths as fp
+from scout.config import AEOInputRegistry as air
 
 
 class EIAData(object):
@@ -23,8 +24,9 @@ class EIAData(object):
     """
 
     def __init__(self, data_dir=fp.INPUTS):
-        self.cpl_data = data_dir / "ktek.csv"
-        self.tpp_data = data_dir / "kprem.txt"
+        proc = air.path_map("processed", data_dir)
+        self.cpl_data = proc["ktek"]
+        self.tpp_data = proc["kprem"]
 
 
 class UsefulVars(object):
@@ -1151,6 +1153,13 @@ def main():
     different from the file used for the conversion for the energy data
     and is specific to commercial buildings.
     """
+
+    # Validate required processed AEO inputs up front.
+    air.assert_present(
+        "processed",
+        required_keys=["ktek", "kprem", "cdm_sd", "cdm_db"],
+        hint=("Stage required AEO files in inputs/. If using raw workbook "
+              "inputs, run 'python -m scout.eia_file' to create ktek.csv."))
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()

@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import openpyxl as pyxl
 from scout import mseg_techdata as rmt
+from scout.config import AEOInputRegistry as air
 
 
 class EIAFiles(object):
@@ -48,18 +49,46 @@ class EIAFiles(object):
         # ensure the output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
 
+        raw = air.path_map('raw', self.input_dir)
+        internal = air.path_map('internal', self.input_dir)
+        proc = air.path_map('processed', self.output_dir)
+
         # inputs
-        self.r_db_in = self.input_dir / 'RDM_DBOUT-orig.txt'
-        self.r_mess = self.input_dir / 'rsmess.xlsx'
-        self.c_tech_in = self.input_dir / 'ktekx.xlsx'
-        self.r_lgt_in = self.input_dir / 'rsmlgt.txt'
+        self.r_db_in = raw['res_db_source']
+        self.r_db_backup = internal['res_db_backup']
+        self.r_mess = raw['res_mess_xlsx']
+        self.c_tech_in = raw['com_ktekx_xlsx']
+        self.r_lgt_in = raw['res_lgt']
 
         # outputs
-        self.r_db_out = self.output_dir / 'RDM_DBOUT.txt'
-        self.r_class = self.output_dir / 'rsclass.txt'
-        self.r_meqp = self.output_dir / 'rsmeqp.txt'
-        self.c_tech_out = self.output_dir / 'ktek.csv'
-        self.r_lgt_out = self.output_dir / 'rsmlgt.txt'
+        self.r_db_out = proc['res_db']
+        self.r_class = proc['rsclass']
+        self.r_meqp = proc['rsmeqp']
+        self.c_tech_out = proc['ktek']
+        self.r_lgt_out = proc['rsmlgt']
+
+    def preflight_raw_inputs(self):
+        """Validate raw-mode prerequisites with clear next-step guidance."""
+        missing = air.missing_for_mode(
+            'raw',
+            self.input_dir,
+            required_keys=['res_db_source', 'res_mess_xlsx',
+                           'com_ktekx_xlsx', 'res_lgt'])
+
+        # For RESDBOUT, accept either the raw backup name or the current
+        # processed-name input; if only the latter exists, this script will
+        # rename it to the raw backup name on first pass.
+        if not self.r_db_in.exists() and not self.r_db_backup.exists():
+            missing.append(self.r_db_in)
+
+        if missing:
+            missing_str = '\n'.join([f"  - {p}" for p in missing])
+            raise FileNotFoundError(
+                "Missing required raw AEO inputs for preprocessing:\n"
+                f"{missing_str}\n\n"
+                "Next step: place raw AEO files in inputs/ (including "
+                "rsmess.xlsx and ktekx.xlsx), then rerun "
+                "'python -m scout.eia_file'.")
 
     def resdbout_fill_household(self):
         """Modify RESDBOUT such that all rows have the same number of columns.
@@ -241,6 +270,7 @@ class EIAFiles(object):
 def main():
     # read from AEO raw data, write processed files into 'inputs'
     f = EIAFiles(input_dir=Path('inputs'), output_dir=Path('inputs'))
+    f.preflight_raw_inputs()
 
     f.resdbout_fill_household()
     f.res_gsl_lt_update()
