@@ -9,6 +9,7 @@ import json
 import io
 from functools import reduce
 from scout.config import FilePaths as fp
+from scout.config import AEOInputRegistry as air
 
 # AEO publication year used to select the correct end use name mapping.
 # Set by main() via the -y/--year CLI argument; falls back to metadata when None.
@@ -26,9 +27,10 @@ class EIAData(object):
     """
 
     def __init__(self, data_dir=fp.INPUTS):
-        self.serv_dmd = data_dir / "CDM_SDOUT.txt"
-        self.catg_dmd = data_dir / "CDM_DBOUT.txt"
-        self.com_generation = data_dir / "CDM_DGENOUT.txt"
+        proc = air.path_map("processed", data_dir)
+        self.serv_dmd = proc["cdm_sd"]
+        self.catg_dmd = proc["cdm_db"]
+        self.com_generation = proc["cdm_dgen"]
 
 
 class UsefulVars(object):
@@ -1336,6 +1338,13 @@ def main():
     args = parser.parse_args()
 
     aeo_import_year = args.year
+
+    # Validate required processed AEO inputs up front.
+    air.assert_present(
+        "processed",
+        required_keys=["cdm_sd", "cdm_db", "cdm_dgen"],
+        hint=("Stage required AEO files in inputs/. If you started from "
+              "raw workbook sources, run 'python -m scout.eia_file' first."))
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()
