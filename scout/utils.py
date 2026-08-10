@@ -34,12 +34,43 @@ class JsonIO:
         Returns:
             dict: .json data as a dict
         """
+        if _ORJSON_AVAILABLE:
+            # orjson's decoder is substantially faster than stdlib json for
+            # large files (e.g. the multi-hundred-MB baseline/measure data
+            # used by run.py).
+            try:
+                with open(filepath, 'rb') as handle:
+                    return _orjson.loads(handle.read())
+            except ValueError as e:
+                raise ValueError(f"Error reading in '{filepath}': {str(e)}") from None
         with open(filepath, 'r') as handle:
             try:
                 data = json.load(handle)
             except ValueError as e:
                 raise ValueError(f"Error reading in '{filepath}': {str(e)}") from None
         return data
+
+    @staticmethod
+    def loads_bytes(data):
+        """Parse JSON from an in-memory bytes/str payload (e.g., decompressed gzip content).
+
+        Args:
+            data: JSON payload as bytes, bytearray, or str.
+
+        Returns:
+            Parsed JSON data.
+        """
+        if _ORJSON_AVAILABLE:
+            try:
+                return _orjson.loads(data)
+            except ValueError as e:
+                raise ValueError(f"Error parsing JSON data: {str(e)}") from None
+        if isinstance(data, (bytes, bytearray)):
+            data = data.decode('utf-8')
+        try:
+            return json.loads(data)
+        except ValueError as e:
+            raise ValueError(f"Error parsing JSON data: {str(e)}") from None
 
     @staticmethod
     def dump_json(data, filepath: Path):
