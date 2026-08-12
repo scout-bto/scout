@@ -88,44 +88,59 @@ Use this quick checklist when updating Scout to a new AEO release.
    python tests/final_mseg_converter_test.py
 
    python -m scout.final_mseg_converter
-   python scout/final_mseg_converter.py Select options 1,1 when prompted
-   Ignore: UserWarning: Key 'solar_water_heater_north' not found in
-   add_dict – skipping warnings.warn(f"Key '{k}' not found in add_dict – skipping"),
-   there is an issue about this. Outputs mseg_res_com_cz.json
-   Also run with the following options
-   1,2,2,1
-   1,3,2,1
-   2,3
 
-   Move these final output files to the
-   scout/scout/supporting_data/supporting_data/stock_energy_tech_data folder,
-   commit and push to github:
-   mseg_res_com_cz.json
-   mseg_res_com_emm.gz
-   mseg_res_com_state.gz
-   cpl_res_com_cdiv.gz
+   python scout/final_mseg_converter.py
+
+   Select options ``1,1`` when prompted.
+
+   Also run with the following options in separate runs:
+
+   * ``1,2,2,1``
+   * ``1,3,2,1``
+   * ``2,3``
+
+   .. note::
+
+      Ignore this warning for now:
+
+      ``UserWarning: Key 'solar_water_heater_north' not found in add_dict``
+
+      There is an open issue for this warning.
+
+   Expected output includes ``mseg_res_com_cz.json``.
+
+   Move these final output files to
+   ``scout/supporting_data/stock_energy_tech_data``, then commit and push:
+
+   * ``mseg_res_com_cz.json``
+   * ``mseg_res_com_emm.gz``
+   * ``mseg_res_com_state.gz``
+   * ``cpl_res_com_cdiv.gz``
 
 5. **Update emissions/price conversion datasets**:
 
-   Create a local `.env` file (not committed to git)** in the project root
-   (the same folder as ``pyproject.toml``) with your EIA API key::
+   Ensure ``EIA_API_KEY`` is set in the project-root ``.env`` file
+   (as described earlier in this document).
 
-      EIA_API_KEY=YOUR_REAL_KEY_HERE
+   Run the updater validation tests::
 
-   You can request a free key from EIA at https://www.eia.gov/opendata/register.php.
-   Replace ``YOUR_REAL_KEY_HERE`` with the value from your EIA account, and keep
-   the file at the repository root so Scout can load it automatically.
+      python tests/updater_validation_test.py
 
-   python tests/updater_validation_test.py
+   Update state baseline snapshots::
 
-   python -m scout.state_baseline_data_updater
-   
-   python -m scout.converter -f FILE_NAME
-   separately to update each of the files beginning with "emm_region_"
-   or "site_source_" in ./scout/supporting_data/convert_data
+      python -m scout.state_baseline_data_updater
 
-   download hourly Balancing Areas emission data
-   from https://scenarioviewer.nrel.gov/ to a folder
-   python -m scout.cambium_updater -f FILE_NAME
-   separately to update each of the files beginning with
-   "emm_region_" or "state_"
+   Update EIA conversion files (run separately per file)::
+
+      python -m scout.converter -f FILE_NAME
+
+   Use this for files beginning with ``emm_region_`` or ``site_source_`` in
+   ``scout/supporting_data/convert_data``.
+
+   Download hourly Balancing Authority emissions data from
+   https://scenarioviewer.nrel.gov/, then run Cambium updates (separately per
+   file)::
+
+      python -m scout.cambium_updater -f FILE_NAME
+
+   Use this for files beginning with ``emm_region_`` or ``state_``.
