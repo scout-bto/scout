@@ -72,8 +72,7 @@ class EIAFiles(object):
         missing = air.missing_for_mode(
             'raw',
             self.input_dir,
-            required_keys=['res_db_source', 'res_mess_xlsx',
-                           'com_ktekx_xlsx', 'res_lgt'])
+            required_keys=['res_mess_xlsx', 'com_ktekx_xlsx', 'res_lgt'])
 
         # For RESDBOUT, accept either the raw backup name or the current
         # processed-name input; if only the latter exists, this script will
@@ -99,13 +98,14 @@ class EIAFiles(object):
         for all 10 columns, including replacing the empty HOUSEHOLDS
         column with a 0.
         """
-        # Always read from a backup copy of RESDBOUT and write the
-        # processed output to RDM_DBOUT.txt. This avoids trying to read
-        # and write the same file path simultaneously.
-        if self.r_db_backup.exists():
-            read_path = self.r_db_backup
-        elif self.r_db_in.exists():
+        # Prefer the current raw RESDBOUT file when it exists, and fall
+        # back to the backup copy for reruns. This avoids trying to read
+        # and write the same file path simultaneously while still letting a
+        # fresh raw file replace an older backup.
+        if self.r_db_in.exists():
             os.replace(self.r_db_in, self.r_db_backup)
+            read_path = self.r_db_backup
+        elif self.r_db_backup.exists():
             read_path = self.r_db_backup
         else:
             raise FileNotFoundError(

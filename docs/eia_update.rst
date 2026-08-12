@@ -138,9 +138,9 @@ Use this quick checklist when updating Scout to a new AEO release.
    ``scout/supporting_data/convert_data``.
 
    Download hourly Balancing Authority emissions data from
-   https://scenarioviewer.nrel.gov/, then run Cambium updates (separately per
-   file)::
+   https://scenarioviewer.nrel.gov/, then run Cambium updates::
 
-      python -m scout.cambium_updater -f FILE_NAME
+      python -m scout.cambium_updater
 
-   Use this for files beginning with ``emm_region_`` or ``state_``.
+   Follow the prompts to select the Cambium year/scenario and to update
+   files beginning with ``emm_region_`` or ``state_``.
