@@ -26,6 +26,8 @@ Running the EIA update check
       EIA_API_KEY=YOUR_REAL_KEY_HERE
 
    You can request a free key from EIA at https://www.eia.gov/opendata/register.php.
+   Replace ``YOUR_REAL_KEY_HERE`` with the value from your EIA account, and keep
+   the file at the repository root so Scout can load it automatically.
 
 2. **Install Scout and its dependencies** into a virtual environment
    (see :ref:`install-guide`).
@@ -103,8 +105,27 @@ Use this quick checklist when updating Scout to a new AEO release.
    mseg_res_com_state.gz
    cpl_res_com_cdiv.gz
 
-5. **Update emissions/price conversion datasets**::
+5. **Update emissions/price conversion datasets**:
+
+   Create a local `.env` file (not committed to git)** in the project root
+   (the same folder as ``pyproject.toml``) with your EIA API key::
+
+      EIA_API_KEY=YOUR_REAL_KEY_HERE
+
+   You can request a free key from EIA at https://www.eia.gov/opendata/register.php.
+   Replace ``YOUR_REAL_KEY_HERE`` with the value from your EIA account, and keep
+   the file at the repository root so Scout can load it automatically.
+
+   python tests/updater_validation_test.py
 
    python -m scout.state_baseline_data_updater
-   python -m scout.converter
-   python -m scout.cambium_updater
+   
+   python -m scout.converter -f FILE_NAME
+   separately to update each of the files beginning with "emm_region_"
+   or "site_source_" in ./scout/supporting_data/convert_data
+
+   download hourly Balancing Areas emission data
+   from https://scenarioviewer.nrel.gov/ to a folder
+   python -m scout.cambium_updater -f FILE_NAME
+   separately to update each of the files beginning with
+   "emm_region_" or "state_"
