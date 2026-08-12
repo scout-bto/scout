@@ -441,10 +441,20 @@ def main():
         print(f'Dry run enabled; skipping write to disk for {output_path}.')
         return
 
-    if should_overwrite_existing_file(baseline_data_path, args.overwrite, args.yes, overwrite) and baseline_data_path:
+    if (
+        should_overwrite_existing_file(
+            baseline_data_path, args.overwrite, args.yes, overwrite
+        )
+        and baseline_data_path
+    ):
         os.remove(baseline_data_path)
         print('Existing state-level baseline data file overwritten.')
-    elif should_overwrite_existing_file(baseline_data_path, args.overwrite, args.yes, overwrite) and not baseline_data_path:
+    elif (
+        should_overwrite_existing_file(
+            baseline_data_path, args.overwrite, args.yes, overwrite
+        )
+        and not baseline_data_path
+    ):
         print('No existing state baseline file found; creating a new file.')
     df.to_csv(output_path, index=False)
     print(f'State-level baseline data updated for {year} and saved to {output_path}')

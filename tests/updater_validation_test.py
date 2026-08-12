@@ -1,11 +1,8 @@
 import json
 import logging
-import sys
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scout import converter, state_baseline_data_updater, cambium_updater
 
@@ -24,8 +21,14 @@ def test_resolve_output_path_uses_output_dir_when_no_existing_file(tmp_path):
 
 
 def test_validate_conversion_file_name_accepts_supported_inputs():
-    assert converter.validate_conversion_file_name("emm_region_emissions_prices.json") == "regional"
-    assert converter.validate_conversion_file_name("site_source_co2_conversions.json") == "national"
+    assert (
+        converter.validate_conversion_file_name("emm_region_emissions_prices.json")
+        == "regional"
+    )
+    assert (
+        converter.validate_conversion_file_name("site_source_co2_conversions.json")
+        == "national"
+    )
 
 
 def test_validate_conversion_file_name_rejects_unknown_inputs():
@@ -59,7 +62,9 @@ def test_state_baseline_api_query_uses_timeout(monkeypatch):
         return FakeResponse()
 
     monkeypatch.setattr(state_baseline_data_updater.requests, 'get', fake_get)
-    assert state_baseline_data_updater.api_query('https://example.com', 'fake-key') == [{'period': '2025'}]
+    assert state_baseline_data_updater.api_query(
+        'https://example.com', 'fake-key'
+    ) == [{'period': '2025'}]
     assert calls['timeout'] == 30
 
 
@@ -83,7 +88,11 @@ def test_state_baseline_api_query_rejects_invalid_payloads(monkeypatch, payload,
         def json(self):
             return self._payload
 
-    monkeypatch.setattr(state_baseline_data_updater.requests, 'get', lambda url, timeout: FakeResponse(payload))
+    monkeypatch.setattr(
+        state_baseline_data_updater.requests,
+        'get',
+        lambda url, timeout: FakeResponse(payload),
+    )
 
     with pytest.raises(expected_error):
         state_baseline_data_updater.api_query('https://example.com', 'fake-key')
@@ -100,7 +109,11 @@ def test_state_baseline_api_query_raises_on_rate_limit(monkeypatch):
         def json(self):
             return {'response': {'data': []}}
 
-    monkeypatch.setattr(state_baseline_data_updater.requests, 'get', lambda url, timeout: FakeResponse())
+    monkeypatch.setattr(
+        state_baseline_data_updater.requests,
+        'get',
+        lambda url, timeout: FakeResponse(),
+    )
 
     with pytest.raises(RuntimeError):
         state_baseline_data_updater.api_query('https://example.com', 'fake-key')
@@ -145,7 +158,11 @@ def test_converter_api_query_raises_on_rate_limit(monkeypatch):
         def json(self):
             return {'response': {'data': []}}
 
-    monkeypatch.setattr(converter.requests, 'get', lambda url, timeout: FakeResponse())
+    monkeypatch.setattr(
+        converter.requests,
+        'get',
+        lambda url, timeout: FakeResponse(),
+    )
 
     backoff_logger, previous_level = mute_backoff_logger()
     try:
@@ -169,9 +186,24 @@ def test_validate_update_year_and_converter_inputs():
 def test_should_overwrite_existing_file():
     existing_path = Path('existing.csv')
 
-    assert state_baseline_data_updater.should_overwrite_existing_file(existing_path, False, False, None) is False
-    assert state_baseline_data_updater.should_overwrite_existing_file(existing_path, True, False, None) is True
-    assert state_baseline_data_updater.should_overwrite_existing_file(existing_path, False, True, None) is True
+    assert (
+        state_baseline_data_updater.should_overwrite_existing_file(
+            existing_path, False, False, None
+        )
+        is False
+    )
+    assert (
+        state_baseline_data_updater.should_overwrite_existing_file(
+            existing_path, True, False, None
+        )
+        is True
+    )
+    assert (
+        state_baseline_data_updater.should_overwrite_existing_file(
+            existing_path, False, True, None
+        )
+        is True
+    )
 
 
 def test_state_baseline_parser_supports_dry_run_and_yes_flags():
@@ -185,7 +217,16 @@ def test_state_baseline_parser_supports_dry_run_and_yes_flags():
 
 def test_converter_parser_supports_non_interactive_flags():
     parser = converter.build_parser()
-    args = parser.parse_args(['-f', 'site_source_co2_conversions.json', '-y', '2025', '-s_e', 'ref2025', '-s_g', 'ref2025', '--no-prompt', '--dry-run'])
+    args = parser.parse_args(
+        [
+            '-f', 'site_source_co2_conversions.json',
+            '-y', '2025',
+            '-s_e', 'ref2025',
+            '-s_g', 'ref2025',
+            '--no-prompt',
+            '--dry-run',
+        ]
+    )
 
     assert args.f == 'site_source_co2_conversions.json'
     assert args.no_prompt is True
@@ -241,7 +282,9 @@ def test_cambium_import_and_update_path(tmp_path):
         }
     }
     updated = cambium_updater.annual_factors_updater(df, ss, 'National')
-    assert updated['electricity']['CO2 intensity']['data']['residential']['2023'] > 0
+    assert (
+        updated['electricity']['CO2 intensity']['data']['residential']['2023'] > 0
+    )
 
 
 def test_converter_updater_with_mocked_eia_responses_snapshot(monkeypatch):
@@ -249,16 +292,57 @@ def test_converter_updater_with_mocked_eia_responses_snapshot(monkeypatch):
         'site-source calculation method': 'captured energy',
         'electricity': {
             'site to source conversion': {'data': {'2020': 1.0, '2021': 1.0}},
-            'CO2 intensity': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}},
-            'price': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}},
+            'CO2 intensity': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            },
+            'price': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            },
         },
         'natural gas': {
-            'CO2 intensity': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}},
-            'price': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}},
+            'CO2 intensity': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            },
+            'price': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            },
         },
-        'propane': {'CO2 intensity': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}}},
-        'distillate': {'CO2 intensity': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}}},
-        'other': {'CO2 intensity': {'data': {'residential': {'2020': 1.0, '2021': 1.0}, 'commercial': {'2020': 1.0, '2021': 1.0}}}},
+        'propane': {
+            'CO2 intensity': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            }
+        },
+        'distillate': {
+            'CO2 intensity': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            }
+        },
+        'other': {
+            'CO2 intensity': {
+                'data': {
+                    'residential': {'2020': 1.0, '2021': 1.0},
+                    'commercial': {'2020': 1.0, '2021': 1.0},
+                }
+            }
+        },
     }
 
     years = converter.np.array(['2020', '2021'])
@@ -314,9 +398,14 @@ def test_converter_updater_with_mocked_eia_responses_snapshot(monkeypatch):
         return elec_data, years
 
     monkeypatch.setattr(converter, 'data_getter', fake_data_getter)
-    updated = converter.updater(conv, 'fake-key', '2023', 'ref2023', 'ref2023', False)
+    updated = converter.updater(
+        conv, 'fake-key', '2023', 'ref2023', 'ref2023', False
+    )
 
-    snapshot = json.dumps(updated['electricity']['CO2 intensity']['data']['residential'], sort_keys=True)
+    snapshot = json.dumps(
+        updated['electricity']['CO2 intensity']['data']['residential'],
+        sort_keys=True,
+    )
     assert '2020' in snapshot
     assert '2021' in snapshot
     assert updated['electricity']['site to source conversion']['data']['2021'] > 1.0
