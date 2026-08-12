@@ -42,6 +42,7 @@ import os
 import sys
 import argparse
 from pathlib import Path
+import numpy as np
 import pandas as pd
 import requests
 from urllib.parse import unquote
@@ -107,8 +108,54 @@ def get_baseline_data_path():
     """Get the path to the existing state-level baseline data file."""
     files = list(Path(fp.CONVERT_DATA).glob(
         "EIA_State_Emissions_Prices_Baselines_*.csv"))
-    baseline_data_file = files[0] if files else None
+    if not files:
+        return None
+
+    def year_from_path(path):
+        stem = path.stem
+        year = stem.rsplit('_', 1)[-1]
+        return int(year) if year.isdigit() else -1
+
+    baseline_data_file = sorted(files, key=year_from_path)[-1]
     return baseline_data_file
+
+
+def resolve_output_path(existing_path, year, convert_data_dir=None):
+    """Return the intended output path for the requested baseline CSV."""
+    convert_data_dir = Path(convert_data_dir or fp.CONVERT_DATA)
+    return convert_data_dir / f"EIA_State_Emissions_Prices_Baselines_{year}.csv"
+
+
+def validate_update_year(year):
+    """Validate that the requested update year is supported."""
+    if year not in VALID_UPDATE_YEARS:
+        raise ValueError(f'Unsupported update year: {year}')
+    return year
+
+
+def should_overwrite_existing_file(existing_path, overwrite_flag, yes_flag, prompt_response):
+    """Return whether an existing baseline file should be overwritten."""
+    if overwrite_flag or yes_flag:
+        return True
+    if existing_path is None:
+        return False
+    if prompt_response is not None:
+        return prompt_response.lower() == 'y'
+    return False
+
+
+def build_parser():
+    """Build the CLI parser for the state baseline updater."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-y', '--year', choices=VALID_UPDATE_YEARS,
+                        help="Desired year to update state-level data")
+    parser.add_argument('-o', '--overwrite', action='store_true',
+                        help="Overwrite existing state baseline data?")
+    parser.add_argument('--yes', action='store_true',
+                        help="Answer yes to overwrite confirmation prompts")
+    parser.add_argument('--dry-run', action='store_true',
+                        help="Validate inputs and prepare updates without writing files")
+    return parser
 
 
 def get_api_key():
@@ -172,11 +219,23 @@ def generate_query_string(key, freq):
     return query_str
 
 
-def api_query(query_str, api_key):
+def api_query(query_str, api_key, timeout=30):
     """Execute an EIA API query and return the response data."""
-    response = requests.get(unquote(query_str) + '&api_key=' + api_key)
+    response = requests.get(
+        unquote(query_str) + '&api_key=' + api_key,
+        timeout=timeout,
+    )
+    status_code = getattr(response, 'status_code', None)
+    if status_code == 429:
+        raise RuntimeError('Rate limit reached')
     response.raise_for_status()
-    return response.json()['response']['data']
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError('Malformed API response: expected a JSON object')
+    data = payload.get('response', {}).get('data')
+    if not data:
+        raise ValueError('API returned no data')
+    return data
 
 
 def clean_source_disposition_data(data):
@@ -189,25 +248,35 @@ def clean_source_disposition_data(data):
     df.loc[df['total-international-imports'].isnull(), 'total-international-imports'] = 0
     # convert df columns except period and state to numeric
     df[df.columns[2:]] = df[df.columns[2:]].apply(pd.to_numeric)
+
+    net_trade = df['net-interstate-trade']
+    intl_imports = df['total-international-imports']
+    generation = df['total-net-generation']
+    direct_use = df['direct-use']
+    estimated_losses = df['estimated-losses']
+
     # calculate total disposition:
     # total disposition = total net generation + abs(net interstate trade) +
     # total international imports if net interstate trade < 0
-    # else total disposition = total net generation +
-    # total international imports
+    # else total disposition = total net generation + total international imports
     # *only add the absolute value of net interstate trade if it is negative
-    df['total_disposition'] = df.apply(lambda x: x['total-net-generation'] +
-                                       abs(x['net-interstate-trade'] +
-                                           x['total-international-imports'])
-                                       if x['net-interstate-trade'] < 0 else
-                                       x['total-net-generation'] +
-                                       x['total-international-imports'],
-                                       axis=1)
+    df['total_disposition'] = generation + np.where(
+        net_trade < 0,
+        (abs(net_trade + intl_imports)),
+        intl_imports,
+    )
+
     # convert generation to TWh
-    df['generation_twh'] = df['total-net-generation'] * 1e-6
-    # calculate T&D loss factor as estimated losses / (total disposition -
-    # direct use)
-    df['TD_loss_factor'] = df['estimated-losses'] / (df['total_disposition'] -
-                                                     df['direct-use'])
+    df['generation_twh'] = generation * 1e-6
+
+    denominator = df['total_disposition'] - direct_use
+    if (denominator <= 0).any():
+        raise ValueError('Encountered non-positive denominator while calculating TD loss factors.')
+    if pd.isna(estimated_losses).any() or pd.isna(denominator).any():
+        raise ValueError('Encountered NaN values while calculating TD loss factors.')
+
+    # calculate T&D loss factor as estimated losses / (total disposition - direct use)
+    df['TD_loss_factor'] = estimated_losses / denominator
     df = df.rename(columns={'state': 'stateid'})
     return df
 
@@ -294,30 +363,29 @@ def main():
     baseline_data_path = get_baseline_data_path()
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-y', '--year', choices=VALID_UPDATE_YEARS,
-                        help="Desired year to update state-level data")
-    parser.add_argument('-o', '--overwrite', action='store_true',
-                        help="Overwrite existing state baseline data?")
+    parser = build_parser()
     args = parser.parse_args()
 
     # Get year and overwrite preference from user input
     if args.year:
-        year = args.year
+        year = validate_update_year(args.year)
     else:
         year = input(
             "Please specify the desired update year. Valid entries are: " +
             ', '.join(VALID_UPDATE_YEARS) +
             ".\n")
-        if year not in VALID_UPDATE_YEARS:
+        try:
+            year = validate_update_year(year)
+        except ValueError:
             print('Invalid year entered.')
             sys.exit(1)
-    if args.overwrite:
+    if args.overwrite or args.yes:
         overwrite = 'y'
-        print(
-            f'Existing state-level baseline data file found in the '
-            f'convert_data directory: {baseline_data_path}'
-        )
+        if baseline_data_path:
+            print(
+                f'Existing state-level baseline data file found in the '
+                f'convert_data directory: {baseline_data_path}'
+            )
     else:
         if baseline_data_path:
             overwrite = input(
@@ -363,19 +431,21 @@ def main():
         df[key] = gas_prices[key]
 
     # Save data to CSV
-    if baseline_data_path:
-        output_path = str(baseline_data_path.parent) + \
-            f'/EIA_State_Emissions_Prices_Baselines_{year}.csv'
-    else:
+    output_path = resolve_output_path(baseline_data_path, year, fp.CONVERT_DATA)
+    if not baseline_data_path:
         print(
-                'No existing state-level baseline data file found in the '
-                'convert_data directory. Creating new file.'
-            )
-        output_path = str(fp.CONVERT_DATA /
-                          f'EIA_State_Emissions_Prices_Baselines_{year}.csv')
-    if overwrite == 'y':
+            'No existing state-level baseline data file found in the '
+            'convert_data directory. Creating new file.'
+        )
+    if args.dry_run:
+        print(f'Dry run enabled; skipping write to disk for {output_path}.')
+        return
+
+    if should_overwrite_existing_file(baseline_data_path, args.overwrite, args.yes, overwrite) and baseline_data_path:
         os.remove(baseline_data_path)
         print('Existing state-level baseline data file overwritten.')
+    elif should_overwrite_existing_file(baseline_data_path, args.overwrite, args.yes, overwrite) and not baseline_data_path:
+        print('No existing state baseline file found; creating a new file.')
     df.to_csv(output_path, index=False)
     print(f'State-level baseline data updated for {year} and saved to {output_path}')
 
