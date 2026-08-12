@@ -258,7 +258,8 @@ def clean_source_disposition_data(data):
     # calculate total disposition:
     # total disposition = total net generation + abs(net interstate trade) +
     # total international imports if net interstate trade < 0
-    # else total disposition = total net generation + total international imports
+    # else total disposition = total net generation +
+    # total international imports
     # *only add the absolute value of net interstate trade if it is negative
     df['total_disposition'] = generation + np.where(
         net_trade < 0,
@@ -379,20 +380,24 @@ def main():
         except ValueError:
             print('Invalid year entered.')
             sys.exit(1)
+    output_path = resolve_output_path(baseline_data_path, year, fp.CONVERT_DATA)
+    output_exists = output_path.exists()
     if args.overwrite or args.yes:
         overwrite = 'y'
-        if baseline_data_path:
+        if output_exists:
             print(
-                f'Existing state-level baseline data file found in the '
-                f'convert_data directory: {baseline_data_path}'
+                f'Existing state-level baseline data file found at '
+                f'{output_path}'
             )
     else:
-        if baseline_data_path:
+        if output_exists:
             overwrite = input(
-                'Would you like to overwrite this file? (y/n)\n'
+                f'Existing state-level baseline data file found at '
+                f'{output_path}. Overwrite it? (y/n)\n'
             )
             if overwrite.lower() != 'y':
                 print('Leaving existing baseline data file in place.')
+                return
         else:
             overwrite = 'n'
 
@@ -431,7 +436,6 @@ def main():
         df[key] = gas_prices[key]
 
     # Save data to CSV
-    output_path = resolve_output_path(baseline_data_path, year, fp.CONVERT_DATA)
     if not baseline_data_path:
         print(
             'No existing state-level baseline data file found in the '
@@ -441,21 +445,9 @@ def main():
         print(f'Dry run enabled; skipping write to disk for {output_path}.')
         return
 
-    if (
-        should_overwrite_existing_file(
-            baseline_data_path, args.overwrite, args.yes, overwrite
-        )
-        and baseline_data_path
-    ):
-        os.remove(baseline_data_path)
+    if output_exists and overwrite.lower() == 'y':
+        os.remove(output_path)
         print('Existing state-level baseline data file overwritten.')
-    elif (
-        should_overwrite_existing_file(
-            baseline_data_path, args.overwrite, args.yes, overwrite
-        )
-        and not baseline_data_path
-    ):
-        print('No existing state baseline file found; creating a new file.')
     df.to_csv(output_path, index=False)
     print(f'State-level baseline data updated for {year} and saved to {output_path}')
 
