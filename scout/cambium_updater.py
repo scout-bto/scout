@@ -383,20 +383,26 @@ def cambium_data_import(cambium_base_dir, year, scenario):
     files = list(data_dir.glob("*20*.csv"))
     frames = []
 
+    # Read only fields required downstream for annual/hourly factor updates.
+    required_cols = {
+        'timestamp',
+        'aer_load_co2_c',
+        'total_cost_enduse',
+        'ba',
+        'cambium_24_ba',
+    }
+
     for file in files:
-        df = pd.read_csv(str(file.resolve()), header=5)
+        df = pd.read_csv(
+            str(file.resolve()),
+            header=5,
+            usecols=lambda c: c in required_cols,
+        )
 
         if 'timestamp' not in df.columns:
             raise ValueError(
                 f"Cambium file '{file.name}' is missing required 'timestamp' column."
             )
-
-        # Newer Cambium exports may omit timestamp_local; fall back to timestamp.
-        if 'timestamp_local' not in df.columns:
-            df['timestamp_local'] = df['timestamp']
-
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df['timestamp_local'] = pd.to_datetime(df['timestamp_local'])
 
         ba_match = re.search(r'p\d+', str(file))
         if ba_match:
@@ -415,6 +421,8 @@ def cambium_data_import(cambium_base_dir, year, scenario):
         frames.append(df.assign(ba=ba))
 
     ba_df = pd.concat(frames, ignore_index=True)
+    # Parse datetimes once after concatenation to avoid repeated per-file cost.
+    ba_df['timestamp'] = pd.to_datetime(ba_df['timestamp'], errors='raise', cache=True)
     return ba_df
 
 
