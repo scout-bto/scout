@@ -147,7 +147,6 @@ ecm_prep:
     num_units: true
     cap_invest: true
 
-run: 
-  high_res_comp: true
+run:
   report_stk: true
   write_elec_conv_fracs: true
