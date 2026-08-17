@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from compute_peak_days import (
     COMMERCIAL_ENERGY_COLS, RESIDENTIAL_ENERGY_COLS, WINTER_DAYS,
     SUMMER_DAYS, WINTER_DAYS_EXTENDED, SUMMER_DAYS_EXTENDED,
-    load_combined_hourly, find_peak_days)
+    BOUNDARY_CHECK_BUFFER_DAYS, load_combined_hourly, find_peak_days)
 
 warnings.filterwarnings('ignore')
 MAP_DIR = "map"
@@ -878,6 +878,20 @@ def plot_peakday_hourly(opts):
             print(f"{out_path} is successfully saved!")
 
 
+# A second boundary_trend variant that shows PLOT_EXTRA_BUFFER_DAYS more
+# days on both edges than WINTER_DAYS_EXTENDED/SUMMER_DAYS_EXTENDED, purely
+# for extra visual context beyond compute_peak_days.py's own
+# BOUNDARY_CHECK_BUFFER_DAYS (which drives the flagging logic and stays
+# unchanged here).
+PLOT_EXTRA_BUFFER_DAYS = 30
+_WIDE_BUFFER_DAYS = BOUNDARY_CHECK_BUFFER_DAYS + PLOT_EXTRA_BUFFER_DAYS
+WINTER_DAYS_WIDE = (
+    set(range(1, 91 + _WIDE_BUFFER_DAYS)) |
+    set(range(335 - _WIDE_BUFFER_DAYS, 366)))
+SUMMER_DAYS_WIDE = set(range(
+    152 - _WIDE_BUFFER_DAYS, 274 + _WIDE_BUFFER_DAYS))
+
+
 def plot_boundary_trend(opts):
     """ For each region, plot the day-by-day trend of the combined
     (commercial + residential) load's daily max hourly value across a
@@ -887,14 +901,22 @@ def plot_boundary_trend(opts):
     PeakAtWindowBoundary flag rather than just take its word for it.
     Unlike the other --diag plots, this always combines both building
     sectors to match compute_peak_days.py's own methodology, so it ignores
-    --bstock and needs both raw commercial/residential CSVs cached. """
+    --bstock and needs both raw commercial/residential CSVs cached.
+
+    Two variants are saved per season/geography: the default (matching
+    compute_peak_days.py's own BOUNDARY_CHECK_BUFFER_DAYS window) and a
+    "_wide" version extended by another PLOT_EXTRA_BUFFER_DAYS on both
+    edges, for cases where even the default window doesn't show enough of
+    the curve to tell a real local max from a still-rising edge. """
     import matplotlib.pyplot as plt
     from matplotlib import colormaps
 
     os.makedirs(DIAG_DIR, exist_ok=True)
-    windows = {
-        "Winter": (WINTER_DAYS_EXTENDED,),
-        "Summer": (SUMMER_DAYS_EXTENDED,)}
+    # variant_suffix -> {season_name: day-of-year set to plot}
+    window_variants = [
+        ("", {"Winter": WINTER_DAYS_EXTENDED, "Summer": SUMMER_DAYS_EXTENDED}),
+        ("_wide", {"Winter": WINTER_DAYS_WIDE, "Summer": SUMMER_DAYS_WIDE}),
+    ]
     # Official window start/end day(s) a still-rising curve would be
     # artificially cut off at (see WINTER_DAYS/SUMMER_DAYS in
     # compute_peak_days.py). Winter is defined as day 1-90 plus day
@@ -925,94 +947,99 @@ def plot_boundary_trend(opts):
         hsv = colormaps['hsv']
         colors = [hsv(i / len(regions)) for i in range(len(regions))]
 
-        for season_name, (ext_days,) in windows.items():
-            # Shift winter's wraparound days (335-365) to negative x values
-            # so its two disjoint day-of-year blocks plot as one continuous
-            # trend leading up to the year boundary; summer's window is
-            # already contiguous, so this is a no-op there.
-            def to_x(d, season_name=season_name):
-                return d - 365 if (season_name == "Winter" and d > 200) \
-                    else d
+        for variant_suffix, windows in window_variants:
+            for season_name, ext_days in windows.items():
+                # Shift winter's wraparound days (335-365) to negative x
+                # values so its two disjoint day-of-year blocks plot as one
+                # continuous trend leading up to the year boundary;
+                # summer's window is already contiguous, so this is a
+                # no-op there.
+                def to_x(d, season_name=season_name):
+                    return d - 365 if (
+                        season_name == "Winter" and d > 200) else d
 
-            season_df = combined[combined['dayofyear'].isin(ext_days)]
-            daily_max = season_df.groupby(
-                [geodesc, 'dayofyear'])['total'].max().reset_index()
-            daily_max['x'] = daily_max['dayofyear'].apply(to_x)
-            flag_col = f"{season_name}PeakAtWindowBoundary"
-            flagged_regions = sorted(
-                peaks.loc[peaks[flag_col], geodesc])
+                season_df = combined[combined['dayofyear'].isin(ext_days)]
+                daily_max = season_df.groupby(
+                    [geodesc, 'dayofyear'])['total'].max().reset_index()
+                daily_max['x'] = daily_max['dayofyear'].apply(to_x)
+                flag_col = f"{season_name}PeakAtWindowBoundary"
+                flagged_regions = sorted(
+                    peaks.loc[peaks[flag_col], geodesc])
 
-            def _draw(region_subset, out_suffix, title_extra):
-                fig, ax = plt.subplots(figsize=(11, 6))
-                for region in region_subset:
-                    i = regions.index(region)
-                    rdat = daily_max[
-                        daily_max[geodesc] == region].sort_values('x')
-                    if rdat.empty:
-                        continue
-                    color = colors[i]
-                    ax.plot(rdat['x'], rdat['total'], color=color,
-                            linewidth=1, label=region)
-                    prow = peaks[peaks[geodesc] == region]
-                    if prow.empty:
-                        continue
-                    peak_day = prow[f"{season_name}PeakDay"].iloc[0]
-                    peak_load = prow[f"{season_name}PeakLoad"].iloc[0]
-                    is_flagged = prow[flag_col].iloc[0]
-                    # Circle = official (window-constrained) peak — always
-                    # shown, this is what's actually in
-                    # tsv_peak_days_{EMM,State}.csv
-                    ax.plot(
-                        to_x(peak_day), peak_load, marker='o',
-                        markersize=6, markeredgecolor='black',
-                        markerfacecolor=color, zorder=5)
-                    # Star = the higher peak a widened window finds — only
-                    # meaningfully different from the circle when flagged
-                    # (otherwise it's the same point, so skip it)
-                    if is_flagged:
-                        ext_day = prow[
-                            f"{season_name}ExtendedPeakDay"].iloc[0]
-                        ext_load = prow[
-                            f"{season_name}ExtendedPeakLoad"].iloc[0]
+                def _draw(region_subset, out_suffix, title_extra):
+                    fig, ax = plt.subplots(figsize=(11, 6))
+                    for region in region_subset:
+                        i = regions.index(region)
+                        rdat = daily_max[
+                            daily_max[geodesc] == region].sort_values('x')
+                        if rdat.empty:
+                            continue
+                        color = colors[i]
+                        ax.plot(rdat['x'], rdat['total'], color=color,
+                                linewidth=1, label=region)
+                        prow = peaks[peaks[geodesc] == region]
+                        if prow.empty:
+                            continue
+                        peak_day = prow[f"{season_name}PeakDay"].iloc[0]
+                        peak_load = prow[f"{season_name}PeakLoad"].iloc[0]
+                        is_flagged = prow[flag_col].iloc[0]
+                        # Circle = official (window-constrained) peak —
+                        # always shown, this is what's actually in
+                        # tsv_peak_days_{EMM,State}.csv
                         ax.plot(
-                            to_x(ext_day), ext_load, marker='*',
-                            markersize=16, markeredgecolor='black',
+                            to_x(peak_day), peak_load, marker='o',
+                            markersize=6, markeredgecolor='black',
                             markerfacecolor=color, zorder=5)
+                        # Star = the higher peak a widened window finds —
+                        # only meaningfully different from the circle when
+                        # flagged (otherwise it's the same point, so skip)
+                        if is_flagged:
+                            ext_day = prow[
+                                f"{season_name}ExtendedPeakDay"].iloc[0]
+                            ext_load = prow[
+                                f"{season_name}ExtendedPeakLoad"].iloc[0]
+                            ax.plot(
+                                to_x(ext_day), ext_load, marker='*',
+                                markersize=16, markeredgecolor='black',
+                                markerfacecolor=color, zorder=5)
 
-                for edge in official_edges[season_name]:
-                    ax.axvline(to_x(edge), color='black', linestyle='--',
-                               linewidth=1, alpha=0.6)
-                ax.set_xlabel(
-                    "Day of year (winter's Nov-Dec block shown as "
-                    "negative days before Jan 1)"
-                    if season_name == "Winter" else "Day of year")
-                ax.set_ylabel("Daily max hourly total load [kWh]")
-                ax.set_title(
-                    f"{season_name} season daily max hourly load by "
-                    f"region ({geodesc}){title_extra}. Dashed = official "
-                    "window start/end. Circle = official (in-window) "
-                    "peak. Star = higher peak found by a widened window "
-                    "(only shown when flagged as a boundary artifact).")
-                ax.legend(fontsize=6, ncol=3, loc='center left',
-                          bbox_to_anchor=(1.0, 0.5))
-                plt.tight_layout()
-                out_path = (f"{DIAG_DIR}/boundary_trend_"
-                            f"{season_name.lower()}_{geodesc}"
-                            f"{out_suffix}.png")
-                plt.savefig(out_path, dpi=100, bbox_inches='tight')
-                plt.close(fig)
-                print(f"{out_path} is successfully saved!")
+                    for edge in official_edges[season_name]:
+                        ax.axvline(
+                            to_x(edge), color='black', linestyle='--',
+                            linewidth=1, alpha=0.6)
+                    ax.set_xlabel(
+                        "Day of year (winter's Nov-Dec block shown as "
+                        "negative days before Jan 1)"
+                        if season_name == "Winter" else "Day of year")
+                    ax.set_ylabel("Daily max hourly total load [kWh]")
+                    ax.set_title(
+                        f"{season_name} season daily max hourly load by "
+                        f"region ({geodesc}){title_extra}. Dashed = "
+                        "official window start/end. Circle = official "
+                        "(in-window) peak. Star = higher peak found by a "
+                        "widened window (only shown when flagged as a "
+                        "boundary artifact).")
+                    ax.legend(fontsize=6, ncol=3, loc='center left',
+                              bbox_to_anchor=(1.0, 0.5))
+                    plt.tight_layout()
+                    out_path = (f"{DIAG_DIR}/boundary_trend_"
+                                f"{season_name.lower()}_{geodesc}"
+                                f"{variant_suffix}{out_suffix}.png")
+                    plt.savefig(out_path, dpi=100, bbox_inches='tight')
+                    plt.close(fig)
+                    print(f"{out_path} is successfully saved!")
 
-            _draw(regions, "", "")
-            if flagged_regions:
-                _draw(
-                    flagged_regions, "_flagged_only",
-                    f" — flagged regions only ({len(flagged_regions)}"
-                    f" of {len(regions)})")
-            else:
-                print(f"No {season_name.lower()}/{geodesc} regions "
-                      "flagged as window-boundary artifacts, skipping "
-                      "flagged-only plot.")
+                _draw(regions, "", "")
+                if flagged_regions:
+                    _draw(
+                        flagged_regions, "_flagged_only",
+                        f" — flagged regions only ({len(flagged_regions)}"
+                        f" of {len(regions)})")
+                else:
+                    print(f"No {season_name.lower()}/{geodesc}"
+                          f"{variant_suffix} regions flagged as "
+                          "window-boundary artifacts, skipping "
+                          "flagged-only plot.")
 
 
 def plot_annual_fraction(opts):
