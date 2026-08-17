@@ -86,7 +86,11 @@ jobs:
             # --- Checkout master ---
             git fetch --depth=1 origin master
             git stash  # stash any result files to avoid conflicts
-            git checkout origin/master -- .
+            # Keep the feature branch's integration_test.yml so master runs
+            # the same workload — otherwise this profiling comparison mixes
+            # "master vs. feature code" with "master vs. feature test config"
+            # and the timing delta stops meaning anything.
+            git checkout origin/master -- . ':!tests/integration_testing/integration_test.yml'
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
             # --- Profile MASTER branch ---
