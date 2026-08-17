@@ -41,8 +41,13 @@ class JsonIO:
             try:
                 with open(filepath, 'rb') as handle:
                     return _orjson.loads(handle.read())
-            except ValueError as e:
-                raise ValueError(f"Error reading in '{filepath}': {str(e)}") from None
+            except ValueError:
+                # orjson needs one large contiguous allocation, which can fail
+                # on very large files even when the JSON itself is well-formed
+                # (e.g. "not enough memory to allocate buffer for parsing").
+                # Fall back to stdlib's incremental parser, which tolerates
+                # tight memory better despite being slower.
+                pass
         with open(filepath, 'r') as handle:
             try:
                 data = json.load(handle)
@@ -83,12 +88,14 @@ class JsonIO:
         if _ORJSON_AVAILABLE:
             # orjson is 5-10x faster than stdlib json for numeric-heavy data.
             # It natively serialises numpy scalars/arrays and does not require
-            # a custom encoder.  We request non-string keys (e.g. integer year
-            # keys) to be serialised and pretty-print with 2-space indent to
-            # stay consistent with the previous output format.
+            # a custom encoder. We request non-string keys (e.g. integer year
+            # keys) to be serialised. Output is compact (no indentation):
+            # nothing downstream parses these files for human readability,
+            # and indentation adds meaningful CPU/memory cost on the
+            # multi-hundred-MB files this is used for.
             raw = _orjson.dumps(
                 data,
-                option=_orjson.OPT_NON_STR_KEYS | _orjson.OPT_INDENT_2,
+                option=_orjson.OPT_NON_STR_KEYS,
                 default=_orjson_default,
             )
             Path(filepath).write_bytes(raw)
