@@ -117,7 +117,7 @@ ecm_prep:
     "(C) Bst. HP FS (NG Boiler) & Env.++"
     ]
   ecm_field_updates:
-    climate_zone: ["CA", "MI", "NY", "FL"]
+    climate_zone: ["NY", "FL"]
   alt_regions: State
   pkg_env_costs: include HVAC
   site_energy: true
