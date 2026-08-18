@@ -57,7 +57,7 @@ class JsonIO:
             # stay consistent with the previous output format.
             raw = _orjson.dumps(
                 data,
-                option=_orjson.OPT_NON_STR_KEYS | _orjson.OPT_INDENT_2,
+                option=_orjson.OPT_NON_STR_KEYS,
                 default=_orjson_default,
             )
             Path(filepath).write_bytes(raw)
