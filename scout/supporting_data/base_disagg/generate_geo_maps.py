@@ -397,6 +397,36 @@ def output_state(df):
     return sorted_matrix
 
 
+def normalize_by_column_sum(conversion_matrix, context):
+    """Divide each geo column of `conversion_matrix` by its own sum, turning
+    raw values into shares that sum to 1 -- and warn about any column whose
+    sum is zero before doing so.
+
+    A zero column sum turns the divide below into 0/0, which downstream
+    fillna(0) calls silently turn into a share of 0, indistinguishable from
+    a geo genuinely having no energy/stock for this end use. Most of the
+    time a zero column really is that (e.g. a niche end use with no samples
+    in a small state), but it's also the signature of a broken data import
+    (a renamed/misspelled source column that ensure_columns() silently
+    zero-filled). Printing it here, at generation time, means a bad import
+    shows up immediately in the console instead of only being spottable by
+    later eyeballing the output CSV/JSON for a suspicious all-zero column.
+    """
+    col_sums = conversion_matrix.sum(axis=0)
+    zero_cols = col_sums[col_sums == 0].index.tolist()
+    if zero_cols:
+        if len(zero_cols) == len(col_sums):
+            print(f"    WARNING: {context} sums to ZERO across every geo "
+                  f"({len(zero_cols)} column(s)) -- check for a broken or "
+                  f"renamed source column rather than assuming genuine zero "
+                  f"data. Columns: {zero_cols}")
+        else:
+            print(f"    Note: {context} sums to zero for "
+                  f"{len(zero_cols)} geo column(s) (share reported as 0): "
+                  f"{zero_cols}")
+    return conversion_matrix.div(col_sums, axis=1)
+
+
 def finalize_eu_matrix(conversion_matrix, output_func, geo_label, eu,
                        drop_total=False):
     """Normalize a raw (geo x geo) conversion matrix for one end use and
@@ -409,8 +439,8 @@ def finalize_eu_matrix(conversion_matrix, output_func, geo_label, eu,
     identical across all three, even though how each one builds the raw
     conversion_matrix differs.
     """
-    normalized_matrix = conversion_matrix.div(
-        conversion_matrix.sum(axis=0), axis=1).reset_index()
+    normalized_matrix = normalize_by_column_sum(
+        conversion_matrix, f"end use '{eu}'").reset_index()
     normalized_matrix = output_func(normalized_matrix)
     normalized_matrix = normalized_matrix.fillna(0)
     normalized_matrix.columns = normalized_matrix.iloc[0]
@@ -766,8 +796,9 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
                 tdf = df[df['scout_tech'] == tech].drop(columns=['scout_tech'])
                 conversion_matrix = tdf.pivot(
                     index=pivot_index, columns=pivot_col, values=eu)
-                normalized_matrix = conversion_matrix.div(
-                    conversion_matrix.sum(axis=0), axis=1).reset_index()
+                normalized_matrix = normalize_by_column_sum(
+                    conversion_matrix, f"end use '{eu}' / tech '{tech}'"
+                ).reset_index()
                 all_tech = _tech_output_block(
                     normalized_matrix, output_func, eu, tech, all_tech)
             if not all_tech.empty:
@@ -871,8 +902,9 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
                 # Use pivot (not pivot_table) since data is already aggregated
                 conversion_matrix = tdf.pivot(
                     index=pivot_index, columns=pivot_col, values='warea')
-                normalized_matrix = conversion_matrix.div(
-                    conversion_matrix.sum(axis=0), axis=1).reset_index()
+                normalized_matrix = normalize_by_column_sum(
+                    conversion_matrix, f"end use '{eu}' / tech '{tech}'"
+                ).reset_index()
                 all_tech = _tech_output_block(
                     normalized_matrix, output_func, eu, tech, all_tech)
             if not all_tech.empty:
