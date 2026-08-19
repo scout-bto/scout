@@ -65,14 +65,14 @@ It's interactive and must be run **twice** — once per region breakdown:
 - Prompt 1: `1` (energy, stock, and square footage data)
 - Prompt 2: `2` for EMM, or `3` for state
 - Prompt 3 (electricity-only vs. all fuels): match whatever the current
-  baseline files use — check `cdiv_disagg_info.prep_settings` in the
+  baseline files use — check `_cdiv_disagg_info.prep_settings` in the
   existing `mseg_res_com_emm.gz`/`mseg_res_com_state.gz` before
   overwriting them, unless you're intentionally changing the setting.
   Scout's default baseline files use `2` (all fuels).
 - Prompt 4 (technology- vs. end-use-level electricity disaggregation):
   same idea — Scout's default baseline files use `1` (technology-level).
 
-This also stamps a `cdiv_disagg_info` block (disaggregation choices +
+This also stamps a `_cdiv_disagg_info` block (disaggregation choices +
 ResStock/ComStock SDR version) into the top of each output file for
 provenance (issue #576).
 

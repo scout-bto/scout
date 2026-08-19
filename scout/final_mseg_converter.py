@@ -36,7 +36,7 @@ from scout.config import FilePaths as fp
 
 # Human-readable labels for the user-selected disaggregation options
 # (see main(), Steps 3-4) that get reported alongside the EMM/state
-# stock and energy data in cdiv_disagg_info -> prep_settings, so the
+# stock and energy data in _cdiv_disagg_info -> prep_settings, so the
 # choices behind a given mseg_res_com_emm/state.json are reproducible
 # after the fact instead of only living in the terminal at generation
 # time (see issue #576).
@@ -2322,7 +2322,7 @@ def main():
     # (the electricity-only-vs-all-fuels and technology-vs-end-use
     # disaggregation choices) were actually prompted for and used.
     if handyvars.json_out in ('mseg_res_com_emm.json', 'mseg_res_com_state.json'):
-        result["cdiv_disagg_info"] = {
+        result["_cdiv_disagg_info"] = {
             "prep_settings": {
                 "gen_disagg_level": GEN_DISAGG_LABELS.get(
                     input_var[2], input_var[2]),

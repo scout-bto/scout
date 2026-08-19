@@ -225,7 +225,7 @@ def write_sdr_version(out_dir, ds):
     """Record which SDR release this dataset came from.
 
     generate_geo_maps.py reads this back in to stamp the SDR version
-    into the mseg_res_com_emm/state.json outputs (cdiv_disagg_info ->
+    into the mseg_res_com_emm/state.json outputs (_cdiv_disagg_info ->
     sdr_version), so the disaggregation factors' provenance survives
     past this download step.
     """
