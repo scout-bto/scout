@@ -699,25 +699,44 @@ def _apply_tech_map(df, map_df):
     return merged.drop(columns=['_orig_idx'])
 
 
+CDIV_LIST = [str(i) for i in range(1, 10)]
+
+
 def _tech_output_block(normalized_matrix, output_func, eu, tech, all_tech):
-    """Normalize, format, and accumulate one technology's matrix."""
+    """Normalize, format, and accumulate one technology's matrix.
+
+    Always emits one row per CDIV (1-9), zero-filling any CDIV where this
+    tech has zero samples (conversion_matrix simply has no column for a
+    CDIV with no data at all, rather than a zero-valued one). This matters
+    because final_mseg_converter.py looks up these rows by position
+    (cd_num, 0-8) after filtering to a Technology -- a missing CDIV row
+    wouldn't just mean "no data for that CDIV," it would silently shift
+    every later CDIV into the wrong slot (or raise an out-of-bounds error
+    if the gap were CDIV 9).
+    """
     normalized_matrix = output_func(normalized_matrix)
     normalized_matrix = normalized_matrix.fillna(0)
     normalized_matrix.columns = normalized_matrix.iloc[0]
     normalized_matrix.rename(
         columns={normalized_matrix.columns[-1]: 'Total'}, inplace=True)
     normalized_matrix = normalized_matrix.iloc[1:]
+
+    missing_cdivs = [c for c in CDIV_LIST if c not in normalized_matrix.index]
+    if missing_cdivs:
+        print(f"    Note: tech '{tech}' / end use '{eu}' has no samples in "
+              f"CDIV(s) {missing_cdivs}; zero-filling those rows.")
+        normalized_matrix = normalized_matrix.reindex(CDIV_LIST, fill_value=0)
+
     normalized_matrix.insert(0, 'CDIV', normalized_matrix.index)
     normalized_matrix.insert(0, 'End use', eu.split('_')[1])
     normalized_matrix.insert(0, 'Technology', tech)
-    if (normalized_matrix['Total'] != 0).all():
-        normalized_matrix.drop(columns=['Total'], inplace=True)
-        all_tech = (normalized_matrix if all_tech.empty
-                    else pd.concat([all_tech, normalized_matrix],
-                                   ignore_index=False))
-        if tech == "res_type_central_AC":
-            norm2 = replace_col_vals(normalized_matrix, "wall-window_room_AC")
-            all_tech = pd.concat([all_tech, norm2], ignore_index=False)
+    normalized_matrix = normalized_matrix.drop(columns=['Total'])
+    all_tech = (normalized_matrix if all_tech.empty
+                else pd.concat([all_tech, normalized_matrix],
+                               ignore_index=False))
+    if tech == "res_type_central_AC":
+        norm2 = replace_col_vals(normalized_matrix, "wall-window_room_AC")
+        all_tech = pd.concat([all_tech, norm2], ignore_index=False)
     return all_tech
 
 
