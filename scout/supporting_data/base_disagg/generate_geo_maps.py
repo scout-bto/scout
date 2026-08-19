@@ -7,6 +7,7 @@ import json
 import warnings
 import argparse
 import shutil
+import sys
 import traceback
 
 # Suppress warnings
@@ -1153,6 +1154,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Collected across every try/except below so a batch run over many
+    # sector/geo/fuel combinations can still fail loudly (nonzero exit,
+    # printed at the end) instead of always exiting 0 even when every
+    # combination silently errored out.
+    failures = []
+
     # --data-type not given: skip generation entirely (allows --install-only use).
     # When generating without --install, default to 'both'.
     run_generation = args.data_type is not None
@@ -1265,8 +1272,10 @@ def main():
                             preloaded_dfs=res_dfs
                         )
                     except Exception as e:
-                        print(f"    ERROR processing residential {fuel} energy ({geo_name}): {e}")
+                        msg = f"residential {fuel} energy ({geo_name}): {e}"
+                        print(f"    ERROR processing {msg}")
                         traceback.print_exc()
+                        failures.append(msg)
 
                     try:
                         process_end_use_stock(
@@ -1282,7 +1291,10 @@ def main():
                             preloaded_dfs=res_dfs
                         )
                     except Exception as e:
-                        print(f"    ERROR processing residential {fuel} stock ({geo_name}): {e}")
+                        msg = f"residential {fuel} stock ({geo_name}): {e}"
+                        print(f"    ERROR processing {msg}")
+                        traceback.print_exc()
+                        failures.append(msg)
 
         if args.sector not in ('commercial', 'both'):
             print("Skipping commercial end-use processing (--sector residential).")
@@ -1318,7 +1330,10 @@ def main():
                             preloaded_dfs=com_dfs
                         )
                     except Exception as e:
-                        print(f"    ERROR processing commercial {fuel} energy ({geo_name}): {e}")
+                        msg = f"commercial {fuel} energy ({geo_name}): {e}"
+                        print(f"    ERROR processing {msg}")
+                        traceback.print_exc()
+                        failures.append(msg)
 
                     try:
                         process_end_use_stock(
@@ -1334,7 +1349,10 @@ def main():
                             preloaded_dfs=com_dfs
                         )
                     except Exception as e:
-                        print(f"    ERROR processing commercial {fuel} stock ({geo_name}): {e}")
+                        msg = f"commercial {fuel} stock ({geo_name}): {e}"
+                        print(f"    ERROR processing {msg}")
+                        traceback.print_exc()
+                        failures.append(msg)
 
     if args.data_type in ('technology', 'both'):
         if args.sector not in ('residential', 'both'):
@@ -1360,8 +1378,10 @@ def main():
                         preloaded_dfs=res_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing residential tech energy ({geo_name}): {e}")
+                    msg = f"residential tech energy ({geo_name}): {e}"
+                    print(f"    ERROR processing {msg}")
                     traceback.print_exc()
+                    failures.append(msg)
                 try:
                     process_tech_stock(
                         sector='residential',
@@ -1376,8 +1396,10 @@ def main():
                         preloaded_dfs=res_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing residential tech stock ({geo_name}): {e}")
+                    msg = f"residential tech stock ({geo_name}): {e}"
+                    print(f"    ERROR processing {msg}")
                     traceback.print_exc()
+                    failures.append(msg)
 
         if args.sector not in ('commercial', 'both'):
             print("Skipping commercial technology processing (--sector residential).")
@@ -1402,8 +1424,10 @@ def main():
                         preloaded_dfs=com_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing commercial tech energy ({geo_name}): {e}")
+                    msg = f"commercial tech energy ({geo_name}): {e}"
+                    print(f"    ERROR processing {msg}")
                     traceback.print_exc()
+                    failures.append(msg)
                 try:
                     process_tech_stock(
                         sector='commercial',
@@ -1418,8 +1442,10 @@ def main():
                         preloaded_dfs=com_dfs
                     )
                 except Exception as e:
-                    print(f"    ERROR processing commercial tech stock ({geo_name}): {e}")
+                    msg = f"commercial tech stock ({geo_name}): {e}"
+                    print(f"    ERROR processing {msg}")
                     traceback.print_exc()
+                    failures.append(msg)
 
     print("\nDisaggregation process finished.")
 
@@ -1452,8 +1478,10 @@ def main():
                     process_gap_end_use(
                         gap_csv_path, scoutgeo_df, geos, target_paths)
                 except Exception as e:
-                    print(f"    ERROR processing commercial gap row "
-                          f"({geo_name}): {e}")
+                    msg = f"commercial gap row ({geo_name}): {e}"
+                    print(f"    ERROR processing {msg}")
+                    traceback.print_exc()
+                    failures.append(msg)
 
     # Post-processing steps
     if args.data_type == 'both':
@@ -1466,6 +1494,12 @@ def main():
         install_dir = os.path.abspath(
             os.path.join(script_dir, '..', 'convert_data', 'geo_map'))
         install_files(args.output_dir, install_dir, year=args.year)
+
+    if failures:
+        print(f"\n{len(failures)} processing step(s) failed:")
+        for msg in failures:
+            print(f"  - {msg}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
