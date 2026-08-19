@@ -944,7 +944,7 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
         print(f"    Saved {out_file}")
 
 
-def combine_hvac_and_other(output_dir, year="2025"):
+def combine_hvac_and_other(output_dir, year="2025", weather_year="amy2018"):
     """Combine HVAC technology files with end-use files.
 
     NOTE: Technology-level disaggregation requires HVAC system mapping files
@@ -972,14 +972,14 @@ def combine_hvac_and_other(output_dir, year="2025"):
     print("\nCombining HVAC tech and other end-use files...")
 
     filenames = [
-        "Com_Cdiv_EMM_amy2018",
-        "Com_Cdiv_State_amy2018",
-        "Res_Cdiv_EMM_amy2018",
-        "Res_Cdiv_State_amy2018",
-        "Com_Cdiv_EMM_amy2018_Stock",
-        "Com_Cdiv_State_amy2018_Stock",
-        "Res_Cdiv_EMM_amy2018_Stock",
-        "Res_Cdiv_State_amy2018_Stock"
+        f"Com_Cdiv_EMM_{weather_year}",
+        f"Com_Cdiv_State_{weather_year}",
+        f"Res_Cdiv_EMM_{weather_year}",
+        f"Res_Cdiv_State_{weather_year}",
+        f"Com_Cdiv_EMM_{weather_year}_Stock",
+        f"Com_Cdiv_State_{weather_year}_Stock",
+        f"Res_Cdiv_EMM_{weather_year}_Stock",
+        f"Res_Cdiv_State_{weather_year}_Stock"
     ]
 
     combined_count = 0
@@ -1457,7 +1457,8 @@ def main():
 
     # Post-processing steps
     if args.data_type == 'both':
-        combine_hvac_and_other(args.output_dir, year=args.year)
+        combine_hvac_and_other(
+            args.output_dir, year=args.year, weather_year=args.weather_year)
     fill_na_with_zeros(args.output_dir, year=args.year)
 
     # Install step
