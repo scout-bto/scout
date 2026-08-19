@@ -175,9 +175,12 @@ END_USE_MAP = {
             "water heating": [
                 "out.fuel_oil.hot_water.energy_consumption"
             ],
-            # FIXME: distillate misc points at natural_gas.pool_heater.
+            # No fuel_oil misc/pool_heater column exists in ResStock; reuse
+            # fuel_oil hot_water as the geographic proxy instead of another
+            # fuel's column, since what matters here is where fuel oil
+            # itself is delivered, not the end use it's attributed to.
             "misc": [
-                "out.natural_gas.pool_heater.energy_consumption"
+                "out.fuel_oil.hot_water.energy_consumption"
             ]
         },
         "other fuel": {
@@ -191,9 +194,12 @@ END_USE_MAP = {
             "cooking": [
                 "out.propane.range_oven.energy_consumption"
             ],
-            # FIXME: other fuel misc points at natural_gas.pool_heater.
+            # No propane misc/pool_heater column exists in ResStock; reuse
+            # propane hot_water as the geographic proxy instead of another
+            # fuel's column, since what matters here is where propane
+            # itself is delivered, not the end use it's attributed to.
             "misc": [
-                "out.natural_gas.pool_heater.energy_consumption"
+                "out.propane.hot_water.energy_consumption"
             ],
             "drying": [
                 "out.propane.clothes_dryer.energy_consumption"
