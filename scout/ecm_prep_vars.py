@@ -796,7 +796,23 @@ class UsefulVars(object):
                     }
                 else:
                     self.hp_rates_reg_map = None
-            regions_out = [(x, x) for x in valid_regions]
+            # For State-level output breakouts, scope the breakout regions to
+            # match ecm_field_updates' climate_zone override when present.
+            # Without this, out_break_czones (and every copy of it made by
+            # _obi()/_fast_copy_nested_dict) always enumerates all 50 states
+            # regardless of climate_zone, which is pure overhead when running
+            # a state-restricted config with no prepared data for the
+            # excluded states (e.g. a scoped-down test/dev run). Production
+            # configs don't set ecm_field_updates, so this is a no-op there.
+            out_break_regions = valid_regions
+            if opts.alt_regions == "State" and opts.ecm_field_updates and \
+                    opts.ecm_field_updates.get("climate_zone"):
+                cz_override = opts.ecm_field_updates["climate_zone"]
+                if isinstance(cz_override, str):
+                    cz_override = [cz_override]
+                out_break_regions = [
+                    r for r in valid_regions if r in cz_override]
+            regions_out = [(x, x) for x in out_break_regions]
 
             # Read in mapping for alternate performance/cost unit breakouts
             # AIA -> EMM or State mapping
