@@ -190,6 +190,14 @@ def download_comstock_gap(out_path):
 
 def _promote(t1, t2):
     """Pick a common pyarrow type when two files disagree."""
+    # Both null means every file seen so far has this column entirely
+    # empty. Leaving it as pyarrow's null() type would carry through to the
+    # final parquet, and generate_geo_maps.py sums these out.* columns
+    # alongside real float64 energy columns via df.sum(axis=1) -- a null
+    # dtype there risks breaking or silently misbehaving. Every populated
+    # instance of these columns is float64, so default to that instead.
+    if pa.types.is_null(t1) and pa.types.is_null(t2):
+        return pa.float64()
     if t1 == t2:
         return t1
     # null from an all-empty column loses to any real type
