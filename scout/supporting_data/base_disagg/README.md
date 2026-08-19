@@ -26,7 +26,7 @@ ComStock baseline parquet files to `input/<year>_resstock/` and
 ## 2. Generate the disaggregation CSVs
 
 ```
-python generate_geo_maps.py --install
+python generate_geo_maps.py
 ```
 
 Run from the same directory as step 1, so its defaults
@@ -36,11 +36,21 @@ this script's own `input/mapping/` regardless of cwd, since those
 `map_*.csv` files are checked into git (see step 0 below) rather than
 downloaded.
 
-`--install` is required to actually update the files Scout reads —
-without it, output only lands in the scratch `output/` directory here,
-not in `../convert_data/geo_map/`. Run `--help` for the full flag list
-(`--sector`, `--data-type`, `--year`, etc.); the defaults cover the
-common case.
+With no flags, this regenerates both end-use and technology CSVs from the
+ResStock/ComStock parquet data (`--data-type` defaults to `both`) and
+copies them into `../convert_data/geo_map/`, the location Scout actually
+reads from. Two flags opt out of pieces of that default:
+- `--no-install` generates into the scratch `output/` directory here
+  without copying to `../convert_data/geo_map/` -- useful for inspecting
+  the CSVs before they overwrite what Scout reads.
+- `--install-only` skips generation entirely and just copies whatever is
+  already sitting in `output/` -- useful for re-installing previously
+  generated output without re-running the full data crunch. `--data-type`
+  is ignored in this mode.
+
+(`--install-only` and `--no-install` are mutually exclusive.) Run
+`--help` for the full flag list (`--sector`, `--year`, etc.); the
+defaults cover the common case.
 
 **Gotcha:** if you ever run this script from a different cwd, it creates
 a second `output/2025_end_use/` (or `_technology/`) directory relative to

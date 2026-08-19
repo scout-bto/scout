@@ -85,19 +85,15 @@ To run the script and generate all output files, execute the following from the 
 
 .. code-block:: bash
 
-   python generate_geo_maps.py --all
+   python generate_geo_maps.py
+
+With no flags, this both regenerates all the CSVs and copies them to their final destination within the Scout package. Use `--no-install` to generate into the scratch `output/` directory without copying, or `--install-only` to skip generation and just copy files already sitting in `output/`.
 
 You can also generate specific files or sets of files using the available command-line arguments. Use the `--help` flag to see all options:
 
 .. code-block:: bash
 
    python generate_geo_maps.py --help
-
-After generating the files, you can copy them to their final destination within the Scout package using the `--install` flag:
-
-.. code-block:: bash
-
-   python generate_geo_maps.py --install
 
 
 .. FIGURE THIS OUT

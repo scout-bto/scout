@@ -1141,9 +1141,8 @@ def main():
     parser.add_argument('--data-type', type=str, default=None,
                         choices=['end_use', 'technology', 'both'],
                         help='Which output type to generate: end_use, '
-                             'technology, or both. Defaults to both when '
-                             'generating. Omit entirely with --install to '
-                             'copy existing output files without regenerating.')
+                             'technology, or both. Defaults to both. '
+                             'Ignored with --install-only.')
     parser.add_argument('--mapping-dir', type=str, default='input/mapping',
                         help='Directory containing map_*.csv files '
                              '(default: input/mapping).')
@@ -1155,10 +1154,17 @@ def main():
                         choices=['residential', 'commercial', 'both'],
                         help='Which sector to process: residential, commercial, '
                              'or both (default: both).')
-    parser.add_argument('--install', action='store_true',
-                        help='Copy generated files to geo_map directory.')
+    parser.add_argument('--no-install', action='store_true',
+                        help='Generate into the scratch output/ directory '
+                             'without copying to convert_data/geo_map/.')
+    parser.add_argument('--install-only', action='store_true',
+                        help='Skip generation; just copy the existing '
+                             'output/ files to convert_data/geo_map/.')
 
     args = parser.parse_args()
+
+    if args.install_only and args.no_install:
+        parser.error('--install-only and --no-install cannot both be set.')
 
     # Collected across every try/except below so a batch run over many
     # sector/geo/fuel combinations can still fail loudly (nonzero exit,
@@ -1166,12 +1172,10 @@ def main():
     # combination silently errored out.
     failures = []
 
-    # --data-type not given: skip generation entirely (allows --install-only use).
-    # When generating without --install, default to 'both'.
-    run_generation = args.data_type is not None
-    if not run_generation and not args.install:
+    run_generation = not args.install_only
+    do_install = not args.no_install
+    if args.data_type is None:
         args.data_type = 'both'
-        run_generation = True
 
     # Apply year-based defaults for paths not explicitly provided
     if args.comstock_path is None:
@@ -1187,11 +1191,10 @@ def main():
     end_use_outdir = os.path.join(args.output_dir, f'{args.year}_end_use')
 
     if not run_generation:
-        # Install-only: skip all data loading and generation.
-        if args.install:
-            install_dir = os.path.abspath(
-                os.path.join(script_dir, '..', 'convert_data', 'geo_map'))
-            install_files(args.output_dir, install_dir, year=args.year)
+        # --install-only: skip all data loading and generation.
+        install_dir = os.path.abspath(
+            os.path.join(script_dir, '..', 'convert_data', 'geo_map'))
+        install_files(args.output_dir, install_dir, year=args.year)
         return
 
     if args.data_type in ('technology', 'both'):
@@ -1496,7 +1499,7 @@ def main():
     fill_na_with_zeros(args.output_dir, year=args.year)
 
     # Install step
-    if args.install:
+    if do_install:
         install_dir = os.path.abspath(
             os.path.join(script_dir, '..', 'convert_data', 'geo_map'))
         install_files(args.output_dir, install_dir, year=args.year)
