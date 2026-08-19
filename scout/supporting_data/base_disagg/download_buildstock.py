@@ -28,24 +28,24 @@ YEAR = "2025"
 CONFIGS = {
     "2025": {
         "resstock": {
-            "prefix": f"{BASE}/2025/resstock_amy2018_release_1/",
+            "prefix": f"{BASE}/2025/resstock_{WEATHER}_release_1/",
             "path": "metadata_and_annual_results/national/full/parquet/",
             "filename": "upgrade0.parquet",
         },
         "comstock": {
-            "prefix": f"{BASE}/2025/comstock_amy2018_release_3/",
+            "prefix": f"{BASE}/2025/comstock_{WEATHER}_release_3/",
             "path": "metadata_and_annual_results/by_state_and_county/full/parquet/",
             "file_suffix": "_upgrade0.parquet",
         },
     },
     "2024": {
         "resstock": {
-            "prefix": f"{BASE}/2024/resstock_amy2018_release_2/",
+            "prefix": f"{BASE}/2024/resstock_{WEATHER}_release_2/",
             "path": "metadata_and_annual_results/national/parquet/",
             "filename": "baseline_metadata_and_annual_results.parquet",
         },
         "comstock": {
-            "prefix": f"{BASE}/2024/comstock_amy2018_release_2/",
+            "prefix": f"{BASE}/2024/comstock_{WEATHER}_release_2/",
             "path": "metadata_and_annual_results_aggregates/by_state_and_county/full/parquet/",
             "file_suffix": "_baseline_agg.parquet",
         },

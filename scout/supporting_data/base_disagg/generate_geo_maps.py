@@ -53,10 +53,10 @@ END_USE_MAP = {
                 "out.natural_gas.heating.energy_consumption",
                 "out.district_heating.heating.energy_consumption"
             ],
-            # FIXME: maps to .heating, not .cooling. Gas cooling is near-zero in
-            # commercial stock; confirm whether this should be a cooling column
-            # (likely no such column exists) or removed entirely.
-            "cooling": ["out.natural_gas.heating.energy_consumption"],
+            # No natural_gas cooling column exists (gas cooling in ComStock is
+            # near-zero); district_cooling is used as a proxy for direct-fired
+            # absorption chillers instead.
+            "cooling": ["out.district_cooling.cooling.energy_consumption"],
             "water heating": [
                 "out.natural_gas.water_systems.energy_consumption",
                 "out.district_heating.water_systems.energy_consumption"
