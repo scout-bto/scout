@@ -35,13 +35,15 @@ class FilePaths:
     SUB_FED = SUPPORTING_DATA / "sub_fed"
 
     # Non-package data:
-    # Anchored to the installed package's own location (one level above the
-    # scout/ package dir) rather than Path.cwd(), so these resolve to the
-    # repo root regardless of which directory a script is actually launched
-    # from -- e.g. supporting_data/stock_energy_tech_data/'s workflow
-    # requires running final_mseg_converter.py with a different cwd than
-    # the repo root (see its README) for output files to land correctly.
-    _parent_dir = _root_dir.parent  # repo root
+    # Deliberately Path.cwd(), not anchored to __file__ like the package
+    # data above: in a non-editable install (e.g. CI's `pip install .`,
+    # any production deployment), __file__ resolves into site-packages,
+    # which has no ecm_definitions/, generated/, inputs/, results/ next to
+    # it at all -- those only exist in the project's working directory,
+    # wherever the user actually runs Scout from. Anchoring to __file__
+    # instead of cwd was tried and reverted (see git history) after it
+    # broke exactly that case in CI.
+    _parent_dir = Path.cwd()  # parent dir of repo
     ECM_DEF = _parent_dir / "ecm_definitions"
     GENERATED = _parent_dir / "generated"
     ECM_COMP = GENERATED / "ecm_competition_data"

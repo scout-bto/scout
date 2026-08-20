@@ -2332,21 +2332,28 @@ def main():
             "sdr_version": load_sdr_version(),
         }
 
-    # Write the updated dict of data to a new JSON file
-    with open(handyvars.json_out, 'w') as jso:
+    # Write the updated dict of data to a new JSON file. Written to an
+    # explicit path under STOCK_ENERGY (package data, resolved via
+    # scout/config.py regardless of install mode or invocation cwd)
+    # instead of the bare relative filename, so this step no longer needs
+    # to be run from a particular directory for output to land correctly.
+    json_out_path = fp.STOCK_ENERGY / handyvars.json_out
+    with open(json_out_path, 'w') as jso:
         json.dump(result, jso, indent=2)
         # Compress CPL file
         if handyvars.json_out.startswith('cpl'):
-            zip_out_cpl = handyvars.json_out.split('.')[0] + '.gz'
+            zip_out_cpl = fp.STOCK_ENERGY / (
+                handyvars.json_out.split('.')[0] + '.gz')
             with gzip.GzipFile(zip_out_cpl, 'w') as fout_cpl:
                 fout_cpl.write(json.dumps(result).encode('utf-8'))
         # Compress stock/energy EMM and state files
         if handyvars.json_out in [
                 'mseg_res_com_state.json', 'mseg_res_com_emm.json']:
-            zip_out_se = handyvars.json_out.split('.')[0] + '.gz'
+            zip_out_se = fp.STOCK_ENERGY / (
+                handyvars.json_out.split('.')[0] + '.gz')
             with gzip.GzipFile(zip_out_se, 'w') as fout_se:
                 fout_se.write(json.dumps(result).encode('utf-8'))
-        print("File " + handyvars.json_out +
+        print("File " + str(json_out_path) +
               " has been created with the updated data.")
 
 

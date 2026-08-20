@@ -61,14 +61,16 @@ duplicates elsewhere before re-running.
 ## 3. Regenerate the EMM/state baseline JSON
 
 ```
-cd ../stock_energy_tech_data
-python ../../final_mseg_converter.py
+cd ../../..   # back to repo root
+python scout/final_mseg_converter.py
 ```
 
-**Must be run with cwd = `stock_energy_tech_data/`.** The script writes
-its output (`mseg_res_com_emm.json`/`.gz`, `mseg_res_com_state.json`/`.gz`)
-to a bare relative filename, not an absolute path, so it lands wherever
-cwd happens to be.
+**Run from the repo root**, like every other Scout entry point
+(`ecm_prep.py`, `run.py`, etc.) -- `FilePaths` in `scout/config.py`
+resolves `inputs/` relative to cwd, so a different cwd here would fail to
+find `inputs/metadata.json`. Output (`mseg_res_com_emm.json`/`.gz`,
+`mseg_res_com_state.json`/`.gz`) is written to an explicit path under
+`stock_energy_tech_data/` regardless of cwd.
 
 It's interactive and must be run **twice** — once per region breakdown:
 
@@ -89,9 +91,10 @@ provenance (issue #576).
 ## 4. Regenerate the heating/cooling totals
 
 ```
-cd ../../..   # back to repo root
 python scout/htcl_totals.py
 ```
+
+(Still cwd = repo root, from step 3.)
 
 No parameters. Reads the AIA/EMM/state baseline files (including the ones
 just regenerated in step 3) and rewrites the `htcl_totals*` summary files
