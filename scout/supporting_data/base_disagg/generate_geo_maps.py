@@ -267,6 +267,47 @@ DF_ORDER = pd.DataFrame({
                       "CASO", "NWPP", "RMRG", "BASN"]
 })
 
+# Canonical geo membership lists, keyed the same way geo_pivot_settings'
+# geo_label/filename_geo values are -- used to reindex pivoted output back
+# to full geo coverage, since pandas' pivot() silently drops a geo
+# altogether (rather than a zero-valued row/column) when it has zero
+# samples for a given end use/tech (e.g. no distillate-heated homes
+# sampled in Arkansas). Left as an absent row/column, that gap doesn't
+# surface here -- it surfaces as a KeyError deep in
+# final_mseg_converter.py, which expects every CDIV/State/EMM to be
+# present even when the true value for that geo is zero.
+CDIV_LIST = [str(i) for i in range(1, 10)]
+EMM_LIST = DF_ORDER['emm_intersect'].tolist()
+STATE_LIST = sorted(pd.read_csv(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                 'scout_geography.csv'), dtype=str)['state'].unique().tolist())
+GEO_LISTS = {'CDIV': CDIV_LIST, 'State': STATE_LIST, 'EMM': EMM_LIST}
+
+
+def ensure_geo_coverage(df, row_geo, col_geo, context):
+    """Reindex df (rows indexed by row_geo values, columns holding col_geo
+    values plus any extra non-geo columns like 'Total') against the full
+    canonical geo lists in GEO_LISTS, zero-filling any row/column a pivot
+    dropped because that geo had zero samples for this eu/tech, and
+    printing a note when it does.
+    """
+    row_list = GEO_LISTS[row_geo]
+    missing_rows = [r for r in row_list if r not in df.index]
+    if missing_rows:
+        print(f"    Note: {context} has no samples in {row_geo}(s) "
+              f"{missing_rows}; zero-filling those rows.")
+        df = df.reindex(row_list, fill_value=0)
+
+    col_list = GEO_LISTS[col_geo]
+    missing_cols = [c for c in col_list if c not in df.columns]
+    if missing_cols:
+        print(f"    Note: {context} has no samples in {col_geo}(s) "
+              f"{missing_cols}; zero-filling those columns.")
+        extra_cols = [c for c in df.columns if c not in col_list]
+        df = df.reindex(columns=col_list + extra_cols, fill_value=0)
+    return df
+
+
 # --- HELPER FUNCTIONS ---
 
 
@@ -434,7 +475,7 @@ def normalize_by_column_sum(conversion_matrix, context):
     return conversion_matrix.div(col_sums, axis=1)
 
 
-def finalize_eu_matrix(conversion_matrix, output_func, geo_label, eu,
+def finalize_eu_matrix(conversion_matrix, output_func, geo_label, col_geo, eu,
                        drop_total=False):
     """Normalize a raw (geo x geo) conversion matrix for one end use and
     format it into the 'End use'/geo_label-indexed row block used by all of
@@ -444,7 +485,11 @@ def finalize_eu_matrix(conversion_matrix, output_func, geo_label, eu,
     process_gap_end_use so the normalization/output formatting (including
     the CDIV/EMM/state sort order from output_emm/output_state) stays
     identical across all three, even though how each one builds the raw
-    conversion_matrix differs.
+    conversion_matrix differs. Always emits full geo coverage on both axes
+    (see ensure_geo_coverage) -- a geo with zero samples for this end use
+    (e.g. no distillate-heated homes in Arkansas) is zero-filled rather
+    than left as a missing row/column, which final_mseg_converter.py
+    would otherwise fail to look up.
     """
     normalized_matrix = normalize_by_column_sum(
         conversion_matrix, f"end use '{eu}'").reset_index()
@@ -454,6 +499,8 @@ def finalize_eu_matrix(conversion_matrix, output_func, geo_label, eu,
     normalized_matrix.rename(
         columns={normalized_matrix.columns[-1]: 'Total'}, inplace=True)
     normalized_matrix = normalized_matrix.iloc[1:]
+    normalized_matrix = ensure_geo_coverage(
+        normalized_matrix, geo_label, col_geo, f"end use '{eu}'")
     normalized_matrix.insert(0, geo_label, normalized_matrix.index)
     normalized_matrix.insert(0, 'End use', eu)
     if drop_total:
@@ -532,19 +579,11 @@ def process_end_use_energy(sector, filedir, filename, weathers, mymap,
             conversion_matrix = df.pivot(index=pivot_index, columns=pivot_col,
                                          values=eu)
             normalized_matrix = finalize_eu_matrix(
-                conversion_matrix, output_func, geo_label, eu, drop_total=True)
+                conversion_matrix, output_func, geo_label, filename_geo, eu,
+                drop_total=True)
             norm_pd = (normalized_matrix if norm_pd.empty
                        else pd.concat([norm_pd, normalized_matrix],
                                       ignore_index=False))
-
-        # Ensure AK/HI columns exist even if the source data has no
-        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
-        # coverage); don't clobber real shares computed from ResStock
-        # vintages (2025+) that do include them.
-        if sec == "Res" and 'cdiv' in geos:
-            for st in ("AK", "HI"):
-                if st not in norm_pd.columns:
-                    norm_pd[st] = 0
 
         fuel_suffix = f"_{remove_space(fueltype)}" if fueltype else ""
         norm_pd.to_csv(f"{outdir}/{sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}.csv",
@@ -620,20 +659,12 @@ def process_end_use_stock(sector, filedir, filename, weathers, mymap,
             del df
             gc.collect()
             normalized_matrix = finalize_eu_matrix(
-                conversion_matrix, output_func, geo_label, eu, drop_total=False)
+                conversion_matrix, output_func, geo_label, filename_geo, eu,
+                drop_total=False)
             del conversion_matrix
             norm_pd = (normalized_matrix if norm_pd.empty
                        else pd.concat([norm_pd, normalized_matrix],
                                       ignore_index=False))
-
-        # Ensure AK/HI columns exist even if the source data has no
-        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
-        # coverage); don't clobber real shares computed from ResStock
-        # vintages (2025+) that do include them.
-        if sec == "Res" and 'cdiv' in geos:
-            for st in ("AK", "HI"):
-                if st not in norm_pd.columns:
-                    norm_pd[st] = 0
 
         fuel_suffix = f"_{remove_space(fueltype)}" if fueltype else ""
         norm_pd.to_csv(f"{outdir}/{sec}_Cdiv_{filename_geo}_{weath}{fuel_suffix}_Stock.csv",
@@ -669,7 +700,7 @@ def process_gap_end_use(gap_csv_path, scoutgeo_df, geos, target_paths):
     df = apply_geographies(df, scoutgeo_df, geos)
     df = df.dropna(subset=geos)
 
-    _, pivot_index, pivot_col, output_func, geo_label, _ = \
+    _, pivot_index, pivot_col, output_func, geo_label, filename_geo = \
         geo_pivot_settings(geos)
 
     grouped = df.groupby([pivot_index, pivot_col])[
@@ -677,7 +708,8 @@ def process_gap_end_use(gap_csv_path, scoutgeo_df, geos, target_paths):
     conversion_matrix = grouped.pivot(
         index=pivot_index, columns=pivot_col, values='annual_electricity_kwh')
     gap_row = finalize_eu_matrix(
-        conversion_matrix, output_func, geo_label, 'gap', drop_total=False)
+        conversion_matrix, output_func, geo_label, filename_geo, 'gap',
+        drop_total=False)
 
     for path in target_paths:
         if not os.path.exists(path):
@@ -706,20 +738,18 @@ def _apply_tech_map(df, map_df):
     return merged.drop(columns=['_orig_idx'])
 
 
-CDIV_LIST = [str(i) for i in range(1, 10)]
-
-
-def _tech_output_block(normalized_matrix, output_func, eu, tech, all_tech):
+def _tech_output_block(normalized_matrix, output_func, col_geo, eu, tech, all_tech):
     """Normalize, format, and accumulate one technology's matrix.
 
-    Always emits one row per CDIV (1-9), zero-filling any CDIV where this
-    tech has zero samples (conversion_matrix simply has no column for a
-    CDIV with no data at all, rather than a zero-valued one). This matters
-    because final_mseg_converter.py looks up these rows by position
-    (cd_num, 0-8) after filtering to a Technology -- a missing CDIV row
-    wouldn't just mean "no data for that CDIV," it would silently shift
-    every later CDIV into the wrong slot (or raise an out-of-bounds error
-    if the gap were CDIV 9).
+    Always emits one row per CDIV (1-9) and one column per State/EMM,
+    zero-filling any geo this tech has zero samples for (conversion_matrix
+    simply has no row/column for a geo with no data at all, rather than a
+    zero-valued one). This matters because final_mseg_converter.py looks
+    up rows by position (cd_num, 0-8) after filtering to a Technology, and
+    columns by name (e.g. a state abbreviation) -- a missing CDIV row
+    would silently shift every later CDIV into the wrong slot (or raise
+    an out-of-bounds error if the gap were CDIV 9), while a missing
+    State/EMM column raises a hard KeyError on lookup.
     """
     normalized_matrix = output_func(normalized_matrix)
     normalized_matrix = normalized_matrix.fillna(0)
@@ -728,11 +758,8 @@ def _tech_output_block(normalized_matrix, output_func, eu, tech, all_tech):
         columns={normalized_matrix.columns[-1]: 'Total'}, inplace=True)
     normalized_matrix = normalized_matrix.iloc[1:]
 
-    missing_cdivs = [c for c in CDIV_LIST if c not in normalized_matrix.index]
-    if missing_cdivs:
-        print(f"    Note: tech '{tech}' / end use '{eu}' has no samples in "
-              f"CDIV(s) {missing_cdivs}; zero-filling those rows.")
-        normalized_matrix = normalized_matrix.reindex(CDIV_LIST, fill_value=0)
+    normalized_matrix = ensure_geo_coverage(
+        normalized_matrix, 'CDIV', col_geo, f"tech '{tech}' / end use '{eu}'")
 
     normalized_matrix.insert(0, 'CDIV', normalized_matrix.index)
     normalized_matrix.insert(0, 'End use', eu.split('_')[1])
@@ -826,19 +853,11 @@ def process_tech_energy(sector, filedir, filename, weathers, mymap,
                     conversion_matrix, f"end use '{eu}' / tech '{tech}'"
                 ).reset_index()
                 all_tech = _tech_output_block(
-                    normalized_matrix, output_func, eu, tech, all_tech)
+                    normalized_matrix, output_func, filename_geo, eu, tech,
+                    all_tech)
             if not all_tech.empty:
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
-
-        # Ensure AK/HI columns exist even if the source data has no
-        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
-        # coverage); don't clobber real shares computed from ResStock
-        # vintages (2025+) that do include them.
-        if sec == "Res" and 'cdiv' in geos:
-            for st in ("AK", "HI"):
-                if st not in all_eu.columns:
-                    all_eu[st] = 0
 
         out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
@@ -932,19 +951,11 @@ def process_tech_stock(sector, filedir, filename, weathers, mymap, scoutgeo_df,
                     conversion_matrix, f"end use '{eu}' / tech '{tech}'"
                 ).reset_index()
                 all_tech = _tech_output_block(
-                    normalized_matrix, output_func, eu, tech, all_tech)
+                    normalized_matrix, output_func, filename_geo, eu, tech,
+                    all_tech)
             if not all_tech.empty:
                 all_eu = (all_tech if all_eu.empty
                           else pd.concat([all_eu, all_tech], ignore_index=False))
-
-        # Ensure AK/HI columns exist even if the source data has no
-        # AK/HI samples (e.g. 2024 ResStock, which predates AK/HI
-        # coverage); don't clobber real shares computed from ResStock
-        # vintages (2025+) that do include them.
-        if sec == "Res" and 'cdiv' in geos:
-            for st in ("AK", "HI"):
-                if st not in all_eu.columns:
-                    all_eu[st] = 0
 
         out_file = (f"{sec}_Cdiv_{filename_geo}_{weath}_electricity_Stock_Tech.csv")
         all_eu.to_csv(f"{outdir}/{out_file}", index=False)
@@ -1123,7 +1134,13 @@ def install_files(output_dir, install_dir, year="2025"):
 def main():
     parser = argparse.ArgumentParser(
         description="Generate geographic disaggregation maps from ResStock and "
-                    "ComStock data.")
+                    "ComStock data.",
+        # Without this, an unrecognized flag that happens to be an
+        # unambiguous prefix of a real one (e.g. the old --install, now
+        # --no-install/--install-only) is silently accepted as that flag
+        # instead of erroring -- exactly the kind of mistake this script's
+        # own history just demonstrated is easy to make.
+        allow_abbrev=False)
     parser.add_argument('--year', type=str, default='2025',
                         choices=['2024', '2025'],
                         help='BuildStock release year (default: 2025).')

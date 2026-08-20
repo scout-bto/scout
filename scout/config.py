@@ -35,7 +35,13 @@ class FilePaths:
     SUB_FED = SUPPORTING_DATA / "sub_fed"
 
     # Non-package data:
-    _parent_dir = Path.cwd()  # parent dir of repo
+    # Anchored to the installed package's own location (one level above the
+    # scout/ package dir) rather than Path.cwd(), so these resolve to the
+    # repo root regardless of which directory a script is actually launched
+    # from -- e.g. supporting_data/stock_energy_tech_data/'s workflow
+    # requires running final_mseg_converter.py with a different cwd than
+    # the repo root (see its README) for output files to land correctly.
+    _parent_dir = _root_dir.parent  # repo root
     ECM_DEF = _parent_dir / "ecm_definitions"
     GENERATED = _parent_dir / "generated"
     ECM_COMP = GENERATED / "ecm_competition_data"
