@@ -375,6 +375,19 @@ jobs:
         run: |
           git fetch --depth=1 origin ${{ github.event.pull_request.head.sha || github.sha }}
           git show ${{ github.event.pull_request.head.sha || github.sha }}:tests/integration_testing/integration_test.yml > tests/integration_testing/integration_test.yml
+      - name: Use feature branch's out_break_czones scoping fix
+        # TEMPORARY, remove once this branch merges to master. Master's
+        # ecm_prep_vars.py always builds the full 50-state out_break_czones
+        # breakout regardless of ecm_field_updates.climate_zone; the feature
+        # branch scopes it to match. Without this overlay, master does
+        # strictly more work (building/copying breakout data for 47 unused
+        # states) than feature on the same yml, which conflates "less work"
+        # with "faster code" in the timing comparison. This overlay is the
+        # only diff between master's and feature's ecm_prep_vars.py, so it
+        # doesn't pull in any of the actual perf-tuning changes being
+        # profiled — it only equalizes the two branches' workload.
+        run: |
+          git show ${{ github.event.pull_request.head.sha || github.sha }}:scout/ecm_prep_vars.py > scout/ecm_prep_vars.py
       - name: Set up Python 3.10.17
         uses: actions/setup-python@v5
         with:
