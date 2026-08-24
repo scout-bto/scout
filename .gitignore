@@ -130,3 +130,9 @@ scout.egg-info/
 
 !tests/integration_testing/results/plots/tech_potential/*.xlsx
 !tests/integration_testing/results/plots/max_adopt_potential/*.xlsx
+
+# buildstock data #
+######################
+
+scout/supporting_data/base_disagg/input
+scout/supporting_data/base_disagg/output

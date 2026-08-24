@@ -268,8 +268,11 @@ def sum_htcl_energy(msegs, aeo_years, ss_conv):
     htcl_totals = {}
 
     # Loop through all climate zone, building type, and structure type
-    # combinations and sum the energy values associated with each
-    for cz in msegs.keys():
+    # combinations and sum the energy values associated with each. Skip
+    # "_cdiv_disagg_info", a metadata key (not a region) that
+    # final_mseg_converter.py adds to the EMM/state files reporting how
+    # their Cdiv->EMM/state disaggregation was prepared.
+    for cz in [c for c in msegs.keys() if c != "_cdiv_disagg_info"]:
         htcl_totals[cz] = {}
         # Skip the "unspecified" building type, which is non-standard
         for bldg in [b for b in msegs[cz].keys() if b != 'unspecified']:

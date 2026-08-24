@@ -73,6 +73,29 @@ Before contributing to or updating the documentation, try to think of documentat
 .. set up steps so that one can preview documentation in RTD theme (https://github.com/snide/sphinx_rtd_theme)
 .. summary of the different types of references/hyperlinks: http://docutils.sourceforge.net/docs/user/rst/quickref.html#hyperlink-targets
 
+
+.. _maint-data:
+
+Data Generation
+---------------
+
+The Scout model relies on a number of disaggregation factor files. These are generated from a common set of input files using the `scout/supporting_data/base_disagg/generate_geo_maps.py` script.
+
+To run the script and generate all output files, execute the following from the `scout/supporting_data/base_disagg` directory:
+
+.. code-block:: bash
+
+   python generate_geo_maps.py
+
+With no flags, this both regenerates all the CSVs and copies them to their final destination within the Scout package. Use `--no-install` to generate into the scratch `output/` directory without copying, or `--install-only` to skip generation and just copy files already sitting in `output/`.
+
+You can also generate specific files or sets of files using the available command-line arguments. Use the `--help` flag to see all options:
+
+.. code-block:: bash
+
+   python generate_geo_maps.py --help
+
+
 .. FIGURE THIS OUT
 .. documentation formatting rules and best practices
 .. reference/citation formatting style

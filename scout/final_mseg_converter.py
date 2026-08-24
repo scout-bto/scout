@@ -34,6 +34,29 @@ import pandas as pd
 from scout import mseg, com_mseg as cm
 from scout.config import FilePaths as fp
 
+# Human-readable labels for the user-selected disaggregation options
+# (see main(), Steps 3-4) that get reported alongside the EMM/state
+# stock and energy data in _cdiv_disagg_info -> prep_settings, so the
+# choices behind a given mseg_res_com_emm/state.json are reproducible
+# after the fact instead of only living in the terminal at generation
+# time (see issue #576).
+GEN_DISAGG_LABELS = {"1": "1 (electricity only)", "2": "2 (all fuels)"}
+ELEC_DISAGG_LABELS = {"1": "1 (technology)", "2": "2 (end use)"}
+
+
+def load_sdr_version():
+    """Read the ResStock/ComStock SDR release used to build the Cdiv/EMM
+    and Cdiv/State disaggregation factors currently installed under
+    convert_data/geo_map (written by download_buildstock.py and
+    generate_geo_maps.py). Falls back to "unknown" per sector if those
+    factors were installed before this tracking existed.
+    """
+    meta_path = fp.CONVERT_DATA / "geo_map" / "sdr_version.json"
+    if not meta_path.exists():
+        return {"residential": "unknown", "commercial": "unknown"}
+    with open(meta_path, 'r') as f:
+        return json.load(f)
+
 
 class UsefulVars(object):
     """Class for useful variables to make them available to external scripts.
@@ -85,9 +108,6 @@ class UsefulVars(object):
         final_disagg_method (str): Flag for use of tech-level or end-use-level.
             data in disaggregation of electric energy and stock data. Options: 1 – Technology-level
             disaggregation; 2 – End-use-level.
-        ak_hi_res (dict): Share of Pacific CDIV's total consumption by fuel that goes to AK or HI,
-            based on EIA SEDS totals by fuel and building type; these states are not currently
-            reflected in the ResStock-based disaggregation shares
 
     Attributes: (if a method is called)
         res_climate_convert (str): File name for the residential buildings
@@ -108,15 +128,6 @@ class UsefulVars(object):
         self.geo_break = geo_break
         self.fuel_disagg_method = fuel_disagg_method
         self.final_disagg_method = final_disagg_method
-        # Source: Scout Geography Mapping data, which in turn uses EIA SEDS data. This version
-        # is based on SEDS 2022 data. https://www.eia.gov/state/seds/seds-data-complete.php?sid=US
-        self.ak_hi_res = {
-            "AK": {
-                "electricity": 0.01162790698, "natural gas": 0.03194221509,
-                "distillate": 0.5220588235, "other fuel": 0.06274509804},
-            "HI": {
-                "electricity": 0.02341958729, "natural gas": 0.0008025682183,
-                "distillate": 0, "other fuel": 0.005882352941}}
 
     def configure_for_energy_square_footage_stock_data(self):
         """Reconfigure stock and energy data to custom region."""
@@ -534,9 +545,10 @@ class UsefulVars(object):
 
 
 def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
-              com_convert_array, cpl, flag_map_dat, first_cd_flag, ak_hi_res,
+              com_convert_array, cpl, flag_map_dat, first_cd_flag,
               cd_to_cz_factor=0, bldg_flag=None, fuel_flag=None, eu_flag=None,
-              tech_typ_flag=None, tech_flag=None, stock_energy_flag=None, key_list=None):
+              tech_typ_flag=None, tech_flag=None, stock_energy_flag=None, key_list=None,
+              com_bldgtype_flag=None):
     """Calculate values to restructure census division data to custom regions.
 
     Two dicts with identical structure, 'base_dict' and 'add_dict' are
@@ -586,9 +598,6 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
             end uses, and map to NREL End Use Load Profiles (EULP) datasets.
         first_cd_flag (boolean): Flag for loop through the first census
             division in the input data.
-        ak_hi_res (dict): Share of Pacific CDIV's total consumption by fuel that goes to AK or HI,
-            based on EIA SEDS totals by fuel and building type; these states are not currently
-            reflected in the ResStock-based disaggregation shares.
         cd_to_cz_factor (float): The numeric conversion factor to
             calculate the contribution from the current census division
             'cd' to the current custom region 'cz'.
@@ -606,6 +615,9 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
         key_list (list): Keys that specify the current location in the
             microsegments database structure and thus indicate what
             data should be returned by this function.
+        com_bldgtype_flag (NoneType): Flag for the commercial building type
+            currently being looped through (relevant only to EMM/state
+            custom region convert, for blending in ComStock "gap" factors).
 
     Returns:
         A dict with the same form as base_dict and add_dict, with the
@@ -688,6 +700,7 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
                 elif k in flag_map_dat["com_bldg_types"]:
                     cd_to_cz_factor = com_convert_array
                     bldg_flag = "com"
+                    com_bldgtype_flag = k
             # Flag the current fuel type being updated, which is relevant
             # to ultimate selection of conversion factor from the conversion
             # array when translating to EMM region or state, in which case
@@ -810,10 +823,10 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
             # Recursively loop through both dicts
             if isinstance(i, dict):
                 merge_sum(i, i2, cd_num, reg_name, res_convert_array,
-                          com_convert_array, cpl, flag_map_dat, first_cd_flag, ak_hi_res,
+                          com_convert_array, cpl, flag_map_dat, first_cd_flag,
                           cd_to_cz_factor, bldg_flag, fuel_flag, eu_flag,
                           tech_typ_flag, tech_flag, stock_energy_flag=current_stock_energy_flag,
-                          key_list=key_list + [k])
+                          key_list=key_list + [k], com_bldgtype_flag=com_bldgtype_flag)
             elif type(base_dict[k]) is not str:
                 # Check whether the conversion array needs to be further keyed
                 # by fuel type and by end use, as is the case when converting to EMM region or
@@ -838,24 +851,39 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
                             # Case where technology-specific factors are not available
                             else:
                                 convert_fact_init = float(convert_array[cd_num][reg_name])
-                            # For residential disaggregation based on EULP data, account for the
-                            # fact that ResStock data do not include AK or HI, and the Pacific
-                            # CDIV (#9, index 8 in Python) data need to be adjusted down using
-                            # external estimates on how much of the region's energy use is
-                            # attributable to AK or HI by fuel type
-                            if bldg_flag == "res" and cd_num == 8 and ak_hi_res:
-                                # Set to external disagg factors for AK and HI region loops
-                                if reg_name in ["AK", "HI"]:
-                                    # Energy by fuel type for either AK or HI
-                                    convert_fact = ak_hi_res[reg_name][fuel_flag]
-                                # For all other regions within CDIV 9, adjust down to reflect
-                                # the share of AK/HI
+                            # Blend in the ComStock "gap" disaggregation factor
+                            # for this commercial building type, if any of its
+                            # electricity consumption falls in the gap (i.e.,
+                            # buildings/loads ComStock doesn't simulate; see
+                            # flag_map_dat["com_gap_fracs"]). Restricted to
+                            # electricity only -- the gap model's geographic
+                            # footprint is only known for electricity, and
+                            # there's no basis for assuming it's a fair proxy
+                            # for natural gas (or other fuels') geography, so
+                            # those fuels are left disaggregated exactly as
+                            # they were before gap blending was introduced.
+                            gap_frac = 0
+                            if bldg_flag == "com" and fuel_flag == "electricity":
+                                gap_frac = flag_map_dat.get(
+                                    "com_gap_fracs", {}).get(
+                                    com_bldgtype_flag, {}).get("electricity", 0)
+                            if gap_frac:
+                                gap_array = cd_to_cz_factor["electricity"][
+                                    current_stock_energy_flag]["gap"]
+                                # The gap row has no real per-technology
+                                # breakdown (see flag_map_dat["com_gap_fracs"]
+                                # and process_gap_end_use) -- when reading
+                                # from a technology-level file, it's tagged
+                                # Technology == "all" and applies uniformly,
+                                # regardless of the current tech_flag
+                                if "Technology" in gap_array.dtype.names:
+                                    convert_fact_gap = float(gap_array[gap_array[
+                                        'Technology'] == 'all'][cd_num][reg_name])
                                 else:
-                                    # Sum AK and HI energy by fuel type
-                                    ak_plus_hi = (
-                                        ak_hi_res["AK"][fuel_flag] + ak_hi_res["HI"][fuel_flag])
-                                    # Scale other regions by 1 - sum of AK and HI energy by fuel
-                                    convert_fact = (convert_fact_init * (1 - ak_plus_hi))
+                                    convert_fact_gap = float(gap_array[cd_num][reg_name])
+                                convert_fact = (
+                                    gap_frac * convert_fact_gap +
+                                    (1 - gap_frac) * convert_fact_init)
                             else:
                                 convert_fact = convert_fact_init
                         except IndexError:
@@ -912,7 +940,7 @@ def merge_sum(base_dict, add_dict, cd_num, reg_name, res_convert_array,
 
 
 def clim_converter(input_dict, res_convert_array, com_convert_array, data_in,
-                   flag_map_dat, reg_list, cdiv_list, ak_hi_res):
+                   flag_map_dat, reg_list, cdiv_list):
     """Convert input data dict from a census division to a custom region basis.
 
     This function principally serves to prepare the inputs for, and
@@ -935,9 +963,6 @@ def clim_converter(input_dict, res_convert_array, com_convert_array, data_in,
             end uses, and map to NREL End Use Load Profiles (EULP) datasets.
         reg_list (list): List of expected regional names to disaggregate to.
         cdiv_list (list): List of expected CDIV names to disaggregate to.
-        ak_hi_res (dict): Share of Pacific CDIV's total consumption by fuel that goes to AK or HI,
-            based on EIA SEDS totals by fuel and building type; these states are not currently
-            reflected in the ResStock-based disaggregation shares
 
     Returns:
         A complete dict with the same structure as input_dict,
@@ -989,7 +1014,7 @@ def clim_converter(input_dict, res_convert_array, com_convert_array, data_in,
             base_dict = merge_sum(base_dict, add_dict, cdiv_ind,
                                   reg_name, res_convert_array,
                                   com_convert_array, cpl_bool, flag_map_dat,
-                                  first_cd_flag, ak_hi_res, key_list=[])
+                                  first_cd_flag, key_list=[])
 
         # Once fully updated with the data from all census divisions,
         # write the resulting data to a new variable and update the
@@ -1998,8 +2023,23 @@ def main():
         # EULP data
         "eulp_other_tech": [
             "dishwasher", "clothes washing", "freezers",
-            "pool heaters", "pool pumps", "portable electric spas"]
-
+            "pool heaters", "pool pumps", "portable electric spas"],
+        # Fraction of each commercial building type's electricity (and,
+        # unused below, natural gas) consumption that falls in the ComStock
+        # "gap" (buildings and non-building loads DOE's ComStock model
+        # doesn't simulate). Used by merge_sum to blend the "gap"
+        # disaggregation factors in with the regular end-use-level factors
+        # for EMM/state conversion -- electricity only, since the gap
+        # model's geographic footprint is only known for electricity and
+        # isn't assumed to be a fair proxy for natural gas/other fuels'
+        # geography. com_gap_fracs.csv's "natural gas" column is kept here
+        # for reference/future use but not currently read by merge_sum.
+        "com_gap_fracs": {
+            row["building type"]: {
+                "electricity": row["electricity"],
+                "natural gas": row["natural gas"]}
+            for _, row in pd.read_csv(
+                fp.CONVERT_DATA / "com_gap_fracs.csv").iterrows()}
     }
 
     # Set list of regions that is consistent with inputs
@@ -2055,6 +2095,16 @@ def main():
                     com_convert_byeu_dict[disagg_type][k] = com_elec_disag_dat[
                         disagg_type][com_elec_disag_dat[disagg_type]["End use"] == k].to_records(
                             index=False)
+                # Also pull the ComStock "gap" row (commercial only -- no
+                # residential equivalent) so merge_sum can blend gap vs.
+                # non-gap disaggregation factors for commercial segments.
+                # Both the end-use-level and _Tech.csv electricity files
+                # carry a "gap" row (tagged Technology == "all" in the
+                # latter), so this reads correctly regardless of which one
+                # com_elec_disag_dat currently points to.
+                com_convert_byeu_dict[disagg_type]["gap"] = com_elec_disag_dat[
+                    disagg_type][com_elec_disag_dat[disagg_type]["End use"] == "gap"].to_records(
+                        index=False)
 
             # Set up final residential and commercial conversion data by fuel.
             # For electricity, used data prepared above. For other fuels,
@@ -2121,6 +2171,18 @@ def main():
                         com_convert_byeu_dict[fuel][disagg_type][k] = (
                             com_disag_dat[fuel][disagg_type][com_disag_dat[
                                 fuel][disagg_type]["End use"] == k].to_records(index=False))
+                    # Also pull the ComStock "gap" row (electricity only --
+                    # no fuel-specific gap geography exists for gas/
+                    # distillate/other fuel, so merge_sum always blends in
+                    # the electricity gap row regardless of current fuel).
+                    # Both the end-use-level and _Tech.csv electricity files
+                    # carry a "gap" row (tagged Technology == "all" in the
+                    # latter), so this reads correctly regardless of which
+                    # one com_disag_dat["electricity"] currently points to.
+                    com_convert_byeu_dict["electricity"][disagg_type]["gap"] = (
+                        com_disag_dat["electricity"][disagg_type][com_disag_dat[
+                            "electricity"][disagg_type]["End use"] == "gap"].to_records(
+                                index=False))
 
             # Set up final residential and commercial conversion data by fuel.
             # For electricity, used data prepared above. For other fuels,
@@ -2230,17 +2292,10 @@ def main():
         # Census breakout)
         if input_var[0] == '1' or (
                 input_var[0] == '2' and input_var[1] != '3'):
-            # For EMM or state converstions, pull in external estimates of AK/HI portion of Pacific
-            # CDIV's energy use to adjust some EULP-based disaggregation factors for EMMs and
-            # states (residential EULP data do not account for AK/HI)
-            if input_var[1] in ['2', '3']:
-                ak_hi_res = handyvars.ak_hi_res
-            else:
-                ak_hi_res = None
             # Convert data
             result = clim_converter(
                 msjson_cdiv, res_cd_cz_conv, com_cd_cz_conv, input_var[0],
-                flag_map_dat, reg_list, cdiv_list, ak_hi_res)
+                flag_map_dat, reg_list, cdiv_list)
         else:
             result = msjson_cdiv
 
@@ -2261,21 +2316,44 @@ def main():
                     jscpl_data, jsconv_data, env_perf_convert, years, result,
                     aia_list, cdiv_list, emm_list)
 
-    # Write the updated dict of data to a new JSON file
-    with open(handyvars.json_out, 'w') as jso:
+    # Record the disaggregation choices and source data version behind
+    # the EMM/state stock and energy data, for reproducibility (issue
+    # #576) -- these are the only outputs for which input_var[2]/[3]
+    # (the electricity-only-vs-all-fuels and technology-vs-end-use
+    # disaggregation choices) were actually prompted for and used.
+    if handyvars.json_out in ('mseg_res_com_emm.json', 'mseg_res_com_state.json'):
+        result["_cdiv_disagg_info"] = {
+            "prep_settings": {
+                "gen_disagg_level": GEN_DISAGG_LABELS.get(
+                    input_var[2], input_var[2]),
+                "elec_disagg_level": ELEC_DISAGG_LABELS.get(
+                    input_var[3], input_var[3]),
+            },
+            "sdr_version": load_sdr_version(),
+        }
+
+    # Write the updated dict of data to a new JSON file. Written to an
+    # explicit path under STOCK_ENERGY (package data, resolved via
+    # scout/config.py regardless of install mode or invocation cwd)
+    # instead of the bare relative filename, so this step no longer needs
+    # to be run from a particular directory for output to land correctly.
+    json_out_path = fp.STOCK_ENERGY / handyvars.json_out
+    with open(json_out_path, 'w') as jso:
         json.dump(result, jso, indent=2)
         # Compress CPL file
         if handyvars.json_out.startswith('cpl'):
-            zip_out_cpl = handyvars.json_out.split('.')[0] + '.gz'
+            zip_out_cpl = fp.STOCK_ENERGY / (
+                handyvars.json_out.split('.')[0] + '.gz')
             with gzip.GzipFile(zip_out_cpl, 'w') as fout_cpl:
                 fout_cpl.write(json.dumps(result).encode('utf-8'))
         # Compress stock/energy EMM and state files
         if handyvars.json_out in [
                 'mseg_res_com_state.json', 'mseg_res_com_emm.json']:
-            zip_out_se = handyvars.json_out.split('.')[0] + '.gz'
+            zip_out_se = fp.STOCK_ENERGY / (
+                handyvars.json_out.split('.')[0] + '.gz')
             with gzip.GzipFile(zip_out_se, 'w') as fout_se:
                 fout_se.write(json.dumps(result).encode('utf-8'))
-        print("File " + handyvars.json_out +
+        print("File " + str(json_out_path) +
               " has been created with the updated data.")
 
 
