@@ -40,6 +40,64 @@ STOCK_RELEASES = {
     "2024": {"comstock": "2024.2", "resstock": "2024.2"},
 }
 
+# Standard-time (no-DST) UTC offset in hours for each state's dominant legal
+# time zone. ComStock/ResStock publish every timeseries on an Eastern
+# Standard Time clock regardless of where the building actually is (see the
+# ComStock/ResStock FAQ: "timestamps of all load profiles have been
+# converted to Eastern Standard Time, to prevent issues when aggregating
+# across time zones"), so an EMM region or state whose local standard time
+# isn't Eastern needs its load shape rolled to match -- see
+# _region_tz_shift_hours/_apply_tz_shift below. A handful of states split
+# across two zones (FL, IN, KY, MI, TN, TX, ND, SD, NE, KS, ID) are assigned
+# their population-majority zone here; that's already an approximation,
+# same as the EMM-region-level dominant-zone approximation those functions
+# make for regions spanning multiple states.
+STATE_TZ_OFFSET = {
+    'CT': -5, 'DE': -5, 'FL': -5, 'GA': -5, 'IN': -5, 'KY': -5, 'ME': -5,
+    'MD': -5, 'MA': -5, 'MI': -5, 'NH': -5, 'NJ': -5, 'NY': -5, 'NC': -5,
+    'OH': -5, 'PA': -5, 'RI': -5, 'SC': -5, 'VT': -5, 'VA': -5, 'WV': -5,
+    'DC': -5,
+    'AL': -6, 'AR': -6, 'IL': -6, 'IA': -6, 'KS': -6, 'LA': -6, 'MN': -6,
+    'MS': -6, 'MO': -6, 'ND': -6, 'NE': -6, 'OK': -6, 'SD': -6, 'TN': -6,
+    'TX': -6, 'WI': -6,
+    'AZ': -7, 'CO': -7, 'ID': -7, 'MT': -7, 'NM': -7, 'UT': -7, 'WY': -7,
+    'CA': -8, 'NV': -8, 'OR': -8, 'WA': -8,
+    'AK': -9,
+    'HI': -10,
+}
+EST_OFFSET = -5
+
+
+def _region_tz_shift_hours(geo_map_path):
+    """ Population-weighted dominant timezone shift (hours, relative to
+    Eastern Standard Time) for every EMM region and state found in
+    geo_map.csv. For a region straddling multiple time zones (e.g. NWPP
+    spans WA/OR/MT), the shift used is whichever single zone holds the most
+    population in that region -- an approximation, but a closer match to
+    reality than applying no shift at all (the status quo). Returns
+    (emm_shift, state_shift), each {region_code: shift_hours}. """
+    geo = pd.read_csv(geo_map_path)
+    geo['tz_offset'] = geo['state_abbr'].map(STATE_TZ_OFFSET)
+
+    def dominant_shift(grp):
+        pop_by_offset = grp.groupby('tz_offset')['population'].sum()
+        return int(pop_by_offset.idxmax() - EST_OFFSET)
+
+    emm_shift = geo.groupby('emm2020_county').apply(dominant_shift).to_dict()
+    state_shift = geo.groupby('state_abbr').apply(dominant_shift).to_dict()
+    return emm_shift, state_shift
+
+
+def _apply_tz_shift(vals, shift_hours):
+    """ Roll an 8760-hour load shape by shift_hours to convert it from
+    Eastern Standard Time (the clock ComStock/ResStock publish on) into a
+    region's own local standard time: the value ComStock recorded at EST
+    hour (t - shift_hours) becomes this shape's value at hour t, i.e. what
+    that region's own clock actually read at hour t. """
+    if not shift_hours:
+        return vals
+    return vals[-shift_hours:] + vals[:-shift_hours]
+
 
 building_map = {
     "commercial": {
@@ -314,6 +372,8 @@ def insert_scouttsv_emm(opts):
     emm_file = f"{OUTPUT_DIR}/{opts.bstock}_emm_{opts.stock_version}.csv"
     if not os.path.isfile(emm_file):
         return print('File does not exist, please run getdata()')
+    emm_shift, _ = _region_tz_shift_hours(
+        os.path.join(MAP_DIR, "geo_map.csv"))
     df = pd.read_csv(emm_file)
     if opts.bstock == 'residential':
         values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
@@ -372,6 +432,7 @@ def insert_scouttsv_emm(opts):
                 # compress, bloating tsv_load_EMM.gz several-fold for no
                 # accuracy benefit.
                 es60 = [round(float(v), 6) for v in es60]
+                es60 = _apply_tz_shift(es60, emm_shift.get(emm, 0))
                 if opts.bstock == 'commercial' and (
                      (bldg == 'MediumOfficeDetailed' and (
                       eu == 'heating' or eu == 'lighting' or
@@ -416,6 +477,8 @@ def insert_scouttsv_usstate(opts):
     csv_file = f"{OUTPUT_DIR}/{opts.bstock}_state_{opts.stock_version}.csv"
     if not os.path.isfile(csv_file):
         return print('File does not exist, please run getdata()')
+    _, state_shift = _region_tz_shift_hours(
+        os.path.join(MAP_DIR, "geo_map.csv"))
     df = pd.read_csv(csv_file)
 
     if opts.bstock == 'commercial':
@@ -474,6 +537,7 @@ def insert_scouttsv_usstate(opts):
                 # compress, bloating tsv_load_State.gz several-fold for no
                 # accuracy benefit.
                 es60 = [round(float(v), 6) for v in es60]
+                es60 = _apply_tz_shift(es60, state_shift.get(state, 0))
                 if opts.bstock == 'commercial' and (
                      (bldg == 'MediumOfficeDetailed' and (
                       eu == 'heating' or eu == 'lighting' or
