@@ -14,6 +14,7 @@ import csv
 import itertools as it
 from scout.config import FilePaths as fp
 from scout.config import AEOInputRegistry as air
+from scout.config import SUPPORTED_AEO_YEARS
 
 
 class EIAData(object):
@@ -24,10 +25,15 @@ class EIAData(object):
         tpp_data (str): File name for the EIA AEO time preference premium data.
     """
 
-    def __init__(self, data_dir=fp.INPUTS):
+    def __init__(self, data_dir=fp.INPUTS_PROCESSED):
         proc = air.path_map("processed", data_dir)
+        raw = air.path_map("raw", fp.INPUTS_RAW)
+
         self.cpl_data = proc["ktek"]
         self.tpp_data = proc["kprem"]
+
+        if raw["kprem"].exists() and not proc["kprem"].exists():
+            self.tpp_data = raw["kprem"]
 
 
 class UsefulVars(object):
@@ -54,8 +60,8 @@ class UsefulVars(object):
     """
 
     def __init__(self, aeo_import_year=None):
-        self.json_in = fp.INPUTS / 'cpl_res_cdiv.json'
-        self.json_out = fp.INPUTS / 'cpl_res_com_cdiv.json'
+        self.json_in = fp.AEO_DERIVED / 'cpl_res_cdiv.json'
+        self.json_out = fp.AEO_DERIVED / 'cpl_res_com_cdiv.json'
         self.aeo_metadata = fp.METADATA_PATH
 
         self.cpl_data_skip_lines = 68
@@ -1089,6 +1095,48 @@ def kprem_import(data_file_path, dtype_list, hl):
         return final_struct
 
 
+def import_commercial_cpl_data(file_name, handyvars=None):
+    """Import commercial KTEK data with a resilient header-row fallback."""
+    if handyvars is None:
+        handyvars = UsefulVars()
+
+    def _import_with_skip(skip_lines):
+        try:
+            tech_dtypes = cm.dtype_array(file_name, ',', skip_lines - 1)
+        except StopIteration:
+            return None
+
+        dtype_names = {name for name, _ in tech_dtypes}
+        wanted_cols = handyvars.columns_to_keep
+        if not set(wanted_cols).issubset(dtype_names):
+            return None
+
+        col_indices, reduced_dtypes = dtype_reducer(tech_dtypes, wanted_cols)
+        return cm.data_import(file_name, reduced_dtypes, ',',
+                              skip_lines, col_indices)
+
+    tech_data = _import_with_skip(handyvars.cpl_data_skip_lines)
+
+    if tech_data is None or not {'y1', 'y2'}.issubset(set(tech_data.dtype.names)):
+        detected_skip = None
+        with open(file_name, 'r', encoding='latin1') as f_in:
+            for i, line in enumerate(f_in, start=1):
+                if line.startswith(
+                        't,v,r,s,f,shr,eff,c1,c2,c3,c4,life,y1,y2'):
+                    detected_skip = i
+                    break
+
+        if detected_skip:
+            tech_data = _import_with_skip(detected_skip)
+
+    if tech_data is None:
+        raise ValueError(
+            f"Unable to import commercial CPL data from {file_name}; "
+            "required columns were not found.")
+
+    return tech_data
+
+
 def dtype_reducer(the_dtype, wanted_cols):
     """Remove extraneous columns from the dtype definition.
 
@@ -1161,14 +1209,12 @@ def main():
     # Set up to support user option to specify the year for the
     # AEO data being imported (default if the option is not used
     # should be based on metadata)
-    aeo_versions = [2015, 2017, 2018, 2019, 2020,
-                    2021, 2022, 2023, 2025, 2026]
     parser = argparse.ArgumentParser(
         description='Build commercial CPL microsegments from EIA AEO data.')
     parser.add_argument(
         '-y', '--year', type=int,
         help='Specify year of AEO data to be imported',
-        choices=aeo_versions)
+        choices=SUPPORTED_AEO_YEARS)
 
     # Get import year specified by user (if any)
     aeo_import_year = parser.parse_args().year
@@ -1177,56 +1223,16 @@ def main():
     air.assert_present(
         "processed",
         required_keys=["ktek", "kprem", "cdm_sd", "cdm_db"],
-        hint=("Stage required AEO files in inputs/. If using raw workbook "
+        hint=("Stage required AEO files in inputs/processed/. If using raw workbook "
               "inputs, run 'python -m scout.eia_file' to create ktek.csv."))
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars(aeo_import_year)
     eiadata = EIAData()
 
-    def import_commercial_cpl_data(file_name):
-        """Import KTEK data with fallback header-row detection."""
-
-        def _import_with_skip(skip_lines):
-            tech_dtypes = cm.dtype_array(file_name, ',', skip_lines - 1)
-            dtype_names = {name for name, _ in tech_dtypes}
-            wanted_cols = handyvars.columns_to_keep
-            if not set(wanted_cols).issubset(dtype_names):
-                return None
-
-            col_indices, reduced_dtypes = dtype_reducer(
-                tech_dtypes, wanted_cols)
-            return cm.data_import(file_name, reduced_dtypes, ',',
-                                  skip_lines, col_indices)
-
-        # Try the configured skip line count first.
-        tech_data = _import_with_skip(handyvars.cpl_data_skip_lines)
-
-        # If expected year columns are missing, detect actual header row
-        # and retry import with that dynamically identified skip value.
-        if tech_data is None or not {'y1', 'y2'}.issubset(
-                set(tech_data.dtype.names)):
-            detected_skip = None
-            with open(file_name, 'r', encoding='latin1') as f_in:
-                for i, line in enumerate(f_in, start=1):
-                    if line.startswith(
-                            't,v,r,s,f,shr,eff,c1,c2,c3,c4,life,y1,y2'):
-                        detected_skip = i
-                        break
-
-            if detected_skip:
-                tech_data = _import_with_skip(detected_skip)
-
-        if tech_data is None:
-            raise ValueError(
-                f"Unable to import commercial CPL data from {file_name}; "
-                "required columns were not found.")
-
-        return tech_data
-
     # Import technology cost, performance, and lifetime data in
     # EIA AEO 'KTEK' data file.
-    tech_data = import_commercial_cpl_data(eiadata.cpl_data)
+    tech_data = import_commercial_cpl_data(eiadata.cpl_data, handyvars)
     tech_data = cm.str_cleaner(tech_data, 'technology name')
 
     # Import EIA AEO 'KSDOUT' service demand data
@@ -1256,6 +1262,7 @@ def main():
 
     # Import empty microsegments JSON file and traverse database structure
     try:
+        handyvars.json_out.parent.mkdir(parents=True, exist_ok=True)
         with open(handyvars.json_in, 'r') as jsi, open(handyvars.json_out, 'w') as jso:
             msjson = json.load(jsi)
 

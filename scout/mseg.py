@@ -8,6 +8,7 @@ import csv
 from scout import mseg_techdata as rmt
 from scout.config import FilePaths as fp
 from scout.config import AEOInputRegistry as air
+from scout.config import SUPPORTED_AEO_YEARS
 
 
 class EIAData(object):
@@ -17,7 +18,7 @@ class EIAData(object):
         res_energy (str): The file name for the AEO residential energy
             and stock data.
     """
-    def __init__(self, data_dir=fp.INPUTS):
+    def __init__(self, data_dir=fp.INPUTS_PROCESSED):
         proc = air.path_map("processed", data_dir)
         self.res_energy = proc["res_db"]
         self.res_generation = proc["res_dgen"]
@@ -52,7 +53,7 @@ class UsefulVars(object):
 
     def __init__(self):
         self.json_in = fp.INPUTS / 'microsegments.json'
-        self.json_out = fp.INPUTS / 'mseg_res_cdiv.json'
+        self.json_out = fp.AEO_DERIVED / 'mseg_res_cdiv.json'
         self.res_tloads = fp.THERMAL_LOADS / 'Res_TLoads_Final.txt'
         self.aeo_metadata = fp.METADATA_PATH
         self.unused_supply_re = r'^\(b\'(SF|ST |FP).*'
@@ -68,7 +69,7 @@ class SkipLines(object):
         json_out (str): Filename for JSON with residential building data added.
         aeo_metadata (str): File name for the custom AEO metadata JSON.
     """
-    def __init__(self, aeo_import_year, aeo_versions):
+    def __init__(self, aeo_import_year, aeo_versions=None):
         self.aeo_import_year = aeo_import_year
         if self.aeo_import_year == 2015:
             self.nlt_cp_skip_header = 20
@@ -99,6 +100,11 @@ class SkipLines(object):
             # AEO 2026 rsmlgt.txt includes two extra header rows before data.
             self.lt_skip_header = 40
             self.lt_skip_footer = 51
+
+        # Ignore any legacy aeo_versions argument when it is not supplied.
+        # The original code was passing an undefined variable in the call site,
+        # so this makes the constructor resilient to both old and new usages.
+        self.aeo_versions = aeo_versions
 
 # Define a series of dicts that will translate imported JSON
 # microsegment names to AEO microsegment(s)
@@ -1481,13 +1487,12 @@ def main():
     # Set up to support user option to specify the year for the
     # AEO data being imported (default if the option is not used
     # should be current year)
-    aeo_versions = [2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025, 2026]
     parser = argparse.ArgumentParser()
     help_string = 'Specify year of AEO data to be imported'
     parser.add_argument('-y', '--year',
                         type=int,
                         help=help_string,
-                        choices=aeo_versions)
+                        choices=SUPPORTED_AEO_YEARS)
 
     # Get import year specified by user (if any)
     aeo_import_year = parser.parse_args().year
@@ -1496,13 +1501,13 @@ def main():
     air.assert_present(
         "processed",
         required_keys=["res_db", "res_dgen", "rsmlgt"],
-        hint=("Stage required AEO files in inputs/, then run "
+        hint=("Stage required AEO files in inputs/processed/, then run "
               "'python -m scout.eia_file' if preprocessing is needed."))
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()
     eiadata = EIAData()
-    skip = SkipLines(aeo_import_year, aeo_versions)
+    skip = SkipLines(aeo_import_year)
 
     # Import metadata generated based on EIA AEO data files
     with open(handyvars.aeo_metadata, 'r') as metadata:
@@ -1597,6 +1602,7 @@ def main():
             raise TypeError
 
     # Import JSON file and run through updating scheme
+    handyvars.json_out.parent.mkdir(parents=True, exist_ok=True)
     with open(handyvars.json_in, 'r') as jsi, open(
          handyvars.json_out, 'w') as jso:
         msjson = json.load(jsi)

@@ -132,7 +132,7 @@ class UsefulVars(object):
     def configure_for_energy_square_footage_stock_data(self):
         """Reconfigure stock and energy data to custom region."""
         # Set input JSON
-        self.json_in = fp.INPUTS / 'mseg_res_com_cdiv.json'
+        self.json_in = fp.AEO_DERIVED / 'mseg_res_com_cdiv.json'
 
         # Find appropriate conversion data for user-specified geo. breakout
         # (1=AIA climate zones, 2=NEMS EMM regions, 3=states)
@@ -494,7 +494,7 @@ class UsefulVars(object):
     def configure_for_cost_performance_lifetime_data(self):
         """Reconfigure cost, performance, and life data to custom region."""
         # Set input JSON
-        self.json_in = fp.INPUTS / 'cpl_res_com_cdiv.json'
+        self.json_in = fp.AEO_DERIVED / 'cpl_res_com_cdiv.json'
         # Find appropriate conversion data for user-specified geo. breakout
         # (1=AIA climate zones, 2=NEMS EMM regions)
         if self.geo_break == '1':
