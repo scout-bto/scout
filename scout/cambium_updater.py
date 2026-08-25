@@ -81,7 +81,7 @@ def validate_cambium_data_dir(cambium_base_dir, year, scenario):
     files = list(data_dir.glob('*20*.csv'))
     if not files:
         raise ValueError(
-            f"Requested Cambium data directory '{data_dir}' contains no CSV files."
+            f"No files in requested Cambium data directory '{data_dir}' match the '*20*.csv' glob."
         )
     return data_dir
 
@@ -366,6 +366,15 @@ def import_ba_emm_mapping():
     return mapping
 
 
+def normalize_cambium_ba(value):
+    """Normalize Cambium BA identifiers to canonical form (e.g., p90)."""
+    text = str(value).strip()
+    match = re.fullmatch(r'[pP]?(\d+)', text)
+    if not match:
+        return text
+    return f"p{int(match.group(1))}"
+
+
 def cambium_data_import(cambium_base_dir, year, scenario):
     """Import Cambium data and concatenate files into single data frame.
 
@@ -399,18 +408,44 @@ def cambium_data_import(cambium_base_dir, year, scenario):
             usecols=lambda c: c in required_cols,
         )
 
-        if 'timestamp' not in df.columns:
+        required_core_cols = {
+            'timestamp',
+            'aer_load_co2_c',
+            'total_cost_enduse',
+        }
+        missing_core_cols = required_core_cols - set(df.columns)
+        if missing_core_cols:
+            missing_cols_text = ', '.join(sorted(missing_core_cols))
             raise ValueError(
-                f"Cambium file '{file.name}' is missing required 'timestamp' column."
+                f"Cambium file '{file.name}' is missing required column(s): "
+                f"{missing_cols_text}."
             )
 
         ba_match = re.search(r'p\d+', str(file))
         if ba_match:
-            ba = ba_match.group()
+            ba = normalize_cambium_ba(ba_match.group())
         elif 'ba' in df.columns and not df['ba'].empty:
-            ba = str(df['ba'].iloc[0])
+            unique_bas = pd.Series(df['ba'].dropna()).map(
+                normalize_cambium_ba
+            ).unique()
+            if len(unique_bas) != 1:
+                raise ValueError(
+                    f"Cambium file '{file.name}' contains multiple BA values in "
+                    "column 'ba'. For EMM/state updates, provide BA-level "
+                    "Cambium files (one BA per file, e.g., names containing 'pXX')."
+                )
+            ba = unique_bas[0]
         elif 'cambium_24_ba' in df.columns and not df['cambium_24_ba'].empty:
-            ba = str(df['cambium_24_ba'].iloc[0])
+            unique_bas = pd.Series(df['cambium_24_ba'].dropna()).map(
+                normalize_cambium_ba
+            ).unique()
+            if len(unique_bas) != 1:
+                raise ValueError(
+                    f"Cambium file '{file.name}' contains multiple BA values in "
+                    "column 'cambium_24_ba'. For EMM/state updates, provide BA-level "
+                    "Cambium files (one BA per file, e.g., names containing 'pXX')."
+                )
+            ba = unique_bas[0]
         else:
             raise ValueError(
                 "Could not infer Cambium BA identifier from file "
@@ -424,6 +459,31 @@ def cambium_data_import(cambium_base_dir, year, scenario):
     # Parse datetimes once after concatenation to avoid repeated per-file cost.
     ba_df['timestamp'] = pd.to_datetime(ba_df['timestamp'], errors='raise', cache=True)
     return ba_df
+
+
+def merge_cambium_with_mapping(cambium_df, ba_emm_map):
+    """Merge Cambium data with BA->EMM mapping and validate full coverage."""
+    df = pd.merge(
+        cambium_df,
+        ba_emm_map,
+        left_on='ba',
+        right_on='cambium_24_ba',
+        how='left',
+    )
+    missing_mask = df['EMM_2020'].isna()
+    if missing_mask.any():
+        missing_bas = sorted(
+            df.loc[missing_mask, 'ba'].dropna().astype(str).unique().tolist()
+        )
+        preview = ', '.join(missing_bas[:10])
+        suffix = '...' if len(missing_bas) > 10 else ''
+        raise ValueError(
+            "Cambium BA to EMM mapping is incomplete: "
+            f"{int(missing_mask.sum())} row(s) could not be mapped to EMM_2020. "
+            "Update scout_reeds_emm_mapping_071325.csv to include BA key(s): "
+            f"{preview}{suffix}"
+        )
+    return df
 
 
 def annual_factors_updater(df, ss, geography):
@@ -790,8 +850,7 @@ def main():
         # Import Cambium data for the specified year and scenario
         cambium_df = cambium_data_import(cambium_file_path, year, scenario)
         # Join mapping file to cambium data
-        df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                      right_on='cambium_24_ba', how='left')
+        df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
         # Notify user that national supporting factors are updating
         print('Updating national annual emissions intensities data...')
         # Update national annual CO2 emissions intensities for annual data for
@@ -954,8 +1013,7 @@ def main():
             # Import Cambium data for the specified year and scenario
             cambium_df = cambium_data_import(cambium_file_path, year, scenario)
             # Join mapping file to cambium data
-            df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                          right_on='cambium_24_ba', how='left')
+            df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
             if geography == "National":
                 # Update national annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario
@@ -1020,13 +1078,13 @@ def main():
                 ss_updated['updated_to_cambium_case'] = scenario
                 ss_updated['updated_to_cambium_year'] = year
                 update_cambium_source_note(ss_updated, 'State', year)
-                # Notify user that EMM region factors are writing to file
+                # Notify user that State factors are writing to file
                 print(
                     'Writing state annual emissions intensities to \
                     file...')
-                # Write EMM region annual CO2 emissions intensities for annual
+                # Write State annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario to file
-                with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
+                with open(UsefulInputFiles().file_paths['state'][scenario], 'w') as json_file:
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
                 print('Update complete.')
@@ -1040,8 +1098,7 @@ def main():
                 cambium_df = cambium_data_import(cambium_file_path, year,
                                                  scenario)
                 # Join mapping file to cambium data
-                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                              right_on='cambium_24_ba', how='left')
+                df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
                 # Notify user that hourly supporting factors are updating
                 print('Updating EMM region hourly emissions and price \
                       factors...')
@@ -1078,8 +1135,7 @@ def main():
                 cambium_df = cambium_data_import(cambium_file_path, year,
                                                  scenario)
                 # Join mapping file to cambium data
-                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                              right_on='cambium_24_ba', how='left')
+                df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
                 # Notify user that hourly supporting factors are updating
                 print('Updating hourly emissions and price scaling factors...')
                 # Update hourly CO2 emissions and price scaling factors

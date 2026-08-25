@@ -2,6 +2,7 @@ import json
 import logging
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from scout import converter, state_baseline_data_updater, cambium_updater
@@ -40,7 +41,7 @@ def test_validate_cambium_data_dir_requires_csv_files(tmp_path):
     empty_dir = tmp_path / "empty" / "2023" / "MidCase"
     empty_dir.mkdir(parents=True)
 
-    with pytest.raises(ValueError, match="contains no CSV files"):
+    with pytest.raises(ValueError, match="match the '\\*20\\*\\.csv' glob"):
         cambium_updater.validate_cambium_data_dir(tmp_path / "empty", "2023", "MidCase")
 
 
@@ -181,29 +182,6 @@ def test_validate_update_year_and_converter_inputs():
         state_baseline_data_updater.validate_update_year('1999')
     with pytest.raises(ValueError):
         converter.validate_scenario('bad-scenario', '2025')
-
-
-def test_should_overwrite_existing_file():
-    existing_path = Path('existing.csv')
-
-    assert (
-        state_baseline_data_updater.should_overwrite_existing_file(
-            existing_path, False, False, None
-        )
-        is False
-    )
-    assert (
-        state_baseline_data_updater.should_overwrite_existing_file(
-            existing_path, True, False, None
-        )
-        is True
-    )
-    assert (
-        state_baseline_data_updater.should_overwrite_existing_file(
-            existing_path, False, True, None
-        )
-        is True
-    )
 
 
 def test_state_baseline_parser_supports_dry_run_and_yes_flags():
@@ -446,6 +424,26 @@ def test_prune_years_from_mapping_removes_outdated_entries(capsys):
     assert removed == ['2020', '2021']
     assert payload == {'2022': 2, 'extra': {'2023': 4}}
     assert 'test payload' in capsys.readouterr().out
+
+
+def test_abort_on_api_fetch_failures_exits_with_error(capsys):
+    converter.reset_api_fetch_summary()
+    converter.record_api_fetch_result('series_ok', 'query_ok', success=True)
+    converter.record_api_fetch_result(
+        'series_bad', 'query_bad', success=False, error='boom'
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        converter.abort_on_api_fetch_failures()
+
+    assert exc.value.code == 1
+    assert 'aborting before writing output files' in capsys.readouterr().err
+
+
+def test_abort_on_api_fetch_failures_noop_when_clean():
+    converter.reset_api_fetch_summary()
+    converter.record_api_fetch_result('series_ok', 'query_ok', success=True)
+    converter.abort_on_api_fetch_failures()
 
 
 if __name__ == '__main__':

@@ -45,6 +45,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import requests
+from backoff import on_exception, expo
 from urllib.parse import unquote
 from dotenv import load_dotenv
 from scout.config import FilePaths as fp
@@ -133,17 +134,6 @@ def validate_update_year(year):
     return year
 
 
-def should_overwrite_existing_file(existing_path, overwrite_flag, yes_flag, prompt_response):
-    """Return whether an existing baseline file should be overwritten."""
-    if overwrite_flag or yes_flag:
-        return True
-    if existing_path is None:
-        return False
-    if prompt_response is not None:
-        return prompt_response.lower() == 'y'
-    return False
-
-
 def build_parser():
     """Build the CLI parser for the state baseline updater."""
     parser = argparse.ArgumentParser()
@@ -219,6 +209,12 @@ def generate_query_string(key, freq):
     return query_str
 
 
+@on_exception(
+    expo,
+    (requests.exceptions.RequestException, RuntimeError),
+    max_tries=5,
+    logger=None,
+)
 def api_query(query_str, api_key, timeout=30):
     """Execute an EIA API query and return the response data."""
     response = requests.get(

@@ -60,6 +60,7 @@ import requests
 import os
 import sys
 import atexit
+import logging
 import numpy as np
 import json
 import argparse
@@ -79,6 +80,9 @@ API_FETCH_SUMMARY = {
     'failed': 0,
     'failures': [],
 }
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def reset_api_fetch_summary():
@@ -121,6 +125,26 @@ def print_api_fetch_summary():
             print(f"- {failure['series']}: {failure['error']}")
 
 
+def abort_on_api_fetch_failures():
+    """Exit with a clear error if any API series failed after retries."""
+    failed = API_FETCH_SUMMARY['failed']
+    if failed == 0:
+        return
+
+    total = API_FETCH_SUMMARY['total']
+    examples = ', '.join(
+        failure['series'] for failure in API_FETCH_SUMMARY['failures'][:5]
+    )
+    suffix = '...' if failed > 5 else ''
+    print(
+        'ERROR: One or more EIA API series failed after retries. '
+        f'{failed}/{total} series failed; aborting before writing output files. '
+        f'Failed series include: {examples}{suffix}',
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+
 def validate_conversion_file_name(file_name):
     """Validate the requested conversion file name and return its geography."""
     if file_name.startswith('emm'):
@@ -144,6 +168,8 @@ def build_parser():
                         help="Desired AEO electricity scenario in given year")
     parser.add_argument('-s_g',
                         help="Desired AEO fossil scenario in given year")
+    parser.add_argument('--state-baseline-file',
+                        help="Path to a specific state baseline CSV file")
     parser.add_argument('--no-prompt', action='store_true',
                         help="Do not prompt for missing values; require them via CLI")
     parser.add_argument('--dry-run', action='store_true',
@@ -505,7 +531,44 @@ class EIAQueries(object):
 
 # https://stackoverflow.com/questions/22786068/
 # how-to-avoid-http-error-429-too-many-requests-python
-@on_exception(expo, Exception, max_tries=5, logger=None)
+def _log_backoff(details):
+    """Log retry attempts at debug level."""
+    exc = details.get('exception')
+    tries = details.get('tries')
+    wait = details.get('wait')
+    target = details.get('target')
+    target_name = getattr(target, '__name__', str(target))
+    LOGGER.debug(
+        "Retrying %s after error on try %s; waiting %.1fs. Error: %s",
+        target_name,
+        tries,
+        wait,
+        exc,
+    )
+
+
+def _log_giveup(details):
+    """Log final give-up event at warning level."""
+    exc = details.get('exception')
+    tries = details.get('tries')
+    target = details.get('target')
+    target_name = getattr(target, '__name__', str(target))
+    LOGGER.warning(
+        "Giving up on %s after %s tries. Last error: %s",
+        target_name,
+        tries,
+        exc,
+    )
+
+
+@on_exception(
+    expo,
+    Exception,
+    max_tries=5,
+    logger=None,
+    on_backoff=_log_backoff,
+    on_giveup=_log_giveup,
+)
 def api_query(api_key, query_str, expect_table_id, timeout=30):
     """Execute an EIA API query and extract the data returned.
 
@@ -1097,7 +1160,8 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
     return conv
 
 
-def updater_state(conv_emm, aeo_min, conv_gas):
+def updater_state(conv_emm, aeo_min, conv_gas, state_baseline_file=None,
+                  no_prompt=False):
     """Perform calculations using EIA data to generate state conversion
     factors JSON.
 
@@ -1124,28 +1188,41 @@ def updater_state(conv_emm, aeo_min, conv_gas):
     # if no data file exists, prompt user to run
     # state_baseline_data_updater.py to create one
     # if multiple exist, ask user to specify year of data file
-    if not UsefulVars().state_baseline_files:
+    baseline_candidates = UsefulVars().state_baseline_files
+    if not baseline_candidates:
         print('\nNo state baseline data available. Please run '
               'state_baseline_data_updater.py to create one.')
         sys.exit(1)
-    elif len(UsefulVars().state_baseline_files) > 1:
+    if state_baseline_file:
+        state_baseline_data = Path(state_baseline_file)
+        if not state_baseline_data.exists():
+            raise ValueError(
+                f"State baseline file '{state_baseline_data}' does not exist."
+            )
+    elif len(baseline_candidates) > 1:
+        if no_prompt:
+            available = ', '.join(str(p.name) for p in baseline_candidates)
+            raise ValueError(
+                'Multiple state baseline files found while --no-prompt was set. '
+                'Re-run with --state-baseline-file to select one. '
+                f"Available files: {available}"
+            )
         print("Multiple state baseline data files found:")
-        for i, file in enumerate(UsefulVars().state_baseline_files, start=1):
+        for i, file in enumerate(baseline_candidates, start=1):
             print(f"{i}: {file}")
         while True:
             try:
                 file_index = int(input("Enter the number of the file to "
                                        "use: "))
-                if 1 <= file_index <= len(UsefulVars().state_baseline_files):
-                    state_baseline_data = UsefulVars().state_baseline_files[
-                        file_index - 1]
+                if 1 <= file_index <= len(baseline_candidates):
+                    state_baseline_data = baseline_candidates[file_index - 1]
                     break
                 else:
                     print("Invalid input. Please enter a valid number.")
             except ValueError:
                 print("Invalid input. Please enter a valid number.")
     else:
-        state_baseline_data = UsefulVars().state_baseline_files[0]
+        state_baseline_data = baseline_candidates[0]
 
     # Load and clean state baselines data from CSV
     # Drop AK and HI and rename columns
@@ -1410,6 +1487,7 @@ def main():
 
         # Update site-source and CO2 emissions conversions
         conv = updater(conv, api_key, year, scenario_elec, scenario_gas, make_web_version)
+        abort_on_api_fetch_failures()
 
         # Exclude years that are not covered in AEO metadata year range
         prune_years_from_mapping(conv['CO2 price']['data'], int(aeo_min), 'CO2 price data')
@@ -1492,20 +1570,27 @@ def main():
         # subsequently through 2050
         conv_gas = {"residential": {}, "commercial": {}}
         conv_gas = updater_gastrend(conv_gas, api_key, year, scenario_gas)
+        abort_on_api_fetch_failures()
+
+        # Update state emissions data
+        print('\nUpdating state CO2 emissions and prices.')
+        # Fully replace state emissions and electricity prices
+        conv_state = updater_state(
+            conv_emm,
+            str(aeo_min),
+            conv_gas,
+            state_baseline_file=opts.state_baseline_file,
+            no_prompt=opts.no_prompt,
+        )
 
         if write_output_if_needed(
             fp.CONVERT_DATA / opts.f,
             conv_emm,
             5,
             opts.dry_run,
-            'Dry run enabled; skipping write to disk for the conversion file.'
+            'Dry run enabled; skipping write to disk for EMM and state conversion files.'
         ) is False:
             return
-
-        # Update state emissions data
-        print('\nUpdating state CO2 emissions and prices.')
-        # Fully replace state emissions and electricity prices
-        conv_state = updater_state(conv_emm, str(aeo_min), conv_gas)
 
         # Output updated state emissions/price projections data
         with open(fp.CONVERT_DATA / state_conv_file, 'w') as js_out:

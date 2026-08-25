@@ -48,7 +48,7 @@ AEO Update Checklist
 
 Use this quick checklist when updating Scout to a new AEO release.
 
-1. **Stage raw AEO files in** ``inputs/``
+1. **Stage raw AEO files in** ``inputs/raw``
 
    Required files:
 
@@ -65,6 +65,9 @@ Use this quick checklist when updating Scout to a new AEO release.
 2. **Process raw AEO files**::
 
    python scout/eia_file.py
+
+   This step reads from ``inputs/raw`` and writes processed tabular files to
+   ``inputs/processed``.
 
 3. **Generate Metadata**::
 
@@ -85,11 +88,13 @@ Use this quick checklist when updating Scout to a new AEO release.
 
    python -m scout.com_mseg_tech -y 2026
 
+   Intermediate JSON artifacts are written to ``inputs/derived``
+   (for example ``mseg_res_cdiv.json``, ``mseg_res_com_cdiv.json``,
+   ``cpl_res_cdiv.json``, and ``cpl_res_com_cdiv.json``).
+
    python tests/final_mseg_converter_test.py
 
    python -m scout.final_mseg_converter
-
-   python scout/final_mseg_converter.py
 
    Select options ``1,1`` when prompted.
 
