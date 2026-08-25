@@ -1,9 +1,6 @@
-from pathlib import Path
-
 import pytest
 
 from scout.config import AEOInputRegistry as air, FilePaths
-from scout import com_mseg
 from scout.eia_file import EIAFiles
 
 
