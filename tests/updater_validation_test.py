@@ -2,7 +2,6 @@ import json
 import logging
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from scout import converter, state_baseline_data_updater, cambium_updater
