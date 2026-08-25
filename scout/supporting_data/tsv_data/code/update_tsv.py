@@ -274,7 +274,8 @@ def read_gzip_json(filename):
 def load_json_maybe_gz(path):
     """ Load a JSON file that may be gzip-compressed (.gz) or plain,
     for pointing --diag_compare_file at either a tsv_load_*.gz output or
-    one of the uncompressed json/tsv_load_*_2024*.json intermediates. """
+    one of the uncompressed json/tsv_load_*_{stock_version}*.json
+    intermediates. """
     if path.endswith('.gz'):
         with gzip.GzipFile(path, 'r') as gz_file:
             return json.loads(gz_file.read().decode('utf-8'))
@@ -308,162 +309,6 @@ def findNan(reg, eu, example_list):
     return updated_list
 
 
-def insert_scouttsv_emm0(opts):
-    emm_file = f"{OUTPUT_DIR}/{opts.bstock}_emm.csv"
-    if not os.path.isfile(emm_file):
-        return print('File does not exist, please run getdata()')
-    df = pd.read_csv(emm_file)
-    if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
-        df = df[df['building_type'].isin(values_to_keep)]
-    if opts.bstock == 'commercial':
-        df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
-
-    df = replace_strings_in_dataframe(df, replacements)
-    json_file = BASE_TEMPLATE
-    if opts.bstock == 'residential':
-        json_file = f"{JSON_DIR}/tsv_load_emm_2024_com.json"
-    with open(json_file, "r") as jsi:
-        lsjson = json.load(jsi)
-    emm_regions = df['emm'].unique()
-
-    for bldg in building_map[opts.bstock]:
-        print(f"EMM {bldg}")
-        bm_vals = [
-            item.split('_', 1)[0] for item in building_map[opts.bstock][bldg]]
-        lsh = df[df['building_type'
-                    ].str.contains("|".join(bm_vals))]
-        for eu in enduse_map[opts.bstock]:
-            for emm in emm_regions:
-                es60 = lsh.loc[lsh.loc[:, 'emm'] == emm, eu].to_frame()
-                es60 = es60.sum(axis=1)
-                es60 = es60 / es60.sum()
-                es60 = findNan(emm, eu, es60)
-
-                llen = len(es60)
-                if llen != 8760:
-                    print(f"{emm} {eu} {llen}")
-                    es60 = [0] * 8760
-
-                if abs(sum(es60) - 1) > 0.01:
-                    print(f"""LOAD SHAPE DOESN'T SUM TO ONE! {sum(es60)}
-                          for {eu} {emm} {opts.bstock}""")
-                # es60 = round_floats(es60)
-                if opts.bstock == 'commercial' and (
-                     (bldg == 'MediumOfficeDetailed' and (
-                      eu == 'heating' or eu == 'lighting' or
-                      eu == 'plug loads' or eu == 'water heating' or
-                      eu == 'other')) or
-                     (bldg == 'LargeHotel' and eu == 'refrigeration') or
-                     eu == 'cooling' or eu == 'ventilation' or eu == 'pumps'):
-                    nested_set(lsjson,
-                               [opts.bstock, eu, bldg, 'load shape', emm],
-                               list(es60))
-                elif opts.bstock == 'residential':
-                    nested_set(lsjson,
-                               [opts.bstock, eu, bldg,
-                                'represented building types'], bldg)
-                    nested_set(lsjson,
-                               [opts.bstock, eu, bldg, 'load shape', emm],
-                               list(es60))
-    if opts.bstock == 'residential':
-        # copy values from SF to MF and MH
-        poolvars = ['pool heaters', 'pool pumps']
-        for p in poolvars:
-            vals_replace = lsjson[opts.bstock][p]['SF']['load shape']
-            nested_set(lsjson, [
-                opts.bstock, p, 'MF', 'load shape'],
-                vals_replace)
-            nested_set(lsjson, [
-                opts.bstock, p, 'MH', 'load shape'],
-                vals_replace)
-    if opts.bstock == 'residential':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_emm_2024.json", 'w'), indent=2)
-    if opts.bstock == 'commercial':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_emm_2024_com.json", 'w'), indent=2)
-    print(f"FINISHED INSERT {opts.bstock} data into EMM")
-
-
-def insert_scouttsv_usstate0(opts):
-    csv_file = f"{OUTPUT_DIR}/{opts.bstock}_state.csv"
-    if not os.path.isfile(csv_file):
-        return print('File does not exist, please run getdata()')
-    df = pd.read_csv(csv_file)
-
-    if opts.bstock == 'commercial':
-        df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
-    if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
-        df = df[df['building_type'].isin(values_to_keep)]
-
-    df = replace_strings_in_dataframe(df, replacements)
-    json_file = BASE_TEMPLATE
-    if opts.bstock == 'residential':
-        json_file = f"{JSON_DIR}/tsv_load_state_2024_com.json"
-    with open(json_file, "r") as jsi:
-        lsjson = json.load(jsi)
-    us_states = np.unique(df['state'])
-    for bldg in building_map[opts.bstock]:
-        print(f"State {bldg}")
-        bm_vals = [
-            item.split('_', 1)[0] for item in building_map[opts.bstock][bldg]]
-        lsh = df[df['building_type'
-                    ].str.contains("|".join(bm_vals))]
-        for eu in enduse_map[opts.bstock]:
-            for state in us_states:
-                es60 = lsh.loc[lsh.loc[:, 'state'] == state, eu].to_frame()
-                es60 = es60.sum(axis=1)
-                es60 = es60 / es60.sum()
-                es60 = findNan(state, eu, es60)
-
-                llen = len(es60)
-                if llen != 8760:
-                    print(f"{state} {eu} {llen}")
-                    es60 = [0] * 8760
-
-                if abs(sum(es60) - 1) > 0.01:
-                    print(f"""LOAD SHAPE DOESN'T SUM TO ONE! {sum(es60)}
-                          for {eu} {state} {opts.bstock}""")
-                # es60 = round_floats(es60)
-                if opts.bstock == 'commercial' and (
-                     (bldg == 'MediumOfficeDetailed' and (
-                      eu == 'heating' or eu == 'lighting' or
-                      eu == 'plug loads' or eu == 'water heating' or
-                      eu == 'other')) or
-                     (bldg == 'LargeHotel' and eu == 'refrigeration') or
-                     eu == 'cooling' or eu == 'ventilation' or eu == 'pumps'):
-                    nested_set(lsjson,
-                               [opts.bstock, eu, bldg, 'load shape', state],
-                               list(es60))
-                elif opts.bstock == 'residential':
-                    nested_set(lsjson,
-                               [opts.bstock, eu, bldg,
-                                'represented building types'], bldg)
-                    nested_set(lsjson,
-                               [opts.bstock, eu, bldg, 'load shape', state],
-                               list(es60))
-    if opts.bstock == 'residential':
-        # copy values from SF to MF and MH
-        poolvars = ['pool heaters', 'pool pumps']
-        for p in poolvars:
-            vals_replace = lsjson[opts.bstock][p]['SF']['load shape']
-            nested_set(lsjson, [
-                opts.bstock, p, 'MF', 'load shape'],
-                vals_replace)
-            nested_set(lsjson, [
-                opts.bstock, p, 'MH', 'load shape'],
-                vals_replace)
-    if opts.bstock == 'residential':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_state_2024.json", 'w'), indent=2)
-    if opts.bstock == 'commercial':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_state_2024_com.json", 'w'), indent=2)
-    print(f"FINISHED INSERT {opts.bstock} data into US STATE")
-
-
 def insert_scouttsv_emm(opts):
     emm_file = f"{OUTPUT_DIR}/{opts.bstock}_emm_{opts.stock_version}.csv"
     if not os.path.isfile(emm_file):
@@ -478,7 +323,7 @@ def insert_scouttsv_emm(opts):
     df = replace_strings_in_dataframe(df, replacements)
     json_file = BASE_TEMPLATE
     if opts.bstock == 'residential':
-        json_file = f"{JSON_DIR}/tsv_load_emm_2024_com.json"
+        json_file = f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}_com.json"
     with open(json_file, "r") as jsi:
         lsjson = json.load(jsi)
     emm_regions = df['emm'].unique()
@@ -556,11 +401,13 @@ def insert_scouttsv_emm(opts):
                 vals_replace)
     if opts.bstock == 'residential':
         json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_emm_2024.json", 'w'), indent=2)
+            f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}.json", 'w'),
+            indent=2)
         write_gzip_json(lsjson, "tsv_load_EMM.gz")
     if opts.bstock == 'commercial':
         json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_emm_2024_com.json", 'w'), indent=2)
+            f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}_com.json", 'w'),
+            indent=2)
     print(f"FINISHED INSERT {opts.bstock} data into EMM")
 
 
@@ -579,7 +426,7 @@ def insert_scouttsv_usstate(opts):
     df = replace_strings_in_dataframe(df, replacements)
     json_file = BASE_TEMPLATE
     if opts.bstock == 'residential':
-        json_file = f"{JSON_DIR}/tsv_load_state_2024_com.json"
+        json_file = f"{JSON_DIR}/tsv_load_state_{opts.stock_version}_com.json"
     with open(json_file, "r") as jsi:
         lsjson = json.load(jsi)
     us_states = np.unique(df['state'])
@@ -656,17 +503,24 @@ def insert_scouttsv_usstate(opts):
                 vals_replace)
     if opts.bstock == 'residential':
         json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_state_2024.json", 'w'), indent=2)
+            f"{JSON_DIR}/tsv_load_state_{opts.stock_version}.json", 'w'),
+            indent=2)
         write_gzip_json(lsjson, "tsv_load_State.gz")
     if opts.bstock == 'commercial':
         json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_state_2024_com.json", 'w'), indent=2)
+            f"{JSON_DIR}/tsv_load_state_{opts.stock_version}_com.json", 'w'),
+            indent=2)
     print(f"FINISHED INSERT {opts.bstock} data into US STATE")
 
 
 def countrows_eu(opts):
+    """ For each (building type, geo) combination, flag cases where the raw
+    stock CSV doesn't have exactly one row per hour of the year (8760) or is
+    missing specific hours within its own min/max timestamp range. Only
+    problems are printed; a clean run prints nothing beyond the header. """
     geodescs = ['emm', 'state']
-    btype = 'Single-Family Detached' if opts.bstock == 'residential' else 'FullServiceRestaurant'
+    btypes = _diag_canonical_building_types(opts.bstock)
+    HOURS_PER_YEAR = 8760
 
     for geodesc in geodescs:
         # geodesc = 'emm'
@@ -675,27 +529,39 @@ def countrows_eu(opts):
             return print('File does not exist, please run getdata()')
         df = pd.read_csv(file)
         geo_list = df[geodesc].unique()
-        for geo in geo_list:
-            filtered_df = df[
-                (df[geodesc] == geo) &
-                (df['building_type'] == btype)
-            ]
-            print(f"{geo} | {len(filtered_df)}")
+        n_flagged = 0
+        for btype in btypes:
+            for geo in geo_list:
+                filtered_df = df[
+                    (df[geodesc] == geo) &
+                    (df['building_type'] == btype)
+                ]
+                if filtered_df.empty:
+                    print(f"{geodesc}={geo} bt={btype}: 0 rows")
+                    n_flagged += 1
+                    continue
+                if len(filtered_df) != HOURS_PER_YEAR:
+                    print(f"{geodesc}={geo} bt={btype}: "
+                          f"{len(filtered_df)} rows (expected "
+                          f"{HOURS_PER_YEAR})")
+                    n_flagged += 1
 
-            # if geo == 'BASN':
-            filtered_df['timestamp_hour'] = pd.to_datetime(filtered_df['timestamp_hour'])
-            start_time = filtered_df['timestamp_hour'].min()
-            end_time = filtered_df['timestamp_hour'].max()
-            # print(f"{start_time} {end_time}")
-            expected_timestamps = pd.date_range(start=start_time, end=end_time, freq='H')
-            actual_timestamps = set(filtered_df['timestamp_hour'])
-            missing_timestamps = [ts for ts in expected_timestamps if ts not in actual_timestamps]
-            if missing_timestamps:
-                print("Missing timestamps:")
-                for ts in missing_timestamps:
-                    print(ts)
-            else:
-                print("No missing timestamps found.")
+                filtered_df = filtered_df.copy()
+                filtered_df['timestamp_hour'] = pd.to_datetime(filtered_df['timestamp_hour'])
+                start_time = filtered_df['timestamp_hour'].min()
+                end_time = filtered_df['timestamp_hour'].max()
+                expected_timestamps = pd.date_range(start=start_time, end=end_time, freq='H')
+                actual_timestamps = set(filtered_df['timestamp_hour'])
+                missing_timestamps = [ts for ts in expected_timestamps if ts not in actual_timestamps]
+                if missing_timestamps:
+                    print(f"{geodesc}={geo} bt={btype}: "
+                          f"{len(missing_timestamps)} missing timestamps:")
+                    for ts in missing_timestamps:
+                        print(f"  {ts}")
+                    n_flagged += 1
+        print(f"{file}: {n_flagged} flagged (geo, building_type) "
+              "combination(s) out of "
+              f"{len(btypes) * len(geo_list)} checked.")
 
 
 def check_nan(opts):
