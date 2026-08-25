@@ -12,14 +12,19 @@ by querying AWS Athena and reshaping the results into the JSON format
   bucket (both hardcoded in `update_tsv.py` as `DATABASE_NAME` /
   `BUCKET_NAME`) — this is where the ComStock/ResStock Athena tables and
   query results live.
-- Python packages: `boto3`, `pandas`, `numpy`.
+- Python packages: `boto3`, `pandas`, `numpy`; `matplotlib` too if you'll
+  run the `--diag` plot types (`peakday_plot`, `annual_plot`,
+  `seasonal_plot`, `boundary_trend`).
 - Run all commands from this directory (`scout/supporting_data/tsv_data/code/`)
-  — the script's `sql/`, `csv/`, `json/`, `map/` paths are relative to cwd.
+  — the script's `sql/`, `csv/`, `json/`, `map/`, `diagnostics/` paths are
+  relative to cwd.
 
 ## Steps
 
-The full rebuild is three stages, run in order. `--bstock` and
-`--stock_version` are shared across stages 1 and 2.
+The full rebuild is three stages, run in order. `--stock_version` applies
+to all three stages; `--bstock` applies to stage 2 and (for most
+`--diag_type` values) stage 3, but not stage 1 — `--get_stockdata` always
+pulls both commercial and residential data regardless of `--bstock`.
 
 ### 1. Pull raw data from Athena (`--get_stockdata`)
 
@@ -58,9 +63,9 @@ python update_tsv.py --insert_scouttsv --bstock residential
 ```
 
 **Commercial must run before residential** — residential's output builds
-on top of commercial's (`json/tsv_load_{emm,state}_2024_com.json` is read
-as the base when processing residential). Running residential first will
-fail with a missing-file error.
+on top of commercial's (`json/tsv_load_{emm,state}_{stock_version}_com.json`
+is read as the base when processing residential). Running residential
+first will fail with a missing-file error.
 
 Each invocation reads the matching `csv/..._{stock_version}.csv` file (so
 pass the same `--stock_version` used in step 1) and computes normalized
@@ -68,6 +73,14 @@ pass the same `--stock_version` used in step 1) and computes normalized
 After the residential pass, the final gzipped outputs are written to
 `../tsv_load_EMM.gz` and `../tsv_load_State.gz` — these are the files
 `ecm_prep.py` consumes directly.
+
+Naming in `json/`: `tsv_load_{emm,state}_{stock_version}_com.json` holds
+**commercial-only** data (the intermediate the residential pass reads back
+in as its starting point). `tsv_load_{emm,state}_{stock_version}.json`
+(no `_com`) is written by the residential pass and already has residential
+merged into that commercial base, so despite the plain name it's the
+**final combined** commercial+residential JSON — the uncompressed
+equivalent of `../tsv_load_{EMM,State}.gz`, not a residential-only file.
 
 ### AK/HI coverage
 
@@ -117,13 +130,13 @@ python update_tsv.py --diag --bstock residential --diag_type nan sumcheck
 
 | `--diag_type` value | What it checks | Reads | Output |
 |---|---|---|---|
-| `rowcount` | Row count per region + missing hourly timestamps, for one representative building type | `csv/..._{stock_version}.csv` (step 1) | printed |
-| `nan` | NaN columns in the raw CSV; NaN values anywhere in the final JSON | `csv/...csv` and `../tsv_load_{EMM,State}.gz` | printed |
+| `rowcount` | Row count per (region, building type) + missing hourly timestamps within each; only combinations that fail (row count != 8760, or gaps) are printed, plus a per-file flagged/checked summary | `csv/..._{stock_version}.csv` (step 1) | printed |
+| `nan` | NaN columns in the raw CSV; NaN values anywhere in the final JSON | `csv/..._{stock_version}.csv` and `../tsv_load_{EMM,State}.gz` | printed |
 | `sumcheck` | Every load shape is length 8760 and sums to ~1 (only failures are printed) | `../tsv_load_{EMM,State}.gz` | printed |
-| `peakday_plot` | Hourly load by end use on each region's winter/summer peak day | `csv/...csv` (step 1) | `diagnostics/peakday_*.png` |
+| `peakday_plot` | Hourly load by end use on each region's winter/summer peak day | `csv/..._{stock_version}.csv` (step 1) | `diagnostics/peakday_*.png` |
 | `annual_plot` | Cumulative fraction of annual load consumed, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/annual_fraction_*.png` |
 | `seasonal_plot` | Weekday-average hourly shape for Jan/Apr/Jul/Oct, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/seasonal_*.png` |
-| `boundary_trend` | Day-by-day trend of daily-max-hourly total load (commercial + residential combined) across a widened season window, one line per region, to visually check `compute_peak_days.py`'s `PeakAtWindowBoundary` flag — is the official peak day an interior local max, or is the curve still rising when the window cuts it off? | `csv/...csv` (step 1), **both** `--bstock` values | `diagnostics/boundary_trend_*.png` |
+| `boundary_trend` | Day-by-day trend of daily-max-hourly total load (commercial + residential combined) across a widened season window, one line per region, to visually check `compute_peak_days.py`'s `PeakAtWindowBoundary` flag — is the official peak day an interior local max, or is the curve still rising when the window cuts it off? | `csv/..._{stock_version}.csv` (step 1), **both** `--bstock` values | `diagnostics/boundary_trend_*.png` |
 
 `nan`, `sumcheck`, `annual_plot`, and `seasonal_plot` read the final gz
 outputs, so they only reflect the current state of `../tsv_load_EMM.gz` /
