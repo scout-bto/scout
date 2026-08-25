@@ -7,6 +7,7 @@ import numpy as np
 import warnings
 import time
 import os
+import textwrap
 from os import getcwd
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
@@ -878,13 +879,13 @@ def plot_boundary_trend(opts):
                         "negative days before Jan 1)"
                         if season_name == "Winter" else "Day of year")
                     ax.set_ylabel("Daily max hourly total load [kWh]")
-                    ax.set_title(
+                    ax.set_title(textwrap.fill(
                         f"{season_name} season daily max hourly load by "
                         f"region ({geodesc}){title_extra}. Dashed = "
                         "official window start/end. Circle = official "
                         "(in-window) peak. Star = higher peak found by a "
                         "widened window (only shown when flagged as a "
-                        "boundary artifact).")
+                        "boundary artifact).", width=100))
                     ax.legend(fontsize=6, ncol=3, loc='center left',
                               bbox_to_anchor=(1.0, 0.5))
                     plt.tight_layout()
@@ -938,17 +939,129 @@ def plot_annual_fraction(opts):
             shapes = sec_data[eu][bt].get('load shape', {})
             for region, vals in shapes.items():
                 ax[i, j].plot(np.cumsum(vals), label=region)
-            ax[i, j].set_title(f'eu={eu}\nbt={bt}', fontsize=8)
+            ax[i, j].set_title(f'eu={eu}\nbt={bt}', fontsize=16)
             if i == nrows - 1:
                 ax[i, j].set_xlabel("Hour of Year")
-            if j == 0:
-                ax[i, j].set_ylabel("Fraction Annual Load Consumed")
         for idx in range(len(combos), nrows * ncols):
             i, j = divmod(idx, ncols)
             ax[i, j].axis('off')
-        plt.tight_layout()
+        # One shared y-axis label spanning all facet rows, instead of
+        # repeating it on every row's leftmost facet.
+        fig.text(
+            0.02, 0.5, "Fraction Annual Load Consumed", va='center',
+            ha='center', rotation='vertical', fontsize=18)
+        plt.tight_layout(rect=(0.03, 0, 1, 1))
         out_path = (f"{DIAG_DIR}/annual_fraction_{opts.bstock[:3]}_"
                     f"{geodesc}.png")
+        plt.savefig(out_path, dpi=100, bbox_inches='tight')
+        plt.close(fig)
+        print(f"{out_path} is successfully saved!")
+
+
+def plot_annual_fraction_by_building(opts):
+    """ Plot cumulative fraction of annual load consumed for each (end use,
+    region) combination, one line per building type, from the final
+    gzipped load-shape JSON. This is the same underlying data as
+    `plot_annual_fraction`, just transposed: rows are end uses, columns
+    are a handful of representative regions, and building type is the
+    hue — matching the style of the DOE Commercial Reference Buildings
+    cumulative-load-shape figure used elsewhere for reference. Unlike
+    that figure's ~16 DOE prototype buildings, this only has as many
+    lines as `building_map[opts.bstock]` (e.g. 5 for commercial), since
+    `insert_scouttsv_emm`/`insert_scouttsv_usstate` only keep
+    building-type-specific shapes for end uses where they meaningfully
+    differ (cooling/ventilation/pumps for commercial); the rest share one
+    representative building type's shape, so those rows show a single
+    line. Saves PNGs to DIAG_DIR. """
+    import matplotlib.pyplot as plt
+
+    os.makedirs(DIAG_DIR, exist_ok=True)
+    for geodesc, gz_name in (
+            ('emm', 'tsv_load_EMM.gz'), ('state', 'tsv_load_State.gz')):
+        gz_path = os.path.join(TSV_DATA_DIR, gz_name)
+        if not os.path.isfile(gz_path):
+            print(f"{gz_path} not found, skipping annual-fraction-by-"
+                  "building-type plot.")
+            continue
+        sec_data = read_gzip_json(gz_name).get(opts.bstock, {})
+        if not sec_data:
+            print(f"{gz_path}: no {opts.bstock} data, skipping.")
+            continue
+
+        if opts.diag_enduses:
+            end_uses = [eu for eu in opts.diag_enduses if eu in sec_data]
+            missing = set(opts.diag_enduses) - set(end_uses)
+            if missing:
+                print(f"{gz_path}: requested end use(s) {sorted(missing)} "
+                      "not found among available end uses, skipping those.")
+        else:
+            end_uses = list(sec_data.keys())
+        if not end_uses:
+            print(f"{gz_path}: no valid end uses to plot, skipping.")
+            continue
+
+        all_regions = sorted({
+            region for eu, eu_v in sec_data.items() if eu in end_uses
+            for bt_v in eu_v.values()
+            for region in bt_v.get('load shape', {})})
+        if opts.diag_regions:
+            regions = [r for r in opts.diag_regions if r in all_regions]
+            missing = set(opts.diag_regions) - set(regions)
+            if missing:
+                print(f"{gz_path}: requested region(s) {sorted(missing)} "
+                      "not found among available regions, skipping those.")
+        else:
+            # No regions specified: auto-pick a handful spread evenly
+            # across the sorted region list so the grid stays readable
+            # without requiring climate-zone knowledge up front.
+            n = min(3, len(all_regions))
+            idxs = np.linspace(
+                0, len(all_regions) - 1, n).round().astype(int)
+            regions = sorted({all_regions[i] for i in idxs})
+        if not regions:
+            print(f"{gz_path}: no valid regions to plot, skipping.")
+            continue
+        print(f"{gz_path}: plotting regions {regions}")
+
+        nrows, ncols = len(end_uses), len(regions)
+        fig, ax = plt.subplots(
+            nrows, ncols, figsize=(ncols * 7, nrows * 6),
+            sharex=True, sharey=True, squeeze=False)
+        building_types = sorted({
+            bt for eu in end_uses for bt in sec_data[eu]})
+        bt_colors = dict(zip(
+            building_types,
+            plt.cm.tab10(np.linspace(0, 1, len(building_types)))))
+
+        for i, eu in enumerate(end_uses):
+            # Multi-word end use names (e.g. "water heating") wrap onto a
+            # second line at large font sizes rather than overflowing.
+            eu_label = eu.replace(' ', '\n') if ' ' in eu else eu
+            for j, region in enumerate(regions):
+                for bt, bt_v in sec_data[eu].items():
+                    vals = bt_v.get('load shape', {}).get(region)
+                    if vals is None:
+                        continue
+                    ax[i, j].plot(
+                        np.cumsum(vals), label=bt, color=bt_colors[bt],
+                        linewidth=1.5)
+                ax[i, j].tick_params(labelsize=34)
+                if i == 0:
+                    ax[i, j].set_title(region, fontsize=50)
+                if i == nrows - 1:
+                    ax[i, j].set_xlabel("Hour of Year", fontsize=42)
+                if j == 0:
+                    ax[i, j].set_ylabel(eu_label, fontsize=46)
+        handles = [
+            plt.Line2D([0], [0], color=bt_colors[bt], label=bt)
+            for bt in building_types]
+        fig.legend(
+            handles=handles, loc='center left', bbox_to_anchor=(1.0, 0.5),
+            fontsize=40, title="Building Type",
+            title_fontsize=44)
+        plt.tight_layout()
+        out_path = (f"{DIAG_DIR}/annual_fraction_by_bldgtype_"
+                    f"{opts.bstock[:3]}_{geodesc}.png")
         plt.savefig(out_path, dpi=100, bbox_inches='tight')
         plt.close(fig)
         print(f"{out_path} is successfully saved!")
@@ -1040,6 +1153,9 @@ def plot_seasonal_factors(opts):
                     axs[idx].grid(True)
                     if idx == 0:
                         axs[idx].set_ylabel('Fraction')
+                handles, labels = axs[-1].get_legend_handles_labels()
+                fig.legend(handles, labels, fontsize=6, ncol=3,
+                           loc='center left', bbox_to_anchor=(1.0, 0.5))
                 plt.suptitle(f'{opts.bstock} / {eu} / {bt} ({geodesc})')
                 plt.tight_layout()
                 out_path = (f"{DIAG_DIR}/seasonal_{opts.bstock[:3]}_"
@@ -1097,7 +1213,8 @@ def main(base_dir):
         diag_types = set(opts.diag_type)
         if 'all' in diag_types:
             diag_types = {'rowcount', 'nan', 'sumcheck', 'peakday_plot',
-                          'annual_plot', 'seasonal_plot', 'boundary_trend'}
+                          'annual_plot', 'annual_by_bldg_plot',
+                          'seasonal_plot', 'boundary_trend'}
         # boundary_trend always combines both commercial and residential
         # raw CSVs (to match compute_peak_days.py's own methodology), so
         # unlike the other diag types it doesn't need --bstock
@@ -1114,6 +1231,8 @@ def main(base_dir):
                 plot_peakday_hourly(opts)
             if 'annual_plot' in diag_types:
                 plot_annual_fraction(opts)
+            if 'annual_by_bldg_plot' in diag_types:
+                plot_annual_fraction_by_building(opts)
             if 'seasonal_plot' in diag_types:
                 plot_seasonal_factors(opts)
         elif diag_types - {'boundary_trend'}:
@@ -1135,19 +1254,35 @@ if __name__ == '__main__':
     parser.add_argument("--diag_type", nargs="+", default=["all"],
                         choices=["rowcount", "nan", "sumcheck",
                                  "peakday_plot", "annual_plot",
-                                 "seasonal_plot", "boundary_trend", "all"],
+                                 "annual_by_bldg_plot", "seasonal_plot",
+                                 "boundary_trend", "all"],
                         help="Which diagnostic(s) to run under --diag "
                         "(default: all). rowcount/nan/sumcheck print "
                         "text reports; peakday_plot/annual_plot/"
-                        "seasonal_plot/boundary_trend save PNGs to "
-                        "diagnostics/. boundary_trend always combines "
-                        "commercial + residential (matching "
+                        "annual_by_bldg_plot/seasonal_plot/boundary_trend "
+                        "save PNGs to diagnostics/. annual_by_bldg_plot "
+                        "is annual_plot transposed: rows are end uses, "
+                        "columns are regions (see --diag_regions), lines "
+                        "are building types. boundary_trend always "
+                        "combines commercial + residential (matching "
                         "compute_peak_days.py) and doesn't need --bstock; "
                         "the others require --bstock.")
     parser.add_argument("--diag_compare_file", type=str, default=None,
                         help="Path to an older tsv_load_*.gz/.json file "
                         "to overlay on seasonal_plot as a before/after "
                         "comparison (mean +/- 1 std dev across regions).")
+    parser.add_argument("--diag_regions", nargs="+", default=None,
+                        help="Region codes (EMM regions or state "
+                        "abbreviations, matching whichever gzipped file "
+                        "is being read) to use as the columns in "
+                        "annual_by_bldg_plot. Defaults to 3 regions "
+                        "spread evenly across the sorted region list.")
+    parser.add_argument("--diag_enduses", nargs="+", default=None,
+                        help="End use names (matching keys in the "
+                        "gzipped load-shape JSON, e.g. 'cooling', "
+                        "'plug loads') to use as the rows in "
+                        "annual_by_bldg_plot, in the given order. "
+                        "Defaults to all end uses present.")
     parser.add_argument("--bstock", type=str,
                         help="Determine building stock ")
     parser.add_argument("--stock_version", type=str, default="2025",
