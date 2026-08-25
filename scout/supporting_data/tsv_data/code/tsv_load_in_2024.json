@@ -3,6 +3,7 @@
 	"DST": "DST in simulations collapsed to standard time for reporting",
 	"leap year": "no",
 	"weather basis": "2018 AMY",
+	"timezone": "ComStock/ResStock publish all timeseries on an Eastern Standard Time clock regardless of building location; load shapes below have been rolled to each EMM region's/state's own population-weighted-dominant local standard time (see STATE_TZ_OFFSET/_region_tz_shift_hours in update_tsv.py)",
 	"residential": {},
 	"commercial": {
 		"heating": {
