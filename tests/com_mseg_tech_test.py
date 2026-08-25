@@ -118,7 +118,7 @@ class CommercialCPLImportTest(unittest.TestCase):
 
     def test_import_commercial_cpl_data_detects_header_row(self):
         with tempfile.NamedTemporaryFile('w', delete=False, newline='',
-                                        encoding='latin1') as temp_file:
+                                         encoding='latin1') as temp_file:
             temp_file.write('not,data\n')
             temp_file.write('\n')
             temp_file.write(
