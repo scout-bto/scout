@@ -35,6 +35,14 @@ class FilePaths:
     SUB_FED = SUPPORTING_DATA / "sub_fed"
 
     # Non-package data:
+    # Deliberately Path.cwd(), not anchored to __file__ like the package
+    # data above: in a non-editable install (e.g. CI's `pip install .`,
+    # any production deployment), __file__ resolves into site-packages,
+    # which has no ecm_definitions/, generated/, inputs/, results/ next to
+    # it at all -- those only exist in the project's working directory,
+    # wherever the user actually runs Scout from. Anchoring to __file__
+    # instead of cwd was tried and reverted (see git history) after it
+    # broke exactly that case in CI.
     _parent_dir = Path.cwd()  # parent dir of repo
     ECM_DEF = _parent_dir / "ecm_definitions"
     GENERATED = _parent_dir / "generated"

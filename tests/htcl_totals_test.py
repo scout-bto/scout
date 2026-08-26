@@ -522,6 +522,23 @@ class SumHtClEnergyTest(unittest.TestCase, CommonMethods):
                 self.ok_msegs_in, self.aeo_years, self.ss_conv),
             self.ok_out)
 
+    def test_skips_cdiv_disagg_info(self):
+        """Test that the _cdiv_disagg_info metadata key (added by
+        final_mseg_converter.py to the EMM/state mseg files to report
+        their disaggregation prep settings) is not mistaken for a
+        climate zone/region and summed like one."""
+        msegs_with_metadata = dict(self.ok_msegs_in)
+        msegs_with_metadata["_cdiv_disagg_info"] = {
+            "prep_settings": {
+                "gen_disagg_level": "1 (electricity only)",
+                "elec_disagg_level": "1 (technology)"},
+            "sdr_version": {
+                "residential": "2025.1", "commercial": "2025.3"}}
+        self.dict_check(
+            htcl_totals.sum_htcl_energy(
+                msegs_with_metadata, self.aeo_years, self.ss_conv),
+            self.ok_out)
+
 
 # Offer external code execution (include all lines below this point in all
 # test files)
