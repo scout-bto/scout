@@ -662,7 +662,8 @@ def countrows_eu(opts):
                 end_time = filtered_df['timestamp_hour'].max()
                 expected_timestamps = pd.date_range(start=start_time, end=end_time, freq='H')
                 actual_timestamps = set(filtered_df['timestamp_hour'])
-                missing_timestamps = [ts for ts in expected_timestamps if ts not in actual_timestamps]
+                missing_timestamps = [
+                    ts for ts in expected_timestamps if ts not in actual_timestamps]
                 if missing_timestamps:
                     print(f"{geodesc}={geo} bt={btype}: "
                           f"{len(missing_timestamps)} missing timestamps:")
