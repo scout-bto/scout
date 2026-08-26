@@ -4,6 +4,7 @@
 	"leap year": "no",
 	"weather basis": "2018 AMY",
 	"timezone": "ComStock/ResStock publish all timeseries on an Eastern Standard Time clock regardless of building location; load shapes below have been rolled to each EMM region's/state's own population-weighted-dominant local standard time (see STATE_TZ_OFFSET/_region_tz_shift_hours in update_tsv.py)",
+	"known data gaps": "commercial/water heating/MediumOfficeDetailed is 0 for every California building in every fuel column in the ComStock 2025.3 release (an upstream ComStock data gap, confirmed against ComStock's own metadata table); CA (state) and CANO/CASO (EMM) below are backfilled with 2024.2 ComStock data instead -- see _water_heating_fallback_2024 in update_tsv.py",
 	"residential": {},
 	"commercial": {
 		"heating": {

@@ -88,6 +88,39 @@ def _region_tz_shift_hours(geo_map_path):
     return emm_shift, state_shift
 
 
+def _water_heating_fallback_2024(geodesc):
+    """ commercial/water heating/MediumOfficeDetailed is entirely 0 for
+    every California building, in every fuel column (electric, gas,
+    district heating) and even in the granular heat-pump-water-heater
+    component columns, in the ComStock 2025.3 release -- confirmed
+    directly against ComStock's own metadata table, so the energy isn't
+    hiding under a renamed/relocated column, it's just absent upstream.
+    The 2024.2 release has normal, nonzero CA water-heating data. This
+    substitutes pre-fetched (not live-queried) 2024.2 MediumOffice
+    water-heating shapes for CA (state) / CANO+CASO (EMM, CA's own EMM
+    regions -- both entirely composed of CA counties per geo_map.csv) in
+    place of the all-zero 2025.3 ones. See
+    csv/water_heating_ca_fallback_2024_{state,emm}.csv (fetched via the
+    queries in this function's git history/PR description) and
+    conversation notes for how those were pulled. Returns
+    {region: [8760 raw weighted hourly values]}, or {} if the fallback
+    CSV isn't present locally. """
+    if geodesc == 'state':
+        path = os.path.join(
+            OUTPUT_DIR, "water_heating_ca_fallback_2024_state.csv")
+        if not os.path.isfile(path):
+            return {}
+        df = pd.read_csv(path).sort_values('timestamp_hour')
+        return {'CA': df['water_heating'].tolist()}
+    path = os.path.join(OUTPUT_DIR, "water_heating_ca_fallback_2024_emm.csv")
+    if not os.path.isfile(path):
+        return {}
+    df = pd.read_csv(path)
+    return {
+        region: grp.sort_values('timestamp_hour')['water_heating'].tolist()
+        for region, grp in df.groupby('emm')}
+
+
 def _apply_tz_shift(vals, shift_hours):
     """ Roll an 8760-hour load shape by shift_hours to convert it from
     Eastern Standard Time (the clock ComStock/ResStock publish on) into a
@@ -374,6 +407,7 @@ def insert_scouttsv_emm(opts):
         return print('File does not exist, please run getdata()')
     emm_shift, _ = _region_tz_shift_hours(
         os.path.join(MAP_DIR, "geo_map.csv"))
+    wh_fallback = _water_heating_fallback_2024('emm')
     df = pd.read_csv(emm_file)
     if opts.bstock == 'residential':
         values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
@@ -415,6 +449,11 @@ def insert_scouttsv_emm(opts):
             for emm in emm_regions:
                 es60 = lsh.loc[lsh.loc[:, 'emm'] == emm, eu].to_frame()
                 es60 = es60.sum(axis=1)
+                if (es60.sum() == 0 and bldg == 'MediumOfficeDetailed' and
+                        eu == 'water heating' and emm in wh_fallback):
+                    print(f"  {emm} {eu}: 2025 release is all-zero, "
+                          "substituting 2024.2 fallback")
+                    es60 = pd.Series(wh_fallback[emm])
                 es60 = es60 / es60.sum()
                 es60 = findNan(emm, eu, es60)
 
@@ -479,6 +518,7 @@ def insert_scouttsv_usstate(opts):
         return print('File does not exist, please run getdata()')
     _, state_shift = _region_tz_shift_hours(
         os.path.join(MAP_DIR, "geo_map.csv"))
+    wh_fallback = _water_heating_fallback_2024('state')
     df = pd.read_csv(csv_file)
 
     if opts.bstock == 'commercial':
@@ -520,6 +560,11 @@ def insert_scouttsv_usstate(opts):
             for state in us_states:
                 es60 = lsh.loc[lsh.loc[:, 'state'] == state, eu].to_frame()
                 es60 = es60.sum(axis=1)
+                if (es60.sum() == 0 and bldg == 'MediumOfficeDetailed' and
+                        eu == 'water heating' and state in wh_fallback):
+                    print(f"  {state} {eu}: 2025 release is all-zero, "
+                          "substituting 2024.2 fallback")
+                    es60 = pd.Series(wh_fallback[state])
                 es60 = es60 / es60.sum()
                 es60 = findNan(state, eu, es60)
 
