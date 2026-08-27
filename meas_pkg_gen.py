@@ -36,6 +36,8 @@ def parse_integer(val):
 
 def parse_newline_list(val):
     """Parses newline-separated strings into a list."""
+    if isinstance(val, list):
+        return val
     if not isinstance(val, str):
         return [val]
     return [x.strip() for x in val.split("\n") if x.strip()]
@@ -60,7 +62,8 @@ def _recursive_dict(parts, is_unit):
     """Helper: Recursively nests fields separated by colons."""
     if len(parts) == 1:
         return _parse_terminal_value(parts[0], is_unit)
-    return {parts[0].strip(): _recursive_dict(parts[1:], is_unit)}
+    # Force the generated key to lowercase
+    return {parts[0].strip().lower(): _recursive_dict(parts[1:], is_unit)}
 
 
 def _parse_dynamic_nested(val, is_unit):
@@ -68,28 +71,26 @@ def _parse_dynamic_nested(val, is_unit):
     if not isinstance(val, str):
         return val
 
-    # Handle list of items without deeper nesting
     if ";" in val and ":" not in val:
         return [_parse_terminal_value(x, is_unit) for x in val.split(";")]
 
-    # Handle standalone simple values
     if ":" not in val:
         return _parse_terminal_value(val, is_unit)
 
-    # Handle nested mappings (e.g., Key: Subkey: Value)
     res = {}
     for p in val.split(";"):
         p = p.strip()
         if not p or ":" not in p:
             continue
         sub = [x.strip() for x in p.split(":")]
-        key = sub[0]
+
+        # Force the top-level nested key to lowercase
+        key = sub[0].lower()
         nested = _recursive_dict(sub[1:], is_unit)
 
         if key not in res:
             res[key] = nested
         else:
-            # Safely update existing nested dicts
             if isinstance(res[key], dict) and isinstance(nested, dict):
                 res[key].update(nested)
             else:
