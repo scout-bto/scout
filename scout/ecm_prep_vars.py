@@ -246,13 +246,7 @@ class UsefulVars(object):
         self.demand_tech = [
             'roof', 'ground', 'lighting gain', 'windows conduction',
             'equipment gain', 'floor', 'infiltration', 'people gain',
-            'windows solar', 'ventilation', 'other heat gain', 'wall',
-            'internal gains']  # 'internal gains' is aggregated from people + equipment gains
-        # Map legacy internal gain component names to the aggregated node
-        self.demand_tech_alias = {
-            'people gain': 'internal gains',
-            'equipment gain': 'internal gains',
-        }
+            'windows solar', 'ventilation', 'other heat gain', 'wall']
         # Note: ASHP costs are zero by convention in EIA data for new
         # construction
         self.zero_cost_tech = ['infiltration', 'ASHP']
@@ -960,7 +954,7 @@ class UsefulVars(object):
                     "demand": [
                         'roof', 'ground', 'windows solar',
                         'windows conduction', 'equipment gain',
-                        'people gain', 'internal gains', 'wall', 'infiltration']},
+                        'people gain', 'wall', 'infiltration']},
                 "commercial": {
                     "supply": {
                         "electricity": {
@@ -1058,7 +1052,7 @@ class UsefulVars(object):
                         'roof', 'ground', 'lighting gain',
                         'windows conduction', 'equipment gain',
                         'floor', 'infiltration', 'people gain',
-                        'internal gains', 'windows solar', 'ventilation',
+                        'windows solar', 'ventilation',
                         'other heat gain', 'wall']}}}
         # Find the full set of valid names for describing a measure's
         # applicable baseline that do not begin with 'all'
@@ -1593,7 +1587,7 @@ class UsefulVars(object):
                 delimiter=',', dtype=(['<U25'] * 3 + ['<f8'] * 4))
         self.env_heat_ls_scrn = (
             "windows solar", "equipment gain", "people gain",
-            "other heat gain", "internal gains")
+            "other heat gain")
         self.skipped_ecms = []
         # Import total absolute heating and cooling energy use data, used in
         # calculating overall envelope relative performance for packages
