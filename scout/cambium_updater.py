@@ -71,6 +71,70 @@ from scout.config import FilePaths as fp
 load_dotenv()
 
 
+def validate_cambium_data_dir(cambium_base_dir, year, scenario):
+    """Validate that the requested Cambium data directory exists and contains CSV files."""
+    data_dir = Path(cambium_base_dir, year, scenario)
+    if not data_dir.exists():
+        raise ValueError(
+            f"Requested Cambium data directory '{data_dir}' does not exist."
+        )
+    files = list(data_dir.glob('*20*.csv'))
+    if not files:
+        raise ValueError(
+            f"No files in requested Cambium data directory '{data_dir}' match the '*20*.csv' glob."
+        )
+    return data_dir
+
+
+def load_json_file(path):
+    """Load JSON content from the requested path."""
+    with open(path, "r") as js:
+        return json.load(js)
+
+
+def write_outputs(path, payload, output_format='json', indent=2, sort_keys=False):
+    """Write JSON payloads to disk as plain JSON or gzip-compressed JSON."""
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_format == 'gzip':
+        with gzip.open(output_path, 'wt') as fp:
+            json.dump(payload, fp, sort_keys=sort_keys, indent=indent)
+    else:
+        with open(output_path, 'w') as json_file:
+            json.dump(payload, json_file, sort_keys=sort_keys, indent=indent)
+
+
+def _infer_aeo_year(payload):
+    """Infer the AEO year for source notes from metadata or existing text."""
+    aeo_year = str(payload.get('updated_to_aeo_year', '')).strip()
+    if aeo_year.isdigit():
+        return aeo_year
+
+    source_candidates = [
+        payload.get('electricity', {}).get('CO2 intensity', {}).get('source', ''),
+        payload.get('CO2 intensity of electricity', {}).get('source', ''),
+    ]
+    for source_text in source_candidates:
+        match = re.search(r'AEO\s+(\d{4})', str(source_text))
+        if match:
+            return match.group(1)
+    return None
+
+
+def update_cambium_source_note(payload, geography, cambium_year):
+    """Update CO2 source notes to match selected AEO and Cambium years."""
+    aeo_year = _infer_aeo_year(payload)
+    if aeo_year:
+        source_note = f"AEO {aeo_year} data through {cambium_year} w/ Cambium projections"
+    else:
+        source_note = f"AEO data through {cambium_year} w/ Cambium projections"
+
+    if geography == 'National':
+        payload['electricity']['CO2 intensity']['source'] = source_note
+    else:
+        payload['CO2 intensity of electricity']['source'] = source_note
+
+
 class UsefulInputFiles(object):
     """Class of input file paths to be used by this routine.
 
@@ -298,10 +362,17 @@ def import_ba_emm_mapping():
             'cambium_24_ba', 'EMM_2020', 'state_abbrev']].reset_index(
         drop=True)
     # change name of BASIN to BASN
-    mapping['EMM_2020'] = mapping.apply(
-        lambda x: 'BASN' if x['EMM_2020'] == 'BASIN' else x['EMM_2020'],
-        axis=1)
+    mapping['EMM_2020'] = mapping['EMM_2020'].replace({'BASIN': 'BASN'})
     return mapping
+
+
+def normalize_cambium_ba(value):
+    """Normalize Cambium BA identifiers to canonical form (e.g., p90)."""
+    text = str(value).strip()
+    match = re.fullmatch(r'[pP]?(\d+)', text)
+    if not match:
+        return text
+    return f"p{int(match.group(1))}"
 
 
 def cambium_data_import(cambium_base_dir, year, scenario):
@@ -317,17 +388,102 @@ def cambium_data_import(cambium_base_dir, year, scenario):
         year (every 2 years through 2050),
         and region (Cambium Balancing Authority)
     """
-    # create list of files
-    files = list(Path(cambium_base_dir, year, scenario).glob("*20*.csv"))
-    # create df from multiple CSVs in working directory and assign new 'ba'
-    # column to appropriate file name; parse dates with datetime
-    ba_df = pd.concat(
-        map(lambda file: pd.read_csv(
-            str(file.resolve()), parse_dates=['timestamp', 'timestamp_local'],
-            header=5).assign(
-                # extract "pXX" from file name and assign to ba
-                ba=re.search(r'p\d+', str(file)).group()), files))
+    data_dir = validate_cambium_data_dir(cambium_base_dir, year, scenario)
+    files = list(data_dir.glob("*20*.csv"))
+    frames = []
+
+    # Read only fields required downstream for annual/hourly factor updates.
+    required_cols = {
+        'timestamp',
+        'aer_load_co2_c',
+        'total_cost_enduse',
+        'ba',
+        'cambium_24_ba',
+    }
+
+    for file in files:
+        df = pd.read_csv(
+            str(file.resolve()),
+            header=5,
+            usecols=lambda c: c in required_cols,
+        )
+
+        required_core_cols = {
+            'timestamp',
+            'aer_load_co2_c',
+            'total_cost_enduse',
+        }
+        missing_core_cols = required_core_cols - set(df.columns)
+        if missing_core_cols:
+            missing_cols_text = ', '.join(sorted(missing_core_cols))
+            raise ValueError(
+                f"Cambium file '{file.name}' is missing required column(s): "
+                f"{missing_cols_text}."
+            )
+
+        ba_match = re.search(r'p\d+', str(file))
+        if ba_match:
+            ba = normalize_cambium_ba(ba_match.group())
+        elif 'ba' in df.columns and not df['ba'].empty:
+            unique_bas = pd.Series(df['ba'].dropna()).map(
+                normalize_cambium_ba
+            ).unique()
+            if len(unique_bas) != 1:
+                raise ValueError(
+                    f"Cambium file '{file.name}' contains multiple BA values in "
+                    "column 'ba'. For EMM/state updates, provide BA-level "
+                    "Cambium files (one BA per file, e.g., names containing 'pXX')."
+                )
+            ba = unique_bas[0]
+        elif 'cambium_24_ba' in df.columns and not df['cambium_24_ba'].empty:
+            unique_bas = pd.Series(df['cambium_24_ba'].dropna()).map(
+                normalize_cambium_ba
+            ).unique()
+            if len(unique_bas) != 1:
+                raise ValueError(
+                    f"Cambium file '{file.name}' contains multiple BA values in "
+                    "column 'cambium_24_ba'. For EMM/state updates, provide BA-level "
+                    "Cambium files (one BA per file, e.g., names containing 'pXX')."
+                )
+            ba = unique_bas[0]
+        else:
+            raise ValueError(
+                "Could not infer Cambium BA identifier from file "
+                f"'{file.name}'. For EMM/state updates, provide BA-level Cambium "
+                "files (e.g., names containing 'pXX'), not aggregate hourly_usa files."
+            )
+
+        frames.append(df.assign(ba=ba))
+
+    ba_df = pd.concat(frames, ignore_index=True)
+    # Parse datetimes once after concatenation to avoid repeated per-file cost.
+    ba_df['timestamp'] = pd.to_datetime(ba_df['timestamp'], errors='raise', cache=True)
     return ba_df
+
+
+def merge_cambium_with_mapping(cambium_df, ba_emm_map):
+    """Merge Cambium data with BA->EMM mapping and validate full coverage."""
+    df = pd.merge(
+        cambium_df,
+        ba_emm_map,
+        left_on='ba',
+        right_on='cambium_24_ba',
+        how='left',
+    )
+    missing_mask = df['EMM_2020'].isna()
+    if missing_mask.any():
+        missing_bas = sorted(
+            df.loc[missing_mask, 'ba'].dropna().astype(str).unique().tolist()
+        )
+        preview = ', '.join(missing_bas[:10])
+        suffix = '...' if len(missing_bas) > 10 else ''
+        raise ValueError(
+            "Cambium BA to EMM mapping is incomplete: "
+            f"{int(missing_mask.sum())} row(s) could not be mapped to EMM_2020. "
+            "Update scout_reeds_emm_mapping_071325.csv to include BA key(s): "
+            f"{preview}{suffix}"
+        )
+    return df
 
 
 def annual_factors_updater(df, ss, geography):
@@ -634,6 +790,9 @@ def hourly_factors_updater(df, scenario, year, metric, geography):
 def main():
     """Main function calls to generate updated supporting files"""
 
+    input_files = UsefulInputFiles()
+    file_paths = input_files.file_paths
+
     # Ask the user to specify the file path to downloaded Cambium data
     while True:
         cambium_file_path = input('\nPlease provide the file path to '
@@ -683,8 +842,7 @@ def main():
             else:
                 break
         # Load Ref Case National supporting data file
-        with open(UsefulInputFiles().file_paths['ss']['Ref'], "r") as js:
-            ss_nat = json.load(js)
+        ss_nat = load_json_file(file_paths['ss']['Ref'])
         # Import mapping file to map Cambium BA regions to EMM regions
         ba_emm_map = import_ba_emm_mapping()
         # Notify user that Cambium data are importing
@@ -692,8 +850,7 @@ def main():
         # Import Cambium data for the specified year and scenario
         cambium_df = cambium_data_import(cambium_file_path, year, scenario)
         # Join mapping file to cambium data
-        df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                      right_on='cambium_24_ba', how='left')
+        df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
         # Notify user that national supporting factors are updating
         print('Updating national annual emissions intensities data...')
         # Update national annual CO2 emissions intensities for annual data for
@@ -703,20 +860,16 @@ def main():
         # data updates
         ss_updated['updated_to_cambium_case'] = scenario
         ss_updated['updated_to_cambium_year'] = year
-        # Update emissions source notes
-        ss_updated["electricity"]["CO2 intensity"]["source"] = \
-            "AEO 2025 data through 2024 w/ Cambium projections"
+        update_cambium_source_note(ss_updated, 'National', year)
         # Notify user that national supporting factors are writing to file
         print('Writing national annual emissions intensities data to file...')
         # Write national annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
-        with open(UsefulInputFiles().file_paths['ss'][scenario], 'w') as json_file:
-            json.dump(ss_updated, json_file, sort_keys=False, indent=2)
+        write_outputs(file_paths['ss'][scenario], ss_updated, indent=2)
         # Notify user that EMM region supporting factors are updating
         print('Updating EMM region annual emissions intensities data...')
         # Load existing Ref Case EMM region supporting data file
-        with open(UsefulInputFiles().file_paths['emm']['Ref'], "r") as js:
-            ss_emm = json.load(js)
+        ss_emm = load_json_file(file_paths['emm']['Ref'])
         # Update EMM region annual CO2 emissions intensities for annual data
         # for a given Cambium scenario
         ss_emm_updated = annual_factors_updater(df, ss_emm, 'EMM')
@@ -724,20 +877,16 @@ def main():
         # data updates
         ss_emm_updated['updated_to_cambium_case'] = scenario
         ss_emm_updated['updated_to_cambium_year'] = year
-        # Update emissions source notes
-        ss_emm_updated["CO2 intensity of electricity"]["source"] = \
-            "AEO 2025 data through 2024 w/ Cambium projections"
+        update_cambium_source_note(ss_emm_updated, 'EMM', year)
         # Notify user that EMM region supporting factors are writing to file
         print('Writing EMM region annual emissions intensities data to file..')
         # Write EMM region annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
-        with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
-            json.dump(ss_emm_updated, json_file, sort_keys=False, indent=2)
+        write_outputs(file_paths['emm'][scenario], ss_emm_updated, indent=2)
         # Notify user that state supporting factors are updating
         print('Updating state annual emissions intensities data...')
         # Load existing Ref Case State supporting data file
-        with open(UsefulInputFiles().file_paths['state']['Ref'], "r") as js:
-            ss_state = json.load(js)
+        ss_state = load_json_file(file_paths['state']['Ref'])
         # Update State CO2 emissions intensities for annual data
         # for a given Cambium scenario
         ss_state_updated = annual_factors_updater(df, ss_state, 'State')
@@ -745,15 +894,12 @@ def main():
         # data updates
         ss_state_updated['updated_to_cambium_case'] = scenario
         ss_state_updated['updated_to_cambium_year'] = year
-        # Update emissions source notes
-        ss_state_updated["CO2 intensity of electricity"]["source"] = \
-            "AEO 2025 data through 2024 w/ Cambium projections"
+        update_cambium_source_note(ss_state_updated, 'State', year)
         # Notify user that State supporting factors are writing to file
         print('Writing state annual emissions intensities data to file..')
         # Write State annual CO2 emissions intensities for annual data for
         # a given Cambium scenario to file
-        with open(UsefulInputFiles().file_paths['state'][scenario], 'w') as json_file:
-            json.dump(ss_state_updated, json_file, sort_keys=False, indent=2)
+        write_outputs(file_paths['state'][scenario], ss_state_updated, indent=2)
         # Notify user that EMM hourly supporting factors are updating
         print('Updating EMM region hourly emissions and price factors...')
         # Update EMM region hourly CO2 emissions and price scaling factors
@@ -767,16 +913,14 @@ def main():
         # Notify user that hourly supporting factors are writing to file
         print('Writing EMM price scaling factors to file...')
         # # Write hourly price scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['emm']['cost'][scenario],
-                'wt') as fp:
-            json.dump(hourly_cost_json_emm, fp, sort_keys=True, indent=4)
+        write_outputs(file_paths['tsv']['emm']['cost'][scenario],
+                      hourly_cost_json_emm, output_format='gzip', indent=4,
+                      sort_keys=True)
         print('Writing EMM CO2 emissions scaling factors to file...')
         # Write hourly CO2 emissions scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['emm']['carbon'][scenario],
-                'wt') as fp:
-            json.dump(hourly_carbon_json_emm, fp, sort_keys=True, indent=4)
+        write_outputs(file_paths['tsv']['emm']['carbon'][scenario],
+                      hourly_carbon_json_emm, output_format='gzip', indent=4,
+                      sort_keys=True)
         # Notify user that State hourly supporting factors are updating
         print('Updating state hourly emissions and price factors...')
         # Update state hourly CO2 emissions and price scaling factors
@@ -790,16 +934,14 @@ def main():
         # Notify user that hourly supporting factors are writing to file
         print('Writing state price scaling factors to file...')
         # Write State hourly price scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['state']['cost'][scenario],
-                'wt') as fp:
-            json.dump(hourly_cost_json_state, fp, sort_keys=True, indent=4)
+        write_outputs(file_paths['tsv']['state']['cost'][scenario],
+                      hourly_cost_json_state, output_format='gzip', indent=4,
+                      sort_keys=True)
         print('Writing state CO2 emissions scaling factors to file...')
         # Write State hourly CO2 emissions scaling factors to file
-        with gzip.open(
-            UsefulInputFiles().file_paths['tsv']['state']['carbon'][scenario],
-                'wt') as fp:
-            json.dump(hourly_carbon_json_state, fp, sort_keys=True, indent=4)
+        write_outputs(file_paths['tsv']['state']['carbon'][scenario],
+                      hourly_carbon_json_state, output_format='gzip', indent=4,
+                      sort_keys=True)
         print('Update complete.')
     elif full_update == "No":
         while True:
@@ -871,8 +1013,7 @@ def main():
             # Import Cambium data for the specified year and scenario
             cambium_df = cambium_data_import(cambium_file_path, year, scenario)
             # Join mapping file to cambium data
-            df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                          right_on='cambium_24_ba', how='left')
+            df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
             if geography == "National":
                 # Update national annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario
@@ -882,6 +1023,7 @@ def main():
                 # data updates
                 ss_updated['updated_to_cambium_case'] = scenario
                 ss_updated['updated_to_cambium_year'] = year
+                update_cambium_source_note(ss_updated, 'National', year)
                 # Notify user that national supporting factors are writing to
                 # file
                 print(
@@ -908,6 +1050,7 @@ def main():
                 # data updates
                 ss_updated['updated_to_cambium_case'] = scenario
                 ss_updated['updated_to_cambium_year'] = year
+                update_cambium_source_note(ss_updated, 'EMM', year)
                 # Notify user that EMM region factors are writing to file
                 print(
                     'Writing EMM region annual emissions intensities to \
@@ -934,13 +1077,14 @@ def main():
                 # data updates
                 ss_updated['updated_to_cambium_case'] = scenario
                 ss_updated['updated_to_cambium_year'] = year
-                # Notify user that EMM region factors are writing to file
+                update_cambium_source_note(ss_updated, 'State', year)
+                # Notify user that State factors are writing to file
                 print(
                     'Writing state annual emissions intensities to \
                     file...')
-                # Write EMM region annual CO2 emissions intensities for annual
+                # Write State annual CO2 emissions intensities for annual
                 # data for a given Cambium scenario to file
-                with open(UsefulInputFiles().file_paths['emm'][scenario], 'w') as json_file:
+                with open(UsefulInputFiles().file_paths['state'][scenario], 'w') as json_file:
                     json.dump(ss_updated, json_file, sort_keys=False, indent=2)
                 # Notify user that update is complete.
                 print('Update complete.')
@@ -954,8 +1098,7 @@ def main():
                 cambium_df = cambium_data_import(cambium_file_path, year,
                                                  scenario)
                 # Join mapping file to cambium data
-                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                              right_on='cambium_24_ba', how='left')
+                df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
                 # Notify user that hourly supporting factors are updating
                 print('Updating EMM region hourly emissions and price \
                       factors...')
@@ -992,8 +1135,7 @@ def main():
                 cambium_df = cambium_data_import(cambium_file_path, year,
                                                  scenario)
                 # Join mapping file to cambium data
-                df = pd.merge(cambium_df, ba_emm_map, left_on='ba',
-                              right_on='cambium_24_ba', how='left')
+                df = merge_cambium_with_mapping(cambium_df, ba_emm_map)
                 # Notify user that hourly supporting factors are updating
                 print('Updating hourly emissions and price scaling factors...')
                 # Update hourly CO2 emissions and price scaling factors

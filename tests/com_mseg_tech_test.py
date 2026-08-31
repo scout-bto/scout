@@ -9,6 +9,7 @@ import numpy as np
 import os
 import csv
 import itertools
+import tempfile
 
 
 # Skip this test if the EIA files are not expected, indicated by the
@@ -110,6 +111,33 @@ class EIADataFileIntegrityTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             int(self.first_row[3])
             float(self.first_row[3])
+
+
+class CommercialCPLImportTest(unittest.TestCase):
+    """Regression tests for the shared commercial CPL import helper."""
+
+    def test_import_commercial_cpl_data_detects_header_row(self):
+        with tempfile.NamedTemporaryFile('w', delete=False, newline='',
+                                         encoding='latin1') as temp_file:
+            temp_file.write('not,data\n')
+            temp_file.write('\n')
+            temp_file.write(
+                't,v,r,s,f,shr,eff,c1,c2,c3,c4,life,y1,y2,technology name\n')
+            temp_file.write('\n')
+            temp_file.write(
+                '1,1,1,1,1,0.10,3.10,1.00,1.00,1.00,1.00,15,2003,2009,example tech\n')
+            temp_file.write(
+                '2,1,1,1,1,0.20,3.20,2.00,2.00,2.00,2.00,16,2004,2010,second tech\n')
+            temp_path = temp_file.name
+
+        try:
+            tech_data = cmt.import_commercial_cpl_data(temp_path, cmt.UsefulVars())
+            self.assertIn('y1', tech_data.dtype.names)
+            self.assertIn('y2', tech_data.dtype.names)
+            self.assertEqual(len(tech_data), 1)
+            self.assertEqual(tech_data['technology name'][0], 'second tech')
+        finally:
+            os.remove(temp_path)
 
 
 class CommonUnitTest(unittest.TestCase):

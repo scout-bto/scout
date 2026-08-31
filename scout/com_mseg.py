@@ -9,6 +9,8 @@ import json
 import io
 from functools import reduce
 from scout.config import FilePaths as fp
+from scout.config import AEOInputRegistry as air
+from scout.config import SUPPORTED_AEO_YEARS
 
 # AEO publication year used to select the correct end use name mapping.
 # Set by main() via the -y/--year CLI argument; falls back to metadata when None.
@@ -25,10 +27,25 @@ class EIAData(object):
             microsegment generation data.
     """
 
-    def __init__(self, data_dir=fp.INPUTS):
-        self.serv_dmd = data_dir / "CDM_SDOUT.txt"
-        self.catg_dmd = data_dir / "CDM_DBOUT.txt"
-        self.com_generation = data_dir / "CDM_DGENOUT.txt"
+    def __init__(self, data_dir=fp.INPUTS_PROCESSED):
+        proc = air.path_map("processed", data_dir)
+        raw = air.path_map("raw", fp.INPUTS_RAW)
+
+        self.serv_dmd = proc["cdm_sd"]
+        self.catg_dmd = proc["cdm_db"]
+        self.com_generation = proc["cdm_dgen"]
+
+        for key, raw_path in {
+            "cdm_sd": raw["cdm_sd"],
+            "cdm_db": raw["cdm_db"],
+            "cdm_dgen": raw["cdm_dgen"],
+        }.items():
+            if key == "cdm_sd" and raw_path.exists() and not proc["cdm_sd"].exists():
+                self.serv_dmd = raw_path
+            if key == "cdm_db" and raw_path.exists() and not proc["cdm_db"].exists():
+                self.catg_dmd = raw_path
+            if key == "cdm_dgen" and raw_path.exists() and not proc["cdm_dgen"].exists():
+                self.com_generation = raw_path
 
 
 class UsefulVars(object):
@@ -45,8 +62,8 @@ class UsefulVars(object):
     """
 
     def __init__(self):
-        self.json_in = fp.INPUTS / 'mseg_res_cdiv.json'
-        self.json_out = fp.INPUTS / 'mseg_res_com_cdiv.json'
+        self.json_in = fp.AEO_DERIVED / 'mseg_res_cdiv.json'
+        self.json_out = fp.AEO_DERIVED / 'mseg_res_com_cdiv.json'
         self.com_tloads = fp.THERMAL_LOADS / 'Com_TLoads_Final.txt'
         self.aeo_metadata = fp.METADATA_PATH
         self.pivot_year = 1989
@@ -1326,16 +1343,22 @@ def main():
 
     global aeo_import_year
 
-    aeo_versions = [2015, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2025, 2026]
     parser = argparse.ArgumentParser(
         description='Build commercial microsegments from EIA AEO data.')
     parser.add_argument(
         '-y', '--year', type=int, default=None,
         help='Specify year of AEO data to be imported',
-        choices=aeo_versions)
+        choices=SUPPORTED_AEO_YEARS)
     args = parser.parse_args()
 
     aeo_import_year = args.year
+
+    # Validate required processed AEO inputs up front.
+    air.assert_present(
+        "processed",
+        required_keys=["cdm_sd", "cdm_db", "cdm_dgen"],
+        hint=("Stage required AEO files in inputs/processed/. If you started from "
+              "raw workbook sources, run 'python -m scout.eia_file' first."))
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()
@@ -1373,6 +1396,7 @@ def main():
 
     # Import empty microsegments JSON file and traverse database structure
     try:
+        handyvars.json_out.parent.mkdir(parents=True, exist_ok=True)
         with open(handyvars.json_in, 'r') as jsi, open(handyvars.json_out,
                                                        'w') as jso:
             msjson = json.load(jsi)
@@ -1392,8 +1416,7 @@ def main():
 
     except FileNotFoundError:
         errtext = ('Confirm that the expected residential data file ' +
-                   handyvars.json_in + ' has already been created and '
-                   'is in the current directory.\n')
+                   str(handyvars.json_in) + ' has already been created.\n')
         print(errtext)
 
 
