@@ -126,68 +126,6 @@ class ECMPrepHelper:
         return run_setup
 
     @staticmethod
-    def add_internal_gains_aggregate(msegs: dict, years, ig_names=None, new_name="internal gains"):
-        """Aggregate internal gain thermal load components into one node per mseg.
-
-
-        Parameters
-        ----------
-        msegs : dict
-            Baseline microsegment stock/energy structure (loaded from JSON).
-        years : iterable[str]
-            AEO modeling year strings used as keys in energy dicts.
-        ig_names : list[str], optional
-            Component names to aggregate. Defaults to standard set.
-        new_name : str
-            Name of aggregated node to create.
-        """
-        if ig_names is None:
-            # Only aggregate people + equipment gains per requirements
-            ig_names = ["people gain", "equipment gain"]
-
-        # Traverse top-level geography keys
-        for geo_key, geo_val in (msegs.items() if isinstance(msegs, dict) else []):
-            if not isinstance(geo_val, dict):
-                continue
-            for bldg_key, bldg_val in geo_val.items():
-                if not isinstance(bldg_val, dict):
-                    continue
-                for fuel_key, fuel_val in bldg_val.items():
-                    if not isinstance(fuel_val, dict):
-                        continue
-                    for eu in ("heating", "secondary heating", "cooling"):
-                        eu_dict = fuel_val.get(eu)
-                        if not isinstance(eu_dict, dict):
-                            continue
-                        demand = eu_dict.get("demand")
-                        if not isinstance(demand, dict):
-                            continue
-                        # Skip if already aggregated
-                        if new_name in demand:
-                            continue
-                        comp_energy_pairs = []  # (name, energy_dict)
-                        for nm in ig_names:
-                            node = demand.get(nm)
-                            if isinstance(node, dict) and isinstance(node.get("energy"), dict):
-                                comp_energy_pairs.append((nm, node["energy"]))
-                        if not comp_energy_pairs:
-                            continue
-                        # Sum per year (missing years treated as zero)
-                        summed = {yr: float(sum(ed.get(yr, 0.0)
-                                            for _, ed in comp_energy_pairs)) for yr in years}
-                        demand[new_name] = {
-                            "stock": "NA",
-                            "energy": summed
-                        }
-                        # Remove original component nodes to prevent double counting elsewhere
-                        for nm, _ in comp_energy_pairs:
-                            try:
-                                del demand[nm]
-                            except Exception:
-                                pass
-        return msegs
-
-    @staticmethod
     def prep_error(meas_name, handyvars, handyfiles):
         """Prepare and write out error messages for skipped measures/packages.
 
@@ -9830,19 +9768,6 @@ class Measure(object):
                     self.fuel_type[mseg_type], self.end_use[mseg_type],
                     self.technology_type[mseg_type],
                     self.technology[mseg_type], self.structure_type]]
-        # Map legacy internal gain component names to the aggregated node, if present
-        try:
-            alias_map = getattr(self.handyvars, 'demand_tech_alias', {})
-        except Exception:
-            alias_map = {}
-        if isinstance(self.technology[mseg_type], list) and alias_map:
-            mapped = []
-            for t in self.technology[mseg_type]:
-                mt = alias_map.get(t, t)
-                if mt not in mapped:
-                    mapped.append(mt)
-            self.technology[mseg_type] = mapped
-
         # Flag heating/cooling end use microsegments. For heating/cooling
         # cases, an extra 'supply' or 'demand' key is required in the key
         # chain; this key indicates the supply-side and demand-side variants
@@ -14482,17 +14407,6 @@ def main(opts: argparse.NameSpace):  # noqa: F821
                 msegs = json.loads(zip_ref.read().decode('utf-8'))
         else:
             msegs = JsonIO.load_json(handyfiles.msegs_in)
-        # Aggregate internal gains components (people + equipment only)
-        # into a single 'internal gains' node for heating/secondary heating/cooling
-        # demand microsegments. This prevents downstream double counting once logic
-        # skips originals when aggregate present.
-        try:
-            msegs = ECMPrepHelper.add_internal_gains_aggregate(msegs, handyvars.aeo_years)
-            logger.info("Applied internal gains aggregation (people + equipment)")
-
-        except Exception as e:
-            logger.warning(
-                f"Internal gains aggregation failed; proceeding without aggregation: {e}")
         # Import baseline cost, performance, and lifetime data
         bjszip = handyfiles.msegs_cpl_in
         with gzip.GzipFile(bjszip, 'r') as zip_ref:

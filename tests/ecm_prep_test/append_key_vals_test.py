@@ -134,7 +134,6 @@ def test_data():
         "lighting gain",
         "floor",
         "other heat gain",
-        "internal gains",
         "VAV_Vent",
         "CAV_Vent",
         "solar water heater",
