@@ -22,7 +22,7 @@ WITH meta_combined AS (
 		ts."out.electricity.interior_equipment.energy_consumption" as nonpc_office_equipment,
 		ts."out.electricity.interior_equipment.energy_consumption" as other_mels,
 		meta.weight,
-		meta."in.sqft..ft2" as sqft
+		meta."{sqft_col}" as sqft
 		FROM "{by_state_table}" as ts
 		LEFT JOIN "{meta_table}" as meta
 		ON ts.bldg_id = meta.bldg_id
