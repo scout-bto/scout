@@ -37,10 +37,18 @@ then runs the four SQL queries in `sql/` (ComStock/ResStock × EMM/state)
 concurrently against Athena and downloads the results to
 `csv/{commercial,residential}_{emm,state}_{stock_version}.csv`.
 
-- **`--stock_version {2025,2024}`** (default `2025`) selects which
+- **`--stock_version {2025,2024,2023}`** (default `2025`) selects which
   ComStock/ResStock release to query:
   - `2025` → ComStock 2025.3 / ResStock 2025.1
   - `2024` → ComStock 2024.2 / ResStock 2024.2
+  - `2023` → ComStock 2023.1 / ResStock 2024.2 -- pins ComStock back to its
+    2023.1 vintage (data-quality discrepancies were observed in the
+    2024.2/2025.3 ComStock releases) while keeping ResStock on its
+    already-validated 2024.2 vintage; there's no 2023 ResStock release to
+    pair it with anyway. Requires the `comstock_amy2018_release_2023.1_*`
+    Athena tables to exist in `scout_tsv` (a one-time Glue crawler run over
+    the 2023 ComStock S3 data -- see git history around this option's
+    introduction for the crawler config used).
 
   The version is baked into the cached CSV filename, so switching
   `--stock_version` between runs can't silently reuse a CSV cached from the

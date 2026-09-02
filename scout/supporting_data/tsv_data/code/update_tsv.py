@@ -34,10 +34,15 @@ BUCKET_NAME = 'yujie-bucket'
 # live one level up from this script, in supporting_data/tsv_data/
 TSV_DATA_DIR = ".."
 # ComStock/ResStock release versions queried by --stock_version. 2025 is the
-# default; 2024 is kept for backwards compatibility/comparison.
+# default; 2024 is kept for backwards compatibility/comparison. "2023" pins
+# ComStock back to its 2023.1 vintage (data-quality discrepancies were
+# observed in the 2024.2/2025.3 ComStock releases) while keeping ResStock on
+# its already-validated 2024.2 vintage -- there's no 2023 ResStock release to
+# pair it with anyway.
 STOCK_RELEASES = {
     "2025": {"comstock": "2025.3", "resstock": "2025.1"},
     "2024": {"comstock": "2024.2", "resstock": "2024.2"},
+    "2023": {"comstock": "2023.1", "resstock": "2024.2"},
 }
 
 # Standard-time (no-DST) UTC offset in hours for each state's dominant legal
@@ -213,6 +218,18 @@ def download_query_result(s3_client, result_loc, local_path):
     s3_client.download_file(bucket, key, local_path)
 
 
+# Whether a given (bstock_source, release) by_state table's "timestamp"
+# column is a native Athena TIMESTAMP (post-crawl) rather than an
+# epoch-nanosecond bigint -- confirmed directly against each table's Glue
+# schema. This is NOT simply a function of vintage: ComStock is bigint at
+# 2024.2 but native at both 2023.1 and 2025.3, so it can't be derived from
+# the --stock_version year the way meta_table/kwh/sqft_col below still can.
+NATIVE_TIMESTAMP_RELEASES = {
+    ("comstock", "2023.1"), ("comstock", "2025.3"),
+    ("resstock", "2025.1"),
+}
+
+
 def sql_template_vars(bstock_source, version):
     """ Build the {placeholder}: value substitutions the SQL templates in
     SQL_DIR need to target a given ResStock/ComStock release. The 2025
@@ -221,10 +238,13 @@ def sql_template_vars(bstock_source, version):
     of an epoch-nanosecond bigint, and (ResStock only) the metadata table
     was renamed from "..._metadata" to "..._parquet", its sqft column from
     "in.sqft" to "in.sqft..ft2", and its energy_consumption columns gained a
-    "..kwh" suffix. """
+    "..kwh" suffix. ComStock's sqft column is "in.sqft..ft2" in every
+    release except 2023, which (like old-style ResStock) only has
+    "in.sqft" -- confirmed directly against the 2023.1 metadata parquet's
+    schema, since that table predates the "..ft2" rename. """
     release = STOCK_RELEASES[version][bstock_source]
     by_state_table = f"{bstock_source}_amy2018_release_{release}_by_state"
-    if version == "2025":
+    if (bstock_source, release) in NATIVE_TIMESTAMP_RELEASES:
         ts_trunc = "DATE_TRUNC('hour', ts.\"timestamp\")"
     else:
         ts_trunc = ("DATE_TRUNC('hour', "
@@ -232,7 +252,8 @@ def sql_template_vars(bstock_source, version):
 
     if bstock_source == "comstock":
         meta_table = f"{bstock_source}_amy2018_release_{release}_parquet"
-        kwh, sqft_col = "", "in.sqft..ft2"
+        kwh = ""
+        sqft_col = "in.sqft" if version == "2023" else "in.sqft..ft2"
     else:
         if version == "2025":
             meta_table = f"{bstock_source}_amy2018_release_{release}_parquet"
@@ -797,6 +818,11 @@ def plot_peakday_hourly(opts):
         if opts.bstock == 'commercial':
             df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
         df = df[df['building_type'].isin(bts)].copy()
+        # A handful of buildings can fail the geo_map county join (e.g. a
+        # few ComStock 2023 buildings carry an unresolved "Not Applicable"
+        # county), leaving NaN in geodesc -- drop them rather than let the
+        # sort below crash on a float/str comparison.
+        df = df.dropna(subset=[geodesc])
         df['timestamp_hour'] = pd.to_datetime(df['timestamp_hour'])
         df['dayofyear'] = df['timestamp_hour'].dt.dayofyear
         df['total'] = df[energy_cols].sum(axis=1)
@@ -1399,7 +1425,8 @@ if __name__ == '__main__':
                         choices=list(STOCK_RELEASES.keys()),
                         help="ComStock/ResStock release year to query "
                         "(2025 = ComStock 2025.3/ResStock 2025.1, "
-                        "2024 = ComStock 2024.2/ResStock 2024.2). "
+                        "2024 = ComStock 2024.2/ResStock 2024.2, "
+                        "2023 = ComStock 2023.1/ResStock 2024.2). "
                         "Defaults to 2025.")
     opts = parser.parse_args()
     base_dir = getcwd()
