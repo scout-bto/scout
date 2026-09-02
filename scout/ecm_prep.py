@@ -6546,7 +6546,7 @@ class Measure(object):
                     else:
                         tsv_metrics_days = [
                             self.handyvars.tsv_metrics_data[
-                                "peak days"][season]]
+                                "peak days"][season][tsvmets_reg]]
 
                     # Set applicable daily hour range
                     # NOTE: for now, use peak/take periods from 2050 only

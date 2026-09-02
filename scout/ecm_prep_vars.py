@@ -1516,6 +1516,21 @@ class UsefulVars(object):
                             sysld_wint[sys_yr_str][reg], \
                             sysld_int[sys_yr_str][reg] = self.set_peak_take(
                                 sysload_dat_yr, self.emm_name_num_map[reg])
+                # Import the winter/summer day of year on which the total
+                # (commercial + residential) buildings sector baseline load
+                # peaks in each EMM region, per the tsv_load shape data
+                # (derived from ComStock/ResStock; see
+                # supporting_data/tsv_data/code/compute_peak_days.py).
+                # State regions reuse their representative EMM region's
+                # peak days (self.state_emm_map), consistent with how
+                # system load hours are handled above.
+                peak_days_dat = pd.read_csv(
+                    handyfiles.tsv_metrics_peak_days, index_col="Region")
+                peak_days_sum, peak_days_wint = ({
+                    reg: int(peak_days_dat.loc[
+                        reg, f"{season}PeakDay"])
+                    for reg in emm_region_names}
+                    for season in ("Summer", "Winter"))
                 self.tsv_metrics_data = {
                     "season days": {
                         "all": {
@@ -1541,13 +1556,12 @@ class UsefulVars(object):
                         "winter": sysld_wint,
                         "intermediate": sysld_int
                     },
-                    # Note: these currently correspond to the days in which the
-                    # overall Scout buildings sector winter and summer
-                    # baseline load peaks, given the tsv_load shape data
-                    # (which are based on EULP)
+                    # Winter/summer day of year (by EMM region) on which the
+                    # total Scout buildings sector baseline load peaks,
+                    # given the tsv_load shape data
                     "peak days": {
-                        "summer": 183,
-                        "winter": 1
+                        "summer": peak_days_sum,
+                        "winter": peak_days_wint
                     },
                     "hourly index": list(enumerate(
                         itertools.product(range(365), range(24))))
@@ -2166,6 +2180,7 @@ class UsefulInputFiles(object):
         self.tsv_metrics_data_net_ref = fp.TSV_DATA / "tsv_hrs_net_base.csv"
         self.tsv_metrics_data_tot_hr = fp.TSV_DATA / "tsv_hrs_tot_lowogs.csv"
         self.tsv_metrics_data_net_hr = fp.TSV_DATA / "tsv_hrs_net_lowogs.csv"
+        self.tsv_metrics_peak_days = fp.TSV_DATA / "tsv_peak_days_EMM.csv"
         self.health_data = fp.CONVERT_DATA / "epa_costs.csv"
         self.hp_convert_rates = fp.CONVERT_DATA / "hp_convert_rates.json"
         self.fug_emissions_dat = fp.CONVERT_DATA / "fugitive_emissions_convert.json"
