@@ -11482,9 +11482,13 @@ class MeasurePackage(Measure):
             for m in self.contributing_ECMs_eqp:
                 # Loop through all adoption scenarios
                 for a_s in self.handyvars.adopt_schemes_prep:
-                    # Shorthand deep copy of measure stock data
-                    stk_cpy = copy.deepcopy(m.markets[a_s]["mseg_adjust"][
-                        "contributing mseg keys and values"])
+                    # Shorthand deep copy of measure stock data. Use
+                    # _fast_copy_nested_dict instead of copy.deepcopy: stk_cpy
+                    # is only ever read from below (via stk_cpy[cm]["stock"]
+                    # [met]["measure"][yr], a numeric leaf), never mutated in
+                    # place, so reference-sharing the leaves is safe.
+                    stk_cpy = _fast_copy_nested_dict(m.markets[a_s][
+                        "mseg_adjust"]["contributing mseg keys and values"])
                     # Loop through all contributing msegs for measure
                     for cm in stk_cpy.keys():
                         # If contributing mseg is not already
@@ -12147,8 +12151,12 @@ class MeasurePackage(Measure):
         # to account for/remove direct overlaps with other measures
         if len(overlap_meas) != 0:
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop
-            msegs_meas_init = copy.deepcopy(msegs_meas)
+            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
+            # leaves out of msegs_meas_init (e.g. msegs_meas["energy"]["total"]
+            # ["baseline"][yr]), never mutates them in place, so
+            # reference-sharing the leaves is safe.
+            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
             # Find base and efficient adjustment fractions
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
                 self.find_base_eff_adj_fracs(
@@ -12359,8 +12367,11 @@ class MeasurePackage(Measure):
         if htcl_key_match in self.htcl_overlaps[
                 adopt_scheme]["data"].keys():
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop
-            msegs_meas_init = copy.deepcopy(msegs_meas)
+            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
+            # leaves out of msegs_meas_init, never mutates them in place, so
+            # reference-sharing the leaves is safe.
+            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
             # Find base and efficient adjustment fractions; directly
             # overlapping measures are none in this case
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
