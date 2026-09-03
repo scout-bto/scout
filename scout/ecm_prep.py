@@ -29,6 +29,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _fast_copy_measure(m):
+    """Fast copy of a Measure (or MeasurePackage) object.
+
+    copy.deepcopy on a Measure instance also deep-copies its handyvars
+    attribute in full. That undoes the shallow-copy-plus-selective-deepcopy
+    optimization Measure.__init__ already applies to handyvars (see its
+    comments there): handyvars wraps the large, shared UsefulVars object and
+    is deliberately shallow-copied, with only a handful of measure-specific
+    mutable sub-attributes (panel_shares, sf_to_house, the tsv_hourly_*
+    caches, save_shp_warn) deep-copied individually. Deep-copying handyvars
+    again here re-does that same large-object copy for every contributing
+    measure in every package (MeasurePackage.__init__ doesn't even copy its
+    own top-level handyvars attribute, for the same reason). This copies the
+    measure's other attributes with copy.deepcopy as before, but reuses its
+    already-shallow-copied handyvars object via copy.copy instead.
+    """
+    new_m = m.__class__.__new__(m.__class__)
+    for k, v in m.__dict__.items():
+        new_m.__dict__[k] = copy.copy(v) if k == "handyvars" else copy.deepcopy(v)
+    return new_m
+
+
 def _fast_copy_nested_dict(d):
     """Fast recursive copy of a nested dict/OrderedDict of dicts.
 
@@ -11183,7 +11205,9 @@ class MeasurePackage(Measure):
                  opts, convert_data):
         self.name = p
         self.handyvars = handyvars
-        self.contributing_ECMs = copy.deepcopy(measure_list_package)
+        # Use _fast_copy_measure instead of copy.deepcopy: see its docstring.
+        self.contributing_ECMs = [
+            _fast_copy_measure(m) for m in measure_list_package]
         # Check to ensure energy output settings for all measures that
         # contribute to the package are identical
         if not all([all([m.usr_opts[x] ==
