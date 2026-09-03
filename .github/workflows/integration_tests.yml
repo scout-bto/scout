@@ -68,6 +68,9 @@ jobs:
             steps=("ecm_prep" "run")
 
             # --- Profile FEATURE branch ---
+            # Clear ecm_prep cache so the feature branch starts from a cold cache
+            rm -rf generated/ecm_competition_data/*.pkl.gz
+            rm -f  generated/ecm_prep.json
             for step in "${steps[@]}"; do
               psrecord --log "memory_log_${step}_feature.txt" --include-children --interval 1 \
                 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
@@ -102,6 +105,11 @@ jobs:
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
             # --- Profile MASTER branch ---
+            # Clear cache so master also starts from a cold cache (otherwise
+            # it would load ecm_prep's cached output/competition data from
+            # the feature run above instead of recomputing it)
+            rm -rf generated/ecm_competition_data/*.pkl.gz
+            rm -f  generated/ecm_prep.json
             for step in "${steps[@]}"; do
               psrecord --log "memory_log_${step}_master.txt" --include-children --interval 1 \
                 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
