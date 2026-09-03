@@ -78,30 +78,33 @@ class JsonIO:
             raise ValueError(f"Error parsing JSON data: {str(e)}") from None
 
     @staticmethod
-    def dump_json(data, filepath: Path):
+    def dump_json(data, filepath: Path, indent: bool = False):
         """Export data to .json file
 
         Args:
             data: data to write to .json file
             filepath (pathlib.Path): filepath of .json file
+            indent (bool, optional): pretty-print with 2-space indentation.
+                Defaults to False (compact output) since most callers write
+                multi-hundred-MB generated result files that nothing reads
+                for human readability, and indentation adds meaningful
+                CPU/memory cost at that size. Pass True for small, hand-
+                curated/reviewed files (e.g. supporting_data references)
+                where staying diffable in git matters more than write speed.
         """
         if _ORJSON_AVAILABLE:
             # orjson is 5-10x faster than stdlib json for numeric-heavy data.
             # It natively serialises numpy scalars/arrays and does not require
             # a custom encoder. We request non-string keys (e.g. integer year
-            # keys) to be serialised. Output is compact (no indentation):
-            # nothing downstream parses these files for human readability,
-            # and indentation adds meaningful CPU/memory cost on the
-            # multi-hundred-MB files this is used for.
-            raw = _orjson.dumps(
-                data,
-                option=_orjson.OPT_NON_STR_KEYS,
-                default=_orjson_default,
-            )
+            # keys) to be serialised.
+            option = _orjson.OPT_NON_STR_KEYS
+            if indent:
+                option |= _orjson.OPT_INDENT_2
+            raw = _orjson.dumps(data, option=option, default=_orjson_default)
             Path(filepath).write_bytes(raw)
         else:
             with open(filepath, "w") as handle:
-                json.dump(data, handle, indent=2, cls=MyEncoder)
+                json.dump(data, handle, indent=2 if indent else None, cls=MyEncoder)
 
 
 class MyEncoder(json.JSONEncoder):

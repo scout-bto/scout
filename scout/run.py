@@ -8130,8 +8130,12 @@ def main(opts: argparse.NameSpace):  # noqa: F821
             # Open existing electric/HP conversion rates file, read in and append to the data
             existing_dict = JsonIO.load_json(handyfiles.elec_conv_fracs)
             existing_dict["data (by scenario)"][scn_name] = conv_fracs
-            # Write out updated data
-            JsonIO.dump_json(existing_dict, handyfiles.elec_conv_fracs)
+            # Write out updated data. Keep this file pretty-printed (unlike
+            # run.py's other JSON writes): it's a small, hand-curated
+            # reference dataset under supporting_data/, not a large generated
+            # results file, and staying diffable in git matters more here
+            # than write speed.
+            JsonIO.dump_json(existing_dict, handyfiles.elec_conv_fracs, indent=True)
             print("Calculations complete")
         print("Results finalized")
 
