@@ -503,10 +503,193 @@ class DataRestructuringFunctionTest(CommonUnitTest):
                                    self.com_cd_cz_array,
                                    self.cpl_bool,
                                    self.flag_map_dat,
-                                   first_cd_flag="",
-                                   ak_hi_res=None)
+                                   first_cd_flag="")
 
             self.dict_check(result, self.loutput[idx])
+
+
+class ComStockGapBlendingTest(CommonUnitTest):
+    """ Test that merge_sum blends in the ComStock "gap" disaggregation
+    factor for commercial building types with a nonzero electricity gap
+    fraction (flag_map_dat["com_gap_fracs"]), leaves building types absent
+    from that table (e.g. "unspecified") unblended, and never blends gap
+    into non-electric fuels (natural gas, distillate, other fuel), even for
+    a building type that's 100% gap for electricity. """
+
+    # Non-gap and gap EMM disaggregation factors for electricity heating,
+    # keyed by CDIV, matching the shape final_mseg_converter.py builds from
+    # the "heating" and "gap" End-use rows of the Com_Cdiv_EMM_*
+    # electricity CSVs
+    com_cd_cz_array_emm = np.array([
+        (1, 0.2389, 0.7611, 0.0, 0.0, 0.0),
+        (2, 0.1546, 0.3568, 0.4886, 0.0, 0.0)],
+        dtype=[('CDIV', '<i4'), ('TRE', '<f8'), ('FRCC', '<f8'),
+               ('ISNE', '<f8'), ('NWPP', '<f8'), ('MISE', '<f8')])
+    com_cd_cz_array_gap_emm = np.array([
+        (1, 0.9, 0.1, 0.0, 0.0, 0.0),
+        (2, 0.2, 0.3, 0.5, 0.0, 0.0)],
+        dtype=[('CDIV', '<i4'), ('TRE', '<f8'), ('FRCC', '<f8'),
+               ('ISNE', '<f8'), ('NWPP', '<f8'), ('MISE', '<f8')])
+
+    com_cd_cz_array_fuelsplit_gap = {
+        "electricity": {
+            "stock": {"water heating": com_cd_cz_array_emm,
+                      "gap": com_cd_cz_array_gap_emm},
+            "energy": {"water heating": com_cd_cz_array_emm,
+                       "gap": com_cd_cz_array_gap_emm}},
+        # No "gap" key here -- matches production, where only the
+        # electricity conversion data has a "gap" entry (see
+        # final_mseg_converter.main()). Confirms the non-electric-fuel
+        # path never even tries to look one up.
+        "natural gas": {
+            "stock": {"water heating": com_cd_cz_array_emm},
+            "energy": {"water heating": com_cd_cz_array_emm}}}
+
+    # com_gap_fracs.csv, in dict form, for "assembly" (fully gap, matching
+    # the real file's 100% assembly gap fraction) and "food service"
+    # (partially gap); "unspecified" is deliberately absent
+    flag_map_dat_gap = copy.deepcopy(CommonUnitTest.flag_map_dat)
+    flag_map_dat_gap["com_gap_fracs"] = {
+        "assembly": {"electricity": 1.0, "natural gas": 1.0},
+        "food service": {"electricity": 0.5, "natural gas": 0.5}}
+
+    def _make_input(self, bldg_type):
+        return {
+            bldg_type: {
+                "electricity": {
+                    "water heating": {
+                        "stock": {"2009": 100},
+                        "energy": {"2009": 200}}}}}
+
+    def test_full_gap_building_type(self):
+        # "assembly" is 100% gap for electricity -- the blended factor
+        # should equal the gap factor exactly
+        base_input = self._make_input("assembly")
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_gap,
+            self.com_cd_cz_array_fuelsplit_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        gap_fact = float(self.com_cd_cz_array_gap_emm[0]["TRE"])
+        expected = {"assembly": {"electricity": {"water heating": {
+            "stock": {"2009": 100 * gap_fact},
+            "energy": {"2009": 200 * gap_fact}}}}}
+        self.dict_check(result, expected)
+
+    def test_partial_gap_building_type(self):
+        # "food service" is 50% gap for electricity -- the blended factor
+        # should be the weighted average of the gap and non-gap factors
+        base_input = self._make_input("food service")
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_gap,
+            self.com_cd_cz_array_fuelsplit_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        nongap_fact = float(self.com_cd_cz_array_emm[0]["TRE"])
+        gap_fact = float(self.com_cd_cz_array_gap_emm[0]["TRE"])
+        blended = 0.5 * gap_fact + 0.5 * nongap_fact
+        expected = {"food service": {"electricity": {"water heating": {
+            "stock": {"2009": 100 * blended},
+            "energy": {"2009": 200 * blended}}}}}
+        self.dict_check(result, expected)
+
+    def test_building_type_absent_from_gap_fracs_is_unblended(self):
+        # "unspecified" has no entry in com_gap_fracs -- factor should be
+        # identical to the plain non-gap disaggregation factor
+        base_input = self._make_input("unspecified")
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_gap,
+            self.com_cd_cz_array_fuelsplit_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        nongap_fact = float(self.com_cd_cz_array_emm[0]["TRE"])
+        expected = {"unspecified": {"electricity": {"water heating": {
+            "stock": {"2009": 100 * nongap_fact},
+            "energy": {"2009": 200 * nongap_fact}}}}}
+        self.dict_check(result, expected)
+
+    def test_non_electric_fuel_never_blended(self):
+        # "assembly" is 100% gap for electricity per com_gap_fracs, but gap
+        # blending is restricted to electricity -- a natural gas segment for
+        # the same building type should come out identical to the plain
+        # non-gap factor, unaffected by com_gap_fracs' "natural gas" column.
+        base_input = {
+            "assembly": {
+                "natural gas": {
+                    "water heating": {
+                        "stock": {"2009": 100},
+                        "energy": {"2009": 200}}}}}
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_gap,
+            self.com_cd_cz_array_fuelsplit_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        nongap_fact = float(self.com_cd_cz_array_emm[0]["TRE"])
+        expected = {"assembly": {"natural gas": {"water heating": {
+            "stock": {"2009": 100 * nongap_fact},
+            "energy": {"2009": 200 * nongap_fact}}}}}
+        self.dict_check(result, expected)
+
+    # Technology-level non-gap and gap disaggregation factors, matching the
+    # shape final_mseg_converter.py builds from a "cooling"/"rooftop_AC" row
+    # and a "gap"/"all" row in the Com_Cdiv_EMM_*_electricity_Tech.csv files
+    com_cd_cz_array_tech_emm = np.array([
+        (1, "rooftop_AC", 0.3, 0.7, 0.0, 0.0, 0.0),
+        (2, "rooftop_AC", 0.4, 0.2, 0.4, 0.0, 0.0)],
+        dtype=[('CDIV', '<i4'), ('Technology', 'U20'), ('TRE', '<f8'),
+               ('FRCC', '<f8'), ('ISNE', '<f8'), ('NWPP', '<f8'), ('MISE', '<f8')])
+    com_cd_cz_array_gap_tech_emm = np.array([
+        (1, "all", 0.9, 0.1, 0.0, 0.0, 0.0),
+        (2, "all", 0.2, 0.3, 0.5, 0.0, 0.0)],
+        dtype=[('CDIV', '<i4'), ('Technology', 'U20'), ('TRE', '<f8'),
+               ('FRCC', '<f8'), ('ISNE', '<f8'), ('NWPP', '<f8'), ('MISE', '<f8')])
+
+    com_cd_cz_array_fuelsplit_tech_gap = {
+        "electricity": {
+            "stock": {"cooling": com_cd_cz_array_tech_emm,
+                      "gap": com_cd_cz_array_gap_tech_emm},
+            "energy": {"cooling": com_cd_cz_array_tech_emm,
+                       "gap": com_cd_cz_array_gap_tech_emm}}}
+
+    def test_partial_gap_technology_level(self):
+        # When reading from a technology-level file, the gap row is tagged
+        # Technology == "all" (it has no real per-technology breakdown) and
+        # should be matched on that tag rather than on the current tech_flag
+        # ("rooftop_AC" here) -- confirms merge_sum's Technology-aware gap
+        # array indexing, on top of the usual gap/non-gap fraction blend.
+        base_input = {
+            "food service": {
+                "electricity": {
+                    "cooling": {
+                        "supply": {
+                            "rooftop_AC": {
+                                "stock": {"2009": 100},
+                                "energy": {"2009": 200}}}}}}}
+        add_input = copy.deepcopy(base_input)
+        result = fmc.merge_sum(
+            base_input, add_input, 0, "TRE",
+            self.com_cd_cz_array_fuelsplit_tech_gap,
+            self.com_cd_cz_array_fuelsplit_tech_gap,
+            False, self.flag_map_dat_gap, first_cd_flag=True)
+
+        nongap_fact = float(self.com_cd_cz_array_tech_emm[
+            self.com_cd_cz_array_tech_emm['Technology'] == 'rooftop_AC'][0]['TRE'])
+        gap_fact = float(self.com_cd_cz_array_gap_tech_emm[
+            self.com_cd_cz_array_gap_tech_emm['Technology'] == 'all'][0]['TRE'])
+        blended = 0.5 * gap_fact + 0.5 * nongap_fact
+        expected = {"food service": {"electricity": {"cooling": {"supply": {
+            "rooftop_AC": {
+                "stock": {"2009": 100 * blended},
+                "energy": {"2009": 200 * blended}}}}}}}
+        self.dict_check(result, expected)
 
 
 class ToClimateZoneConversionTest(CommonUnitTest):
@@ -2853,7 +3036,7 @@ class ToClimateZoneConversionTest(CommonUnitTest):
                                    self.com_cd_cz_array,
                                    self.user_input_nrgstk,
                                    self.flag_map_dat, self.aia_list,
-                                   self.cdiv_list, ak_hi_res=None)
+                                   self.cdiv_list)
         dict2 = self.test_energy_stock_output
         self.dict_check(dict1, dict2)
 
@@ -2865,7 +3048,7 @@ class ToClimateZoneConversionTest(CommonUnitTest):
                                    self.res_cd_cz_array_fuelsplit,
                                    self.com_cd_cz_array_fuelsplit,
                                    self.user_input_nrgstk, self.flag_map_dat,
-                                   self.emm_list, self.cdiv_list, ak_hi_res=None)
+                                   self.emm_list, self.cdiv_list)
         dict2 = self.test_energy_stock_output_emm
         self.dict_check(dict1, dict2)
 
@@ -2878,7 +3061,7 @@ class ToClimateZoneConversionTest(CommonUnitTest):
                                    self.com_cd_cz_wtavg_array,
                                    self.user_input_cpl,
                                    self.flag_map_dat, self.aia_list,
-                                   self.cdiv_list, ak_hi_res=None)
+                                   self.cdiv_list)
         dict2 = self.test_cpl_output
         self.dict_check(dict1, dict2)
 
@@ -2890,7 +3073,7 @@ class ToClimateZoneConversionTest(CommonUnitTest):
                                    self.res_cd_cz_wtavg_array_fuelsplit,
                                    self.com_cd_cz_wtavg_array_fuelsplit,
                                    self.user_input_cpl, self.flag_map_dat,
-                                   self.emm_list, self.cdiv_list, ak_hi_res=None)
+                                   self.emm_list, self.cdiv_list)
         dict2 = self.test_cpl_output_emm
         self.dict_check(dict1, dict2)
 
