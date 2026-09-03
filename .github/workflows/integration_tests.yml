@@ -75,6 +75,7 @@ jobs:
               psrecord --log "memory_log_${step}_feature.txt" --include-children --interval 1 \
                 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
               mv "results/profile_${step}.csv" "results/profile_${step}_feature.csv"
+              mv "results/profile_${step}.pstats" "results/profile_${step}_feature.pstats"
               mv "memory_log_${step}_feature.txt" "results/memory_log_${step}_feature.txt"
             done
 
@@ -114,6 +115,7 @@ jobs:
               psrecord --log "memory_log_${step}_master.txt" --include-children --interval 1 \
                 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
               mv "results/profile_${step}.csv" "results/profile_${step}_master.csv"
+              mv "results/profile_${step}.pstats" "results/profile_${step}_master.pstats"
               mv "memory_log_${step}_master.txt" "results/memory_log_${step}_master.txt"
             done
 
