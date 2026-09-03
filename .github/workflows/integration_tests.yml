@@ -20,6 +20,7 @@ jobs:
       has_json_diff: ${{ steps.compare.outputs.has_json_diff }}
       has_plot_diff: ${{ steps.compare.outputs.has_plot_diff }}
       changed_plots: ${{ steps.compare.outputs.changed_plots }}
+      profile_comparison: ${{ steps.profile_comparison.outputs.profile_comparison }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,16 +57,101 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -c .github/constraints.txt ".[dev]"
-      - name: Run workflow
+          pip install -c .github/constraints.txt ".[dev]" psrecord
+      - name: Run and profile workflow
         env:
+          ENABLE_PROFILER: ${{ inputs.enable_profiler || (github.ref == 'refs/heads/master') }}
           SOURCE_DATE_EPOCH: '0'
         run: |
           mkdir -p results
-          python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
+          if [[ "$ENABLE_PROFILER" == 'true' ]]; then
+            steps=("ecm_prep" "run")
+
+            # --- Profile FEATURE branch ---
+            for step in "${steps[@]}"; do
+              psrecord --log "memory_log_${step}_feature.txt" --include-children --interval 1 \
+                "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
+              mv "results/profile_${step}.csv" "results/profile_${step}_feature.csv"
+              mv "memory_log_${step}_feature.txt" "results/memory_log_${step}_feature.txt"
+            done
+
+            # --- Checkout master, on the same runner, back-to-back ---
+            git fetch --depth=1 origin master
+            git stash  # stash any result files to avoid conflicts
+            git checkout origin/master -- .
+
+            # Use feature branch's integration_test.yml so this is a code-only
+            # comparison — otherwise master runs a lighter config and the
+            # timing delta stops meaning anything.
+            git fetch --depth=1 origin ${{ github.event.pull_request.head.sha || github.sha }}
+            git show ${{ github.event.pull_request.head.sha || github.sha }}:tests/integration_testing/integration_test.yml > tests/integration_testing/integration_test.yml
+
+            # Use feature branch's out_break_czones scoping fix.
+            # TEMPORARY, remove once this branch merges to master. Master's
+            # ecm_prep_vars.py always builds the full 50-state out_break_czones
+            # breakout regardless of ecm_field_updates.climate_zone; the feature
+            # branch scopes it to match. Without this overlay, master does
+            # strictly more work (building/copying breakout data for 47 unused
+            # states) than feature on the same yml, which conflates "less work"
+            # with "faster code" in the timing comparison. This overlay is the
+            # only diff between master's and feature's ecm_prep_vars.py, so it
+            # doesn't pull in any of the actual perf-tuning changes being
+            # profiled — it only equalizes the two branches' workload.
+            git show ${{ github.event.pull_request.head.sha || github.sha }}:scout/ecm_prep_vars.py > scout/ecm_prep_vars.py
+
+            pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
+
+            # --- Profile MASTER branch ---
+            for step in "${steps[@]}"; do
+              psrecord --log "memory_log_${step}_master.txt" --include-children --interval 1 \
+                "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
+              mv "results/profile_${step}.csv" "results/profile_${step}_master.csv"
+              mv "memory_log_${step}_master.txt" "results/memory_log_${step}_master.txt"
+            done
+
+            # --- Restore feature branch ---
+            git checkout ${{ github.event.pull_request.head.sha || github.sha }} -- .
+            pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
+
+            # --- Comparison ---
+            echo "=== Profiling Comparison ===" | tee results/profile_comparison.txt
+
+            for step in "${steps[@]}"; do
+              echo "" | tee -a results/profile_comparison.txt
+              echo "--- Step: $step ---" | tee -a results/profile_comparison.txt
+
+              # Elapsed time = col 1 of the last data row of each psrecord memory log
+              m_time=$(grep -v "^#" "results/memory_log_${step}_master.txt"  | grep -v "^$" | tail -n 1 | awk '{print $1}')
+              f_time=$(grep -v "^#" "results/memory_log_${step}_feature.txt" | grep -v "^$" | tail -n 1 | awk '{print $1}')
+
+              echo "Master  elapsed time: ${m_time}s" | tee -a results/profile_comparison.txt
+              echo "Feature elapsed time: ${f_time}s" | tee -a results/profile_comparison.txt
+
+              if [[ -n "$m_time" && -n "$f_time" ]]; then
+                abs_diff=$(awk "BEGIN {printf \"%.2f\", $m_time - $f_time}")
+                pct=$(awk "BEGIN {printf \"%.2f\", ($m_time - $f_time) / $m_time * 100}")
+                printf "Δ Time: %ss (%.2f%% improvement in feature vs master)\n" "$abs_diff" "$pct" | tee -a results/profile_comparison.txt
+              fi
+            done
+
+          else
+            python tests/integration_testing/run_workflow.py --yaml tests/integration_testing/integration_test.yml
+          fi
+
           find ./tests/integration_testing/results -mindepth 1 -delete
           mv ./results/* ./tests/integration_testing/results/
           mv ./generated/log_*.txt ./tests/integration_testing/results/ 2>/dev/null || true
+      - name: Capture profiler comparison output
+        id: profile_comparison
+        run: |
+          if [[ -f "tests/integration_testing/results/profile_comparison.txt" ]]; then
+            content=$(cat tests/integration_testing/results/profile_comparison.txt)
+            echo "profile_comparison<<EOF" >> $GITHUB_OUTPUT
+            echo "$content" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "profile_comparison=" >> $GITHUB_OUTPUT
+          fi
       - name: Compare integration test results
         id: compare
         run: |
@@ -315,167 +401,13 @@ jobs:
             exit 1
           fi
 
-  # Profiler comparison runs in its own pair of jobs (one per branch) rather
-  # than sequentially in run-test, so each leg gets a fresh runner with the
-  # full memory/disk budget instead of sharing one VM back-to-back — a
-  # sequential double-run of this test's workload (retrofits, aggressive
-  # sub_fed_policy, high_res_comp) has been enough to crash the runner.
-  profile-feature:
-    name: Profile Feature Branch
-    if: ${{ inputs.enable_profiler || (github.ref == 'refs/heads/master') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 1
-      - name: Set up Python 3.10.17
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10.17'
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -c .github/constraints.txt ".[dev]" psrecord
-      - name: Profile feature branch
-        env:
-          SOURCE_DATE_EPOCH: '0'
-        run: |
-          mkdir -p results
-          for step in ecm_prep run; do
-            psrecord --log "memory_log_${step}_feature.txt" --include-children --interval 1 \
-              "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
-            mv "results/profile_${step}.csv" "profile_${step}_feature.csv"
-          done
-      - name: Upload feature profile artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: profile-feature
-          path: |
-            profile_ecm_prep_feature.csv
-            profile_run_feature.csv
-            memory_log_ecm_prep_feature.txt
-            memory_log_run_feature.txt
-
-  profile-master:
-    name: Profile Master Branch
-    if: ${{ inputs.enable_profiler || (github.ref == 'refs/heads/master') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: master
-          fetch-depth: 1
-      - name: Use feature branch's integration_test.yml
-        # Keep the same test workload as the feature branch so this is a
-        # code-only comparison — otherwise master runs a lighter config and
-        # the timing delta stops meaning anything.
-        run: |
-          git fetch --depth=1 origin ${{ github.event.pull_request.head.sha || github.sha }}
-          git show ${{ github.event.pull_request.head.sha || github.sha }}:tests/integration_testing/integration_test.yml > tests/integration_testing/integration_test.yml
-      - name: Use feature branch's out_break_czones scoping fix
-        # TEMPORARY, remove once this branch merges to master. Master's
-        # ecm_prep_vars.py always builds the full 50-state out_break_czones
-        # breakout regardless of ecm_field_updates.climate_zone; the feature
-        # branch scopes it to match. Without this overlay, master does
-        # strictly more work (building/copying breakout data for 47 unused
-        # states) than feature on the same yml, which conflates "less work"
-        # with "faster code" in the timing comparison. This overlay is the
-        # only diff between master's and feature's ecm_prep_vars.py, so it
-        # doesn't pull in any of the actual perf-tuning changes being
-        # profiled — it only equalizes the two branches' workload.
-        run: |
-          git show ${{ github.event.pull_request.head.sha || github.sha }}:scout/ecm_prep_vars.py > scout/ecm_prep_vars.py
-      - name: Set up Python 3.10.17
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10.17'
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -c .github/constraints.txt ".[dev]" psrecord
-      - name: Profile master branch
-        env:
-          SOURCE_DATE_EPOCH: '0'
-        run: |
-          mkdir -p results
-          for step in ecm_prep run; do
-            psrecord --log "memory_log_${step}_master.txt" --include-children --interval 1 \
-              "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
-            mv "results/profile_${step}.csv" "profile_${step}_master.csv"
-          done
-      - name: Upload master profile artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: profile-master
-          path: |
-            profile_ecm_prep_master.csv
-            profile_run_master.csv
-            memory_log_ecm_prep_master.txt
-            memory_log_run_master.txt
-
-  profile-compare:
-    name: Compare Profiler Results
-    needs: [profile-feature, profile-master]
-    if: ${{ inputs.enable_profiler || (github.ref == 'refs/heads/master') }}
-    runs-on: ubuntu-latest
-    outputs:
-      profile_comparison: ${{ steps.compare.outputs.profile_comparison }}
-    steps:
-      - name: Download feature profile artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: profile-feature
-          path: results
-      - name: Download master profile artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: profile-master
-          path: results
-      - name: Build profiler comparison
-        id: compare
-        run: |
-          echo "=== Profiling Comparison ===" | tee profile_comparison.txt
-
-          for step in ecm_prep run; do
-            echo "" | tee -a profile_comparison.txt
-            echo "--- Step: $step ---" | tee -a profile_comparison.txt
-
-            # Elapsed time = col 1 of the last data row of each psrecord memory log
-            m_time=$(grep -v "^#" "results/memory_log_${step}_master.txt"  | grep -v "^$" | tail -n 1 | awk '{print $1}')
-            f_time=$(grep -v "^#" "results/memory_log_${step}_feature.txt" | grep -v "^$" | tail -n 1 | awk '{print $1}')
-
-            echo "Master  elapsed time: ${m_time}s" | tee -a profile_comparison.txt
-            echo "Feature elapsed time: ${f_time}s" | tee -a profile_comparison.txt
-
-            if [[ -n "$m_time" && -n "$f_time" ]]; then
-              abs_diff=$(awk "BEGIN {printf \"%.2f\", $m_time - $f_time}")
-              pct=$(awk "BEGIN {printf \"%.2f\", ($m_time - $f_time) / $m_time * 100}")
-              printf "Δ Time: %ss (%.2f%% improvement in feature vs master)\n" "$abs_diff" "$pct" | tee -a profile_comparison.txt
-            fi
-          done
-
-          content=$(cat profile_comparison.txt)
-          echo "profile_comparison<<EOF" >> $GITHUB_OUTPUT
-          echo "$content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      - name: Upload profiler comparison artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: profile-comparison
-          path: |
-            profile_comparison.txt
-            results/
-
   # Build a Markdown summary of the integration test run (Ubuntu baseline +
   # cross-platform results, diff details, and before/after plot images) and
   # post it as a comment on the pull request so reviewers can quickly see
   # the current state of the integration tests.
   post-pr-comment:
     name: Post PR Comment
-    needs: [run-test, cross-platform-test, profile-compare]
+    needs: [run-test, cross-platform-test]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -504,7 +436,7 @@ jobs:
           HAS_JSON_DIFF: ${{ needs.run-test.outputs.has_json_diff }}
           HEAD_REF: ${{ github.head_ref }}
           CROSS_PLATFORM_RESULT: ${{ needs.cross-platform-test.result }}
-          PROFILE_COMPARISON: ${{ needs.profile-compare.outputs.profile_comparison }}
+          PROFILE_COMPARISON: ${{ needs.run-test.outputs.profile_comparison }}
         with:
           script: |
             const fs = require('fs');
