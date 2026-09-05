@@ -63,20 +63,31 @@ def run_with_profiler(
     pr.enable()
     func(args)
     pr.disable()
-    write_profile_stats(pr, output_file)
+    # Build the stats snapshot once and reuse it for both outputs below.
+    # Constructing pstats.Stats(pr) triggers cProfile.Profile.create_stats(),
+    # which fully rebuilds the profiler's internal stats dict from scratch.
+    # Doing that twice (once per output, as this used to) roughly doubles
+    # peak memory right after a long, memory-heavy profiled run — on a
+    # constrained CI runner that was enough to get the process OOM-killed
+    # partway through (write_profile_stats's .csv would land, then the
+    # process would die before dump_profile_stats's .pstats got written).
+    stats = pstats.Stats(pr).sort_stats("cumulative")
+    write_profile_stats(stats, output_file)
+    dump_profile_stats(stats, output_file.with_suffix(".pstats"))
 
 
-def write_profile_stats(pr: cProfile.Profile, filepath: pathlib.Path) -> None:  # noqa: F821
+def write_profile_stats(stats: pstats.Stats, filepath: pathlib.Path) -> None:  # noqa: F821
     """Writes profile stats and stores a .csv file
 
     Args:
-        pr (cProfile.Profile): Profile instance that has previously been enabled (pr.enable())
+        stats (pstats.Stats): Stats snapshot built from a completed profiler run
         filepath (pathlib.Path): .csv filepath to write profiling stats
     """
 
     # Capture io stream
     result = io.StringIO()
-    pstats.Stats(pr, stream=result).sort_stats("cumulative").print_stats()
+    stats.stream = result
+    stats.print_stats()
     result = result.getvalue()
 
     # Parse stats and write to csv
@@ -90,6 +101,27 @@ def write_profile_stats(pr: cProfile.Profile, filepath: pathlib.Path) -> None:  
     f.write(result_out)
     f.close()
     logger.info(f"Wrote profiler stats to {filepath}")
+
+
+def dump_profile_stats(stats: pstats.Stats, filepath: pathlib.Path) -> None:  # noqa: F821
+    """Dumps the raw profile stats to a binary .pstats file.
+
+    Cumulative/self time alone can't tell you which of several call sites for
+    a hot function is actually responsible for the time — that needs caller
+    info, which write_profile_stats' cumulative-sorted CSV dump doesn't
+    capture. Rather than pre-guessing which functions are worth that detail
+    and baking a fixed filter in here, this dumps the full raw stats so any
+    future investigation can load it and query whatever it needs, e.g.:
+        pstats.Stats("profile_ecm_prep.pstats").print_callers("deepcopy")
+    or visualize it with snakeviz / gprof2dot.
+
+    Args:
+        stats (pstats.Stats): Stats snapshot built from a completed profiler run
+        filepath (pathlib.Path): .pstats filepath to write raw stats to
+    """
+
+    stats.dump_stats(filepath)
+    logger.info(f"Wrote raw profiler stats to {filepath}")
 
 
 if __name__ == "__main__":

@@ -29,6 +29,47 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _fast_copy_measure(m):
+    """Fast copy of a Measure (or MeasurePackage) object.
+
+    copy.deepcopy on a Measure instance also deep-copies its handyvars
+    attribute in full. That undoes the shallow-copy-plus-selective-deepcopy
+    optimization Measure.__init__ already applies to handyvars (see its
+    comments there): handyvars wraps the large, shared UsefulVars object and
+    is deliberately shallow-copied, with only a handful of measure-specific
+    mutable sub-attributes (panel_shares, sf_to_house, the tsv_hourly_*
+    caches, save_shp_warn) deep-copied individually. Deep-copying handyvars
+    again here re-does that same large-object copy for every contributing
+    measure in every package (MeasurePackage.__init__ doesn't even copy its
+    own top-level handyvars attribute, for the same reason). This copies the
+    measure's other attributes with copy.deepcopy as before, but reuses its
+    already-shallow-copied handyvars object via copy.copy instead.
+    """
+    new_m = m.__class__.__new__(m.__class__)
+    for k, v in m.__dict__.items():
+        new_m.__dict__[k] = copy.copy(v) if k == "handyvars" else copy.deepcopy(v)
+    return new_m
+
+
+def _fast_copy_nested_dict(d):
+    """Fast recursive copy of a nested dict/OrderedDict of dicts.
+
+    Significantly faster than copy.deepcopy for trees such as
+    handyvars.out_break_in, which are built entirely of nested dict/
+    OrderedDict containers. copy.deepcopy is unusually slow for OrderedDict
+    because it copies via the generic __reduce_ex__-based reconstruction
+    path rather than the fast path used for plain dict. Non-dict leaf
+    values are copied by reference, which is safe because out_break_in's
+    leaves are always empty dict/OrderedDict containers at the point this
+    is used (later code fills them in with new values rather than mutating
+    shared leaf objects in place).
+    """
+    out = d.__class__()
+    for k, v in d.items():
+        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+    return out
+
+
 class ECMPrepHelper:
     """Shared methods used throughout ecm_prep.py"""
 
@@ -1070,9 +1111,12 @@ class Measure(object):
 
             # Helper for a fresh, independent deep-copy of the out_break_in.
             # Each breakout slot needs its own copy so accumulation into one slot
-            # doesn't alias into the others.
+            # doesn't alias into the others. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: out_break_in is a pure nested dict/OrderedDict tree,
+            # and copy.deepcopy is much slower for OrderedDict than the equivalent
+            # hand-rolled recursive copy.
             def _obi():
-                return copy.deepcopy(self.handyvars.out_break_in)
+                return _fast_copy_nested_dict(self.handyvars.out_break_in)
 
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
@@ -3145,11 +3189,27 @@ class Measure(object):
                         # else set to empty list
                         if self.handyvars.incentives is not None and \
                                 len(self.handyvars.incentives) != 0:
+                            # Build (and cache on handyvars, shared across all measures/msegs in
+                            # the current run) an index of incentives rows keyed by (region,
+                            # building type, vintage) the first time it's needed. Avoids a full
+                            # linear scan of self.handyvars.incentives -- which can have
+                            # thousands of rows from the itertools.product expansion in
+                            # import_state_data -- on every call; this was previously a major
+                            # hot loop cost.
+                            incent_by_key = getattr(
+                                self.handyvars, "_incentives_by_key", None)
+                            if incent_by_key is None:
+                                incent_by_key = {}
+                                for x in self.handyvars.incentives:
+                                    incent_by_key.setdefault(
+                                        (x[0], x[1], x[2]), []).append(x)
+                                self.handyvars._incentives_by_key = incent_by_key
                             # Pull any relevant incentives mod data that apply to current mseg
-                            incent_mod = [x for x in self.handyvars.incentives if (
-                                [x[0], x[1], x[2]] == [mskeys[1], mskeys[2], mskeys[-1]]
-                                # reg/bldg/vnt
-                                and (x[3] == "all" or x[3] == mskeys[4]))]  # end use
+                            # (reg/bldg/vnt restriction handled by the key lookup above)
+                            incent_mod = [
+                                x for x in incent_by_key.get(
+                                    (mskeys[1], mskeys[2], mskeys[-1]), [])
+                                if (x[3] == "all" or x[3] == mskeys[4])]  # end use
                             # Distinguish between modifications that apply to an applicable base seg
                             # vs. a segment that a measure switches to (the latter is only relevant
                             # for fuel or technology switching measures)
@@ -11145,7 +11205,9 @@ class MeasurePackage(Measure):
                  opts, convert_data):
         self.name = p
         self.handyvars = handyvars
-        self.contributing_ECMs = copy.deepcopy(measure_list_package)
+        # Use _fast_copy_measure instead of copy.deepcopy: see its docstring.
+        self.contributing_ECMs = [
+            _fast_copy_measure(m) for m in measure_list_package]
         # Check to ensure energy output settings for all measures that
         # contribute to the package are identical
         if not all([all([m.usr_opts[x] ==
@@ -11378,22 +11440,29 @@ class MeasurePackage(Measure):
 
             # Add market breakout information
 
+            # Helper for a fresh, independent copy of out_break_in. Use
+            # _fast_copy_nested_dict instead of copy.deepcopy: out_break_in is a
+            # pure nested dict/OrderedDict tree, and copy.deepcopy is much slower
+            # for OrderedDict than the equivalent hand-rolled recursive copy.
+            def _obi():
+                return _fast_copy_nested_dict(self.handyvars.out_break_in)
+
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": copy.deepcopy(self.handyvars.out_break_in),
-                "efficient": copy.deepcopy(self.handyvars.out_break_in),
-                "savings": copy.deepcopy(self.handyvars.out_break_in)} for
+                "baseline": _obi(),
+                "efficient": _obi(),
+                "savings": _obi()} for
                 key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
-                    key: copy.deepcopy(self.handyvars.out_break_in) for
+                    key: _obi() for
                     key in ["baseline", "efficient"]}
             # Add stock cost breakouts, contingent on user selecting these
             if self.usr_opts["cap_invest"]:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["capital cost"] = {
-                        key: copy.deepcopy(self.handyvars.out_break_in) for
+                        key: _obi() for
                         key in ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this additional
@@ -11404,8 +11473,7 @@ class MeasurePackage(Measure):
                     self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"][
                     "efficient-captured-envelope"] = \
-                    (copy.deepcopy(self.handyvars.out_break_in) for n in
-                     range(2))
+                    (_obi() for n in range(2))
 
     def merge_measures(self, opts):
         """Merge the markets information of multiple individual measures.
@@ -11438,9 +11506,13 @@ class MeasurePackage(Measure):
             for m in self.contributing_ECMs_eqp:
                 # Loop through all adoption scenarios
                 for a_s in self.handyvars.adopt_schemes_prep:
-                    # Shorthand deep copy of measure stock data
-                    stk_cpy = copy.deepcopy(m.markets[a_s]["mseg_adjust"][
-                        "contributing mseg keys and values"])
+                    # Shorthand deep copy of measure stock data. Use
+                    # _fast_copy_nested_dict instead of copy.deepcopy: stk_cpy
+                    # is only ever read from below (via stk_cpy[cm]["stock"]
+                    # [met]["measure"][yr], a numeric leaf), never mutated in
+                    # place, so reference-sharing the leaves is safe.
+                    stk_cpy = _fast_copy_nested_dict(m.markets[a_s][
+                        "mseg_adjust"]["contributing mseg keys and values"])
                     # Loop through all contributing msegs for measure
                     for cm in stk_cpy.keys():
                         # If contributing mseg is not already
@@ -12103,8 +12175,12 @@ class MeasurePackage(Measure):
         # to account for/remove direct overlaps with other measures
         if len(overlap_meas) != 0:
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop
-            msegs_meas_init = copy.deepcopy(msegs_meas)
+            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
+            # leaves out of msegs_meas_init (e.g. msegs_meas["energy"]["total"]
+            # ["baseline"][yr]), never mutates them in place, so
+            # reference-sharing the leaves is safe.
+            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
             # Find base and efficient adjustment fractions
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
                 self.find_base_eff_adj_fracs(
@@ -12315,8 +12391,11 @@ class MeasurePackage(Measure):
         if htcl_key_match in self.htcl_overlaps[
                 adopt_scheme]["data"].keys():
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop
-            msegs_meas_init = copy.deepcopy(msegs_meas)
+            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
+            # leaves out of msegs_meas_init, never mutates them in place, so
+            # reference-sharing the leaves is safe.
+            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
             # Find base and efficient adjustment fractions; directly
             # overlapping measures are none in this case
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \

@@ -71,38 +71,52 @@ jobs:
             # Clear ecm_prep cache so the feature branch starts from a cold cache
             rm -rf generated/ecm_competition_data/*.pkl.gz
             rm -f  generated/ecm_prep.json
-
             for step in "${steps[@]}"; do
-              log_file="memory_log_feature_${step}.txt"
-
-              psrecord --log "$log_file" --include-children --interval 1 \
+              psrecord --log "memory_log_${step}_feature.txt" --include-children --interval 1 \
                 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
-
-              # run_workflow.py writes cProfile stats to results/profile_${step}.csv — rename with branch suffix
               mv "results/profile_${step}.csv" "results/profile_${step}_feature.csv"
-              mv "$log_file" "results/memory_log_${step}_feature.txt"
+              mv "results/profile_${step}.pstats" "results/profile_${step}_feature.pstats"
+              mv "memory_log_${step}_feature.txt" "results/memory_log_${step}_feature.txt"
             done
 
-            # --- Checkout master ---
+            # --- Checkout master, on the same runner, back-to-back ---
             git fetch --depth=1 origin master
             git stash  # stash any result files to avoid conflicts
             git checkout origin/master -- .
+
+            # Use feature branch's integration_test.yml so this is a code-only
+            # comparison — otherwise master runs a lighter config and the
+            # timing delta stops meaning anything.
+            git fetch --depth=1 origin ${{ github.event.pull_request.head.sha || github.sha }}
+            git show ${{ github.event.pull_request.head.sha || github.sha }}:tests/integration_testing/integration_test.yml > tests/integration_testing/integration_test.yml
+
+            # Use feature branch's out_break_czones scoping fix.
+            # TEMPORARY, remove once this branch merges to master. Master's
+            # ecm_prep_vars.py always builds the full 50-state out_break_czones
+            # breakout regardless of ecm_field_updates.climate_zone; the feature
+            # branch scopes it to match. Without this overlay, master does
+            # strictly more work (building/copying breakout data for 47 unused
+            # states) than feature on the same yml, which conflates "less work"
+            # with "faster code" in the timing comparison. This overlay is the
+            # only diff between master's and feature's ecm_prep_vars.py, so it
+            # doesn't pull in any of the actual perf-tuning changes being
+            # profiled — it only equalizes the two branches' workload.
+            git show ${{ github.event.pull_request.head.sha || github.sha }}:scout/ecm_prep_vars.py > scout/ecm_prep_vars.py
+
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
             # --- Profile MASTER branch ---
-            # Clear cache so master also starts from a cold cache
+            # Clear cache so master also starts from a cold cache (otherwise
+            # it would load ecm_prep's cached output/competition data from
+            # the feature run above instead of recomputing it)
             rm -rf generated/ecm_competition_data/*.pkl.gz
             rm -f  generated/ecm_prep.json
-
             for step in "${steps[@]}"; do
-              log_file="memory_log_master_${step}.txt"
-
-              psrecord --log "$log_file" --include-children --interval 1 \
+              psrecord --log "memory_log_${step}_master.txt" --include-children --interval 1 \
                 "python tests/integration_testing/run_workflow.py --run_step $step --yaml tests/integration_testing/integration_test.yml --with_profiler"
-
-              # Rename cProfile CSV and memory log with branch suffix
               mv "results/profile_${step}.csv" "results/profile_${step}_master.csv"
-              mv "$log_file" "results/memory_log_${step}_master.txt"
+              mv "results/profile_${step}.pstats" "results/profile_${step}_master.pstats"
+              mv "memory_log_${step}_master.txt" "results/memory_log_${step}_master.txt"
             done
 
             # --- Restore feature branch ---
@@ -148,7 +162,6 @@ jobs:
           else
             echo "profile_comparison=" >> $GITHUB_OUTPUT
           fi
-
       - name: Compare integration test results
         id: compare
         run: |
