@@ -29,6 +29,84 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _fast_copy_measure(m):
+    """Fast copy of a Measure (or MeasurePackage) object.
+
+    copy.deepcopy on a Measure instance also deep-copies its handyvars
+    attribute in full. That undoes the shallow-copy-plus-selective-deepcopy
+    optimization Measure.__init__ already applies to handyvars (see its
+    comments there): handyvars wraps the large, shared UsefulVars object and
+    is deliberately shallow-copied, with only a handful of measure-specific
+    mutable sub-attributes (panel_shares, sf_to_house, the tsv_hourly_*
+    caches, save_shp_warn) deep-copied individually. Deep-copying handyvars
+    again here re-does that same large-object copy for every contributing
+    measure in every package (MeasurePackage.__init__ doesn't even copy its
+    own top-level handyvars attribute, for the same reason). This copies the
+    measure's other attributes with copy.deepcopy as before, but reuses its
+    already-shallow-copied handyvars object via copy.copy instead.
+
+    markets is also special-cased to use _fast_copy_nested_dict instead of
+    copy.deepcopy. markets is a plain dict/OrderedDict tree (by construction
+    in Measure.__init__) whose non-dict leaves are, by the time this function
+    is called (packaging already-prepared measures in MeasurePackage.__init__),
+    always immutable scalars (floats or None) -- confirmed by tracing every
+    site that writes into markets (fill_mkts, partition_microsegment,
+    add_keyvals, breakout_mseg, merge_htcl_overlaps, etc.): all of them either
+    rebind a dict key to a new scalar or recurse into a nested dict, never
+    mutate a leaf value in place. copy.deepcopy is unusually slow for this
+    tree because it is built of OrderedDicts (see _fast_copy_nested_dict's
+    docstring); _fast_copy_nested_dict gives every dict/OrderedDict level in
+    the tree its own object (so later in-place mutation of one copy's nested
+    dicts, e.g. via add_keyvals, can't leak into another copy or the
+    original) while sharing only the immutable leaf scalars by reference.
+    """
+    new_m = m.__class__.__new__(m.__class__)
+    for k, v in m.__dict__.items():
+        if k == "handyvars":
+            new_m.__dict__[k] = copy.copy(v)
+        elif k == "markets":
+            new_m.__dict__[k] = _fast_copy_nested_dict(v)
+        else:
+            new_m.__dict__[k] = copy.deepcopy(v)
+    return new_m
+
+
+def _fast_copy_tsv_shapes(d):
+    """Fast copy of a TSV 'hourly shapes' dict (or None).
+
+    d is either None or a dict of the form {"baseline": <8760-elem list>,
+    "efficient": <8760-elem list>}. copy.deepcopy visits each of the 8760
+    list elements individually (id()/memo dispatch per element), which is
+    the dominant cost at the call volumes gen_tsv_facts runs at; list.copy()
+    does the same job as a single bulk operation. The lists themselves are
+    only ever replaced wholesale by callers (never mutated in place via
+    index assignment), so a shallow list copy is sufficient to keep callers
+    isolated from the shared handyvars.tsv_hourly_lafs cache.
+    """
+    if d is None:
+        return None
+    return {k: v.copy() for k, v in d.items()}
+
+
+def _fast_copy_nested_dict(d):
+    """Fast recursive copy of a nested dict/OrderedDict of dicts.
+
+    Significantly faster than copy.deepcopy for trees such as
+    handyvars.out_break_in, which are built entirely of nested dict/
+    OrderedDict containers. copy.deepcopy is unusually slow for OrderedDict
+    because it copies via the generic __reduce_ex__-based reconstruction
+    path rather than the fast path used for plain dict. Non-dict leaf
+    values are copied by reference, which is safe because out_break_in's
+    leaves are always empty dict/OrderedDict containers at the point this
+    is used (later code fills them in with new values rather than mutating
+    shared leaf objects in place).
+    """
+    out = d.__class__()
+    for k, v in d.items():
+        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+    return out
+
+
 class ECMPrepHelper:
     """Shared methods used throughout ecm_prep.py"""
 
@@ -1008,9 +1086,12 @@ class Measure(object):
 
             # Helper for a fresh, independent deep-copy of the out_break_in.
             # Each breakout slot needs its own copy so accumulation into one slot
-            # doesn't alias into the others.
+            # doesn't alias into the others. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: out_break_in is a pure nested dict/OrderedDict tree,
+            # and copy.deepcopy is much slower for OrderedDict than the equivalent
+            # hand-rolled recursive copy.
             def _obi():
-                return copy.deepcopy(self.handyvars.out_break_in)
+                return _fast_copy_nested_dict(self.handyvars.out_break_in)
 
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
@@ -3083,11 +3164,27 @@ class Measure(object):
                         # else set to empty list
                         if self.handyvars.incentives is not None and \
                                 len(self.handyvars.incentives) != 0:
+                            # Build (and cache on handyvars, shared across all measures/msegs in
+                            # the current run) an index of incentives rows keyed by (region,
+                            # building type, vintage) the first time it's needed. Avoids a full
+                            # linear scan of self.handyvars.incentives -- which can have
+                            # thousands of rows from the itertools.product expansion in
+                            # import_state_data -- on every call; this was previously a major
+                            # hot loop cost.
+                            incent_by_key = getattr(
+                                self.handyvars, "_incentives_by_key", None)
+                            if incent_by_key is None:
+                                incent_by_key = {}
+                                for x in self.handyvars.incentives:
+                                    incent_by_key.setdefault(
+                                        (x[0], x[1], x[2]), []).append(x)
+                                self.handyvars._incentives_by_key = incent_by_key
                             # Pull any relevant incentives mod data that apply to current mseg
-                            incent_mod = [x for x in self.handyvars.incentives if (
-                                [x[0], x[1], x[2]] == [mskeys[1], mskeys[2], mskeys[-1]]
-                                # reg/bldg/vnt
-                                and (x[3] == "all" or x[3] == mskeys[4]))]  # end use
+                            # (reg/bldg/vnt restriction handled by the key lookup above)
+                            incent_mod = [
+                                x for x in incent_by_key.get(
+                                    (mskeys[1], mskeys[2], mskeys[-1]), [])
+                                if (x[3] == "all" or x[3] == mskeys[4])]  # end use
                             # Distinguish between modifications that apply to an applicable base seg
                             # vs. a segment that a measure switches to (the latter is only relevant
                             # for fuel or technology switching measures)
@@ -3143,20 +3240,28 @@ class Measure(object):
                         # that all baseline data are invalid
 
                         # Installed cost
-                        if any([((("lighting" in mskeys and (isinstance(
-                            x[1], float) and round(x[1]) in [0, 999])) or
-                            x[1] in [0, "NA", 999]) and mskeys[-2] not in
-                            self.handyvars.zero_cost_tech) for x in
-                                cost_base.items()]):
+                        # Hoist the per-mseg (not per-year) parts of the
+                        # check below out of the items() loop, and use a
+                        # generator instead of a listcomp so any() can
+                        # short-circuit instead of evaluating every year
+                        is_lighting_mseg = "lighting" in mskeys
+                        not_zero_cost_tech = mskeys[-2] not in \
+                            self.handyvars.zero_cost_tech
+                        if not_zero_cost_tech and any(
+                                (is_lighting_mseg and isinstance(
+                                    x[1], float) and
+                                 round(x[1]) in (0, 999)) or
+                                x[1] in (0, "NA", 999) for x in
+                                cost_base.items()):
                             # If some years have valid cost data, take the max
                             # from those years and extend across the full
                             # time horizon (cases like commercial lighting
                             # sometimes have typical CPL data that declines to
                             # zero with declining stock)
-                            mx_cb = round(max([
+                            mx_cb = round(max(
                                 x[1] for x in cost_base.items() if
-                                x[1] != "NA"]))
-                            if mx_cb not in [0, 999]:
+                                x[1] != "NA"))
+                            if mx_cb not in (0, 999):
                                 cost_base = {yr: mx_cb for yr
                                              in self.handyvars.aeo_years}
                             else:
@@ -3165,14 +3270,14 @@ class Measure(object):
                         perf_base, perf_base_best = [
                             self.fix_lgt_perf_vals(x, mskeys) for x in [perf_base, perf_base_best]]
                         # Lifetime
-                        if any([z[1] in [0, "NA"] for z in life_base.items()]):
+                        if any(z[1] in (0, "NA") for z in life_base.items()):
                             # If some years have valid lifetime data, take
                             # the max from those years and extend across the
                             # full time horizon
-                            mx_lf = round(max([
+                            mx_lf = round(max(
                                 x[1] for x in life_base.items() if
-                                x[1] != "NA"]))
-                            if mx_lf not in [0, 999]:
+                                x[1] != "NA"))
+                            if mx_lf not in (0, 999):
                                 life_base = {yr: mx_lf for yr
                                              in self.handyvars.aeo_years}
                             else:
@@ -4294,11 +4399,12 @@ class Measure(object):
                     # a baseline case with methane leakage to a non-gas tech.
                     # without such leakage
                     if self.fuel_switch_to is not None:
-                        lkg_fmeth_base = copy.deepcopy(lkg_rate)
+                        # lkg_rate is a float; no copy needed (immutable)
+                        lkg_fmeth_base = lkg_rate
                         lkg_fmeth_meas = 0
                     else:
                         lkg_fmeth_base, lkg_fmeth_meas = (
-                            copy.deepcopy(lkg_rate) for n in range(2))
+                            lkg_rate for n in range(2))
                 # State region setting requires no further mapping
                 elif opts.fugitive_emissions is not False and \
                     opts.fugitive_emissions[0] in ['1', '3'] and \
@@ -4311,11 +4417,12 @@ class Measure(object):
                     # a baseline case with methane leakage to a non-gas tech.
                     # without such leakage
                     if self.fuel_switch_to is not None:
-                        lkg_fmeth_base = copy.deepcopy(lkg_rate)
+                        # lkg_rate is a float; no copy needed (immutable)
+                        lkg_fmeth_base = lkg_rate
                         lkg_fmeth_meas = 0
                     else:
                         lkg_fmeth_base, lkg_fmeth_meas = (
-                            copy.deepcopy(lkg_rate) for n in range(2))
+                            lkg_rate for n in range(2))
                 else:
                     lkg_rate, lkg_fmeth_base, lkg_fmeth_meas = (
                         None for n in range(3))
@@ -4326,8 +4433,8 @@ class Measure(object):
                 if opts.fugitive_emissions is not False and \
                         opts.fugitive_emissions[0] in ['2', '3']:
                     # Set building type name (residential/commercial) to key
-                    # refrigerant data
-                    bldg_name_chk = copy.deepcopy(bldg_sect)
+                    # refrigerant data (bldg_sect is a str; no copy needed)
+                    bldg_name_chk = bldg_sect
 
                     # Set technology names to key baseline and efficient case
                     # refrigerant data for the current mseg; set name
@@ -4378,8 +4485,8 @@ class Measure(object):
                             if (mskeys[-2] is not None and
                                 "HP" in mskeys[-2]) \
                                     or "cooling" not in mskeys:
-                                tech_name_chk_b = copy.deepcopy(
-                                    tech_name_chk_e)
+                                # tech_name_chk_e is a str; no copy needed
+                                tech_name_chk_b = tech_name_chk_e
                                 # Given like-for-like HP replacement, anchor
                                 # baseline and measure refrigerant emissions
                                 # on the cooling end use and set flag to zero
@@ -4430,14 +4537,15 @@ class Measure(object):
                             # pump WH replacement or the case of switching to
                             # a HPWH from another baseline WH technology (e.g.,
                             # in all possible cases)
-                            tech_name_chk_b = copy.deepcopy(tech_name_chk_e)
+                            # tech_name_chk_e is a str; no copy needed
+                            tech_name_chk_b = tech_name_chk_e
                             # Given like-for-like HPWH replacement, do not
                             # set flag to zero out baseline refrigerant
                             # emissions (since they occur in baseline too)
                             if (mskeys[-2] is not None and
                                     "HP" in mskeys[-2]):
-                                tech_name_chk_b = copy.deepcopy(
-                                    tech_name_chk_e)
+                                # tech_name_chk_e is a str; no copy needed
+                                tech_name_chk_b = tech_name_chk_e
                                 zero_b_r_flag, zero_m_r_flag = (
                                         False for n in range(2))
                             # Given switch to HPWH from another baseline
@@ -5801,16 +5909,17 @@ class Measure(object):
             # subsequent technology microsegments
             self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
                 mskeys[2]][eu] = {
-                    "annual adjustment fractions": copy.deepcopy(
+                    "annual adjustment fractions": _fast_copy_nested_dict(
                         updated_tsv_fracs),
-                    "hourly shapes": copy.deepcopy(updated_tsv_shapes)}
+                    "hourly shapes": _fast_copy_tsv_shapes(
+                        updated_tsv_shapes)}
         elif self.handyvars.tsv_hourly_lafs is not None:
-            updated_tsv_fracs, updated_tsv_shapes = [
-                copy.deepcopy(x) for x in [
-                    self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
-                        mskeys[2]][eu]["annual adjustment fractions"],
-                    self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
-                        mskeys[2]][eu]["hourly shapes"]]]
+            updated_tsv_fracs = _fast_copy_nested_dict(
+                self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
+                    mskeys[2]][eu]["annual adjustment fractions"])
+            updated_tsv_shapes = _fast_copy_tsv_shapes(
+                self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
+                    mskeys[2]][eu]["hourly shapes"])
         else:
             updated_tsv_fracs = {
                 "energy": {"baseline": 1, "efficient": 1},
@@ -11070,7 +11179,9 @@ class MeasurePackage(Measure):
                  opts, convert_data):
         self.name = p
         self.handyvars = handyvars
-        self.contributing_ECMs = copy.deepcopy(measure_list_package)
+        # Use _fast_copy_measure instead of copy.deepcopy: see its docstring.
+        self.contributing_ECMs = [
+            _fast_copy_measure(m) for m in measure_list_package]
         # Check to ensure energy output settings for all measures that
         # contribute to the package are identical
         if not all([all([m.usr_opts[x] ==
@@ -11303,22 +11414,29 @@ class MeasurePackage(Measure):
 
             # Add market breakout information
 
+            # Helper for a fresh, independent copy of out_break_in. Use
+            # _fast_copy_nested_dict instead of copy.deepcopy: out_break_in is a
+            # pure nested dict/OrderedDict tree, and copy.deepcopy is much slower
+            # for OrderedDict than the equivalent hand-rolled recursive copy.
+            def _obi():
+                return _fast_copy_nested_dict(self.handyvars.out_break_in)
+
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
-                "baseline": copy.deepcopy(self.handyvars.out_break_in),
-                "efficient": copy.deepcopy(self.handyvars.out_break_in),
-                "savings": copy.deepcopy(self.handyvars.out_break_in)} for
+                "baseline": _obi(),
+                "efficient": _obi(),
+                "savings": _obi()} for
                 key in ["energy", "carbon", "energy cost"]}
             # Add stock breakouts
             self.markets[adopt_scheme][
                 "mseg_out_break"]["stock"] = {
-                    key: copy.deepcopy(self.handyvars.out_break_in) for
+                    key: _obi() for
                     key in ["baseline", "efficient"]}
             # Add stock cost breakouts, contingent on user selecting these
             if self.usr_opts["cap_invest"]:
                 self.markets[adopt_scheme][
                     "mseg_out_break"]["capital cost"] = {
-                        key: copy.deepcopy(self.handyvars.out_break_in) for
+                        key: _obi() for
                         key in ["baseline", "efficient", "savings"]}
             # Initialize breakouts of efficient energy captured by measure
             # if user does not suppress reporting of this additional
@@ -11329,8 +11447,7 @@ class MeasurePackage(Measure):
                     self.markets[adopt_scheme][
                     "mseg_out_break"]["energy"][
                     "efficient-captured-envelope"] = \
-                    (copy.deepcopy(self.handyvars.out_break_in) for n in
-                     range(2))
+                    (_obi() for n in range(2))
 
     def merge_measures(self, opts):
         """Merge the markets information of multiple individual measures.
@@ -11363,9 +11480,13 @@ class MeasurePackage(Measure):
             for m in self.contributing_ECMs_eqp:
                 # Loop through all adoption scenarios
                 for a_s in self.handyvars.adopt_schemes_prep:
-                    # Shorthand deep copy of measure stock data
-                    stk_cpy = copy.deepcopy(m.markets[a_s]["mseg_adjust"][
-                        "contributing mseg keys and values"])
+                    # Shorthand deep copy of measure stock data. Use
+                    # _fast_copy_nested_dict instead of copy.deepcopy: stk_cpy
+                    # is only ever read from below (via stk_cpy[cm]["stock"]
+                    # [met]["measure"][yr], a numeric leaf), never mutated in
+                    # place, so reference-sharing the leaves is safe.
+                    stk_cpy = _fast_copy_nested_dict(m.markets[a_s][
+                        "mseg_adjust"]["contributing mseg keys and values"])
                     # Loop through all contributing msegs for measure
                     for cm in stk_cpy.keys():
                         # If contributing mseg is not already
@@ -12028,8 +12149,12 @@ class MeasurePackage(Measure):
         # to account for/remove direct overlaps with other measures
         if len(overlap_meas) != 0:
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop
-            msegs_meas_init = copy.deepcopy(msegs_meas)
+            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
+            # leaves out of msegs_meas_init (e.g. msegs_meas["energy"]["total"]
+            # ["baseline"][yr]), never mutates them in place, so
+            # reference-sharing the leaves is safe.
+            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
             # Find base and efficient adjustment fractions
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
                 self.find_base_eff_adj_fracs(
@@ -12240,8 +12365,11 @@ class MeasurePackage(Measure):
         if htcl_key_match in self.htcl_overlaps[
                 adopt_scheme]["data"].keys():
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop
-            msegs_meas_init = copy.deepcopy(msegs_meas)
+            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
+            # leaves out of msegs_meas_init, never mutates them in place, so
+            # reference-sharing the leaves is safe.
+            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
             # Find base and efficient adjustment fractions; directly
             # overlapping measures are none in this case
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \

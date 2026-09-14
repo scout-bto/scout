@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import json
 import numpy
 from numpy.linalg import LinAlgError
 from collections import OrderedDict, defaultdict
 import gzip
 import pickle
 from ast import literal_eval
+from functools import lru_cache
 import math
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy_financial as npf
 from scout.plots import run_plot
 from scout.config import Config, FilePaths as fp
-from scout.utils import PrintFormat as fmt
+from scout.utils import JsonIO, PrintFormat as fmt
 import warnings
 import itertools
 import pandas as pd
 from operator import itemgetter
 import os
+
+# Initialize a global tracking set for warning about exogenous heat pump rate calculations
+_SHOWN_WARNINGS = set()
 
 
 class UsefulInputFiles(object):
@@ -178,11 +181,7 @@ class UsefulVars(object):
     def __init__(self, handyfiles, opts, brk_vars, brkout, regions, state_appl_regs, codes, bps,
                  exog_rates):
         # Pull in global variable settings from ecm_prep
-        with open(handyfiles.glob_vars, 'r') as gv:
-            try:
-                gvars = json.load(gv)
-            except ValueError:
-                raise ValueError(f"Error reading in '{handyfiles.glob_vars}'")
+        gvars = JsonIO.load_json(handyfiles.glob_vars)
         self.adopt_schemes = gvars["adopt_schemes"]
         self.retro_rate = gvars["retro_rate"]
         self.aeo_years = gvars["aeo_years"]
@@ -314,13 +313,17 @@ class UsefulVars(object):
         # Initialize conversion fraction output; only calculate and write out conversion fractions
         # for scenarios run with endogenous electrification calculations
         if opts.write_elec_conv_fracs and not exog_rates:
+            # Shorthand for warning for tracking purposes
+            warning_key = "exogenous_switching_rates"
             # Warn user if technical potential outputs are desired; rates will only be produced
-            # for max adoption potential
-            if "Technical potential" in self.adopt_schemes:
+            # for max adoption potential; do not show warning if it has already been shown
+            if "Technical potential" in self.adopt_schemes and warning_key not in _SHOWN_WARNINGS:
                 warnings.warn(
                     "WARNING: Exogenous rates of electric switching are desired by user for "
                     "a run with both Technical potential and Max adoption potential cases. Rates "
                     "will be generated based on Max adoption potential results only.")
+                # Add to warning tracking
+                _SHOWN_WARNINGS.add(warning_key)
             # Set list of possible regions based on output breakout information
             conversion_regions = self.out_break_czones.keys()
             # Set list of possible building types based on output breakout information
@@ -816,6 +819,20 @@ class Measure(object):
             else:
                 if isinstance(markets[k], list):
                     markets[k] = numpy.array(markets[k])
+
+
+@lru_cache(maxsize=None)
+def _literal_eval_cached(key_str):
+    """Cached ast.literal_eval for microsegment key chain strings.
+
+    These string-encoded tuples (e.g., mseg_key) are re-parsed many times
+    across measure competition, often with the same string recurring across
+    calls; caching avoids repeatedly re-parsing/re-compiling the same
+    mini-AST. Callers must not mutate the returned object in place (wrap in
+    list(...) first if a mutable copy is needed) since the same object is
+    shared across all callers requesting the same key_str.
+    """
+    return literal_eval(key_str)
 
 
 def _fast_copy_nested_dict(d):
@@ -1826,7 +1843,7 @@ class Engine(object):
                 # Determine the climate zone, building type, and structure type
                 # needed to link the secondary microsegment and associated3
                 # primary microsegment(s)
-                mseg_separate = literal_eval(msu)
+                mseg_separate = _literal_eval_cached(msu)
                 secnd_mseg_adjkey = str((
                     mseg_separate[1], mseg_separate[2], mseg_separate[-1]))
                 # Determine the subset of measures pertaining to the given
@@ -2635,7 +2652,7 @@ class Engine(object):
             # Separate out components of the mseg information; use mseg information that accounts
             # for any links/dependencies between mseg and other msegs the measure applies to (
             # assume that first measure in the competing set is representative of links for all)
-            mseg_separate = literal_eval(stk_cost_dat_keys[0][0])
+            mseg_separate = _literal_eval_cached(stk_cost_dat_keys[0][0])
             # Shorthand for current mseg region, bldg. type, bldg. vintage, fuel, end use, tech.
             ctb_mseg_params_notech = [mseg_separate[1], mseg_separate[2], mseg_separate[-1],
                                       mseg_separate[3], mseg_separate[4]]
@@ -3238,7 +3255,7 @@ class Engine(object):
         # type)
 
         # Convert contributing microsegment key chain string to a list
-        keys = literal_eval(msu)
+        keys = _literal_eval_cached(msu)
         # Pull out climate zone, building type, structure type, fuel type,
         # and end use
         msu_split = [str(x) for x in [keys[1], keys[2], keys[-1],
@@ -3325,7 +3342,7 @@ class Engine(object):
             # overlaps across the heating/cooling supply-side and demand-side
             for mseg in htcl_keys:
                 # Convert contributing microsegment key chain string to a list
-                keys = literal_eval(mseg)
+                keys = _literal_eval_cached(mseg)
                 # Pull out climate zone, building type, structure type,
                 # fuel type, and end use
                 msu_split = [str(x) for x in [keys[1], keys[2], keys[-1],
@@ -3703,7 +3720,7 @@ class Engine(object):
                 "cooling" not in mseg_key))):
             # Decompose contributing microsegment key information into a list,
             # to be modified per comment above
-            key_list = list(literal_eval(mseg_key))
+            key_list = list(_literal_eval_cached(mseg_key))
             # Strip any additional information that is added to the
             # EIA technology name to further distinguish msegs with exogenous
             # rates, specific heating and cooling pairings, and/or panel upgrade needs
@@ -3990,7 +4007,7 @@ class Engine(object):
         _cache = self._mseg_key_meta_cache
         if mseg_key not in _cache:
             # Convert microsegment string to a list
-            key_list = literal_eval(mseg_key)
+            key_list = _literal_eval_cached(mseg_key)
             # Establish applicable climate zone breakout
             for cz in self.handyvars.out_break_czones.items():
                 if key_list[1] in cz[1]:
@@ -4682,7 +4699,7 @@ class Engine(object):
             # type for the current contributing primary microsegment from the
             # microsegment key chain information and use as the key for linking
             # the primary and its associated secondary microsegment
-            cz_bldg_struct = literal_eval(mseg_key)
+            cz_bldg_struct = _literal_eval_cached(mseg_key)
             secnd_mseg_adjkey = str((
                 cz_bldg_struct[1], cz_bldg_struct[2], cz_bldg_struct[-1]))
 
@@ -5076,7 +5093,7 @@ class Engine(object):
             conversion = (measure.fuel_switch_to == "electricity" or (
                 measure.tech_switch_to not in [None, "NA", "same"]))
             # Find and set region, fuel, end use, and vintage for current mseg
-            key_list = list(literal_eval(mseg_key))
+            key_list = list(_literal_eval_cached(mseg_key))
             reg, base_fuel, eu, vint = [key_list[1], key_list[3], key_list[4], key_list[-1]]
             # Ensure that the mseg end use name is in the conversion end uses
             # (handles potential erroneous match of "heating" in secondary heating)
@@ -7789,21 +7806,11 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         trim_yrs = False
 
     # Import measure files
-    with open(handyfiles.meas_summary_data, 'r') as mjs:
-        try:
-            meas_summary = json.load(mjs)
-        except ValueError as e:
-            raise ValueError(
-                f"Error reading in '{handyfiles.meas_summary_data}': {str(e)}") from None
+    meas_summary = JsonIO.load_json(handyfiles.meas_summary_data)
 
     # Import list of all unique active measures
-    with open(handyfiles.active_measures, 'r') as am:
-        try:
-            run_setup = json.load(am)
-            active_meas_all = numpy.unique(run_setup["active"])
-        except ValueError as e:
-            raise ValueError(
-                f"Error reading in '{handyfiles.active_measures}': {str(e)}") from None
+    run_setup = JsonIO.load_json(handyfiles.active_measures)
+    active_meas_all = numpy.unique(run_setup["active"])
     print('ECM attributes data load complete')
 
     active_ecms_w_jsons = 0
@@ -8036,12 +8043,7 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         # Import total absolute heating and cooling energy use data, used in
         # removing overlaps between supply-side and demand-side heating/cooling
         # ECMs in the analysis
-        with open(handyfiles.htcl_totals, 'r') as msi:
-            try:
-                htcl_totals = json.load(msi)
-            except ValueError as e:
-                raise ValueError(
-                    f"Error reading in '{handyfiles.htcl_totals}': {str(e)}") from None
+        htcl_totals = JsonIO.load_json(handyfiles.htcl_totals)
 
     # Print message to console; if in verbose mode, print to new line,
     # otherwise append to existing message on the console
@@ -8056,14 +8058,9 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     if regions in ['EMM', 'State']:  # Extract compressed EMM/state data
         bjszip = handyfiles.msegs_in
         with gzip.GzipFile(bjszip, 'r') as zip_ref:
-            msegs = json.loads(zip_ref.read().decode('utf-8'))
+            msegs = JsonIO.loads_bytes(zip_ref.read())
     else:
-        with open(handyfiles.msegs_in, 'r') as msi:
-            try:
-                msegs = json.load(msi)
-            except ValueError as e:
-                raise ValueError(
-                    f"Error reading in '{handyfiles.msegs_in}': {str(e)}") from None
+        msegs = JsonIO.load_json(handyfiles.msegs_in)
 
     # Calculate uncompeted and competed measure savings and financial
     # metrics, and write key outputs to JSON file
@@ -8131,12 +8128,14 @@ def main(opts: argparse.NameSpace):  # noqa: F821
             scn_name = "bss-" + \
                 os.path.splitext(measures_objlist[0].usr_opts["yaml"])[0].split("/")[-1]
             # Open existing electric/HP conversion rates file, read in and append to the data
-            with open(handyfiles.elec_conv_fracs, 'r') as hpr:
-                existing_dict = json.load(hpr)
-                existing_dict["data (by scenario)"][scn_name] = conv_fracs
-            # Write out updated data
-            with open(handyfiles.elec_conv_fracs, 'w') as hpw:
-                json.dump(existing_dict, hpw, indent=2)
+            existing_dict = JsonIO.load_json(handyfiles.elec_conv_fracs)
+            existing_dict["data (by scenario)"][scn_name] = conv_fracs
+            # Write out updated data. Keep this file pretty-printed (unlike
+            # run.py's other JSON writes): it's a small, hand-curated
+            # reference dataset under supporting_data/, not a large generated
+            # results file, and staying diffable in git matters more here
+            # than write speed.
+            JsonIO.dump_json(existing_dict, handyfiles.elec_conv_fracs, indent=True)
             print("Calculations complete")
         print("Results finalized")
 
@@ -8145,22 +8144,11 @@ def main(opts: argparse.NameSpace):  # noqa: F821
           flush=True)
 
     # Import site-source conversions
-    with open(handyfiles.ss_data, 'r') as ss:
-        try:
-            cost_ss_carb = json.load(ss)
-            ss_conv = cost_ss_carb['electricity'][
-                'site to source conversion']['data']
-        except ValueError as e:
-            raise ValueError(
-                f"Error reading in '{handyfiles.ss_data}': {str(e)}") from None
+    cost_ss_carb = JsonIO.load_json(handyfiles.ss_data)
+    ss_conv = cost_ss_carb['electricity']['site to source conversion']['data']
 
     # Import electricity price and CO2 emissions intensity
-    with open(handyfiles.elec_price_co2, 'r') as ece:
-        try:
-            elec_cost_carb = json.load(ece)
-        except ValueError as e:
-            raise ValueError(
-                f"Error reading in '{handyfiles.elec_price_co2}': + {str(e)}") from None
+    elec_cost_carb = JsonIO.load_json(handyfiles.elec_price_co2)
     # Extract separate price and CO2 emissions intensity variables
     try:
         elec_carb = elec_cost_carb['CO2 intensity of electricity']['data']
@@ -8274,16 +8262,13 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     a_run.output_all = round_values(a_run.output_all, 6)
 
     # Write summary outputs for individual measures to a JSON
-    with open(handyfiles.meas_engine_out_ecms, "w") as jso:
-        json.dump(a_run.output_ecms, jso, indent=2)
+    JsonIO.dump_json(a_run.output_ecms, handyfiles.meas_engine_out_ecms)
     # Write summary outputs across all measures to a JSON
-    with open(handyfiles.meas_engine_out_agg, "w") as jso:
-        json.dump(a_run.output_all, jso, indent=2)
+    JsonIO.dump_json(a_run.output_all, handyfiles.meas_engine_out_agg)
     print("Data writing complete")
     # Write competition adjustment fractions to a JSON, if applicable
     if a_run.output_ecms_cfs is not None:
-        with open(handyfiles.comp_fracs_out, "w") as jso:
-            json.dump(a_run.output_ecms_cfs, jso, indent=2)
+        JsonIO.dump_json(a_run.output_ecms_cfs, handyfiles.comp_fracs_out)
 
     # Do not plot for the case where a user has trimmed down the results
     # (not all data required for the plots will be available)
