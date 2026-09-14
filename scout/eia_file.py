@@ -12,6 +12,8 @@ from pathlib import Path
 import re
 import openpyxl as pyxl
 from scout import mseg_techdata as rmt
+from scout.config import AEOInputRegistry as air
+from scout.config import FilePaths as fp
 
 
 class EIAFiles(object):
@@ -32,15 +34,15 @@ class EIAFiles(object):
         r_meqp: Residential equipment cost, efficiency, and adoption parameters
         c_tech_out: Commercial technology characteristics data
 
-        Other files modified in place
-        -----------------------------
-        r_lgt: Residential lighting technology data
+        Additional transformed outputs
+        ------------------------------
+        r_lgt_out: Residential lighting technology data
     """
     def __init__(self, input_dir: Path = None, output_dir: Path = None):
         if not input_dir:
-            input_dir = Path(__file__).resolve().parents[1] / 'inputs'
+            input_dir = fp.INPUTS_RAW
         if not output_dir:
-            output_dir = input_dir
+            output_dir = fp.INPUTS_PROCESSED
         """Define class with required input and output file names."""
         self.input_dir = input_dir
         self.output_dir = output_dir or input_dir
@@ -48,18 +50,37 @@ class EIAFiles(object):
         # ensure the output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
 
+        raw = air.path_map('raw', self.input_dir)
+        proc = {k: self.output_dir / v for k, v in air.files_for_mode('processed').items()}
+
         # inputs
-        self.r_db_in = self.input_dir / 'RDM_DBOUT-orig.txt'
-        self.r_mess = self.input_dir / 'rsmess.xlsx'
-        self.c_tech_in = self.input_dir / 'ktekx.xlsx'
-        self.r_lgt_in = self.input_dir / 'rsmlgt.txt'
+        self.r_db_in = raw['res_db']
+        self.r_mess = raw['res_mess_xlsx']
+        self.c_tech_in = raw['com_ktekx_xlsx']
+        self.r_lgt_in = raw['rsmlgt']
 
         # outputs
-        self.r_db_out = self.output_dir / 'RDM_DBOUT.txt'
-        self.r_class = self.output_dir / 'rsclass.txt'
-        self.r_meqp = self.output_dir / 'rsmeqp.txt'
-        self.c_tech_out = self.output_dir / 'ktek.csv'
-        self.r_lgt_out = self.output_dir / 'rsmlgt.txt'
+        self.r_db_out = proc['res_db']
+        self.r_class = proc['rsclass']
+        self.r_meqp = proc['rsmeqp']
+        self.c_tech_out = proc['ktek']
+        self.r_lgt_out = proc['rsmlgt']
+
+    def preflight_raw_inputs(self):
+        """Validate raw-mode prerequisites with clear next-step guidance."""
+        missing = air.missing_for_mode(
+            'raw',
+            self.input_dir,
+            required_keys=['res_db', 'res_mess_xlsx', 'com_ktekx_xlsx', 'rsmlgt'])
+
+        if missing:
+            missing_str = '\n'.join([f"  - {p}" for p in missing])
+            raise FileNotFoundError(
+                "Missing required raw AEO inputs for preprocessing:\n"
+                f"{missing_str}\n\n"
+                "Next step: place raw AEO files in inputs/raw/ (including "
+                "rsmess.xlsx and ktekx.xlsx), then rerun "
+                "'python -m scout.eia_file'.")
 
     def resdbout_fill_household(self):
         """Modify RESDBOUT such that all rows have the same number of columns.
@@ -70,22 +91,25 @@ class EIAFiles(object):
         for all 10 columns, including replacing the empty HOUSEHOLDS
         column with a 0.
         """
-        # Read the original RESDBOUT data; rename the original
-        # RESDBOUT.txt file to RESDBOUT-orig.txt to set it aside if
-        # it is not already present so that the modified data can be
-        # written to a new RESDBOUT.txt
-        try:
-            f_dbin = open(self.r_db_in, 'r')
-        except FileNotFoundError:
-            os.rename(self.r_db_out, self.r_db_in)
-            f_dbin = open(self.r_db_in, 'r')
+        # Always read from raw input and write transformed output to processed.
+        if not self.r_db_in.exists():
+            raise FileNotFoundError(
+                f"Required raw AEO file not found: {self.r_db_in}")
 
-        with open(self.r_db_out, 'w+', encoding='utf-8', newline='') as f_dbout:
+        with open(self.r_db_in, 'r', encoding='utf-8') as f_dbin, \
+            open(
+                self.r_db_out,
+                'w+',
+                encoding='utf-8',
+                newline='') as f_dbout:
             csv_dbin = csv.DictReader(f_dbin)
 
             # Get field names from the file header row as determined
             # by DictReader
             header = csv_dbin.fieldnames
+            if not header:
+                raise ValueError(
+                    f"No header row found in RESDBOUT input file: {self.r_db_in}")
 
             # Create corresponding DictWriter object for file outputs
             csv_dbout = csv.DictWriter(f_dbout, fieldnames=header)
@@ -101,8 +125,6 @@ class EIAFiles(object):
                 # Strip off leading and trailing space characters
                 row.update({k: v.strip() for k, v in row.items()})
                 csv_dbout.writerow(row)
-
-        f_dbin.close()
 
     def res_gsl_lt_update(self):
         """Replace 'HAL' with 'INC' for GSL residential lighting.
@@ -239,8 +261,9 @@ class EIAFiles(object):
 
 
 def main():
-    # read from AEO raw data, write processed files into 'inputs'
-    f = EIAFiles(input_dir=Path('inputs'), output_dir=Path('inputs'))
+    # Read from raw AEO inputs and write processed outputs to a separate folder.
+    f = EIAFiles(input_dir=fp.INPUTS_RAW, output_dir=fp.INPUTS_PROCESSED)
+    f.preflight_raw_inputs()
 
     f.resdbout_fill_household()
     f.res_gsl_lt_update()
