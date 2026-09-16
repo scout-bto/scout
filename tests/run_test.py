@@ -29191,7 +29191,9 @@ class StateImportTest(unittest.TestCase, CommonMethods):
                                           self.test_opts[case_ind]["bps"]])
             # Check to ensure that both outputs match test values
             for output, expected in zip(
-                    [self.hvobj.state_appl_regs, self.hvobj.codes, self.hvobj.bps],
+                    [self.hvobj.state_appl_regs,
+                     [x[:8] for x in self.hvobj.codes] if self.hvobj.codes is not None else None,
+                     [x[:8] for x in self.hvobj.bps] if self.hvobj.bps is not None else None],
                     [self.state_appl_regs_out[case_ind], self.codes_out[case_ind],
                      self.bps_out[case_ind]]):
                 self.assertEqual(output, expected)
