@@ -49,4 +49,5 @@ llm = [
     "anthropic",
     "google-genai",
     "pydantic",
+    "pypdf",
 ]

@@ -154,14 +154,54 @@ is fixed.
 uv run python dsire_incentive_drafter.py --provider gemini --resume --output <the output file from your last run>
 ```
 
-## 3. Review and copy into incentives.csv
+## 3. Try to resolve blank performance level/units (optional, costs money)
 
-Open the drafts CSV, check each row against its `source_url`, fix or
+```
+uv run python dsire_incentive_resolver.py --dry-run          # preview the prompt, $0
+uv run python dsire_incentive_resolver.py --limit 5           # small paid test batch
+uv run python dsire_incentive_resolver.py                     # full run over every drafts_*.csv in this dir
+uv run python dsire_incentive_resolver.py --follow-pdfs        # also read PDFs linked from each source page
+```
+
+The drafter (step 2) leaves `performance level`/`performance units`
+blank far more often than not — empirically, DSIRE's own program text
+routinely names a standard ("ENERGY STAR certified", "CEE's highest
+efficiency tier") without stating the actual number. This script
+re-fetches each blank row's `source_url` directly and asks an LLM to
+extract a stated numeric threshold from the primary source itself
+(never to invent one), then applies a **deterministic, non-LLM**
+conversion (dividing a Btu/(W·hr)-type rating — SEER/SEER2/EER/EER2/
+HSPF/HSPF2 — by 3.412 to get a dimensionless COP, the same conversion
+already used by hand elsewhere in `incentives.csv`) to map it into
+Scout's own units.
+
+`--follow-pdfs` also downloads and reads PDFs linked from the source
+page, since rate schedules and incentive tables often live there
+instead. It costs more and needs *more* scrutiny of a "resolved" row,
+not less: a linked PDF can cover a different, unrelated technology than
+the row is for (the model is instructed to refuse rather than guess,
+but check `resolver_source_quote` anyway), and a PDF's table can be far
+more granular (e.g. six capacity tiers) than any existing
+`incentives.csv` row's convention — `resolver_notes` flags both cases
+for a human to actually decide, since this script won't.
+
+Writes `dsire_incentive_resolved_<date>.csv`: the same rows, with
+`performance level`/`units` filled in wherever resolved (never
+overwriting a value the drafter already filled in), plus
+`resolver_status`/`resolver_source_quote`/`resolver_notes`/
+`resolver_pdf_urls` for review. Same cost/`--resume`/`--limit`/
+`--provider` conventions as the drafter.
+
+## 4. Review and copy into incentives.csv
+
+Open the drafts (or resolved) CSV, check each row against its
+`source_url` (and `resolver_source_quote`, if you ran step 3), fix or
 fill in whatever the model left blank or flagged in
-`llm_open_questions`, then copy the accepted rows' `incentives.csv`
-columns into `../incentives.csv` by hand. The `dsire_id`/`source_url`/
-`llm_confidence`/`llm_open_questions` columns are for your review only
-— don't copy those into `incentives.csv`.
+`llm_open_questions`/`resolver_notes`, then copy the accepted rows'
+`incentives.csv` columns into `../incentives.csv` by hand. The
+`dsire_id`/`source_url`/`llm_confidence`/`llm_open_questions`/
+`resolver_*` columns are for your review only — don't copy those into
+`incentives.csv`.
 
 ## Notes
 
