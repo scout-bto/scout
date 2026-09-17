@@ -26,6 +26,12 @@ rs*.txt
 
 scout/Cambium_data/
 
+# Generated intermediate output from the tsv_data update pipeline #
+#####################################################################
+
+scout/supporting_data/tsv_data/code/csv/
+scout/supporting_data/tsv_data/code/json/
+
 # Populated microsegment JSON databases #
 #########################################
 
