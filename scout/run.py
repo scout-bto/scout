@@ -5838,36 +5838,11 @@ class Engine(object):
                     m.markets[adopt_scheme]["competed"]["mseg_out_break"][
                         "capital cost"]["baseline"], stk_base_cost_avg, focus_yrs,
                     divide=True)
-            # Case with market penetration fractions/breakouts; copy
-            # measure stock totals to avoid manipulation via "frac_eff_stk"
-            # calculation
-            if all([x for x in [self.opts.mkt_fracs, report_stk_units]]):
-                eff_stk = _fast_copy_nested_dict(m.markets[adopt_scheme][
-                    "competed"]["mseg_out_break"]["stock"]["efficient"])
-            else:
-                eff_stk = m.markets[adopt_scheme][
-                    "competed"]["mseg_out_break"]["stock"]["efficient"]
-            if report_stk_units:
-                # Calculate efficient stock fractions by breakout category
-                frac_eff_stk = self.out_break_walk(
-                    m.markets[adopt_scheme]["competed"][
-                        "mseg_out_break"]["stock"]["efficient"],
-                    stk_eff_avg, focus_yrs, divide=True)
-            if report_stk_costs:
                 # Calculate efficient stock cost fractions by breakout category
                 frac_eff_stk_cost = self.out_break_walk(
                     m.markets[adopt_scheme]["competed"][
                         "mseg_out_break"]["capital cost"]["efficient"],
                     stk_eff_cost_avg, focus_yrs, divide=True)
-            if self.opts.mkt_fracs is True:
-                # Calculate market penetration percentages for the current
-                # measure and scenario by output breakout category; divide
-                # post-competition measure stock by the total stock that
-                # the measure could possibly affect (before competition)
-                frac_mkt_stk = self.out_break_walk(
-                    eff_stk, m.markets[adopt_scheme]["uncompeted"][
-                        "master_mseg"]["stock"]["total"]["all"],
-                    focus_yrs, divide=True, mkt_frac=True)
 
             # Create shorthand variable for results by breakout category
             mkt_save_brk = self.output_ecms[m.name][
