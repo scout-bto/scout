@@ -1,6 +1,6 @@
 {
-  "name": "(C) Ref. Case Plug Loads",
-  "_description": "Counterfactual commercial plug loads measure, no savings vs. reference case",
+  "name": "(C) Ref. Case Data Centers",
+  "_description": "Counterfactual commercial data centers measure, no savings vs. reference case",
   "measure_type": "add-on",
   "market_entry_year": 2026,
   "market_exit_year": null,
@@ -9,7 +9,7 @@
   "climate_zone": "all",
   "bldg_type": "all commercial",
   "structure_type": "all",
-  "end_use": "office equipment",
+  "end_use": "data center",
   "fuel_type": "electricity",
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
@@ -35,10 +35,10 @@
     "source_data": null
   },
   "add_elec_infr_cost": null,
-  "product_lifetime": 9.0,
+  "product_lifetime": 10.0,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average of low/high 'Average Life (yrs.)'",
+    "notes": "Generic 10 year lifetime used for misc. loads",
     "source_data": {
       "title": "Grid-Interactive Efficient Building Technology Cost, Performance, and Lifetime Characteristics",
       "author": "Nubbe et al.",
