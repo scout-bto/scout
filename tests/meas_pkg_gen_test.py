@@ -120,21 +120,33 @@ def test_clean_dataframe():
 def test_parse_nested_value():
     assert parse_nested_value("0.95") == 0.95
     assert parse_nested_value("Text Value") == "Text Value"
-
-    # expect lowercase keys
-    assert parse_nested_value("Heating: 0.95; Cooling: 0.85") == {
+    assert parse_nested_value("heating: 0.95; cooling: 0.85") == {
         "heating": 0.95, "cooling": 0.85}
-    assert parse_nested_value("Gas: Heating: 0.95; Gas: Water: 0.8") == {
-        "gas": {"heating": 0.95, "water": 0.8}}
+    assert parse_nested_value("Gas: heating: 0.95; Gas: Water: 0.8") == {
+        "Gas": {"heating": 0.95, "Water": 0.8}}
+    assert parse_nested_value("240V Circuit: 1500; Default: 500") == {
+        "240V Circuit": 1500, "Default": 500}
 
 
 def test_parse_nested_unit():
     assert parse_nested_unit("MMBtu") == "MMBtu"
-
-    # expect lowercase keys
-    assert parse_nested_unit("Heating: MMBtu; Cooling: kWh") == {
+    assert parse_nested_unit("heating: MMBtu; cooling: kWh") == {
         "heating": "MMBtu", "cooling": "kWh"}
     assert parse_nested_unit("1000") == "1000"
+
+
+def test_parse_identity_semicolon_list():
+    # Test that simple strings remain strings
+    assert parse_identity("single value") == "single value"
+    # Test that semicolon-delimited strings are split into lists
+    assert parse_identity("heating; cooling") == ["heating", "cooling"]
+    # Test handling of multiple semicolons and varied spacing
+    assert parse_identity(" heating ;cooling ; ventilation ") == [
+        "heating", "cooling", "ventilation"]
+    # Test that trailing semicolons don't create empty list elements
+    assert parse_identity("single use;") == ["single use"]
+    # Test that non-string values pass through unaffected
+    assert parse_identity(True) is True
 
 
 def test_populate_json():
@@ -143,6 +155,7 @@ def test_populate_json():
         "Entry": ("market_entry_year", parse_integer),
         "Active": ("is_active", parse_boolean),
         "Perf": (["energy", "performance_data"], parse_nested_value),
+        "MissingCol": ("should_be_null", parse_identity)  # Added to test null handling
     }
 
     record = {
@@ -150,6 +163,7 @@ def test_populate_json():
         "Entry": "2025",
         "Active": "yes",
         "Perf": "Heating: 3.5; Cooling: 4.0",
+        "MissingCol": None
     }
 
     expected_output = {
@@ -158,11 +172,11 @@ def test_populate_json():
         "is_active": True,
         "energy": {
             "performance_data": {
-                # lowercase
-                "heating": 3.5,
-                "cooling": 4.0
+                "Heating": 3.5,
+                "Cooling": 4.0
             }
-        }
+        },
+        "should_be_null": None  # Now explicitly asserts that None is retained
     }
 
     assert populate_json(record, test_map) == expected_output
