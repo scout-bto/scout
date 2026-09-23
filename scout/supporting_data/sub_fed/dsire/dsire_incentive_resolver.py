@@ -59,11 +59,27 @@ What this does NOT do even with --follow-pdfs:
 
 Input: one or more drafts CSVs written by dsire_incentive_drafter.py
 (defaults to every dsire_incentive_drafts_*.csv and
-dsire_incentive_backfill_drafts_*.csv found in this directory). Output: the
-same rows, with performance level/units filled in wherever resolved, plus
-resolver_status/resolver_source_quote/resolver_notes columns for review --
-same "read before trusting" expectation as the drafter's own
-llm_confidence/llm_open_questions.
+dsire_incentive_backfill_drafts_*.csv found in this directory). Output:
+two files --
+1. The same rows, with performance level/units filled in wherever
+   resolved, plus resolver_status/resolver_source_quote/resolver_notes/
+   candidate_pdf_links/cites_external_standard columns for review -- same
+   "read before trusting" expectation as the drafter's own
+   llm_confidence/llm_open_questions.
+2. A much narrower "followup" worklist (dsire_incentive_followup_*.csv):
+   just the rows still needing a human, or a separate/more thorough AI
+   pass, to go look somewhere this script didn't -- each with its
+   candidate_pdf_links (every PDF link found on the row's source page,
+   ranked, regardless of whether --follow-pdfs was used to actually read
+   any of them -- finding them costs nothing beyond the page fetch this
+   script already makes) and cites_external_standard (the named standard,
+   e.g. "CEE's highest efficiency tier", when that's why nothing was
+   found -- that number lives on a different site entirely, not a link on
+   this page). This file is rebuilt fresh from the full resolved CSV on
+   every run, so it stays accurate across multiple --resume passes. This
+   is meant to be a recurring step: expect to run it again each time
+   incentives.csv is updated with new candidate rows, same as the checker
+   and drafter.
 
 Supports the same two providers as the drafter -- pick with --provider
 (anthropic default, gemini via --provider gemini) -- and reuses its
@@ -177,6 +193,16 @@ class ResolvedPerformance(BaseModel):
         "the residential program this row is for'). Empty string only if "
         "found is true and there's nothing to flag."
     ))
+    cites_external_standard: str = Field(default="", description=(
+        "Only when found is false: if the material names a specific "
+        "external standard or tier as the qualifying requirement without "
+        "stating its actual number (e.g. 'CEE's highest efficiency "
+        "tier', 'ENERGY STAR Most Efficient', 'IECC 2021'), name that "
+        "standard here verbatim, exactly as printed -- this points a "
+        "human at where else to look (CEE's own site, ENERGY STAR's own "
+        "criteria page, the IECC code text), since it won't be on this "
+        "program's own page. Empty string if no such standard is named."
+    ))
 
 
 def build_system_prompt():
@@ -196,7 +222,8 @@ def build_system_prompt():
         "- Never invent, estimate, or infer a number. If the material "
         "only names a standard ('ENERGY STAR certified', 'CEE's highest "
         "efficiency tier') without giving the actual number, set "
-        "found=false and say so in notes.\n"
+        "found=false, name that standard verbatim in "
+        "cites_external_standard, and say so in notes.\n"
         "- Report the raw value and unit exactly as printed -- do not "
         "convert units or percentages yourself.\n"
         "- If the material states different thresholds for different "
@@ -300,17 +327,24 @@ def extract_pdf_text(pdf_url):
 def gather_source_text(url, follow_pdfs, max_pdfs):
     """Fetch a row's primary source, optionally following linked PDFs.
 
-    Returns (combined_text, used_pdf_urls, pdf_notes) where pdf_notes
-    describes any linked PDF that was found but failed to fetch/parse --
-    that failure doesn't abort the row, since the page text alone may
-    still be enough, or may be all that's honestly available.
+    Returns (combined_text, used_pdf_urls, pdf_notes, candidate_pdf_links).
+    candidate_pdf_links is every PDF link found on the page, ranked by
+    find_pdf_links, regardless of follow_pdfs -- finding them costs
+    nothing beyond the page fetch already made, so it's always done, even
+    on a plain run, so a "not_found" row still leaves a concrete lead
+    (see write_followup_worklist). used_pdf_urls is the subset actually
+    downloaded and read (--follow-pdfs only). pdf_notes describes any
+    linked PDF that was found but failed to fetch/parse -- that failure
+    doesn't abort the row, since the page text alone may still be enough,
+    or may be all that's honestly available.
     """
     page_text, html = fetch_page(url)
+    candidate_pdf_links = find_pdf_links(url, html)
     if not follow_pdfs:
-        return page_text, [], ""
+        return page_text, [], "", candidate_pdf_links
 
     used_pdfs, pdf_sections, pdf_notes = [], [], []
-    for pdf_url in find_pdf_links(url, html)[:max_pdfs]:
+    for pdf_url in candidate_pdf_links[:max_pdfs]:
         try:
             pdf_text = extract_pdf_text(pdf_url)
         except Exception as e:
@@ -325,7 +359,7 @@ def gather_source_text(url, follow_pdfs, max_pdfs):
     combined = page_text
     if pdf_sections:
         combined += "\n\n" + "\n\n".join(pdf_sections)
-    return combined, used_pdfs, "; ".join(pdf_notes)
+    return combined, used_pdfs, "; ".join(pdf_notes), candidate_pdf_links
 
 
 def convert_to_scout_units(raw_value, raw_unit):
@@ -446,6 +480,50 @@ def load_processed_ids(output_path):
         return {row["dsire_id"] for row in csv.DictReader(f)}
 
 
+# Rows in these states still need somewhere else looked at -- either a
+# candidate document this script found but didn't (fully) read, or a
+# named external standard it can't follow at all. "resolved" and
+# "ambiguous" are deliberately different: ambiguous already has extracted
+# values, just not safely combinable, so it isn't a "go look elsewhere"
+# case the same way.
+FOLLOWUP_STATUSES = {"not_found"}
+FOLLOWUP_COLUMNS = [
+    "dsire_id", "dsire_name", "tech(s)", "end use(s)", "state(s)",
+    "source_url", "resolver_status", "cites_external_standard",
+    "candidate_pdf_links", "resolver_notes",
+]
+
+
+def default_followup_path(output_path):
+    stem = output_path.stem
+    stem = stem.replace("resolved", "followup") if "resolved" in stem else stem + "_followup"
+    return output_path.with_name(stem + output_path.suffix)
+
+
+def write_followup_worklist(resolved_path, followup_path):
+    """Derive a focused hand-off worklist from a resolver output file: just
+    the rows still needing a human (or another, separate AI pass) to go
+    look somewhere this script didn't, with the concrete leads
+    (candidate_pdf_links, cites_external_standard) up front instead of
+    buried in the full, much wider resolver CSV.
+
+    Rebuilt fresh from the complete resolved_path every call (not
+    appended to), so it stays correct across multiple --resume passes
+    regardless of how many separate runs built up resolved_path -- this
+    is meant to reflect current cumulative state, not this run's slice
+    of it. Returns the row count written.
+    """
+    with open(resolved_path, encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    followup_rows = [r for r in rows if r.get("resolver_status") in FOLLOWUP_STATUSES]
+    with open(followup_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=FOLLOWUP_COLUMNS)
+        writer.writeheader()
+        for r in followup_rows:
+            writer.writerow({col: r.get(col, "") for col in FOLLOWUP_COLUMNS})
+    return len(followup_rows)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -475,6 +553,13 @@ def main():
         "--output", type=str,
         help="Path to write the resolved CSV to. Defaults to "
              "sub_fed/dsire/dsire_incentive_resolved_<today>.csv"
+    )
+    parser.add_argument(
+        "--followup-output", type=str,
+        help="Path to write the narrower followup worklist to (rows still "
+             "needing a human/another AI pass to check a candidate PDF or "
+             "external standard). Defaults to --output's path with "
+             "'resolved' swapped for 'followup' (or '_followup' appended)."
     )
     parser.add_argument(
         "--limit", type=int,
@@ -568,7 +653,7 @@ def main():
          "source_url", "llm_confidence", "llm_open_questions"]
         + list(CSV_COLUMNS.values())
         + ["resolver_status", "resolver_source_quote", "resolver_notes",
-           "resolver_pdf_urls"]
+           "resolver_pdf_urls", "candidate_pdf_links", "cites_external_standard"]
     )
 
     total_input_tokens = 0
@@ -597,7 +682,8 @@ def main():
             if not source_url:
                 out_row.update(resolver_status="no_source_url",
                                 resolver_source_quote="", resolver_notes="",
-                                resolver_pdf_urls="")
+                                resolver_pdf_urls="", candidate_pdf_links="",
+                                cites_external_standard="")
                 status_counts["no_source_url"] += 1
                 print(f"{label} -> no source_url, skipped")
                 writer.writerow(out_row)
@@ -605,18 +691,21 @@ def main():
                 continue
 
             try:
-                page_text, used_pdfs, pdf_fetch_notes = gather_source_text(
-                    source_url, args.follow_pdfs, args.max_pdfs_per_row)
+                page_text, used_pdfs, pdf_fetch_notes, candidate_links = \
+                    gather_source_text(
+                        source_url, args.follow_pdfs, args.max_pdfs_per_row)
             except requests.exceptions.RequestException as e:
                 out_row.update(resolver_status="fetch_failed",
                                 resolver_source_quote="",
                                 resolver_notes=f"{type(e).__name__}: {e}",
-                                resolver_pdf_urls="")
+                                resolver_pdf_urls="", candidate_pdf_links="",
+                                cites_external_standard="")
                 status_counts["fetch_failed"] += 1
                 print(f"{label} -> FETCH FAILED ({type(e).__name__})")
                 writer.writerow(out_row)
                 f.flush()
                 continue
+            out_row["candidate_pdf_links"] = "; ".join(candidate_links)
             if used_pdfs:
                 print(f"{label} -> followed {len(used_pdfs)} linked PDF(s)")
 
@@ -637,7 +726,8 @@ def main():
                 out_row.update(resolver_status="llm_error",
                                 resolver_source_quote="",
                                 resolver_notes=f"{type(e).__name__}: {e}",
-                                resolver_pdf_urls="; ".join(used_pdfs))
+                                resolver_pdf_urls="; ".join(used_pdfs),
+                                cites_external_standard="")
                 status_counts["llm_error"] += 1
                 print(f"{label} -> LLM/PARSE ERROR ({type(e).__name__})")
                 writer.writerow(out_row)
@@ -653,10 +743,12 @@ def main():
             if not resolved.found or not resolved.entries:
                 out_row.update(
                     resolver_status="not_found", resolver_source_quote="",
-                    resolver_notes=notes_prefix + resolved.notes)
+                    resolver_notes=notes_prefix + resolved.notes,
+                    cites_external_standard=resolved.cites_external_standard)
                 status_counts["not_found"] += 1
                 print(f"{label} -> not found on primary source")
             else:
+                out_row["cites_external_standard"] = ""
                 level, units, problem = format_performance(resolved.entries)
                 quotes = " | ".join(e.source_quote for e in resolved.entries)
                 if problem:
@@ -704,6 +796,15 @@ def main():
         print(f"Cost estimate unavailable for {args.provider}/{model} "
               f"({total_input_tokens} input, {total_output_tokens} output tokens used).")
     print(f"Wrote {output_path}")
+
+    followup_path = (
+        Path(args.followup_output) if args.followup_output
+        else default_followup_path(output_path))
+    followup_count = write_followup_worklist(output_path, followup_path)
+    print(f"Wrote {followup_count} row(s) needing further follow-up "
+          f"(a candidate PDF to check, or a named external standard to "
+          f"track down) to {followup_path}")
+
     print("Review resolver_status/resolver_source_quote/resolver_notes for "
           "every 'resolved' row against the live source_url before copying "
           "into incentives.csv -- this extracts and converts, but doesn't "

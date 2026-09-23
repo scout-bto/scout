@@ -185,12 +185,29 @@ more granular (e.g. six capacity tiers) than any existing
 `incentives.csv` row's convention — `resolver_notes` flags both cases
 for a human to actually decide, since this script won't.
 
-Writes `dsire_incentive_resolved_<date>.csv`: the same rows, with
-`performance level`/`units` filled in wherever resolved (never
+Writes two files. `dsire_incentive_resolved_<date>.csv`: the same rows,
+with `performance level`/`units` filled in wherever resolved (never
 overwriting a value the drafter already filled in), plus
 `resolver_status`/`resolver_source_quote`/`resolver_notes`/
-`resolver_pdf_urls` for review. Same cost/`--resume`/`--limit`/
-`--provider` conventions as the drafter.
+`resolver_pdf_urls`/`candidate_pdf_links`/`cites_external_standard` for
+review. Same cost/`--resume`/`--limit`/`--provider` conventions as the
+drafter.
+
+`dsire_incentive_followup_<date>.csv`: a much narrower worklist, just the
+`not_found` rows, meant to be handed to a human or a separate/more
+thorough AI pass rather than re-read column-by-column in the full file.
+Every row's `candidate_pdf_links` (every PDF linked from its source page,
+ranked by filename relevance) is populated regardless of whether
+`--follow-pdfs` was used — finding the links costs nothing beyond the
+page fetch this script already makes, only *reading* them costs extra.
+`cites_external_standard` names the standard when that's why nothing was
+found (e.g. "CEE's highest efficiency tier") — that number lives on a
+different site entirely (CEE's own, ENERGY STAR's own, the IECC code
+text), not on this row's `source_url` at all, so it needs a differently-
+scoped follow-up than a linked PDF does. Rebuilt fresh from the full
+resolved CSV on every run, so re-running this script as part of a future
+`incentives.csv` update (the expected use — not a one-off) keeps this
+worklist current without any extra step.
 
 ## 4. Review and copy into incentives.csv
 
