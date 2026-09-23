@@ -821,7 +821,7 @@ class Measure(object):
                     markets[k] = numpy.array(markets[k])
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=16384)
 def _literal_eval_cached(key_str):
     """Cached ast.literal_eval for microsegment key chain strings.
 
@@ -830,7 +830,10 @@ def _literal_eval_cached(key_str):
     calls; caching avoids repeatedly re-parsing/re-compiling the same
     mini-AST. Callers must not mutate the returned object in place (wrap in
     list(...) first if a mutable copy is needed) since the same object is
-    shared across all callers requesting the same key_str.
+    shared across all callers requesting the same key_str. Bounded (rather
+    than unbounded) so repeated main() calls in the same process (e.g.,
+    BatchRun in run_batch.py) can't grow this cache without limit; a full
+    integration test run measures ~3,800 unique keys, well under this cap.
     """
     return literal_eval(key_str)
 
@@ -7772,6 +7775,18 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         savings and financial metrics for each measure, and write a summary
         of key results to an output JSON.
     """
+    try:
+        _run_main(opts)
+    finally:
+        # Reset the module-level literal_eval cache so repeated main() calls
+        # in one process (e.g., BatchRun in run_batch.py looping over
+        # configs) don't carry stale entries from a prior, unrelated run
+        # into the next one's hit/miss accounting.
+        _literal_eval_cached.cache_clear()
+
+
+def _run_main(opts: argparse.NameSpace):  # noqa: F821
+    """Implementation of main(); see main() for details."""
 
     # Raise numpy errors as exceptions
     numpy.seterr('raise')
