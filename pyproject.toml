@@ -45,3 +45,9 @@ dev = [
     "flake8 >= 7.0",
     "tabulate",
 ]
+llm = [
+    "anthropic",
+    "google-genai",
+    "pydantic",
+    "pypdf",
+]
