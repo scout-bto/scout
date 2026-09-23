@@ -51,7 +51,6 @@ domain/state combination found in incentives.csv.
 
 import csv
 import re
-import sys
 import argparse
 from datetime import date
 from pathlib import Path

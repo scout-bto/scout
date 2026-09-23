@@ -103,7 +103,6 @@ Usage (from the project root):
 
 """
 
-import os
 import re
 import sys
 import csv
@@ -161,7 +160,7 @@ class ResolvedEntry(BaseModel):
         "pre-convert a percent to a fraction; that happens later in code)."
     ))
     raw_unit: Literal["SEER", "SEER2", "EER", "EER2", "HSPF", "HSPF2",
-                       "UEF", "AFUE", "R value", "COP"] = Field(
+                      "UEF", "AFUE", "R value", "COP"] = Field(
         description="The unit exactly as stated on the page.")
     source_quote: str = Field(description=(
         "The verbatim sentence or phrase from the page that states this "
@@ -412,13 +411,13 @@ def resolve_row_anthropic(client, model, system_prompt, row, page_text, effort):
         model=model,
         max_tokens=1500,
         system=[{"type": "text", "text": system_prompt,
-                  "cache_control": {"type": "ephemeral"}}],
+                "cache_control": {"type": "ephemeral"}}],
         output_config={"effort": effort},
         messages=[{"role": "user", "content": build_user_message(row, page_text)}],
         output_format=ResolvedPerformance,
     )
     usage = {"input_tokens": response.usage.input_tokens,
-              "output_tokens": response.usage.output_tokens}
+             "output_tokens": response.usage.output_tokens}
     return response.parsed_output, usage
 
 
@@ -437,7 +436,7 @@ def resolve_row_gemini(client, model, system_prompt, row, page_text):
     resolved = ResolvedPerformance.model_validate(json.loads(response.text))
     try:
         usage = {"input_tokens": response.usage_metadata.prompt_token_count,
-                  "output_tokens": response.usage_metadata.candidates_token_count}
+                 "output_tokens": response.usage_metadata.candidates_token_count}
     except AttributeError:
         usage = {"input_tokens": 0, "output_tokens": 0}
     return resolved, usage
@@ -659,7 +658,7 @@ def main():
     total_input_tokens = 0
     total_output_tokens = 0
     status_counts = {"resolved": 0, "not_found": 0, "no_source_url": 0,
-                      "fetch_failed": 0, "llm_error": 0, "ambiguous": 0}
+                     "fetch_failed": 0, "llm_error": 0, "ambiguous": 0}
     consecutive_errors = 0
     max_consecutive_errors = 5
 
@@ -681,9 +680,9 @@ def main():
             source_url = row.get("source_url", "").strip()
             if not source_url:
                 out_row.update(resolver_status="no_source_url",
-                                resolver_source_quote="", resolver_notes="",
-                                resolver_pdf_urls="", candidate_pdf_links="",
-                                cites_external_standard="")
+                               resolver_source_quote="", resolver_notes="",
+                               resolver_pdf_urls="", candidate_pdf_links="",
+                               cites_external_standard="")
                 status_counts["no_source_url"] += 1
                 print(f"{label} -> no source_url, skipped")
                 writer.writerow(out_row)
@@ -696,10 +695,10 @@ def main():
                         source_url, args.follow_pdfs, args.max_pdfs_per_row)
             except requests.exceptions.RequestException as e:
                 out_row.update(resolver_status="fetch_failed",
-                                resolver_source_quote="",
-                                resolver_notes=f"{type(e).__name__}: {e}",
-                                resolver_pdf_urls="", candidate_pdf_links="",
-                                cites_external_standard="")
+                               resolver_source_quote="",
+                               resolver_notes=f"{type(e).__name__}: {e}",
+                               resolver_pdf_urls="", candidate_pdf_links="",
+                               cites_external_standard="")
                 status_counts["fetch_failed"] += 1
                 print(f"{label} -> FETCH FAILED ({type(e).__name__})")
                 writer.writerow(out_row)
@@ -724,10 +723,10 @@ def main():
                 continue
             except Exception as e:
                 out_row.update(resolver_status="llm_error",
-                                resolver_source_quote="",
-                                resolver_notes=f"{type(e).__name__}: {e}",
-                                resolver_pdf_urls="; ".join(used_pdfs),
-                                cites_external_standard="")
+                               resolver_source_quote="",
+                               resolver_notes=f"{type(e).__name__}: {e}",
+                               resolver_pdf_urls="; ".join(used_pdfs),
+                               cites_external_standard="")
                 status_counts["llm_error"] += 1
                 print(f"{label} -> LLM/PARSE ERROR ({type(e).__name__})")
                 writer.writerow(out_row)
