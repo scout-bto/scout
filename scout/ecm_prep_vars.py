@@ -810,8 +810,12 @@ class UsefulVars(object):
                 cz_override = opts.ecm_field_updates["climate_zone"]
                 if isinstance(cz_override, str):
                     cz_override = [cz_override]
+                # Normalize to uppercase so a lowercase override (e.g. from a
+                # config file or CLI arg, neither of which enforce case)
+                # still matches valid_regions' uppercase state abbreviations.
+                cz_override_set = {cz.upper() for cz in cz_override}
                 out_break_regions = [
-                    r for r in valid_regions if r in cz_override]
+                    r for r in valid_regions if r in cz_override_set]
             regions_out = [(x, x) for x in out_break_regions]
 
             # Read in mapping for alternate performance/cost unit breakouts
