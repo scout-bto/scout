@@ -1,105 +1,29 @@
-﻿scenario,description,state(s),building type(s),onsite pct fossil reduction,energy index improvement,stretch pct improvement,start year,applicable fraction,fraction notes,type
-reference,Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2025,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-reference,Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements).,CA,all,,stretch,20,2025,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+﻿scenario,description,state(s),building type(s),onsite pct fossil reduction,energy index improvement,stretch pct improvement,start year,applicable fraction,fraction notes,type,,,,,,,,,,
+reference,California Title 24: Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2026,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+reference,California Title 24: Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements to meet Title 24 stretch equivalency).,CA,all,,stretch,20,2026,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
 reference,"Lancaster, CA's Zero Net Energy ordinance requires at least 2kWh of solar generation per newly constructed home, beginning in 2017. 
 
 https://lancasterenergy.com/2017/10/12/1274/#:~:text=The%20first%20of%20its%20kind,home%20built%2C%20beginning%20in%202017",CA,all residential,,stretch,20,2017,0.004,"Tiny fraction but interesting code, included just as an example of more aggressive solar codes
 
-Used Lancaster city, res site_energy",local
-reference,"Los Angeles has banned gas in new buildings. This ban applies to most new buildings approved by the Los Angeles Department of Building and Safety. ""Affordable housing proposals will get treated a little differently: Those that are approved before June 1 won’t have to comply with the rules. Meanwhile, secondary housing units on single-family lots won’t be affected by the new requirements, and restaurants will still be allowed to use gas ranges and ovens.""
-
-https://grist.org/beacon/la-bans-natural-gas-in-new-buildings/
-
-https://www.jdesigns.com/blog/los-angeles-gas-banned-new-construction",CA,"all residential, all commercial",100,,,2023,0.152,"Note that this uses LA city res data and LA county com data because we don't have city com data, natural_gas consumption",local
-reference,"San Francisco prohibits installation of infrastructure, piping systems, or piping for distribution of natural gas or propane to such uses for indoor and outdoor space-conditioning, water heating, cooking, and clothes drying systems, requiring these functions to be all-electric. 
-
-https://www.sf.gov/all-electric-new-construction-ordinance#
-
-https://sfbos.org/sites/default/files/o0237-20.pdf",CA,"all residential, all commercial",100,,,2021,0.036,"Note that this uses SF city res data and SF county com data because we don't have city com data, natural_gas consumption",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2022,0.007,"SF county commercial buildings over 500,000 sq ft
-site_energy",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2024,0.012,"SF county commercial buildings over 250,000 sq ft and under 500,000
-site_energy",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2030,0.01,"SF county commercial buildings over 50,000 sq ft and under 250,000
-site_energy",local
-optimistic,Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2025,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-optimistic,Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements).,CA,all,,stretch,20,2025,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
-optimistic,"Lancaster, CA's Zero Net Energy ordinance requires at least 2kWh of solar generation per newly constructed home, beginning in 2017. 
-
-https://lancasterenergy.com/2017/10/12/1274/#:~:text=The%20first%20of%20its%20kind,home%20built%2C%20beginning%20in%202017",CA,all residential,,stretch,20,2017,0.004,"Tiny fraction but interesting code, included just as an example of more aggressive solar codes
-
-Used Lancaster city, res site_energy",local
-optimistic,"Los Angeles has banned gas in new buildings. This ban applies to most new buildings approved by the Los Angeles Department of Building and Safety. ""Affordable housing proposals will get treated a little differently: Those that are approved before June 1 won’t have to comply with the rules. Meanwhile, secondary housing units on single-family lots won’t be affected by the new requirements, and restaurants will still be allowed to use gas ranges and ovens.""
-
-https://grist.org/beacon/la-bans-natural-gas-in-new-buildings/
-
-https://www.jdesigns.com/blog/los-angeles-gas-banned-new-construction",CA,"all residential, all commercial",100,,,2023,0.152,"Note that this uses LA city res data and LA county com data because we don't have city com data, natural_gas consumption",local
-optimistic,"San Francisco prohibits installation of infrastructure, piping systems, or piping for distribution of natural gas or propane to such uses for indoor and outdoor space-conditioning, water heating, cooking, and clothes drying systems, requiring these functions to be all-electric. 
-
-https://www.sf.gov/all-electric-new-construction-ordinance#
-
-https://sfbos.org/sites/default/files/o0237-20.pdf",CA,"all residential, all commercial",100,,,2021,0.036,"Note that this uses SF city res data and SF county com data because we don't have city com data, natural_gas consumption",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2022,0.007,"SF county commercial buildings over 500,000 sq ft
-site_energy",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2024,0.012,"SF county commercial buildings over 250,000 sq ft and under 500,000
-site_energy",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2030,0.01,"SF county commercial buildings over 50,000 sq ft and under 250,000
-site_energy",local
-aggressive,Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2025,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements).,CA,all,,stretch,20,2025,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+Used Lancaster city, res site_energy",local,,,,,,,,,,
+aggressive,California Title 24: Requirements for buildings that install electric heat pump equipment (efficiency at base code level).,CA,all,100,none,,2026,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,California Title 24: Requirements for buildings that do not install electric heat pump equipment (assume higher efficiency requirements to meet Title 24 stretch equivalency).,CA,all,,stretch,20,2026,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
 aggressive,"Lancaster, CA's Zero Net Energy ordinance requires at least 2kWh of solar generation per newly constructed home, beginning in 2017. 
 
 https://lancasterenergy.com/2017/10/12/1274/#:~:text=The%20first%20of%20its%20kind,home%20built%2C%20beginning%20in%202017",CA,all residential,,stretch,20,2017,0.004,"Tiny fraction but interesting code, included just as an example of more aggressive solar codes
 
-Used Lancaster city, res site_energy",local
-aggressive,"Los Angeles has banned gas in new buildings. This ban applies to most new buildings approved by the Los Angeles Department of Building and Safety. ""Affordable housing proposals will get treated a little differently: Those that are approved before June 1 won’t have to comply with the rules. Meanwhile, secondary housing units on single-family lots won’t be affected by the new requirements, and restaurants will still be allowed to use gas ranges and ovens.""
-
-https://grist.org/beacon/la-bans-natural-gas-in-new-buildings/
-
-https://www.jdesigns.com/blog/los-angeles-gas-banned-new-construction",CA,"all residential, all commercial",100,,,2023,0.152,"Note that this uses LA city res data and LA county com data because we don't have city com data, natural_gas consumption",local
-aggressive,"San Francisco prohibits installation of infrastructure, piping systems, or piping for distribution of natural gas or propane to such uses for indoor and outdoor space-conditioning, water heating, cooking, and clothes drying systems, requiring these functions to be all-electric. 
-
-https://www.sf.gov/all-electric-new-construction-ordinance#
-
-https://sfbos.org/sites/default/files/o0237-20.pdf",CA,"all residential, all commercial",100,,,2021,0.036,"Note that this uses SF city res data and SF county com data because we don't have city com data, natural_gas consumption",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2022,0.007,"SF county commercial buildings over 500,000 sq ft
-site_energy",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2024,0.012,"SF county commercial buildings over 250,000 sq ft and under 500,000
-site_energy",local
-remove,"San Francisco’s Environment Code Chapter 30 (Ordinance 220-19) requires large commercial buildings to source 100% of their electricity from renewable or greenhouse gas-free (GHG-free) sources. 
-
-https://sfbos.org/sites/default/files/o0220-19.pdf",CA,all commercial,100,,,2030,0.01,"SF county commercial buildings over 50,000 sq ft and under 250,000
-site_energy",local
+Used Lancaster city, res site_energy",local,,,,,,,,,,
 reference,"Oak Park Illinois was the first municipality in the Midwest to approve an electrification ordinance as part of the building code. The ordinance requires any new building constructed after January 1, 2024, to be fully electric, meaning that there will be no natural gas hookups within the structure.
 
-https://www.oakpark.com/2023/11/27/new-building-code-requires-all-electric-construction-to-reduce-greenhouse-gas-emissions/",IL,"all residential, all commercial",100,,,2024,0.163,This fraction might be slightly misleading because cook county includes chicago - had to use county for comstock but used oak park for res stock,local
-optimistic,"Oak Park Illinois was the first municipality in the Midwest to approve an electrification ordinance as part of the building code. The ordinance requires any new building constructed after January 1, 2024, to be fully electric, meaning that there will be no natural gas hookups within the structure.
-
-https://www.oakpark.com/2023/11/27/new-building-code-requires-all-electric-construction-to-reduce-greenhouse-gas-emissions/",IL,"all residential, all commercial",100,,,2024,0.163,This fraction might be slightly misleading because cook county includes chicago - had to use county for comstock but used oak park for res stock,local
+https://www.oakpark.com/2023/11/27/new-building-code-requires-all-electric-construction-to-reduce-greenhouse-gas-emissions/",IL,"all residential, all commercial",100,,,2024,0.163,This fraction might be slightly misleading because cook county includes chicago - had to use county for comstock but used oak park for res stock,local,,,,,,,,,,
 aggressive,"Oak Park Illinois was the first municipality in the Midwest to approve an electrification ordinance as part of the building code. The ordinance requires any new building constructed after January 1, 2024, to be fully electric, meaning that there will be no natural gas hookups within the structure.
 
-https://www.oakpark.com/2023/11/27/new-building-code-requires-all-electric-construction-to-reduce-greenhouse-gas-emissions/",IL,"all residential, all commercial",100,,,2024,0.163,This fraction might be slightly misleading because cook county includes chicago - had to use county for comstock but used oak park for res stock,local
-aggressive,Assume state-wide code similar to CA enacted by 2035.,IL,"all residential, all commercial",100,adopt current,,2035,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2035.,IL,"all residential, all commercial",,stretch,20,2035,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+https://www.oakpark.com/2023/11/27/new-building-code-requires-all-electric-construction-to-reduce-greenhouse-gas-emissions/",IL,"all residential, all commercial",100,,,2024,0.163,This fraction might be slightly misleading because cook county includes chicago - had to use county for comstock but used oak park for res stock,local,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2035.,IL,"all residential, all commercial",100,adopt current,,2035,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2035.,IL,"all residential, all commercial",,stretch,20,2035,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
 reference,"Massachusetts Stretch Energy Code serves as a more energy-efficient alternative to the Base Code. The Stretch code increases the energy efficiency requirements for all new residential and commercial buildings, as well as for additions and renovations that require building permits.The Stretch Code applies to both new residential and commercial buildings, as well as certain renovations and additions requiring building permits. Municipalities may adopt the Stretch Code, and as of January 2023, 300 out of 351 Massachusetts cities and towns had done so.
 
-https://www.mass.gov/regulations/225-CMR-2200-massachusetts-stretch-code-and-specialized-code-for-low-rise-residential-2025-residential-low-rise-amendments-to-iecc2021-and-irc-2021-chapter-11-energy-efficiency",MA,"all residential, all commercial",,stretch,20,2025,0.91,91% of the population had adopted the stretch or spcialized code as of April 2025 https://www.mass.gov/doc/building-energy-code-adoption-by-municipality/download,state
+https://www.mass.gov/regulations/225-CMR-2200-massachusetts-stretch-code-and-specialized-code-for-low-rise-residential-2025-residential-low-rise-amendments-to-iecc2021-and-irc-2021-chapter-11-energy-efficiency",MA,"all residential, all commercial",,stretch,20,2025,0.91,91% of the population had adopted the stretch or spcialized code as of April 2025 https://www.mass.gov/doc/building-energy-code-adoption-by-municipality/download,state,,,,,,,,,,
 reference,"An Act Driving Clean Energy and Offshore Wind (St. 2022, c. 179, § 84) requires the Massachusetts Department of Energy Resources (DOER) to establish a demonstration project in which not more than ten cities and towns may adopt and amend general or zoning ordinances or by-laws that require new building construction or major renovation projects to be fossil fuel-free, and enforce restrictions and prohibitions on new building construction and major renovation projects that are not fossil fuel-free, including through the withholding or conditioning of building permits. 
 
 Accepted towns include Arlington, Newton, Acton, Aquinnah, Brookline, Cambridge, Concord, Lincoln, Northampton and Lexington.
@@ -109,187 +33,1021 @@ Massachusetts will allow municipalities to begin pilot programs that may prohibi
 https://www.mass.gov/info-details/municipal-fossil-fuel-free-building-demonstration-program
 
 https://www.aceee.org/blog-post/2022/08/three-states-enact-integrated-plans-decarbonize-buildings",MA,"all residential, all commercial",100,,,2025,0.354,"Filtered for Middlesex, Dukes, Hampshire, and Norfolk counties
-Site_energy",local
-optimistic,"Massachusetts Stretch Energy Code serves as a more energy-efficient alternative to the Base Code. The Stretch code increases the energy efficiency requirements for all new residential and commercial buildings, as well as for additions and renovations that require building permits.The Stretch Code applies to both new residential and commercial buildings, as well as certain renovations and additions requiring building permits. Municipalities may adopt the Stretch Code, and as of January 2023, 300 out of 351 Massachusetts cities and towns had done so.
-
-https://www.mass.gov/regulations/225-CMR-2200-massachusetts-stretch-code-and-specialized-code-for-low-rise-residential-2025-residential-low-rise-amendments-to-iecc2021-and-irc-2021-chapter-11-energy-efficiency",MA,"all residential, all commercial",,stretch,20,2025,0.91,91% of the population had adopted the stretch or spcialized code as of April 2025 https://www.mass.gov/doc/building-energy-code-adoption-by-municipality/download,local
-optimistic,"An Act Driving Clean Energy and Offshore Wind (St. 2022, c. 179, § 84) requires the Massachusetts Department of Energy Resources (DOER) to establish a demonstration project in which not more than ten cities and towns may adopt and amend general or zoning ordinances or by-laws that require new building construction or major renovation projects to be fossil fuel-free, and enforce restrictions and prohibitions on new building construction and major renovation projects that are not fossil fuel-free, including through the withholding or conditioning of building permits. 
-
-Accepted towns include Arlington, Newton, Acton, Aquinnah, Brookline, Cambridge, Concord, Lincoln, Northampton and Lexington.
-
-Massachusetts will allow municipalities to begin pilot programs that may prohibit the use of fossil fuels in new buildings. Expecting a shift away from gas, starting in 2025, Massachusetts will eliminate incentives for new fossil-fuel equipment, except as a backup thermal energy source for heat pumps. The state will also offer research and grants to promote the use of ground-source heat pump systems, which take advantage of more consistent underground temperatures, making them more efficient than air-source heat pumps.  
-
-https://www.mass.gov/info-details/municipal-fossil-fuel-free-building-demonstration-program
-
-https://www.aceee.org/blog-post/2022/08/three-states-enact-integrated-plans-decarbonize-buildings",MA,"all residential, all commercial",100,,,2025,0.354,"Filtered for Middlesex, Dukes, Hampshire, and Norfolk counties
-Site_energy",local
-optimistic,Extend stretch to entire state beginning in 2030.,MA,"all residential, all commercial",,stretch,20,2030,1,,state
+Site_energy",local,,,,,,,,,,
 aggressive,"Massachusetts Stretch Energy Code serves as a more energy-efficient alternative to the Base Code. The Stretch code increases the energy efficiency requirements for all new residential and commercial buildings, as well as for additions and renovations that require building permits.The Stretch Code applies to both new residential and commercial buildings, as well as certain renovations and additions requiring building permits. Municipalities may adopt the Stretch Code, and as of January 2023, 300 out of 351 Massachusetts cities and towns had done so.
 
-https://www.mass.gov/regulations/225-CMR-2200-massachusetts-stretch-code-and-specialized-code-for-low-rise-residential-2025-residential-low-rise-amendments-to-iecc2021-and-irc-2021-chapter-11-energy-efficiency",MA,"all residential, all commercial",,stretch,20,2025,0.91,91% of the population had adopted the stretch or spcialized code as of April 2025 https://www.mass.gov/doc/building-energy-code-adoption-by-municipality/download,local
-optimistic,"An Act Driving Clean Energy and Offshore Wind (St. 2022, c. 179, § 84) requires the Massachusetts Department of Energy Resources (DOER) to establish a demonstration project in which not more than ten cities and towns may adopt and amend general or zoning ordinances or by-laws that require new building construction or major renovation projects to be fossil fuel-free, and enforce restrictions and prohibitions on new building construction and major renovation projects that are not fossil fuel-free, including through the withholding or conditioning of building permits. 
-
-Accepted towns include Arlington, Newton, Acton, Aquinnah, Brookline, Cambridge, Concord, Lincoln, Northampton and Lexington.
-
-Massachusetts will allow municipalities to begin pilot programs that may prohibit the use of fossil fuels in new buildings. Expecting a shift away from gas, starting in 2025, Massachusetts will eliminate incentives for new fossil-fuel equipment, except as a backup thermal energy source for heat pumps. The state will also offer research and grants to promote the use of ground-source heat pump systems, which take advantage of more consistent underground temperatures, making them more efficient than air-source heat pumps.  
-
-https://www.mass.gov/info-details/municipal-fossil-fuel-free-building-demonstration-program
-
-https://www.aceee.org/blog-post/2022/08/three-states-enact-integrated-plans-decarbonize-buildings",MA,"all residential, all commercial",100,,,2025,0.354,"Filtered for Middlesex, Dukes, Hampshire, and Norfolk counties
-Site_energy",local
-aggressive,Extend stretch to entire state beginning in 2030 and assume it reflects the specialized code (with its additional electrification requirement).,MA,"all residential, all commercial",100,stretch,20,2030,1,,state
+https://www.mass.gov/regulations/225-CMR-2200-massachusetts-stretch-code-and-specialized-code-for-low-rise-residential-2025-residential-low-rise-amendments-to-iecc2021-and-irc-2021-chapter-11-energy-efficiency",MA,"all residential, all commercial",,stretch,20,2025,0.91,91% of the population had adopted the stretch or spcialized code as of April 2025 https://www.mass.gov/doc/building-energy-code-adoption-by-municipality/download,local,,,,,,,,,,
+aggressive,Extend stretch to entire state beginning in 2030 and assume it reflects the specialized code (with its additional electrification requirement).,MA,"all residential, all commercial",100,stretch,20,2030,1,,state,,,,,,,,,,
 reference,"Montgomery County, MD, passed Bill 13-22, Buildings – Comprehensive Building Decarbonization, which will require the County Executive to issue all-electric building standards for new construction by Dec. 31, 2026. 
 
-https://www2.montgomerycountymd.gov/mcgportalapps/Press_Detail.aspx?Item_ID=42501&Dept=1",MD,"all residential, all commercial",100,stretch,,2027,0.16,,local
-proposed,"In 2023, MD Council Bill 5-2023 (Howard County) required a report to the Council with recommendations about changes to the Howard County Building Code that be needed to require all-electric buildings. The Report was completed in April 2024. As of March 2025, Howard County has not officially adopted a stretch energy code. 
-
-https://cc.howardcountymd.gov/recommendations-all-electric-buildings
-
-https://cc.howardcountymd.gov/sites/default/files/2024-04/CB-5%20Report%20to%20Council_Building%20Code%20Considerations%20for%20Comprehensive%20Building%20Decarbonization.pdf",MD,"all residential, all commercial",,stretch?,,,0.053,,local
-optimistic,"Montgomery County, MD, passed Bill 13-22, Buildings – Comprehensive Building Decarbonization, which will require the County Executive to issue all-electric building standards for new construction by Dec. 31, 2026. 
-
-https://www2.montgomerycountymd.gov/mcgportalapps/Press_Detail.aspx?Item_ID=42501&Dept=1",MD,"all residential, all commercial",100,stretch,,2027,0.16,,local
-optimistic,Assume update to the latest code by 2030.,MD,"all residential, all commercial",,adopt current,,2030,1,,state
+https://www2.montgomerycountymd.gov/mcgportalapps/Press_Detail.aspx?Item_ID=42501&Dept=1",MD,"all residential, all commercial",100,stretch,,2027,0.16,,local,,,,,,,,,,
 aggressive,"Montgomery County, MD, passed Bill 13-22, Buildings – Comprehensive Building Decarbonization, which will require the County Executive to issue all-electric building standards for new construction by Dec. 31, 2026. 
 
-https://www2.montgomerycountymd.gov/mcgportalapps/Press_Detail.aspx?Item_ID=42501&Dept=1",MD,"all residential, all commercial",100,stretch,,2027,0.16,,local
-aggressive,Assume state-wide code similar to CA enacted by 2030.,MD,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2030.,MD,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+https://www2.montgomerycountymd.gov/mcgportalapps/Press_Detail.aspx?Item_ID=42501&Dept=1",MD,"all residential, all commercial",100,stretch,,2027,0.16,,local,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,MD,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,MD,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
 reference,"In addition to updating Maine's base energy code, the state legislature also mandated the creation of the State’s first energy stretch code, which the MUBEC Board set as the IECC 2021. Municipalities can choose to adopt this code in lieu of the state’s base code. 
 
-https://southportland.gov/673/Energy-Stretch-Code",ME,"all residential, all commercial",,adopt current,,2022,0.049,Only currently adopted in Portland and South Portland.,local
-optimistic,See reference.,ME,"all residential, all commercial",,adopt current,,2022,0.049,Only currently adopted in Portland and South Portland.,local
-optimistic,Assume update to the latest code by 2030.,ME,"all residential, all commercial",,adopt current,,2030,1,,state
-aggressive,See reference.,ME,"all residential, all commercial",,adopt current,,2022,0.049,Only currently adopted in Portland and South Portland.,local
-aggressive,Assume state-wide code similar to CA enacted by 2030.,ME,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2030.,ME,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
-remove,"The NYStretch Energy Code–2020 (NYStretch) is a voluntary stretch energy code that has been developed by NYSERDA as a statewide model code for New York jurisdictions to use to meet their energy and climate goals by accelerating the savings obtained through their local building energy codes.
-
-https://www.nyserda.ny.gov/All-Programs/Clean-Resilient-Building-Codes/NYStretch-Energy-Code-2020",NY,"all residential, all commercial",,stretch,10,2020,1,No data available on adoption,state
-reference,"New York is updating to IECC 2021/2024 for residential and ASHRAE 90.1-2019/2022 for commercial, with expected effective date of 2025. https://www.energycodes.gov/sites/default/files/2023-11/2023-7-27_DOE_Certification_and_Extension_Letter_Final.pdf#:~:text=%C2%A76833(c)%20in%20light%20of%20the%20fact%20that,is%20anticipated%20to%20become%20effective%20in%202025.",NY,"all residential, all commercial",,adopt current,,2025,1,,state
-reference,"Gas ban for new construction, starting in different years for large vs. small buildings.
-
-https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"single family home, mobile home",100,adopt current,,2026,1,,state
-reference,"Gas ban for new construction, starting in different years for large vs. small buildings.
-
- https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"all commercial, multi family home",100,adopt current,,2029,1,,state
-optimistic,"New York is updating to IECC 2021/2024 for residential and ASHRAE 90.1-2019/2022 for commercial, with expected effective date of 2025. https://www.energycodes.gov/sites/default/files/2023-11/2023-7-27_DOE_Certification_and_Extension_Letter_Final.pdf#:~:text=%C2%A76833(c)%20in%20light%20of%20the%20fact%20that,is%20anticipated%20to%20become%20effective%20in%202025.",NY,"all residential, all commercial",,adopt current,,2025,1,,state
-optimistic,"Gas ban for new construction, starting in different years for large vs. small buildings.
-
-https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"single family home, mobile home",100,adopt current,,2026,1,,state
-optimistic,"Gas ban for new construction, starting in different years for large vs. small buildings.
-
- https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"all commercial, multi family home",100,adopt current,,2029,1,,state
-aggressive,"New York is updating to IECC 2021/2024 for residential and ASHRAE 90.1-2019/2022 for commercial, with expected effective date of 2025. https://www.energycodes.gov/sites/default/files/2023-11/2023-7-27_DOE_Certification_and_Extension_Letter_Final.pdf#:~:text=%C2%A76833(c)%20in%20light%20of%20the%20fact%20that,is%20anticipated%20to%20become%20effective%20in%202025.",NY,"all residential, all commercial",,adopt current,,2025,1,,state
+https://southportland.gov/673/Energy-Stretch-Code",ME,"all residential, all commercial",,adopt current,,2022,0.049,Only currently adopted in Portland and South Portland.,local,,,,,,,,,,
+aggressive,See reference.,ME,"all residential, all commercial",,adopt current,,2022,0.049,Only currently adopted in Portland and South Portland.,local,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,ME,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,ME,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
+reference,"New York is updating to IECC 2021/2024 for residential and ASHRAE 90.1-2019/2022 for commercial, with expected effective date of 2025. https://www.energycodes.gov/sites/default/files/2023-11/2023-7-27_DOE_Certification_and_Extension_Letter_Final.pdf#:~:text=%C2%A76833(c)%20in%20light%20of%20the%20fact%20that,is%20anticipated%20to%20become%20effective%20in%202025.",NY,"all residential, all commercial",,adopt current,,2025,1,,state,,,,,,,,,,
+aggressive,"New York is updating to IECC 2021/2024 for residential and ASHRAE 90.1-2019/2022 for commercial, with expected effective date of 2025. https://www.energycodes.gov/sites/default/files/2023-11/2023-7-27_DOE_Certification_and_Extension_Letter_Final.pdf#:~:text=%C2%A76833(c)%20in%20light%20of%20the%20fact%20that,is%20anticipated%20to%20become%20effective%20in%202025.",NY,"all residential, all commercial",,adopt current,,2025,1,,state,,,,,,,,,,
 aggressive,"Gas ban for new construction, starting in different years for large vs. small buildings.
 
-https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"single family home, mobile home",100,adopt current,,2026,1,,state
+https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"single family home, mobile home",100,adopt current,,2026,1,,state,,,,,,,,,,
 aggressive,"Gas ban for new construction, starting in different years for large vs. small buildings.
 
- https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"all commercial, multi family home",100,adopt current,,2029,1,,state
-remove,"Oregon stretch code is an optional code that applies to new commercial buildings, including laboratories, data centers, conditioned warehouses, and retail or mercantile buildings over 40,000 ft2 serving a single tenant, and all other new buildings over 100,000 ft2 of conditioned floor area.
-https://www.oregon.gov/bcd/codes-stand/Pages/reach.aspx
-
-This Commercial Reach Code is intended to achieve between 5% and 10% improved performance over the 2025 Oregon Energy Efficiency Specialty Code (OEESC), based on the measurement of regulated energy loads.
-",OR,all commercial,,stretch,10,2022,1,No data available on adoption,state
-remove,"Oregon stretch code is an optional code that applies to new commercial buildings, including laboratories, data centers, conditioned warehouses, and retail or mercantile buildings over 40,000 ft2 serving a single tenant, and all other new buildings over 100,000 ft2 of conditioned floor area.
-https://www.oregon.gov/bcd/codes-stand/Pages/reach.aspx",OR,all residential,,stretch,10,2022,1,No data available on adoption,state
+ https://nyassembly.gov/leg/?default_fld=&leg_video=&bn=A03006&term=&Summary=Y&Text=Y",NY,"all commercial, multi family home",100,adopt current,,2029,1,,state,,,,,,,,,,
 reference,"In 2009, Rhode Island was the first state to sign a Green Buildings Act (RIGL §37-24) into law. The Act requires that all new construction and renovation projects over 10,000 gross square feet, constructed by a public agency be designed and constructed to a LEED Certified or an equivalent high performance green building standard.
 
-https://ribcc.ri.gov/green-buildings-act",RI,all commercial,,stretch,10,2009,0.049,state-owned commercial buildings in RI >10k sq ft,local
-remove,"Rhode Island’s voluntary residential stretch code was developed as part of the 2015 Lead by Example Executive Order (EO 15-17). It is a voluntary code aimed at helping buildings, contractors, and other industry professionals to design and build high-performance homes. It is based heavily on DOE’s Zero Energy Ready Homes (ZERHs) program and the US Environmental Protection Agency (EPA) Water Sense Program. These homes are built ready to incorporate on-site renewables and lower the carbon footprint of the home as well as save homeowners costs on utilities.
-
-https://energy.ri.gov/sites/g/files/xkgbur741/files/documents/leadbyexample/stretch-code/RIRSC-FINAL-02-14-18.pdf",RI,all residential,,stretch,20,2018,1,No data available on adoption,state
-remove,"Rhode Island’s voluntary commercial stretch code was released in 2018 and is based on the 2015 International Green Construction Code (IgCC). Rhode Island amended the 2015 IgCC to create its commercial stretch code, which covers existing buildings, water resources, indoor air quality, and emission reduction, includes both performance and prescriptive approaches and offers incentives and support from National Grid.
-
-https://energy.ri.gov/sites/g/files/xkgbur741/files/documents/leadbyexample/stretch-code/RI-Stretch-Code-Commercial_FINAL-2-16-18.pdf",RI,all commercial,,stretch,20,2018,1,No data available on adoption,state
-optimistic,"In 2009, Rhode Island was the first state to sign a Green Buildings Act (RIGL §37-24) into law. The Act requires that all new construction and renovation projects over 10,000 gross square feet, constructed by a public agency be designed and constructed to a LEED Certified or an equivalent high performance green building standard.
-
-https://ribcc.ri.gov/green-buildings-act",RI,all commercial,,stretch,10,2009,0.049,state-owned commercial buildings in RI >10k sq ft,local
-optimistic,Assume update to the latest code by 2030.,RI,"all residential, all commercial",,adopt current,,2030,1,,state
+https://ribcc.ri.gov/green-buildings-act",RI,all commercial,,stretch,10,2009,0.049,state-owned commercial buildings in RI >10k sq ft,local,,,,,,,,,,
 aggressive,"In 2009, Rhode Island was the first state to sign a Green Buildings Act (RIGL §37-24) into law. The Act requires that all new construction and renovation projects over 10,000 gross square feet, constructed by a public agency be designed and constructed to a LEED Certified or an equivalent high performance green building standard.
 
-https://ribcc.ri.gov/green-buildings-act",RI,all commercial,,stretch,10,2009,0.049,state-owned commercial buildings in RI >10k sq ft,local
-aggressive,Assume state-wide code similar to CA enacted by 2030.,RI,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2030.,RI,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+https://ribcc.ri.gov/green-buildings-act",RI,all commercial,,stretch,10,2009,0.049,state-owned commercial buildings in RI >10k sq ft,local,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,RI,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,RI,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
 reference,"Burlington, VT - In September 2021 the City Council passed an ordinance which requires the installation of a ""renewable"" primary heating system in all new construction.  This means all new buildings must have either electric heat, wood pellets, renewable gas, or biodiesel. A fossil natural gas, propane, or fuel oil system can still be installed as a back-up heating system, but the “renewable” system must cover 85% of the heating load. A waiver may also be granted if it is determined that this heating system would be ""uneconomical.""
 
-https://www.vermontfuel.com/burnerban/ewExternalFiles/Signed-CC-Ordinance-Chapter-8.-Building-And-Building-Construction-Addition-of-Article-V.-Heating-Systems-Signed.pdf",VT,"all residential, all commercial",85,,,2021,0.111,"Fraction represents Chittiden County, Burlington City all commercial/all residential, site_energy",local
-optimistic,"Burlington, VT - In September 2021 the City Council passed an ordinance which requires the installation of a ""renewable"" primary heating system in all new construction.  This means all new buildings must have either electric heat, wood pellets, renewable gas, or biodiesel. A fossil natural gas, propane, or fuel oil system can still be installed as a back-up heating system, but the “renewable” system must cover 85% of the heating load. A waiver may also be granted if it is determined that this heating system would be ""uneconomical.""
-
-https://www.vermontfuel.com/burnerban/ewExternalFiles/Signed-CC-Ordinance-Chapter-8.-Building-And-Building-Construction-Addition-of-Article-V.-Heating-Systems-Signed.pdf",VT,"all residential, all commercial",85,,,2021,0.111,"Fraction represents Chittiden County, Burlington City all commercial/all residential, site_energy",local
+https://www.vermontfuel.com/burnerban/ewExternalFiles/Signed-CC-Ordinance-Chapter-8.-Building-And-Building-Construction-Addition-of-Article-V.-Heating-Systems-Signed.pdf",VT,"all residential, all commercial",85,,,2021,0.111,"Fraction represents Chittiden County, Burlington City all commercial/all residential, site_energy",local,,,,,,,,,,
 aggressive,"Burlington, VT - In September 2021 the City Council passed an ordinance which requires the installation of a ""renewable"" primary heating system in all new construction.  This means all new buildings must have either electric heat, wood pellets, renewable gas, or biodiesel. A fossil natural gas, propane, or fuel oil system can still be installed as a back-up heating system, but the “renewable” system must cover 85% of the heating load. A waiver may also be granted if it is determined that this heating system would be ""uneconomical.""
 
-https://www.vermontfuel.com/burnerban/ewExternalFiles/Signed-CC-Ordinance-Chapter-8.-Building-And-Building-Construction-Addition-of-Article-V.-Heating-Systems-Signed.pdf",VT,"all residential, all commercial",85,,,2021,0.111,"Fraction represents Chittiden County, Burlington City all commercial/all residential, site_energy",local
-aggressive,Assume state-wide code similar to CA enacted by 2035.,VT,"all residential, all commercial",100,adopt current,,2035,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2035.,VT,"all residential, all commercial",,stretch,20,2035,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
-reference,"Seattle’s updated Energy Code (CB 119993 / Ordinance 126279) effectively bans natural gas in most new commercial and large residential buildings by requiring electric heating and hot water systems instead of fossil fuel-based systems.
-
-https://www.bdlaw.com/publications/seattle-bans-natural-gas-in-new-buildings/",WA,"all commercial, multi family home",100,,,2022,0.316,"Fraction represents King County, Seattle City, all commercial/multifamily buildings over 3 stories, used site_energy",local
-optimistic,"Seattle’s updated Energy Code (CB 119993 / Ordinance 126279) effectively bans natural gas in most new commercial and large residential buildings by requiring electric heating and hot water systems instead of fossil fuel-based systems.
-
-https://www.bdlaw.com/publications/seattle-bans-natural-gas-in-new-buildings/",WA,"all commercial, multi family home",100,,,2022,0.316,"Fraction represents King County, Seattle City, all commercial/multifamily buildings over 3 stories, used site_energy",local
-optimistic,Assume update to the latest code by 2030.,WA,"all residential, all commercial",,adopt current,,2030,1,,state
-aggressive,"Seattle’s updated Energy Code (CB 119993 / Ordinance 126279) effectively bans natural gas in most new commercial and large residential buildings by requiring electric heating and hot water systems instead of fossil fuel-based systems.
-
-https://www.bdlaw.com/publications/seattle-bans-natural-gas-in-new-buildings/",WA,"all commercial, multi family home",100,,,2022,0.316,"Fraction represents King County, Seattle City, all commercial/multifamily buildings over 3 stories, used site_energy",local
-aggressive,Assume state-wide code similar to CA enacted by 2030.,WA,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2030.,WA,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+https://www.vermontfuel.com/burnerban/ewExternalFiles/Signed-CC-Ordinance-Chapter-8.-Building-And-Building-Construction-Addition-of-Article-V.-Heating-Systems-Signed.pdf",VT,"all residential, all commercial",85,,,2021,0.111,"Fraction represents Chittiden County, Burlington City all commercial/all residential, site_energy",local,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2035.,VT,"all residential, all commercial",100,adopt current,,2035,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2035.,VT,"all residential, all commercial",,stretch,20,2035,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,WA,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,WA,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
 reference,"DC is banning most natural gas use in new buildings/preventing buildings from using “on-site fuel combustion” for furnaces or water heaters and instruction to the mayor to create the new net-zero building codes no later than December 31, 2026.
 
 https://www.ncelenviro.org/articles/washington-d-c-passes-ban-on-most-natural-gas-use-in-new-buildings/
 
-https://code.dccouncil.gov/us/dc/council/laws/24-177",DC,"all commercial, multi family home",100,,,2027,1,,state
-optimistic,"DC is banning most natural gas use in new buildings/preventing buildings from using “on-site fuel combustion” for furnaces or water heaters and instruction to the mayor to create the new net-zero building codes no later than December 31, 2026.
-
-https://www.ncelenviro.org/articles/washington-d-c-passes-ban-on-most-natural-gas-use-in-new-buildings/
-
-https://code.dccouncil.gov/us/dc/council/laws/24-177",DC,"all commercial, multi family home",100,,,2027,1,,state
+https://code.dccouncil.gov/us/dc/council/laws/24-177",DC,"all commercial, multi family home",100,,,2027,1,,state,,,,,,,,,,
 aggressive,"DC is banning most natural gas use in new buildings/preventing buildings from using “on-site fuel combustion” for furnaces or water heaters and instruction to the mayor to create the new net-zero building codes no later than December 31, 2026.
 
 https://www.ncelenviro.org/articles/washington-d-c-passes-ban-on-most-natural-gas-use-in-new-buildings/
 
-https://code.dccouncil.gov/us/dc/council/laws/24-177",DC,"all commercial, multi family home",100,,,2027,1,,state
-remove,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
-
-https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,"all commercial, multi family home",100,,,2024,0.2,filtered for natural gas/Denver city multifamily res and Denver county comm,state
-reference,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
-
-https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,all commercial,100,,,2027,0.183,filtered for natural gas/Denver county comm,local
+https://code.dccouncil.gov/us/dc/council/laws/24-177",DC,"all commercial, multi family home",100,,,2027,1,,state,,,,,,,,,,
 reference,"In June of 2024, the City of Boulder, Colorado passed a code that bans the use of gas-powered appliances in newly built properties as well as the discontinuation of gas services for existing properties. The code officially went into effect on December 1, 2024.
 
-https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local
-remove,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
-
-https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,"all commercial, multi family home",100,,,2024,0.2,filtered for natural gas/Denver city multifamily res and Denver county comm,state
-optimistic,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
-
-https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,all commercial,100,,,2027,0.183,filtered for natural gas/Denver county comm,local
-optimistic,"In June of 2024, the City of Boulder, Colorado passed a code that bans the use of gas-powered appliances in newly built properties as well as the discontinuation of gas services for existing properties. The code officially went into effect on December 1, 2024.
-
-https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local
-optimistic,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-optimistic,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
-remove,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
-
-https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,"all commercial, multi family home",100,,,2024,0.2,filtered for natural gas/Denver city multifamily res and Denver county comm,state
+https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local,,,,,,,,,,
 aggressive,"Building codes in Denver ban natural gas furnaces and water heaters in new commercial and multifamily construction starting in 2024
 
-https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,all commercial,100,,,2027,0.183,filtered for natural gas/Denver county comm,local
+https://denvergazette.com/news/business/denver-imposes-natural-gas-ban-on-heating-cooling-equipment-in-commercial-buildings-multi-family-housing/article_e8a5352c-b6f1-11ed-b6f5-2bbe6c6ff924.html",CO,all commercial,100,,,2027,0.183,filtered for natural gas/Denver county comm,local,,,,,,,,,,
 aggressive,"In June of 2024, the City of Boulder, Colorado passed a code that bans the use of gas-powered appliances in newly built properties as well as the discontinuation of gas services for existing properties. The code officially went into effect on December 1, 2024.
 
-https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local
-aggressive,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
-reference,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030",all,all commercial,90,none,,2029,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
-reference,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030",all,all commercial,100,none,,2030,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
-optimistic,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030",all,all commercial,90,none,,2029,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
-optimistic,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030",all,all commercial,100,none,,2030,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
-optimistic,States currently considering adopting more aggressive codes update to the latest available code by 2030,"CT, NM, OR, PA","all residential, all commercial",,adopt current,,2030,1,,state
-optimistic,States currently considering adopting more aggressive codes update to the latest available code by 2030,"CT, NM, OR, PA","all residential, all commercial",,adopt current,,2030,1,,state
-aggressive,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030",all,all commercial,90,none,,2029,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
-aggressive,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030",all,all commercial,100,none,,2030,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal
-aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"CT, NM, OR, PA","all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"CT, NM, OR, PA","all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
-aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"AZ, MN, WI, MI, NH, NC, DE, VT, HI","all residential, all commercial",100,adopt current,,2035,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state
-aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"AZ, MN, WI, MI, NH, NC, DE, VT, HI","all residential, all commercial",,stretch,20,2035,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state
+https://thegasconnection.com/what-you-need-to-know-about-the-boulder-gas-line-ban/",CO,"all commercial, all residential",100,,,2024,0.041,"filtered for natural gas/Boulder city multifamily res and Boulder county comm, natural_gas",local,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,Assume state-wide code similar to CA enacted by 2030.,CO,"all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030; NOTE: likely to be repealed under Trump Administration, the aggressive scenario assumes it is reintroduced by a future administration with delayed implementation",all,all commercial,90,none,,2034,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal,,,,,,,,,,
+aggressive,"Clean Energy for Federal Buildings Rule: Mandates a 90% reduction in on-site fossil fuel consumption for new federal buildings and major renovations within five years, aiming for complete elimination by 2030; NOTE: likely to be repealed under Trump Administration, the aggressive scenario assumes it is reintroduced by a future administration with delayed implementation",all,all commercial,100,none,,2035,0.03,"Divide the total goal-subject federal facility consumption in 2023 (308 tbtu, https://ctsedwweb.ee.doe.gov/Annual/Report/Report.aspx) by the total commercail building site energy consumption in 2023 (9465 tbtu, https://www.eia.gov/totalenergy/data/browser/index.php?tbl=T02.03#/?f=A&start=2000&end=2024&charted=15)",federal,,,,,,,,,,
+aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"CT, NM, OR, PA","all residential, all commercial",100,adopt current,,2030,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"CT, NM, OR, PA","all residential, all commercial",,stretch,20,2030,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"AZ, MN, WI, MI, NH, NC, DE, VT, HI","all residential, all commercial",100,adopt current,,2035,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+aggressive,States currently considering adopting more aggressive codes update to something similar to the CA code model by 2030; all remaining US Climate Alliance states follow by 2035.,"AZ, MN, WI, MI, NH, NC, DE, VT, HI","all residential, all commercial",,stretch,20,2035,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
+reference,Colorado Low Energy and Carbon Code becomes new state baseline in 2026 https://energyoffice.colorado.gov/press-releases/colorados-new-model-low-energy-and-carbon-code-will-cut-energy-costs-improve-indoor,CO,all,100,adopt current,,2026,0.8,Assume majority of builders go electric route to avoid more stringent efficiency requirements.,state,,,,,,,,,,
+reference,Colorado Low Energy and Carbon Code becomes new state baseline in 2026 https://energyoffice.colorado.gov/press-releases/colorados-new-model-low-energy-and-carbon-code-will-cut-energy-costs-improve-indoor,CO,all,,stretch,20,2026,0.2,Assume minority of builders install gas while choosing to meet more stringent efficiency requirements.,state,,,,,,,,,,
+reference,"NYStretch Energy Code. A stretch code adopted by over 100 municipalities in NY that goes 10-12% beyond base IECC, significantly incentivizing electrification.
+
+https://www.nyserda.ny.gov/All-Programs/Clean-Resilient-Building-Codes/NYStretch-Energy-Code-2020",NY,all,,stretch,10,2026,0.47,"Find the communities that adopted the Stretch code to date via https://www.nyserda.ny.gov/All-Programs/Clean-Energy-Communities/Tracking-Progress/CEC-Map, which includes population, divide by total NY State population. otal Adopting Population: When summing the populations of the 40 municipalities listed in the dataset, the total comes to roughly 9.4 million residents. (Note: The Town of Bedford and Town of Bethel were listed with populations of 0 in the data, so standard census figures of ~17,335 and ~4,255 were applied to correct the total). Divide by total population from 2020 Census of 20201249",energy,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,
