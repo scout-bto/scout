@@ -7775,6 +7775,11 @@ def main(opts: argparse.NameSpace):  # noqa: F821
         savings and financial metrics for each measure, and write a summary
         of key results to an output JSON.
     """
+    # Reset process-global warning tracking so sequential/batch runs in the
+    # same process (e.g., BatchRun in run_batch.py looping over configs)
+    # each get a fresh chance to show a one-per-run warning, rather than
+    # having it permanently suppressed after the first run that triggers it.
+    _SHOWN_WARNINGS.clear()
     try:
         _run_main(opts)
     finally:
