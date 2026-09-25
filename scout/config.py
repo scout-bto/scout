@@ -5,6 +5,7 @@ import sys
 import warnings
 import logging
 import json
+from functools import lru_cache
 from pathlib import Path
 from jsonschema import validate
 
@@ -184,20 +185,46 @@ class AEOInputRegistry:
             resolve to the same-named raw file when the processed copy is absent.
             This keeps raw inputs directly readable without requiring a duplicate
             processed copy.
+
+            Results are memoized per unique combination of arguments and the
+            *current* values of ``FilePaths.INPUTS_RAW``/``INPUTS_PROCESSED``,
+            so this is safe to call repeatedly (e.g., once per ``EIAData``-like
+            class instantiation) without incurring redundant filesystem stat
+            calls, and the cache automatically invalidates itself if those
+            base directories are later changed (e.g., via ``FilePaths.set_paths``
+            or in tests via monkeypatching). If files are written to `input_dir`
+            paths (e.g., by preprocessing raw AEO inputs into ``inputs/processed``)
+            within the same process *after* a call has already been cached for
+            that same directory, call ``clear_cache()`` to force re-resolution.
+        """
+        return cls._path_map_cached(
+            mode, input_dir, FilePaths.INPUTS_RAW, FilePaths.INPUTS_PROCESSED)
+
+    @classmethod
+    @lru_cache(maxsize=None)
+    def _path_map_cached(cls, mode, input_dir, inputs_raw, inputs_processed):
+        """Cached implementation of `path_map`.
+
+        `inputs_raw`/`inputs_processed` are explicit snapshots of the
+        corresponding `FilePaths` attributes at call time, passed in purely
+        so they participate in the cache key: if either directory changes,
+        subsequent calls get a different cache key and are recomputed rather
+        than returning a stale result.
         """
         if input_dir is not None:
             base = input_dir
         elif mode == "raw":
-            base = FilePaths.INPUTS_RAW
+            base = inputs_raw
         else:
-            base = FilePaths.INPUTS_PROCESSED
+            base = inputs_processed
 
         files = cls.files_for_mode(mode)
         paths = {k: base / v for k, v in files.items()}
 
         if mode == "processed":
-            if input_dir is None or input_dir == FilePaths.INPUTS_PROCESSED:
-                raw_paths = cls.path_map("raw")
+            if input_dir is None or input_dir == inputs_processed:
+                raw_paths = cls._path_map_cached(
+                    "raw", None, inputs_raw, inputs_processed)
                 for key, path in list(paths.items()):
                     if (
                         key in cls.PROCESSED_RAW_LOOKUPS
@@ -208,6 +235,18 @@ class AEOInputRegistry:
                         paths[key] = raw_paths[key]
 
         return paths
+
+    @classmethod
+    def clear_cache(cls):
+        """Clear memoized `path_map` results.
+
+        Call this if raw/processed AEO input files are created, moved, or
+        removed on disk within the same process after `path_map` has already
+        been called for the affected directories (the cache otherwise has no
+        way to detect filesystem changes that aren't reflected by a change to
+        `FilePaths.INPUTS_RAW`/`INPUTS_PROCESSED` or the `input_dir` argument).
+        """
+        cls._path_map_cached.cache_clear()
 
     @classmethod
     def _validate_required_keys(
