@@ -115,7 +115,7 @@ def test_state_baseline_api_query_raises_on_rate_limit(monkeypatch):
         lambda url, timeout: FakeResponse(),
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(state_baseline_data_updater.RateLimitError):
         state_baseline_data_updater.api_query('https://example.com', 'fake-key')
 
 
@@ -411,8 +411,12 @@ def test_clean_source_disposition_data_vectorizes_total_disposition():
 
     df = state_baseline_data_updater.clean_source_disposition_data(data)
 
-    assert df.loc[0, 'total_disposition'] == 1050000
-    assert df.loc[0, 'TD_loss_factor'] == 10000 / (1050000 - 100000)
+    # Net importer (net-interstate-trade < 0): total disposition includes
+    # the full imported amount (its absolute value) in addition to
+    # generation and international imports, per EIA's Source-Disposition
+    # accounting (Table 10).
+    assert df.loc[0, 'total_disposition'] == 1150000
+    assert df.loc[0, 'TD_loss_factor'] == 10000 / (1150000 - 100000)
 
 
 def test_prune_years_from_mapping_removes_outdated_entries(capsys):
