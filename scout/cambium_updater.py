@@ -111,8 +111,10 @@ def _infer_aeo_year(payload):
         return aeo_year
 
     source_candidates = [
-        payload.get('electricity', {}).get('CO2 intensity', {}).get('source', ''),
-        payload.get('CO2 intensity of electricity', {}).get('source', ''),
+        ((payload.get('electricity') or {}).get('CO2 intensity') or {}).get(
+            'source', ''),
+        (payload.get('CO2 intensity of electricity') or {}).get(
+            'source', ''),
     ]
     for source_text in source_candidates:
         match = re.search(r'AEO\s+(\d{4})', str(source_text))

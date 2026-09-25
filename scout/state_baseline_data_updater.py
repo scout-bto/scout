@@ -83,6 +83,12 @@ STATE_QUERY_STRING = (
     '&facets[state][]=WA&facets[state][]=WI&facets[state][]=WV' +
     '&facets[state][]=WY'
 )
+
+
+class RateLimitError(Exception):
+    """Raised when the EIA API responds with a rate-limit (429) status."""
+
+
 # Gas queries use different state filter names than electric queries
 STATE_QUERY_STRING_GAS = (
     '&facets[duoarea][]=SAL&facets[duoarea][]=SAR&facets[duoarea][]=SAZ' +
@@ -211,7 +217,7 @@ def generate_query_string(key, freq):
 
 @on_exception(
     expo,
-    (requests.exceptions.RequestException, RuntimeError),
+    (requests.exceptions.RequestException, RateLimitError),
     max_tries=5,
     logger=None,
 )
@@ -223,7 +229,7 @@ def api_query(query_str, api_key, timeout=30):
     )
     status_code = getattr(response, 'status_code', None)
     if status_code == 429:
-        raise RuntimeError('Rate limit reached')
+        raise RateLimitError('Rate limit reached')
     response.raise_for_status()
     payload = response.json()
     if not isinstance(payload, dict):
@@ -253,13 +259,21 @@ def clean_source_disposition_data(data):
 
     # calculate total disposition:
     # total disposition = total net generation + abs(net interstate trade) +
-    # total international imports if net interstate trade < 0
+    # total international imports if net interstate trade < 0 (net importer)
     # else total disposition = total net generation +
-    # total international imports
-    # *only add the absolute value of net interstate trade if it is negative
+    # total international imports (net exporter)
+    # EIA's net-interstate-trade is positive when a state is a net exporter
+    # and negative when a state is a net importer. Per EIA's Source-
+    # Disposition accounting (Table 10), net interstate exports are counted
+    # as a disposition category alongside sales/direct use/losses, so a net
+    # exporter's total disposition equals generation + international imports
+    # with no further adjustment. A net importer's total disposition equals
+    # generation + international imports + the imported amount (the
+    # absolute value of net interstate trade), since that imported
+    # electricity is also disposed of within the state.
     df['total_disposition'] = generation + np.where(
         net_trade < 0,
-        (abs(net_trade + intl_imports)),
+        abs(net_trade) + intl_imports,
         intl_imports,
     )
 
