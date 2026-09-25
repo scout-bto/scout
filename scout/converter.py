@@ -59,6 +59,8 @@ the latest available Cambium year when prompted.
 import requests
 import os
 import sys
+import atexit
+import logging
 import numpy as np
 import json
 import argparse
@@ -70,6 +72,176 @@ from dotenv import load_dotenv
 from scout.config import FilePaths as fp
 
 load_dotenv()
+
+
+API_FETCH_SUMMARY = {
+    'total': 0,
+    'succeeded': 0,
+    'failed': 0,
+    'failures': [],
+}
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+def reset_api_fetch_summary():
+    """Reset API fetch counters for a converter run."""
+    API_FETCH_SUMMARY['total'] = 0
+    API_FETCH_SUMMARY['succeeded'] = 0
+    API_FETCH_SUMMARY['failed'] = 0
+    API_FETCH_SUMMARY['failures'] = []
+
+
+def record_api_fetch_result(series_name, query_url, success, error=None):
+    """Record the result of one API series fetch attempt after retries."""
+    API_FETCH_SUMMARY['total'] += 1
+    if success:
+        API_FETCH_SUMMARY['succeeded'] += 1
+        return
+
+    API_FETCH_SUMMARY['failed'] += 1
+    API_FETCH_SUMMARY['failures'].append({
+        'series': series_name,
+        'query': query_url,
+        'error': str(error) if error else 'Unknown error',
+    })
+
+
+def print_api_fetch_summary():
+    """Print a concise API fetch summary at the end of a converter run."""
+    total = API_FETCH_SUMMARY['total']
+    if total == 0:
+        return
+
+    succeeded = API_FETCH_SUMMARY['succeeded']
+    failed = API_FETCH_SUMMARY['failed']
+    print('\nAPI fetch summary: '
+          f'{succeeded}/{total} series succeeded, {failed}/{total} failed.')
+
+    if failed:
+        print('Failed API series (partial update possible):')
+        for failure in API_FETCH_SUMMARY['failures']:
+            print(f"- {failure['series']}: {failure['error']}")
+
+
+def abort_on_api_fetch_failures():
+    """Exit with a clear error if any API series failed after retries."""
+    failed = API_FETCH_SUMMARY['failed']
+    if failed == 0:
+        return
+
+    total = API_FETCH_SUMMARY['total']
+    examples = ', '.join(
+        failure['series'] for failure in API_FETCH_SUMMARY['failures'][:5]
+    )
+    suffix = '...' if failed > 5 else ''
+    print(
+        'ERROR: One or more EIA API series failed after retries. '
+        f'{failed}/{total} series failed; aborting before writing output files. '
+        f'Failed series include: {examples}{suffix}',
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+
+def validate_conversion_file_name(file_name):
+    """Validate the requested conversion file name and return its geography."""
+    if file_name.startswith('emm'):
+        return 'regional'
+    if file_name.startswith('site_source'):
+        return 'national'
+    raise ValueError(
+        f"The file name provided '{file_name}' does not correspond to an "
+        "expected conversion file."
+    )
+
+
+def build_parser():
+    """Build the CLI parser for the conversion updater."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', required=True,
+                        help="Name of file to be updated, without the path.")
+    parser.add_argument('-y',
+                        help="Desired AEO publication year")
+    parser.add_argument('-s_e',
+                        help="Desired AEO electricity scenario in given year")
+    parser.add_argument('-s_g',
+                        help="Desired AEO fossil scenario in given year")
+    parser.add_argument('--state-baseline-file',
+                        help="Path to a specific state baseline CSV file")
+    parser.add_argument('--no-prompt', action='store_true',
+                        help="Do not prompt for missing values; require them via CLI")
+    parser.add_argument('--dry-run', action='store_true',
+                        help="Validate inputs and prepare updates without writing files")
+    return parser
+
+
+def validate_year(year):
+    """Validate that the requested AEO year is supported."""
+    if year not in ValidQueries().years:
+        raise ValueError(f'Unsupported AEO year: {year}')
+    return year
+
+
+def validate_scenario(scenario, year):
+    """Validate that the requested AEO scenario is supported for the year."""
+    valid_cases = ValidQueries().cases.get(year, [])
+    if scenario not in valid_cases:
+        raise ValueError(f'Unsupported AEO scenario: {scenario}')
+    return scenario
+
+
+def prompt_for_value(parser, prompt, valid_values, no_prompt, provided_value, error_message):
+    """Prompt for a value or fall back to a provided CLI value."""
+    if provided_value is not None:
+        return provided_value
+    if no_prompt:
+        parser.error(error_message)
+    while True:
+        value = input(prompt)
+        if value in valid_values:
+            return value
+        print('Invalid value entered.')
+
+
+def write_output_if_needed(path, payload, indent, dry_run, message):
+    """Write JSON output unless dry-run was requested."""
+    if dry_run:
+        print(message)
+        return False
+    with open(path, 'w') as js_out:
+        json.dump(payload, js_out, indent=indent)
+    return True
+
+
+def prune_years_from_mapping(mapping, min_year, label):
+    """Prune year-keyed entries from a mapping that are older than the minimum year."""
+    removed = []
+    if not isinstance(mapping, dict):
+        return removed
+
+    for key in list(mapping.keys()):
+        if isinstance(key, str) and key.isdigit() and int(key) < min_year:
+            mapping.pop(key)
+            removed.append(key)
+        elif isinstance(mapping[key], dict):
+            nested_removed = prune_years_from_mapping(mapping[key], min_year, label)
+            removed.extend(nested_removed)
+
+    if removed:
+        print(f"Pruned {len(removed)} outdated year entries from {label}.")
+    return removed
+
+
+def apply_metric_updates(container, path_parts, years, values, round_digits=6):
+    """Write a list of values into a nested dict at the requested path."""
+    current = container
+    for part in path_parts:
+        current = current.setdefault(part, {})
+
+    for year, value in zip(years, values):
+        current[str(year)] = round(float(value), round_digits)
 
 
 class UsefulVars(object):
@@ -359,9 +531,46 @@ class EIAQueries(object):
 
 # https://stackoverflow.com/questions/22786068/
 # how-to-avoid-http-error-429-too-many-requests-python
-@on_exception(expo, Exception, max_tries=5)
-def api_query(api_key, query_str, expect_table_id):
-    """Execute an EIA API query and extract the data returned
+def _log_backoff(details):
+    """Log retry attempts at debug level."""
+    exc = details.get('exception')
+    tries = details.get('tries')
+    wait = details.get('wait')
+    target = details.get('target')
+    target_name = getattr(target, '__name__', str(target))
+    LOGGER.debug(
+        "Retrying %s after error on try %s; waiting %.1fs. Error: %s",
+        target_name,
+        tries,
+        wait,
+        exc,
+    )
+
+
+def _log_giveup(details):
+    """Log final give-up event at warning level."""
+    exc = details.get('exception')
+    tries = details.get('tries')
+    target = details.get('target')
+    target_name = getattr(target, '__name__', str(target))
+    LOGGER.warning(
+        "Giving up on %s after %s tries. Last error: %s",
+        target_name,
+        tries,
+        exc,
+    )
+
+
+@on_exception(
+    expo,
+    Exception,
+    max_tries=5,
+    logger=None,
+    on_backoff=_log_backoff,
+    on_giveup=_log_giveup,
+)
+def api_query(api_key, query_str, expect_table_id, timeout=30):
+    """Execute an EIA API query and extract the data returned.
 
     Execute a query of the EIA API and extract the data from the
     structure returned by the API.
@@ -372,26 +581,33 @@ def api_query(api_key, query_str, expect_table_id):
             excluding the user-specific API key.
         expect_table_id (int): The tableId in the EIA API from which
             the current query data are expected to be drawn.
+        timeout (int): HTTP timeout in seconds for the request.
 
     Returns:
         A nested list of data with inner lists structured as
         [year, data value] where the years are YYYY strings.
     """
-    response = requests.get(query_str + '&api_key=' + api_key)
+    response = requests.get(query_str + '&api_key=' + api_key, timeout=timeout)
+    if response.status_code == 429:
+        raise RuntimeError('Rate limit reached')
+    response.raise_for_status()
 
     try:
-        data = response.json()['response']['data']
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ValueError('Malformed API response: expected a JSON object')
+        data = payload['response']['data']
+        if not data:
+            raise ValueError('API returned no data')
         # Extract only the required data in the API response; ensure that
         # all numbers are formatted as floats (in some cases, they are retrieved as strings)
         data = [[str(x['period']), float(x['value'])] for x in data if
                 x['tableId'] == expect_table_id]
-    except KeyError:
-        if response.status_code == 429:  # API rate limit exceeded
-            raise Exception('Rate limit reached')
-        else:
-            # Any other response, e.g., malformed header or no data returned
-            print('\nAttempted query invalid: ' + query_str)
-    # print(query_str + '&api_key=' + api_key)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f'Malformed API response: {exc}') from exc
+
+    if not data:
+        raise ValueError('API returned no matching data for the requested table')
     return data
 
 
@@ -473,6 +689,7 @@ def data_getter(api_key, series_names, api_urls, series_table):
         the EIA API for the data from api_urls.
     """
     mstr_data_dict = {}
+    years = np.array([])
 
     for idx, series in enumerate(api_urls):
         # Obtain data from EIA API; if the data returned is a dict,
@@ -480,13 +697,32 @@ def data_getter(api_key, series_names, api_urls, series_table):
         # output should be ignored entirely; the resulting error
         # from the missing key in the master dict will be handled
         # in the updater function
-        raw_data = api_query(api_key, series, series_table[idx])
+        series_name = series_names[idx]
+        try:
+            raw_data = api_query(api_key, series, series_table[idx])
+        except Exception as exc:
+            record_api_fetch_result(
+                series_name,
+                series,
+                success=False,
+                error=exc,
+            )
+            continue
+
         if isinstance(raw_data, (list,)):
             # Restructure the data obtained from the API
             data, years = data_processor(raw_data)
             # Record the data as a value in a dict with the key
             # corresponding to the specified series name
-            mstr_data_dict[series_names[idx]] = data
+            mstr_data_dict[series_name] = data
+            record_api_fetch_result(series_name, series, success=True)
+        else:
+            record_api_fetch_result(
+                series_name,
+                series,
+                success=False,
+                error='API response was not a list payload',
+            )
 
     return mstr_data_dict, years
 
@@ -553,9 +789,12 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
     try:
         ss_conv = ((z_elec['elec_tot_energy_site'] + z_elec['elec_tot_energy_loss']) /
                    z_elec['elec_tot_energy_site'])
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['site to source conversion']['data'][year] = (
-                round(ss_conv[idx]*capnrg[idx], 6))
+        apply_metric_updates(
+            conv,
+            ['electricity', 'site to source conversion', 'data'],
+            yrs_elec,
+            [round(ss_conv[idx]*capnrg[idx], 6) for idx in range(len(yrs_elec))],
+        )
     except KeyError:
         print('\nDue to failed data retrieval from the API, electricity '
               'site-source conversion factors were not updated.')
@@ -566,9 +805,12 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         co2_res_ints = (z_elec['elec_res_co2'] /
                         (z_elec['elec_res_energy_site'] +
                          z_elec['elec_res_energy_loss']))
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['CO2 intensity']['data']['residential'][
-                 year] = (round(co2_res_ints[idx]/capnrg[idx], 6))
+        apply_metric_updates(
+            conv,
+            ['electricity', 'CO2 intensity', 'data', 'residential'],
+            yrs_elec,
+            [round(co2_res_ints[idx]/capnrg[idx], 6) for idx in range(len(yrs_elec))],
+        )
     except KeyError:
         print('\nDue to failed data retrieval from the API, residential '
               'electricity CO2 emissions intensities were not updated.')
@@ -578,9 +820,12 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
         co2_com_ints = (z_elec['elec_com_co2'] /
                         (z_elec['elec_com_energy_site'] +
                          z_elec['elec_com_energy_loss']))
-        for idx, year in enumerate(yrs_elec):
-            conv['electricity']['CO2 intensity']['data']['commercial'][
-                 year] = (round(co2_com_ints[idx]/capnrg[idx], 6))
+        apply_metric_updates(
+            conv,
+            ['electricity', 'CO2 intensity', 'data', 'commercial'],
+            yrs_elec,
+            [round(co2_com_ints[idx]/capnrg[idx], 6) for idx in range(len(yrs_elec))],
+        )
     except KeyError:
         print('\nDue to failed data retrieval from the API, commercial '
               'electricity CO2 emissions intensities were not updated.')
@@ -588,9 +833,12 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
     # Residential natural gas CO2 intensities [Mt CO2/quads]
     try:
         co2_res_ng_ints = z_foss['ng_res_co2']/z_foss['ng_res_energy']
-        for idx, year in enumerate(yrs_foss):
-            conv['natural gas']['CO2 intensity']['data']['residential'][
-                 year] = (round(co2_res_ng_ints[idx], 6))
+        apply_metric_updates(
+            conv,
+            ['natural gas', 'CO2 intensity', 'data', 'residential'],
+            yrs_foss,
+            [round(co2_res_ng_ints[idx], 6) for idx in range(len(yrs_foss))],
+        )
     except KeyError:
         print('\nDue to failed data retrieval from the API, residential '
               'natural gas CO2 emissions intensities were not updated.')
@@ -598,9 +846,12 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
     # Commercial natural gas CO2 intensities [Mt CO2/quads]
     try:
         co2_com_ng_ints = z_foss['ng_com_co2']/z_foss['ng_com_energy']
-        for idx, year in enumerate(yrs_foss):
-            conv['natural gas']['CO2 intensity']['data']['commercial'][
-                 year] = (round(co2_com_ng_ints[idx], 6))
+        apply_metric_updates(
+            conv,
+            ['natural gas', 'CO2 intensity', 'data', 'commercial'],
+            yrs_foss,
+            [round(co2_com_ng_ints[idx], 6) for idx in range(len(yrs_foss))],
+        )
     except KeyError:
         print('\nDue to failed data retrieval from the API, commercial '
               'natural gas CO2 emissions intensities were not updated.')
@@ -909,7 +1160,8 @@ def updater_emm(conv, api_key, aeo_yr, scen_elec):
     return conv
 
 
-def updater_state(conv_emm, aeo_min, conv_gas):
+def updater_state(conv_emm, aeo_min, conv_gas, state_baseline_file=None,
+                  no_prompt=False):
     """Perform calculations using EIA data to generate state conversion
     factors JSON.
 
@@ -936,28 +1188,41 @@ def updater_state(conv_emm, aeo_min, conv_gas):
     # if no data file exists, prompt user to run
     # state_baseline_data_updater.py to create one
     # if multiple exist, ask user to specify year of data file
-    if not UsefulVars().state_baseline_files:
+    baseline_candidates = UsefulVars().state_baseline_files
+    if not baseline_candidates:
         print('\nNo state baseline data available. Please run '
               'state_baseline_data_updater.py to create one.')
         sys.exit(1)
-    elif len(UsefulVars().state_baseline_files) > 1:
+    if state_baseline_file:
+        state_baseline_data = Path(state_baseline_file)
+        if not state_baseline_data.exists():
+            raise ValueError(
+                f"State baseline file '{state_baseline_data}' does not exist."
+            )
+    elif len(baseline_candidates) > 1:
+        if no_prompt:
+            available = ', '.join(str(p.name) for p in baseline_candidates)
+            raise ValueError(
+                'Multiple state baseline files found while --no-prompt was set. '
+                'Re-run with --state-baseline-file to select one. '
+                f"Available files: {available}"
+            )
         print("Multiple state baseline data files found:")
-        for i, file in enumerate(UsefulVars().state_baseline_files, start=1):
+        for i, file in enumerate(baseline_candidates, start=1):
             print(f"{i}: {file}")
         while True:
             try:
                 file_index = int(input("Enter the number of the file to "
                                        "use: "))
-                if 1 <= file_index <= len(UsefulVars().state_baseline_files):
-                    state_baseline_data = UsefulVars().state_baseline_files[
-                        file_index - 1]
+                if 1 <= file_index <= len(baseline_candidates):
+                    state_baseline_data = baseline_candidates[file_index - 1]
                     break
                 else:
                     print("Invalid input. Please enter a valid number.")
             except ValueError:
                 print("Invalid input. Please enter a valid number.")
     else:
-        state_baseline_data = UsefulVars().state_baseline_files[0]
+        state_baseline_data = baseline_candidates[0]
 
     # Load and clean state baselines data from CSV
     # Drop AK and HI and rename columns
@@ -1122,6 +1387,9 @@ def aeo_min_extract():
 def main():
     """Main function calls to generate updated conversion files"""
 
+    reset_api_fetch_summary()
+    atexit.register(print_api_fetch_summary)
+
     # Get API key from available environment variables
     if 'EIA_API_KEY' in os.environ:
         api_key = os.environ['EIA_API_KEY']
@@ -1138,73 +1406,51 @@ def main():
 
     # Add arguments for the name of the file to be updated and the AEO
     # year and scenario to use for the update
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-f', required=True,
-                        help="Name of file to be updated, without the path.")
-    parser.add_argument('-y',
-                        help="Desired AEO publication year")
-    parser.add_argument('-s_e',
-                        help="Desired AEO electricity scenario in given year")
-    parser.add_argument('-s_g',
-                        help="Desired AEO fossil scenario in given year")
+    parser = build_parser()
     opts = parser.parse_args()
 
     # Determine what file type is being updated based on the file name;
     # only allow users to specify the emm_region_* and site_source_co2_*
     # files, with the state emissions factors updated automatically
-    if opts.f.startswith('emm'):
-        geography = 'regional'
-    elif opts.f.startswith('site_source'):
-        geography = 'national'
-    else:
-        print('The file name provided does not correspond to an expected '
-              'conversion file.')
+    try:
+        geography = validate_conversion_file_name(opts.f)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     # Set state conversion file to use on the basis of the emm file name
     state_conv_file = opts.f.replace("emm_region_emissions", "state_emissions")
 
-    # If not provided as a command-line argument, ask the user to
-    # specify the desired report year, informing the user about
-    # the valid year options
-    if opts.y is not None:
-        year = opts.y
-    else:  # Year not provided as command line argument
-        while opts.y is None:
-            year = input('Please specify the desired AEO year. '
-                         'Valid entries are: ' +
-                         ', '.join(ValidQueries().years) + '.\n')
-            if year not in ValidQueries().years:
-                print('Invalid year entered.')
-            else:
-                break
+    year = prompt_for_value(
+        parser,
+        'Please specify the desired AEO year. '
+        'Valid entries are: ' + ', '.join(ValidQueries().years) + '.\n',
+        ValidQueries().years,
+        opts.no_prompt,
+        opts.y,
+        'AEO year is required when --no-prompt is used.'
+    )
+    year = validate_year(year)
 
-    # If not provided as a command-line argument, ask the user to specify the desired AEO case or
-    # scenario, allowing for different scenarios to be used for electricity vs. fossil fuels,
-    # and informing the user about the valid scenario options
-    # Electricity
-    if opts.s_e is not None:
-        scenario_elec = opts.s_e
-    else:  # Scenario not provided as command line argument
-        while opts.s_e is None:
-            scenario_elec = input('Please specify the desired AEO electricity scenario. '
-                                  'Valid entries are: ' +
-                                  ', '.join(ValidQueries().cases[year]) + '.\n')
-            if scenario_elec not in ValidQueries().cases[year]:
-                print('Invalid scenario entered.')
-            else:
-                break
-    # Fossil fuels
-    if opts.s_g is not None:
-        scenario_gas = opts.s_g
-    else:  # Scenario not provided as command line argument
-        while opts.s_g is None:
-            scenario_gas = input('Please specify the desired AEO fossil fuel scenario. '
-                                 'Valid entries are: ' +
-                                 ', '.join(ValidQueries().cases[year]) + '.\n')
-            if scenario_gas not in ValidQueries().cases[year]:
-                print('Invalid scenario entered.')
-            else:
-                break
+    scenario_elec = prompt_for_value(
+        parser,
+        'Please specify the desired AEO electricity scenario. '
+        'Valid entries are: ' + ', '.join(ValidQueries().cases[year]) + '.\n',
+        ValidQueries().cases[year],
+        opts.no_prompt,
+        opts.s_e,
+        'AEO electricity scenario is required when --no-prompt is used.'
+    )
+    scenario_gas = prompt_for_value(
+        parser,
+        'Please specify the desired AEO fossil fuel scenario. '
+        'Valid entries are: ' + ', '.join(ValidQueries().cases[year]) + '.\n',
+        ValidQueries().cases[year],
+        opts.no_prompt,
+        opts.s_g,
+        'AEO fossil scenario is required when --no-prompt is used.'
+    )
+    scenario_elec = validate_scenario(scenario_elec, year)
+    scenario_gas = validate_scenario(scenario_gas, year)
 
     # Get year of earliest AEO data
     aeo_min = aeo_min_extract()
@@ -1241,8 +1487,15 @@ def main():
 
         # Update site-source and CO2 emissions conversions
         conv = updater(conv, api_key, year, scenario_elec, scenario_gas, make_web_version)
+        abort_on_api_fetch_failures()
 
         # Exclude years that are not covered in AEO metadata year range
+        prune_years_from_mapping(conv['CO2 price']['data'], int(aeo_min), 'CO2 price data')
+        prune_years_from_mapping(
+            conv['electricity']['site to source conversion']['data'],
+            int(aeo_min),
+            'electricity site-source conversion data',
+        )
         fuels = ['CO2 price', 'electricity', 'natural gas', 'propane',
                  'distillate']
         metrics = ['CO2 intensity', 'site to source conversion', 'price']
@@ -1250,27 +1503,23 @@ def main():
         for fuel in fuels:
             for metric in metrics:
                 for bldg in bldgs:
-                    for year_remove in list(conv['CO2 price']['data'].keys()):
-                        if int(year_remove) < aeo_min:
-                            conv['CO2 price']['data'].pop(year_remove)
-                    for year_remove in list(conv[fuels[1]][
-                                            'site to source conversion'][
-                                            'data'].keys()):
-                        if int(year_remove) < aeo_min:
-                            conv[fuels[1]]['site to source conversion'][
-                                           'data'].pop(year_remove)
                     try:
-                        for year_remove in list(conv[fuel][
-                                         metric]['data'][bldg].keys()):
-                            if int(year_remove) < aeo_min:
-                                conv[fuel][metric]['data'][
-                                                    bldg].pop(year_remove)
+                        prune_years_from_mapping(
+                            conv[fuel][metric]['data'][bldg],
+                            int(aeo_min),
+                            f'{fuel} {metric} {bldg} data',
+                        )
                     except KeyError:
                         pass
 
-        # Output modified site-source and CO2 emissions conversion data
-        with open(fp.CONVERT_DATA / opts.f, 'w') as js_out:
-            json.dump(conv, js_out, indent=2)
+        if write_output_if_needed(
+            fp.CONVERT_DATA / opts.f,
+            conv,
+            2,
+            opts.dry_run,
+            'Dry run enabled; skipping write to disk for the conversion file.'
+        ) is False:
+            return
 
         # Warn user that source fields need to be updated manually
         print('\nWARNING: THE SOCIAL COST OF CARBON AND ALL "source" AND '
@@ -1289,16 +1538,17 @@ def main():
         for bldg in bldgs:
             for reg in list(conv[metrics[0]]['data'].keys()):
                 try:
-                    for year_remove in list(conv[metrics[0]]['data'][
-                                    reg].keys()):
-                        if int(year_remove) < aeo_min:
-                            conv[metrics[0]]['data'][reg].pop(year_remove)
+                    prune_years_from_mapping(
+                        conv[metrics[0]]['data'][reg],
+                        int(aeo_min),
+                        f'{metrics[0]} {reg} data',
+                    )
                 except KeyError:
-                    for year_remove in list(conv[metrics[1]]['data'][
-                                     bldg][reg].keys()):
-                        if int(year_remove) < aeo_min:
-                            conv[metrics[1]]['data'][
-                                                  bldg][reg].pop(year_remove)
+                    prune_years_from_mapping(
+                        conv[metrics[1]]['data'][bldg][reg],
+                        int(aeo_min),
+                        f'{metrics[1]} {bldg} {reg} data',
+                    )
 
         # Change conversion factors dict imported from JSON to OrderedDict
         # so that the AEO year and scenario specified by the user can be
@@ -1320,15 +1570,27 @@ def main():
         # subsequently through 2050
         conv_gas = {"residential": {}, "commercial": {}}
         conv_gas = updater_gastrend(conv_gas, api_key, year, scenario_gas)
-
-        # Output updated EMM emissions/price projections data
-        with open(fp.CONVERT_DATA / opts.f, 'w') as js_out:
-            json.dump(conv_emm, js_out, indent=5)
+        abort_on_api_fetch_failures()
 
         # Update state emissions data
         print('\nUpdating state CO2 emissions and prices.')
         # Fully replace state emissions and electricity prices
-        conv_state = updater_state(conv_emm, str(aeo_min), conv_gas)
+        conv_state = updater_state(
+            conv_emm,
+            str(aeo_min),
+            conv_gas,
+            state_baseline_file=opts.state_baseline_file,
+            no_prompt=opts.no_prompt,
+        )
+
+        if write_output_if_needed(
+            fp.CONVERT_DATA / opts.f,
+            conv_emm,
+            5,
+            opts.dry_run,
+            'Dry run enabled; skipping write to disk for EMM and state conversion files.'
+        ) is False:
+            return
 
         # Output updated state emissions/price projections data
         with open(fp.CONVERT_DATA / state_conv_file, 'w') as js_out:
