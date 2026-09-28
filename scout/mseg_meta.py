@@ -367,40 +367,7 @@ def main():
         return catg_data
 
     def import_commercial_cpl_data(file_name):  # ktek.csv
-        def _import_with_skip(skip_lines):
-            tech_dtypes = cm.dtype_array(file_name, ',', skip_lines - 1)
-            dtype_names = {name for name, _ in tech_dtypes}
-            wanted_cols = cmt.UsefulVars().columns_to_keep
-            if not set(wanted_cols).issubset(dtype_names):
-                return None
-
-            col_indices, reduced_dtypes = cmt.dtype_reducer(
-                tech_dtypes, wanted_cols)
-            return cm.data_import(file_name, reduced_dtypes, ',',
-                                  skip_lines, col_indices)
-
-        # Try the configured skip line count first.
-        tech_data = _import_with_skip(cmt.UsefulVars().cpl_data_skip_lines)
-
-        # If expected year columns are missing, detect the actual header row
-        # and retry import with that dynamically identified skip value.
-        if tech_data is None or not {'y1', 'y2'}.issubset(set(tech_data.dtype.names)):
-            detected_skip = None
-            with open(file_name, 'r', encoding='latin1') as f_in:
-                for i, line in enumerate(f_in, start=1):
-                    if line.startswith('t,v,r,s,f,shr,eff,c1,c2,c3,c4,life,y1,y2'):
-                        detected_skip = i
-                        break
-
-            if detected_skip:
-                tech_data = _import_with_skip(detected_skip)
-
-        if tech_data is None:
-            raise ValueError(
-                f"Unable to import commercial CPL data from {file_name}; "
-                "required columns were not found.")
-
-        return tech_data
+        return cmt.import_commercial_cpl_data(file_name, cmt.UsefulVars())
 
     def import_commercial_time_preference_data(file_name):  # kprem.txt
         tpp_data = cmt.kprem_import(file_name,
@@ -470,15 +437,19 @@ def main():
     year_range_result = {'min year': int(max(min_yrs)),
                          'max year': int(min(max_yrs))}
 
-    # Preserve aeo_base_year from existing metadata if present
-    try:
-        with open(fp.METADATA_PATH, 'r') as existing:
-            existing_meta = json.load(existing)
-            if 'aeo_base_year' in existing_meta:
-                year_range_result['aeo_base_year'] = existing_meta[
-                    'aeo_base_year']
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
+    # Set aeo_base_year explicitly from the AEO year being imported.
+    # If the CLI year is not provided, keep any prior value; otherwise
+    # default to the current AEO base year for a new metadata file.
+    if aeo_import_year is not None:
+        year_range_result['aeo_base_year'] = int(aeo_import_year)
+    else:
+        try:
+            with open(fp.METADATA_PATH, 'r') as existing:
+                existing_meta = json.load(existing)
+                year_range_result['aeo_base_year'] = existing_meta.get(
+                    'aeo_base_year', 2026)
+        except (FileNotFoundError, json.JSONDecodeError):
+            year_range_result['aeo_base_year'] = 2026
 
     # Output a tiny JSON file with year range and base year values
     with open(fp.METADATA_PATH, 'w') as jso:
