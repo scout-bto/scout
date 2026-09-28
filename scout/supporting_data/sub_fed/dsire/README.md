@@ -127,6 +127,18 @@ explain rather than invent a number, but it can still misread ambiguous
 source text). "High confidence" means "worth a quick read," not "safe
 to paste unchecked."
 
+Two specific things the drafter watches for and flags in
+`llm_open_questions` rather than guessing: DSIRE's own `entireState` flag
+(a program that doesn't cover the whole state — e.g. a single utility's
+service territory — shouldn't get `applicable fraction` = 1 without a
+researched territory share), and a `[Low Income Residential]`-tagged
+incentive amount alongside a general one (an income-restricted tier that
+belongs in its own row with its own income-scoped fraction, the way
+existing AMI-tiered rows in `incentives.csv` do). Both signals come from
+step 1's staging CSV, so they're only as good as what DSIRE itself
+reports — a program can still be territory- or income-limited without
+DSIRE flagging it that way.
+
 Runs `--limit N`-many paid API calls, one per candidate row — costs
 real money and prints an estimated `$` total at the end (token-based,
 from each response's usage). Use `--dry-run` first to sanity-check the
@@ -219,6 +231,51 @@ fill in whatever the model left blank or flagged in
 `dsire_id`/`source_url`/`llm_confidence`/`llm_open_questions`/
 `resolver_*` columns are for your review only — don't copy those into
 `incentives.csv`.
+
+## Diagnostic: backtest against existing incentives.csv rows (optional)
+
+```
+uv run python dsire_incentive_backfill.py
+uv run python dsire_incentive_backfill.py --output <path>   # override the default dated filename
+```
+
+Not part of the normal update workflow above — a separate backtest tool
+that answers a different question: "if the DSIRE pipeline ran today in
+place of whoever originally researched each row already in
+`incentives.csv`, how close would the automated output land to what's
+already there?"
+
+For each distinct "reference"-scenario description in `incentives.csv`
+that cites a source URL, it extracts that URL's registrable domain
+(e.g. `efficiencymaine.com`) and the row's state(s), then queries DSIRE
+for Financial Incentive programs in that state whose own `websiteUrl`
+contains the same domain (`state(s)` of `all` is treated as DSIRE's
+federal-only `US` pseudo-state, since those rows all cite IRS/energy.gov
+federal programs). Rows with no URL in their description (e.g. "Duke
+Energy KY from CEE spreadsheet") can't be matched this way and are
+skipped, printed at the end for visibility.
+
+Match quality is coarse (domain + state, not a citation-level pointer)
+— a state or utility often runs several distinct DSIRE-tracked programs
+(residential vs. commercial vs. new construction vs. weatherization,
+...), and this script can't tell which of several domain-matched hits
+is the *right* one for a given `incentives.csv` row, so it keeps all of
+them, tagged in an `incentives_csv_match` column naming which existing
+description(s) triggered the match.
+
+Writes `dsire_incentive_backfill_<date>.csv` in the exact column shape
+`dsire_incentive_checker.py` produces (plus `incentives_csv_match`), so
+it can be fed into step 2 unmodified:
+
+```
+uv run python dsire_incentive_drafter.py \
+    --input dsire_incentive_backfill_<date>.csv \
+    --output dsire_incentive_backfill_drafts_<date>.csv
+```
+
+Requires `DSIRE_API_KEY` only (same as step 1) — DSIRE queries aren't
+billed, so there's no cost concern, just one API call per distinct
+domain/state combination found in `incentives.csv`.
 
 ## Notes
 

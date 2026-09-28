@@ -172,10 +172,11 @@ def main():
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     fieldnames = [
-        "dsire_id", "match_reason", "scout_relevant", "state", "category",
-        "program_type", "implementing_sector", "name", "administrator",
-        "technologies", "incentive_amounts", "summary", "details",
-        "website_url", "last_updated", "created_ts", "incentives_csv_match",
+        "dsire_id", "match_reason", "scout_relevant", "state", "entire_state",
+        "category", "program_type", "implementing_sector", "name",
+        "administrator", "technologies", "incentive_amounts", "summary",
+        "details", "website_url", "last_updated", "created_ts",
+        "incentives_csv_match",
     ]
     rows_out = []
     for flat, descriptions in matches.values():

@@ -221,11 +221,23 @@ def flatten_program(program, match_reason):
         for ps in param_sets for tech in (ps.get("technologies") or [])
         if tech.get("name")
     })
-    amounts = [
-        f"{p.get('source', '')} {p.get('qualifier', '')}: "
-        f"{p.get('amount', '')} {p.get('units', '')}".strip()
-        for ps in param_sets for p in (ps.get("parameters") or [])
-    ]
+    amounts = []
+    for ps in param_sets:
+        # DSIRE tags each parameter set with the sector(s) it applies to
+        # (e.g. "Residential" vs "Low Income Residential") -- different
+        # tiers of the same program often carry different dollar amounts,
+        # so prefix each amount with its tag rather than flattening them
+        # into one indistinguishable list.
+        sector_names = [
+            sec.get("name", "") for sec in (ps.get("sectors") or [])
+            if sec.get("name")
+        ]
+        tag = f"[{', '.join(sector_names)}] " if sector_names else ""
+        amounts.extend(
+            f"{tag}{p.get('source', '')} {p.get('qualifier', '')}: "
+            f"{p.get('amount', '')} {p.get('units', '')}".strip()
+            for p in (ps.get("parameters") or [])
+        )
     details = [
         f"{d.get('label', '')}: {d.get('value', '')}"
         for d in (program.get("details") or [])
@@ -236,6 +248,11 @@ def flatten_program(program, match_reason):
         "match_reason": match_reason,
         "scout_relevant": is_scout_relevant(technologies_str),
         "state": (program.get("stateObj") or {}).get("abbreviation", ""),
+        # DSIRE's own flag for "does this program cover the whole state,
+        # or only part of it" (e.g. a single utility's service territory) --
+        # False here is a strong signal that applicable_fraction shouldn't
+        # default to 1 without a justifying note.
+        "entire_state": program.get("entireState"),
         "category": (program.get("categoryObj") or {}).get("name", ""),
         "program_type": (program.get("typeObj") or {}).get("name", ""),
         "implementing_sector": (program.get("sectorObj") or {}).get("name", ""),

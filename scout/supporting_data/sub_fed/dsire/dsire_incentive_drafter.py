@@ -185,7 +185,19 @@ class DraftedIncentiveRow(BaseModel):
     end_year: str
     applicable_fraction: str = Field(description=(
         "Leave blank unless the input supports a specific fraction; do "
-        "not default to 1 without justification in fraction_notes."
+        "not default to 1 without justification in fraction_notes. If "
+        "'Entire state' is No, this program does NOT cover the whole "
+        "state -- do not write 1 here unless the input independently "
+        "states what share of the state (or which counties/utility "
+        "territory) is covered; otherwise leave blank and flag in "
+        "open_questions that a territory-based fraction is needed. "
+        "Similarly, if 'Incentive amounts' shows a '[Low Income "
+        "Residential]'-tagged amount separate from a general "
+        "'Residential' amount, that's an income-restricted tier -- note "
+        "in open_questions that this program has a separate low-income "
+        "tier (a human should draft it as its own row with its own "
+        "income-scoped fraction, the way existing AMI-tiered rows in "
+        "incentives.csv do) rather than merging both amounts into one row."
     ))
     fraction_notes: str
     confidence: Literal["low", "medium", "high"] = Field(description=(
@@ -310,15 +322,31 @@ def build_system_prompt(few_shot_block):
         "and URL), matching the citation style in the examples.\n"
         "- Set confidence honestly: most drafts from a short program "
         "summary should be 'low' or 'medium', not 'high'.\n"
+        "- If 'Entire state' is No, this program covers only part of the "
+        "state (e.g. one utility's service territory) -- do not set "
+        "applicable_fraction to 1 in that case; leave it blank and flag "
+        "in open_questions that the territory's share of the state needs "
+        "to be researched, unless the input itself states that share.\n"
+        "- If 'Incentive amounts' includes a '[Low Income Residential]'-"
+        "tagged amount alongside a general one, flag in open_questions "
+        "that this program has an income-restricted tier that should be "
+        "drafted as its own row.\n"
         "- This is a DRAFT for a human analyst to review and edit before "
         "it is added to incentives.csv. It is not the final answer."
     )
 
 
+ENTIRE_STATE_LABELS = {"True": "Yes", "False": "No"}
+
+
 def build_user_message(program):
+    entire_state = ENTIRE_STATE_LABELS.get(
+        (program.get("entire_state") or "").strip(), "Unknown"
+    )
     fields = [
         f"Program name: {program.get('name', '')}",
         f"State: {program.get('state', '')}",
+        f"Entire state: {entire_state}",
         f"Program type: {program.get('program_type', '')}",
         f"Administrator: {program.get('administrator', '')}",
         f"Technologies (DSIRE taxonomy): {program.get('technologies', '')}",
