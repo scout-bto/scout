@@ -136,3 +136,9 @@ scout.egg-info/
 
 scout/supporting_data/base_disagg/input
 scout/supporting_data/base_disagg/output
+
+# BTB data #
+######################
+
+scout/supporting_data/btb/raw
+scout/supporting_data/btb/bss_meas_v2_btb_proposed.xlsx
