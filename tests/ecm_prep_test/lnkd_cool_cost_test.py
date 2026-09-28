@@ -10,7 +10,7 @@ from scout.ecm_prep_vars import UsefulVars, UsefulInputFiles
 from tests.ecm_prep_test.common import NullOpts
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def test_settings():
     """Set up the common directory context and handyvars / handyfiles."""
     base_dir = os.getcwd()
