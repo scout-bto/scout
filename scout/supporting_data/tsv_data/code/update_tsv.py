@@ -477,14 +477,16 @@ def insert_scouttsv_emm(opts):
                 opts.bstock, p, 'MH', 'load shape'],
                 vals_replace)
     if opts.bstock == 'residential':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}.json", 'w'),
-            indent=2)
+        with open(
+                f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}.json",
+                'w') as jso:
+            json.dump(lsjson, jso, indent=2)
         write_gzip_json(lsjson, "tsv_load_EMM.gz")
     if opts.bstock == 'commercial':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}_com.json", 'w'),
-            indent=2)
+        with open(
+                f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}_com.json",
+                'w') as jso:
+            json.dump(lsjson, jso, indent=2)
     print(f"FINISHED INSERT {opts.bstock} data into EMM")
 
 
@@ -576,14 +578,16 @@ def insert_scouttsv_usstate(opts):
                 opts.bstock, p, 'MH', 'load shape'],
                 vals_replace)
     if opts.bstock == 'residential':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_state_{opts.stock_version}.json", 'w'),
-            indent=2)
+        with open(
+                f"{JSON_DIR}/tsv_load_state_{opts.stock_version}.json",
+                'w') as jso:
+            json.dump(lsjson, jso, indent=2)
         write_gzip_json(lsjson, "tsv_load_State.gz")
     if opts.bstock == 'commercial':
-        json.dump(lsjson, open(
-            f"{JSON_DIR}/tsv_load_state_{opts.stock_version}_com.json", 'w'),
-            indent=2)
+        with open(
+                f"{JSON_DIR}/tsv_load_state_{opts.stock_version}_com.json",
+                'w') as jso:
+            json.dump(lsjson, jso, indent=2)
     print(f"FINISHED INSERT {opts.bstock} data into US STATE")
 
 
