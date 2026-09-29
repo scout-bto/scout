@@ -274,6 +274,7 @@ def execute_athena_query(client, query, is_create, wait=True):
 
 def sql_to_csvout(s3_client, athena_client, sql_file, version, out_name=None):
     fname = out_name or os.path.splitext(sql_file)[0]
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     out_path = f"{OUTPUT_DIR}/{fname}.csv"
     if os.path.isfile(out_path):
         print(f"{out_path} already exists, skipping re-query "
@@ -476,6 +477,7 @@ def insert_scouttsv_emm(opts):
             nested_set(lsjson, [
                 opts.bstock, p, 'MH', 'load shape'],
                 vals_replace)
+    os.makedirs(JSON_DIR, exist_ok=True)
     if opts.bstock == 'residential':
         with open(
                 f"{JSON_DIR}/tsv_load_emm_{opts.stock_version}.json",
@@ -577,6 +579,7 @@ def insert_scouttsv_usstate(opts):
             nested_set(lsjson, [
                 opts.bstock, p, 'MH', 'load shape'],
                 vals_replace)
+    os.makedirs(JSON_DIR, exist_ok=True)
     if opts.bstock == 'residential':
         with open(
                 f"{JSON_DIR}/tsv_load_state_{opts.stock_version}.json",
