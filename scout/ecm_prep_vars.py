@@ -1521,9 +1521,6 @@ class UsefulVars(object):
                 # peaks in each EMM region, per the tsv_load shape data
                 # (derived from ComStock/ResStock; see
                 # supporting_data/tsv_data/code/compute_peak_days.py).
-                # State regions reuse their representative EMM region's
-                # peak days (self.state_emm_map), consistent with how
-                # system load hours are handled above.
                 peak_days_dat = pd.read_csv(
                     handyfiles.tsv_metrics_peak_days, index_col="Region")
                 peak_days_sum, peak_days_wint = ({
@@ -1531,6 +1528,24 @@ class UsefulVars(object):
                         reg, f"{season}PeakDay"])
                     for reg in emm_region_names}
                     for season in ("Summer", "Winter"))
+                # For state-resolved runs, prefer each state's own peak day
+                # (directly derived from ComStock/ResStock's by-state
+                # totals) over its representative EMM region's peak day.
+                # ComStock/ResStock don't publish by-state data for AK/HI,
+                # so those (and any other state missing from the by-state
+                # peak day file) keep falling back to the EMM-region proxy
+                # via self.state_emm_map -- see the lookup in ecm_prep.py.
+                if opts.alt_regions == "State":
+                    state_peak_days_dat = pd.read_csv(
+                        handyfiles.tsv_metrics_peak_days_state,
+                        index_col="Region")
+                    for peak_days, season in (
+                            (peak_days_sum, "Summer"),
+                            (peak_days_wint, "Winter")):
+                        peak_days.update({
+                            reg: int(state_peak_days_dat.loc[
+                                reg, f"{season}PeakDay"])
+                            for reg in state_peak_days_dat.index})
                 self.tsv_metrics_data = {
                     "season days": {
                         "all": {
@@ -1556,9 +1571,10 @@ class UsefulVars(object):
                         "winter": sysld_wint,
                         "intermediate": sysld_int
                     },
-                    # Winter/summer day of year (by EMM region) on which the
-                    # total Scout buildings sector baseline load peaks,
-                    # given the tsv_load shape data
+                    # Winter/summer day of year (by EMM region, or by state
+                    # for state-resolved runs) on which the total Scout
+                    # buildings sector baseline load peaks, given the
+                    # tsv_load shape data
                     "peak days": {
                         "summer": peak_days_sum,
                         "winter": peak_days_wint
@@ -2181,6 +2197,8 @@ class UsefulInputFiles(object):
         self.tsv_metrics_data_tot_hr = fp.TSV_DATA / "tsv_hrs_tot_lowogs.csv"
         self.tsv_metrics_data_net_hr = fp.TSV_DATA / "tsv_hrs_net_lowogs.csv"
         self.tsv_metrics_peak_days = fp.TSV_DATA / "tsv_peak_days_EMM.csv"
+        self.tsv_metrics_peak_days_state = (
+            fp.TSV_DATA / "tsv_peak_days_State.csv")
         self.health_data = fp.CONVERT_DATA / "epa_costs.csv"
         self.hp_convert_rates = fp.CONVERT_DATA / "hp_convert_rates.json"
         self.fug_emissions_dat = fp.CONVERT_DATA / "fugitive_emissions_convert.json"

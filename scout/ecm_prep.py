@@ -6544,9 +6544,16 @@ class Measure(object):
                             "season days"][days][season]
                     # Maximum calc type (pertains only to a peak day)
                     else:
-                        tsv_metrics_days = [
-                            self.handyvars.tsv_metrics_data[
-                                "peak days"][season][tsvmets_reg]]
+                        # Peak days are keyed by their own region (state or
+                        # EMM, whichever alt_regions resolves to) when
+                        # available; a handful of states (e.g. AK, HI) lack
+                        # their own ComStock/ResStock by-state data and fall
+                        # back to their representative EMM region's peak
+                        # day (tsvmets_reg) instead
+                        peak_days_by_season = self.handyvars.tsv_metrics_data[
+                            "peak days"][season]
+                        tsv_metrics_days = [peak_days_by_season.get(
+                            mskeys[1], peak_days_by_season[tsvmets_reg])]
 
                     # Set applicable daily hour range
                     # NOTE: for now, use peak/take periods from 2050 only
