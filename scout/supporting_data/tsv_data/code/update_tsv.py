@@ -396,9 +396,6 @@ def insert_scouttsv_emm(opts):
     emm_shift, _ = _region_tz_shift_hours(
         os.path.join(MAP_DIR, "geo_map.csv"))
     df = pd.read_csv(emm_file)
-    if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
-        df = df[df['building_type'].isin(values_to_keep)]
     if opts.bstock == 'commercial':
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
 
@@ -412,10 +409,7 @@ def insert_scouttsv_emm(opts):
 
     for bldg in building_map[opts.bstock]:
         print(f"EMM {bldg}")
-        bm_vals = [
-            item.split('_', 1)[0] for item in building_map[opts.bstock][bldg]]
-        lsh = df[df['building_type'
-                    ].str.contains("|".join(bm_vals))]
+        lsh = df[df['building_type'].isin(building_map[opts.bstock][bldg])]
         for eu in enduse_map[opts.bstock]:
             print(f"  {bldg} - {eu} ({len(emm_regions)} EMM regions)")
             # Whether this (building type, end use) combination is actually
@@ -504,9 +498,6 @@ def insert_scouttsv_usstate(opts):
 
     if opts.bstock == 'commercial':
         df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
-    if opts.bstock == 'residential':
-        values_to_keep = ['Mobile Home', 'Multi-Family with 5+ Units', 'Single-Family Detached']
-        df = df[df['building_type'].isin(values_to_keep)]
 
     df = replace_strings_in_dataframe(df, replacements)
     json_file = BASE_TEMPLATE
@@ -517,10 +508,7 @@ def insert_scouttsv_usstate(opts):
     us_states = np.unique(df['state'])
     for bldg in building_map[opts.bstock]:
         print(f"State {bldg}")
-        bm_vals = [
-            item.split('_', 1)[0] for item in building_map[opts.bstock][bldg]]
-        lsh = df[df['building_type'
-                    ].str.contains("|".join(bm_vals))]
+        lsh = df[df['building_type'].isin(building_map[opts.bstock][bldg])]
         for eu in enduse_map[opts.bstock]:
             print(f"  {bldg} - {eu} ({len(us_states)} states)")
             # Whether this (building type, end use) combination is actually
@@ -740,8 +728,9 @@ def check_sum_and_length(opts):
 
 def _diag_canonical_building_types(bstock):
     """ The subset of raw (pre-`replacements`) building_type values in the
-    stock CSVs that update_tsv.py actually keeps, as used elsewhere in this
-    script (e.g. insert_scouttsv_emm's values_to_keep filter). """
+    stock CSVs that update_tsv.py actually keeps, i.e. the pre-`replacements`
+    form of the values kept via `building_map` in insert_scouttsv_emm and
+    insert_scouttsv_usstate. """
     if bstock == 'residential':
         return ['Mobile Home', 'Multi-Family with 5+ Units',
                 'Single-Family Detached']
