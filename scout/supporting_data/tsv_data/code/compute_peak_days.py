@@ -8,8 +8,8 @@ directly comparable to the existing fixed national peak days (day 1 / day
 183). Within a region's winter window, the "peak day" is the day containing
 that region's single highest hourly total load (and similarly for summer).
 
-Usage (run from this directory, after `--get_stockdata` has cached the raw
-CSVs in csv/):
+Usage (after `--get_stockdata` has cached the raw CSVs in csv/; can be run
+from any working directory):
 
     python compute_peak_days.py --stock_version 2025
 
@@ -22,8 +22,14 @@ from argparse import ArgumentParser
 
 import pandas as pd
 
-OUTPUT_DIR = "csv"
-TSV_DATA_DIR = ".."
+# Resolved relative to this script's own location (not the caller's cwd),
+# so this file's OUTPUT_DIR always agrees with update_tsv.py's OUTPUT_DIR
+# when the two are used together in-process (e.g. update_tsv.py's
+# plot_boundary_trend calls load_combined_hourly below), regardless of
+# where the process was launched from.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "csv")
+TSV_DATA_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 
 # Matches HandyVars.tsv_metrics_data["season days"]["all"] in ecm_prep.py
 WINTER_DAYS = set(range(1, 91)) | set(range(335, 366))

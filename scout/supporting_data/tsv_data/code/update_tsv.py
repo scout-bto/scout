@@ -18,21 +18,25 @@ from compute_peak_days import (
     BOUNDARY_CHECK_BUFFER_DAYS, load_combined_hourly, find_peak_days)
 
 warnings.filterwarnings('ignore')
-MAP_DIR = "map"
-SQL_DIR = "sql"
-OUTPUT_DIR = "csv"
-JSON_DIR = "json"
-DIAG_DIR = "diagnostics"
+# All directories below are resolved relative to this script's own location
+# (not the caller's cwd), so the pipeline works the same whether it's run
+# from this directory or invoked from elsewhere (e.g. the repo root).
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MAP_DIR = os.path.join(SCRIPT_DIR, "map")
+SQL_DIR = os.path.join(SCRIPT_DIR, "sql")
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "csv")
+JSON_DIR = os.path.join(SCRIPT_DIR, "json")
+DIAG_DIR = os.path.join(SCRIPT_DIR, "diagnostics")
 # Base template lives alongside this script (not in JSON_DIR), since
 # JSON_DIR holds only large generated output that's gitignored.
-BASE_TEMPLATE = "tsv_load_in_2024.json"
+BASE_TEMPLATE = os.path.join(SCRIPT_DIR, "tsv_load_in_2024.json")
 EXTERNAL_S3_DIR = "datasets"
 # Dedicated Athena database for Scout's tsv data
 DATABASE_NAME = "scout_tsv"
 BUCKET_NAME = 'yujie-bucket'
 # Final gzipped load shape files consumed directly by Scout's ecm_prep.py
 # live one level up from this script, in supporting_data/tsv_data/
-TSV_DATA_DIR = ".."
+TSV_DATA_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 # ComStock/ResStock release versions queried by --stock_version. 2025 is the
 # default; 2024 is kept for backwards compatibility/comparison. "2023" pins
 # ComStock back to its 2023.1 vintage (data-quality discrepancies were
