@@ -2,7 +2,7 @@
   "name": "(C) 90.1 Plug Loads",
   "_description": "Tier 1 advanced power strips applied to commercial workstations",
   "measure_type": "add-on",
-  "market_entry_year": 2025,
+  "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
   "ref_case_flag": null,
@@ -20,9 +20,7 @@
     "warehouse"
   ],
   "structure_type": "all",
-  "end_use": [
-    "office equipment"
-  ],
+  "end_use": "office equipment",
   "fuel_type": "electricity",
   "fuel_switch_to": null,
   "backup_fuel_fraction": null,
@@ -72,9 +70,9 @@
     "source_data": null
   },
   "_updated_by": {
-    "name": "Aven Satre:Meloy",
+    "name": "Jared Langevin",
     "organization": "LBNL",
-    "email": "asatremeloy@lbl.gov",
-    "timestamp": "2025-09-24 13:39:06"
+    "email": "jared.langevin@lbl.gov",
+    "timestamp": "2026-09-21 14:52:10"
   }
 }
