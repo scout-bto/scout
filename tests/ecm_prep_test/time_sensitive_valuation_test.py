@@ -96,7 +96,10 @@ def tsv_test_data():
             "intermediate": inter_days_wknd,
         },
     }
-    handyvars.tsv_metrics_data["peak days"] = {"summer": 270, "winter": 24}
+    handyvars.tsv_metrics_data["peak days"] = {
+        "summer": {reg: 270 for reg in handyvars.emm_name_num_map},
+        "winter": {reg: 24 for reg in handyvars.emm_name_num_map},
+    }
     handyvars.tsv_metrics_data["hourly index"] = list(
         enumerate(itertools.product(range(365), range(24)))
     )
