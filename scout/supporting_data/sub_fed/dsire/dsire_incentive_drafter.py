@@ -200,8 +200,15 @@ class DraftedIncentiveRow(BaseModel):
         "invent a number."
     ))
     rebate_units: str
-    start_year: str
-    end_year: str
+    start_year: str = Field(description=(
+        "The year from 'Start date' if given (e.g. '01/26/1986' -> "
+        "'1986'). Leave blank if 'Start date' is empty -- never guess a "
+        "year from surrounding text instead."
+    ))
+    end_year: str = Field(description=(
+        "The year from 'End date' if given, same rule as start_year. "
+        "Leave blank if 'End date' is empty."
+    ))
     applicable_fraction: str = Field(description=(
         "Leave blank unless the input supports a specific fraction; do "
         "not default to 1 without justification in fraction_notes. If "
@@ -371,6 +378,10 @@ def build_system_prompt(few_shot_block):
         "tagged amount alongside a general one, flag in open_questions "
         "that this program has an income-restricted tier that should be "
         "drafted as its own row.\n"
+        "- Take start_year/end_year only from 'Start date'/'End date' if "
+        "those are non-empty; don't infer a year from summary/details "
+        "text instead, and don't leave them populated with a guess just "
+        "because the program is clearly ongoing.\n"
         "- This is a DRAFT for a human analyst to review and edit before "
         "it is added to incentives.csv. It is not the final answer."
     )
@@ -393,6 +404,8 @@ def build_user_message(program):
         f"Incentive amounts: {program.get('incentive_amounts', '')}",
         f"Summary: {program.get('summary', '')}",
         f"Details: {program.get('details', '')}",
+        f"Start date: {program.get('start_date', '')}",
+        f"End date: {program.get('end_date', '')}",
         f"Source URL: {program.get('website_url', '')}",
         f"DSIRE last updated: {program.get('last_updated', '')}",
     ]

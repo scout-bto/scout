@@ -104,6 +104,15 @@ column (`updated` / `expired` / `expired+updated`) — `expired`-only
 rows mean "check whether an existing `incentives.csv` row needs an end
 year," not "add a new row." Run `--help` for the full flag list.
 
+The staging CSV's columns are a curated subset of what DSIRE's API
+actually returns per program (28 top-level fields) — enough to draft
+most rows, plus `start_date`/`end_date` specifically to feed
+`incentives.csv`'s `start year`/`end year` columns when DSIRE states
+them. If you need a field this script doesn't surface (e.g. `budget`,
+`fundingSource`), pass `--raw-json` to add a `raw_json` column holding
+each program's complete, unflattened API record — useful for one-off
+digging, but makes the file much wider, so it's off by default.
+
 ## 2. Draft candidate rows (optional, costs money)
 
 ```
@@ -294,7 +303,8 @@ uv run python dsire_incentive_drafter.py \
 
 Requires `DSIRE_API_KEY` only (same as step 1) — DSIRE queries aren't
 billed, so there's no cost concern, just one API call per distinct
-domain/state combination found in `incentives.csv`.
+domain/state combination found in `incentives.csv`. Also supports
+`--raw-json`, same as step 1.
 
 ## Notes
 

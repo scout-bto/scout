@@ -48,6 +48,7 @@ Usage (from the project root):
 import os
 import sys
 import csv
+import json
 import argparse
 import subprocess
 from datetime import date
@@ -213,8 +214,15 @@ def get_last_update_date(path):
     return date.fromtimestamp(path.stat().st_mtime).isoformat()
 
 
-def flatten_program(program, match_reason):
-    """Flatten one DSIRE program record into a flat dict for CSV output."""
+def flatten_program(program, match_reason, include_raw=False):
+    """Flatten one DSIRE program record into a flat dict for CSV output.
+
+    Pass include_raw=True to also include a "raw_json" column holding the
+    complete, unflattened API record (every field DSIRE returns, not just
+    the subset curated here) -- useful for one-off investigation of a
+    field this flattening doesn't surface, at the cost of a much wider,
+    harder-to-skim-by-eye staging CSV.
+    """
     param_sets = program.get("parameterSets") or []
     technologies = sorted({
         tech.get("name", "")
@@ -243,7 +251,7 @@ def flatten_program(program, match_reason):
         for d in (program.get("details") or [])
     ]
     technologies_str = "; ".join(technologies)
-    return {
+    flat = {
         "dsire_id": program.get("id"),
         "match_reason": match_reason,
         "scout_relevant": is_scout_relevant(technologies_str),
@@ -263,12 +271,21 @@ def flatten_program(program, match_reason):
         "summary": program.get("summary", ""),
         "details": "; ".join(details),
         "website_url": program.get("websiteUrl", ""),
+        # Human-readable program start/end dates -- feeds incentives.csv's
+        # "start year"/"end year" columns directly when DSIRE states them
+        # (populated on roughly a quarter / a sixth of programs respectively
+        # in spot checks; blank otherwise, same as any other unstated field).
+        "start_date": program.get("startDateDisplay", ""),
+        "end_date": program.get("endDateDisplay", ""),
         "last_updated": program.get("lastUpdated", ""),
         "created_ts": program.get("createdTs", ""),
     }
+    if include_raw:
+        flat["raw_json"] = json.dumps(program)
+    return flat
 
 
-def fetch_updates(session, since, states, category_id):
+def fetch_updates(session, since, states, category_id, include_raw=False):
     """Query DSIRE for programs updated or newly expired since `since`.
 
     Returns a de-duplicated list of flattened program rows, tagged with why
@@ -292,7 +309,8 @@ def fetch_updates(session, since, states, category_id):
 
     rows = []
     for program, reasons in matches.values():
-        rows.append(flatten_program(program, "+".join(sorted(reasons))))
+        rows.append(flatten_program(
+            program, "+".join(sorted(reasons)), include_raw=include_raw))
     return rows
 
 
@@ -338,6 +356,15 @@ def main():
              "majority of DSIRE's Financial Incentive programs are for "
              "renewable generation, not the equipment incentives.csv tracks."
     )
+    parser.add_argument(
+        "--raw-json", action="store_true",
+        help="Also write a 'raw_json' column holding each program's "
+             "complete, unflattened DSIRE API record (every field DSIRE "
+             "returns, not just the curated subset in the other columns). "
+             "Makes the staging CSV much wider; use for one-off digging "
+             "into a field this script doesn't already surface, not as "
+             "the default workflow."
+    )
     args = parser.parse_args()
 
     api_key = get_api_key()
@@ -369,7 +396,8 @@ def main():
     else:
         category_id = resolve_category_id(session, args.category)
 
-    rows = fetch_updates(session, since, states, category_id)
+    rows = fetch_updates(
+        session, since, states, category_id, include_raw=args.raw_json)
 
     if not rows:
         print("No matching DSIRE program changes found.")

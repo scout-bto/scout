@@ -109,7 +109,7 @@ def load_reference_rows(incentives_path):
     return matchable, unmatchable
 
 
-def find_matches(session, category_id, matchable):
+def find_matches(session, category_id, matchable, include_raw=False):
     """Query DSIRE once per distinct (domain, states) pair, returning
     dsire_id -> (flattened program dict, set of matched incentives.csv
     descriptions)."""
@@ -131,7 +131,9 @@ def find_matches(session, category_id, matchable):
             dsire_id = program["id"]
             if dsire_id not in matches:
                 matches[dsire_id] = (
-                    flatten_program(program, "existing_incentives_match"),
+                    flatten_program(
+                        program, "existing_incentives_match",
+                        include_raw=include_raw),
                     set(),
                 )
             matches[dsire_id][1].update(descriptions)
@@ -152,6 +154,12 @@ def main():
         help="Path to write the staging CSV to. Defaults to "
              "sub_fed/dsire/dsire_incentive_backfill_<today>.csv"
     )
+    parser.add_argument(
+        "--raw-json", action="store_true",
+        help="Also write a 'raw_json' column holding each matched "
+             "program's complete, unflattened DSIRE API record. Same "
+             "flag/behavior as dsire_incentive_checker.py --raw-json."
+    )
     args = parser.parse_args()
 
     matchable, unmatchable = load_reference_rows(INCENTIVES_CSV)
@@ -163,7 +171,8 @@ def main():
     session.headers.update({"x-api-key": api_key})
     category_id = resolve_category_id(session, DEFAULT_CATEGORY_NAME)
 
-    matches = find_matches(session, category_id, matchable)
+    matches = find_matches(
+        session, category_id, matchable, include_raw=args.raw_json)
 
     output_path = (
         Path(args.output) if args.output
@@ -175,9 +184,11 @@ def main():
         "dsire_id", "match_reason", "scout_relevant", "state", "entire_state",
         "category", "program_type", "implementing_sector", "name",
         "administrator", "technologies", "incentive_amounts", "summary",
-        "details", "website_url", "last_updated", "created_ts",
-        "incentives_csv_match",
+        "details", "website_url", "start_date", "end_date", "last_updated",
+        "created_ts", "incentives_csv_match",
     ]
+    if args.raw_json:
+        fieldnames.append("raw_json")
     rows_out = []
     for flat, descriptions in matches.values():
         flat["incentives_csv_match"] = "; ".join(sorted(descriptions))[:500]
