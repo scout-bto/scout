@@ -48,6 +48,7 @@ dev = [
 llm = [
     "anthropic",
     "google-genai",
+    "openai",
     "pydantic",
     "pypdf",
 ]

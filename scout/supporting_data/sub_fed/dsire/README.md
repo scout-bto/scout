@@ -29,6 +29,7 @@ if you're running the drafter:
 $ echo 'DSIRE_API_KEY=your api key' >> .env       # required for step 1
 $ echo 'ANTHROPIC_API_KEY=your api key' >> .env    # step 2, --provider anthropic (default)
 $ echo 'GOOGLE_API_KEY=your api key' >> .env       # step 2, --provider gemini
+$ echo 'CBORG_API_KEY=your api key' >> .env        # step 2, --provider cborg
 $ uv pip install -e ".[llm]"                       # step 2 only
 ```
 
@@ -44,6 +45,11 @@ if you want `uv sync`'s exact-match behavior instead.)
   not self-serve.
 - Anthropic key: https://console.anthropic.com/settings/keys
 - Google AI Studio key: https://aistudio.google.com/apikey
+- CBORG key: https://cborg.lbl.gov/api_faq/ (LBL-internal; requires
+  LBLnet/VPN access). Its `lbl/*` on-prem models are free, but
+  noticeably lower-quality than Claude/Gemini — treat `--provider cborg`
+  drafts with extra scrutiny, same caveat as any other drafted row but
+  more so.
 
 Commands below are shown as `uv run python ...` rather than plain
 `python ...` — this project uses `uv` (`uv.lock` at the repo root), and
@@ -105,6 +111,7 @@ uv run python dsire_incentive_drafter.py --dry-run          # preview the prompt
 uv run python dsire_incentive_drafter.py --limit 5           # small paid test batch
 uv run python dsire_incentive_drafter.py                     # full batch, defaults to the latest staging file
 uv run python dsire_incentive_drafter.py --provider gemini    # use Gemini instead of Claude
+uv run python dsire_incentive_drafter.py --provider cborg     # use LBL's free CBORG on-prem models instead ($0, but lower quality -- requires LBLnet/VPN)
 ```
 
 For each candidate program from step 1, asks an LLM to draft one
@@ -161,6 +168,18 @@ model's current rate. The script aborts after 5 consecutive row
 failures rather than burning through the whole batch on a bad model id
 or expired key — `--resume` picks back up once the underlying problem
 is fixed.
+
+`--provider cborg` defaults to `lbl/cborg-deepthought`, one of CBORG's
+free on-prem models (confirmed `$0`/`$0` input/output via CBORG's own
+`/model/info` endpoint — that's why there's no per-token pricing entry
+for it). It needs LBLnet/VPN access and a `CBORG_API_KEY`
+(https://cborg.lbl.gov/api_faq/), and produces noticeably rougher drafts
+than Claude or Gemini — expect more blank/low-confidence fields and
+garbled text in free-form fields occasionally. CBORG also proxies many
+paid third-party models (GPT, Claude, Gemini, ...) under other model
+ids; those aren't free and aren't covered by this script's zero-cost
+assumption, so don't point `--model` at one without checking CBORG's own
+pricing first.
 
 ```
 uv run python dsire_incentive_drafter.py --provider gemini --resume --output <the output file from your last run>

@@ -81,10 +81,11 @@ two files --
    incentives.csv is updated with new candidate rows, same as the checker
    and drafter.
 
-Supports the same two providers as the drafter -- pick with --provider
-(anthropic default, gemini via --provider gemini) -- and reuses its
-model/pricing tables, so update DEFAULT_MODELS/PRICING in
-dsire_incentive_drafter.py, not here, if a model id 404s.
+Supports the same three providers as the drafter -- pick with --provider
+(anthropic default, gemini via --provider gemini, LBL's free CBORG
+on-prem models via --provider cborg) -- and reuses its model/pricing
+tables, so update DEFAULT_MODELS/PRICING in dsire_incentive_drafter.py,
+not here, if a model id 404s.
 
 Usage (from the project root):
 
@@ -442,11 +443,36 @@ def resolve_row_gemini(client, model, system_prompt, row, page_text):
     return resolved, usage
 
 
+def resolve_row_cborg(client, model, system_prompt, row, page_text):
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": build_user_message(row, page_text)},
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "resolved_performance",
+                "schema": ResolvedPerformance.model_json_schema(),
+            },
+        },
+    )
+    resolved = ResolvedPerformance.model_validate(
+        json.loads(response.choices[0].message.content)
+    )
+    usage = {"input_tokens": response.usage.prompt_tokens,
+             "output_tokens": response.usage.completion_tokens}
+    return resolved, usage
+
+
 def resolve_row(provider, client, model, system_prompt, row, page_text, effort):
     if provider == "anthropic":
         return resolve_row_anthropic(client, model, system_prompt, row, page_text, effort)
     if provider == "gemini":
         return resolve_row_gemini(client, model, system_prompt, row, page_text)
+    if provider == "cborg":
+        return resolve_row_cborg(client, model, system_prompt, row, page_text)
     raise ValueError(f"Unknown provider: {provider}")
 
 
@@ -533,14 +559,19 @@ def main():
         )
     )
     parser.add_argument(
-        "--provider", default="anthropic", choices=["anthropic", "gemini"],
-        help="Which LLM provider to resolve with (default: anthropic)."
+        "--provider", default="anthropic",
+        choices=["anthropic", "gemini", "cborg"],
+        help="Which LLM provider to resolve with (default: anthropic). "
+             "'cborg' uses LBL's free on-prem models (requires LBLnet/VPN "
+             "and a CBORG_API_KEY) but is lower-quality -- scrutinize its "
+             "resolved values more than Claude's or Gemini's."
     )
     parser.add_argument(
         "--model", type=str,
         help="Override the provider's default model id. Defaults: "
              f"anthropic={DEFAULT_MODELS['anthropic']}, "
-             f"gemini={DEFAULT_MODELS['gemini']}."
+             f"gemini={DEFAULT_MODELS['gemini']}, "
+             f"cborg={DEFAULT_MODELS['cborg']}."
     )
     parser.add_argument(
         "--input", type=str, nargs="+",
@@ -635,9 +666,12 @@ def main():
     if args.provider == "anthropic":
         import anthropic
         api_error_types = (anthropic.APIStatusError, anthropic.APIConnectionError)
-    else:
+    elif args.provider == "gemini":
         from google.genai import errors as genai_errors
         api_error_types = (genai_errors.APIError,)
+    else:
+        import openai
+        api_error_types = (openai.APIStatusError, openai.APIConnectionError)
 
     already_processed = load_processed_ids(output_path) if args.resume else set()
     if already_processed:

@@ -20,18 +20,28 @@ that isn't stated in the input, but it can still misread ambiguous text,
 so treat "high confidence" as "worth a quick read," not "safe to paste
 unchecked."
 
-Supports two providers -- pick with --provider:
+Supports three providers -- pick with --provider:
 
 - anthropic (default): Claude, via ANTHROPIC_API_KEY
   (https://console.anthropic.com/settings/keys)
 - gemini: Gemini, via GOOGLE_API_KEY or GEMINI_API_KEY
   (https://aistudio.google.com/apikey)
+- cborg: LBL's internal CBORG proxy (https://cborg.lbl.gov/api_faq/), via
+  CBORG_API_KEY. Defaults to lbl/cborg-deepthought, one of CBORG's
+  on-prem models -- those are free (no per-token cost, hence no PRICING
+  entry needed) but require LBLnet/VPN access and are lower-quality than
+  Claude/Gemini, so treat drafts from this provider with extra scrutiny.
+  CBORG also proxies many paid third-party models (GPT, Claude, Gemini,
+  ...) under other model ids -- those aren't free and aren't covered by
+  this script's zero-cost assumption; pass one via --model at your own
+  risk and verify its pricing on CBORG's own dashboard first.
 
 Either way, put the key in .env at the project root (already gitignored)
 and install the optional "llm" dependency group:
 
     $ echo 'ANTHROPIC_API_KEY=your api key' >> .env
     $ echo 'GOOGLE_API_KEY=your api key' >> .env
+    $ echo 'CBORG_API_KEY=your api key' >> .env
     $ pip install ".[llm]"
 
 Gemini's model lineup and pricing move faster than Claude's and aren't
@@ -48,9 +58,11 @@ Usage (from the project root):
     # Draft against the most recent dsire_incentive_updates_*.csv (Claude)
     $ python scout/supporting_data/sub_fed/dsire/dsire_incentive_drafter.py
 
-    # Same, but with Gemini instead
+    # Same, but with Gemini or LBL's free CBORG on-prem models instead
     $ python scout/supporting_data/sub_fed/dsire/dsire_incentive_drafter.py \
         --provider gemini
+    $ python scout/supporting_data/sub_fed/dsire/dsire_incentive_drafter.py \
+        --provider cborg
 
     # Cap spend while testing
     $ python scout/supporting_data/sub_fed/dsire/dsire_incentive_drafter.py --limit 10
@@ -80,7 +92,9 @@ load_dotenv()
 DEFAULT_MODELS = {
     "anthropic": "claude-opus-5",
     "gemini": "gemini-3.6-flash",
+    "cborg": "lbl/cborg-deepthought",
 }
+CBORG_BASE_URL = "https://api.cborg.lbl.gov"
 # $ per token. Anthropic: docs.anthropic.com/en/docs/about-claude/pricing
 # (see the claude-api skill for the current authoritative table). Gemini:
 # ai.google.dev/gemini-api/docs/pricing -- verify if using a non-default
@@ -90,10 +104,15 @@ DEFAULT_MODELS = {
 # 404s with a message naming its replacement, that message is more
 # current than this table; update DEFAULT_MODELS and this entry to match
 # it). gemini-3.6-flash pricing below is the introductory rate through
-# 2026-12-31; it rises to $1.50/$7.50 per 1M on 2027-01-01.
+# 2026-12-31; it rises to $1.50/$7.50 per 1M on 2027-01-01. CBORG's
+# lbl/* on-prem models are free (confirmed $0.0/$0.0 input/output via its
+# /model/info endpoint) -- only add a PRICING entry for a non-"lbl/"
+# --model on CBORG, which proxies paid third-party models at their own
+# rates, not $0.
 PRICING = {
     ("anthropic", "claude-opus-5"): (5.00 / 1_000_000, 25.00 / 1_000_000),
     ("gemini", "gemini-3.6-flash"): (0.75 / 1_000_000, 3.75 / 1_000_000),
+    ("cborg", "lbl/cborg-deepthought"): (0.0, 0.0),
 }
 
 DSIRE_DIR = Path(__file__).resolve().parent
@@ -257,6 +276,27 @@ def get_client(provider):
             sys.exit(1)
         return genai.Client(api_key=api_key)
 
+    if provider == "cborg":
+        api_key = os.environ.get("CBORG_API_KEY")
+        if not api_key:
+            print(
+                "\nExpected environment variable CBORG_API_KEY not set.\n"
+                "Request access and an API key per "
+                "https://cborg.lbl.gov/api_faq/ (requires LBLnet/VPN).\n"
+                "Add it to a .env file at the project root (already "
+                "gitignored):\n$ echo 'CBORG_API_KEY=your api key' "
+                ">> .env\n"
+            )
+            sys.exit(1)
+        try:
+            import openai
+        except ImportError:
+            print('\nThe "openai" package is required for '
+                  "--provider cborg (CBORG is OpenAI-API-compatible).\n"
+                  "$ pip install \".[llm]\"\n")
+            sys.exit(1)
+        return openai.OpenAI(api_key=api_key, base_url=CBORG_BASE_URL)
+
     raise ValueError(f"Unknown provider: {provider}")
 
 
@@ -413,12 +453,48 @@ def draft_row_gemini(client, model, system_prompt, program):
     return drafted, usage
 
 
+def draft_row_cborg(client, model, system_prompt, program):
+    """Call a CBORG-hosted model (OpenAI-compatible) to draft one candidate
+    row.
+
+    Returns (DraftedIncentiveRow, {"input_tokens": int, "output_tokens": int}).
+    Uses non-strict json_schema mode -- CBORG's on-prem models (Gemma/GPT-OSS
+    derivatives) don't reliably satisfy OpenAI strict mode's requirement
+    that every object set additionalProperties: false, which Pydantic's
+    model_json_schema() doesn't emit by default.
+    """
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": build_user_message(program)},
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "drafted_incentive_row",
+                "schema": DraftedIncentiveRow.model_json_schema(),
+            },
+        },
+    )
+    drafted = DraftedIncentiveRow.model_validate(
+        json.loads(response.choices[0].message.content)
+    )
+    usage = {
+        "input_tokens": response.usage.prompt_tokens,
+        "output_tokens": response.usage.completion_tokens,
+    }
+    return drafted, usage
+
+
 def draft_row(provider, client, model, system_prompt, program, effort):
     """Dispatch to the chosen provider's drafting call."""
     if provider == "anthropic":
         return draft_row_anthropic(client, model, system_prompt, program, effort)
     if provider == "gemini":
         return draft_row_gemini(client, model, system_prompt, program)
+    if provider == "cborg":
+        return draft_row_cborg(client, model, system_prompt, program)
     raise ValueError(f"Unknown provider: {provider}")
 
 
@@ -439,14 +515,19 @@ def main():
         )
     )
     parser.add_argument(
-        "--provider", default="anthropic", choices=["anthropic", "gemini"],
-        help="Which LLM provider to draft with (default: anthropic)."
+        "--provider", default="anthropic",
+        choices=["anthropic", "gemini", "cborg"],
+        help="Which LLM provider to draft with (default: anthropic). "
+             "'cborg' uses LBL's free on-prem models (requires LBLnet/VPN "
+             "and a CBORG_API_KEY) but is lower-quality -- scrutinize its "
+             "drafts more than Claude's or Gemini's."
     )
     parser.add_argument(
         "--model", type=str,
         help="Override the provider's default model id. Defaults: "
              f"anthropic={DEFAULT_MODELS['anthropic']}, "
-             f"gemini={DEFAULT_MODELS['gemini']}."
+             f"gemini={DEFAULT_MODELS['gemini']}, "
+             f"cborg={DEFAULT_MODELS['cborg']}."
     )
     parser.add_argument(
         "--input", type=str,
@@ -467,7 +548,7 @@ def main():
         "--effort", default="medium",
         choices=["low", "medium", "high", "xhigh", "max"],
         help="Reasoning effort per row (default: medium). Anthropic only "
-             "-- ignored for --provider gemini."
+             "-- ignored for --provider gemini/cborg."
     )
     parser.add_argument(
         "--resume", action="store_true",
@@ -517,9 +598,12 @@ def main():
     if args.provider == "anthropic":
         import anthropic
         api_error_types = (anthropic.APIStatusError, anthropic.APIConnectionError)
-    else:
+    elif args.provider == "gemini":
         from google.genai import errors as genai_errors
         api_error_types = (genai_errors.APIError,)
+    else:
+        import openai
+        api_error_types = (openai.APIStatusError, openai.APIConnectionError)
 
     already_processed = load_processed_ids(output_path) if args.resume else set()
     if already_processed:
