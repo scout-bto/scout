@@ -154,62 +154,73 @@ META_COLUMNS = [
 
 
 class DraftedIncentiveRow(BaseModel):
-    """One candidate incentives.csv row drafted from a DSIRE program record."""
+    """One candidate incentives.csv row drafted from a DSIRE program record.
+
+    Every field has a safe default so a response that omits a key (seen in
+    practice from weaker/non-strict-schema providers, usually on thin or
+    multi-technology-bundled input) resolves to that default instead of
+    raising a hard ValidationError that would discard the whole row. The
+    drafting loop in main() separately flags, in open_questions, exactly
+    which fields a given response actually omitted (vs. deliberately left
+    blank per a field's own instructions) -- defaults here are a safety
+    net for the row to survive, not a claim that the default is correct.
+    """
 
     scenario: Literal[
         "reference", "optimistic", "aggressive", "proposed", "remove",
-        "aggressive state",
-    ] = Field(description=(
+        "aggressive state", "unclear",
+    ] = Field(default="unclear", description=(
         "Almost always 'reference' for a currently active, "
-        "already-enacted incentive program."
+        "already-enacted incentive program. Use 'unclear' only if you "
+        "genuinely can't tell -- never omit this field."
     ))
-    description: str = Field(description=(
+    description: str = Field(default="", description=(
         "Program name/administrator plus a citation to its source URL, "
         "in the style of the examples."
     ))
-    states: str = Field(description="Comma-separated state abbreviations, or 'all'.")
-    building_types: str
-    building_vintages: str
-    end_uses: str = Field(description=(
+    states: str = Field(default="", description="Comma-separated state abbreviations, or 'all'.")
+    building_types: str = ""
+    building_vintages: str = ""
+    end_uses: str = Field(default="", description=(
         "Prefer Scout's existing vocabulary shown in the examples "
         "(cooking, cooling, drying, heating, water heating, or 'all') "
         "over inventing a new category."
     ))
-    techs: str = Field(description=(
+    techs: str = Field(default="", description=(
         "Prefer Scout's existing vocabulary shown in the examples (ASHP, "
         "GSHP, central AC, electric WH, furnace (NG), roof, wall, "
         "windows conduction, rooftop_ASHP-heat, or 'all'). If nothing "
         "fits, pick the closest match and flag the mismatch in "
         "open_questions rather than leaving this blank."
     ))
-    fuel_types: str
-    base_fuel: str
-    base_fuel_backup: str
-    modification: Literal["replace", ""]
-    scope: Literal["federal", "non-federal", ""]
-    ira: Literal["yes", ""]
-    increase_pct: str
-    performance_level: str = Field(description=(
+    fuel_types: str = ""
+    base_fuel: str = ""
+    base_fuel_backup: str = ""
+    modification: Literal["replace", ""] = ""
+    scope: Literal["federal", "non-federal", ""] = ""
+    ira: Literal["yes", ""] = ""
+    increase_pct: str = ""
+    performance_level: str = Field(default="", description=(
         "Leave blank if the input doesn't state a specific numeric "
         "threshold -- never invent one."
     ))
-    performance_units: str
-    credit_pct: str
-    rebate_amount: str = Field(description=(
+    performance_units: str = ""
+    credit_pct: str = ""
+    rebate_amount: str = Field(default="", description=(
         "Leave blank if not explicitly stated in the input -- never "
         "invent a number."
     ))
-    rebate_units: str
-    start_year: str = Field(description=(
+    rebate_units: str = ""
+    start_year: str = Field(default="", description=(
         "The year from 'Start date' if given (e.g. '01/26/1986' -> "
         "'1986'). Leave blank if 'Start date' is empty -- never guess a "
         "year from surrounding text instead."
     ))
-    end_year: str = Field(description=(
+    end_year: str = Field(default="", description=(
         "The year from 'End date' if given, same rule as start_year. "
         "Leave blank if 'End date' is empty."
     ))
-    applicable_fraction: str = Field(description=(
+    applicable_fraction: str = Field(default="", description=(
         "Leave blank unless the input supports a specific fraction; do "
         "not default to 1 without justification in fraction_notes. If "
         "'Entire state' is No, this program does NOT cover the whole "
@@ -225,13 +236,13 @@ class DraftedIncentiveRow(BaseModel):
         "income-scoped fraction, the way existing AMI-tiered rows in "
         "incentives.csv do) rather than merging both amounts into one row."
     ))
-    fraction_notes: str
-    confidence: Literal["low", "medium", "high"] = Field(description=(
+    fraction_notes: str = ""
+    confidence: Literal["low", "medium", "high"] = Field(default="low", description=(
         "'high' only if nearly every field above has direct textual "
         "support in the input; 'low' if several fields are blank or "
         "guessed from thin evidence."
     ))
-    open_questions: str = Field(description=(
+    open_questions: str = Field(default="", description=(
         "What a human reviewer should check or decide before this row "
         "is added: missing values, judgment calls made, ambiguous "
         "technology mappings, etc. Empty string only if there is truly "
@@ -676,10 +687,30 @@ def main():
             if consecutive_errors:
                 continue
 
+            # Pydantic defaults keep a response that omits a key from
+            # discarding the whole row, but a defaulted field is NOT the
+            # same as the model deliberately leaving it blank -- flag
+            # exactly which fields were actually missing from the raw
+            # response so a reviewer doesn't mistake "model didn't say"
+            # for "model checked and found nothing." Works the same
+            # regardless of provider, since model_fields_set reflects
+            # what model_validate() actually saw, not what the schema
+            # declares.
+            omitted = sorted(
+                set(DraftedIncentiveRow.model_fields) - drafted.model_fields_set
+            )
+            if omitted:
+                drafted.open_questions = (
+                    f"[LLM response omitted field(s), filled with a "
+                    f"placeholder default -- verify: {', '.join(omitted)}] "
+                    + drafted.open_questions
+                )
+
             total_input_tokens += usage["input_tokens"]
             total_output_tokens += usage["output_tokens"]
             confidence_counts[drafted.confidence] += 1
-            print(f"{label} -> confidence={drafted.confidence}")
+            suffix = f" (omitted: {', '.join(omitted)})" if omitted else ""
+            print(f"{label} -> confidence={drafted.confidence}{suffix}")
 
             row = {
                 "dsire_id": dsire_id,
