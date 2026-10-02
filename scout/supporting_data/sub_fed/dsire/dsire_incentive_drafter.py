@@ -196,7 +196,21 @@ class DraftedIncentiveRow(BaseModel):
     fuel_types: str = ""
     base_fuel: str = ""
     base_fuel_backup: str = ""
-    modification: Literal["replace", ""] = ""
+    modification: Literal[
+        "replace", "extend", "remove", "unclear",
+    ] = Field(default="unclear", description=(
+        "Almost always 'replace' for a newly found DSIRE incentive "
+        "program -- it replaces baseline (no-incentive) cost with "
+        "incentive-adjusted cost. 'extend'/'remove' describe changes to "
+        "an incentive ALREADY tracked in incentives.csv (extending its "
+        "expiration, or removing it), which is rarely what a new "
+        "DSIRE-sourced candidate represents -- don't guess one of these "
+        "just to fill the field. Use 'unclear' if genuinely uncertain. "
+        "Never leave this blank or omit it: incentives.csv's loader "
+        "raises a hard error on any row with a blank/invalid "
+        "modification value, so 'unclear' must be caught and fixed by "
+        "a human before this row is copied in, not silently defaulted."
+    ))
     scope: Literal["federal", "non-federal", ""] = ""
     ira: Literal["yes", ""] = ""
     increase_pct: str = ""
@@ -393,6 +407,11 @@ def build_system_prompt(few_shot_block):
         "those are non-empty; don't infer a year from summary/details "
         "text instead, and don't leave them populated with a guess just "
         "because the program is clearly ongoing.\n"
+        "- modification should almost always be 'replace' for a new "
+        "DSIRE-sourced program -- never leave it blank, and don't guess "
+        "'extend'/'remove' (those describe edits to an incentive already "
+        "tracked in incentives.csv). Use 'unclear' only if genuinely "
+        "uncertain.\n"
         "- This is a DRAFT for a human analyst to review and edit before "
         "it is added to incentives.csv. It is not the final answer."
     )
