@@ -214,7 +214,7 @@ def get_last_update_date(path):
     return date.fromtimestamp(path.stat().st_mtime).isoformat()
 
 
-def flatten_program(program, match_reason, include_raw=False):
+def flatten_program(program, match_reason, include_raw=False, parameter_sets=None):
     """Flatten one DSIRE program record into a flat dict for CSV output.
 
     Pass include_raw=True to also include a "raw_json" column holding the
@@ -222,8 +222,17 @@ def flatten_program(program, match_reason, include_raw=False):
     the subset curated here) -- useful for one-off investigation of a
     field this flattening doesn't surface, at the cost of a much wider,
     harder-to-skim-by-eye staging CSV.
+
+    Pass parameter_sets to restrict "technologies"/"incentive_amounts"/
+    "scout_relevant" to a subset of the program's own parameterSets --
+    used by flatten_program_split() to split a program with several
+    bundled technologies/tiers into one row per parameterSet. Defaults to
+    every parameterSet on the program (the original, unsplit behavior).
     """
-    param_sets = program.get("parameterSets") or []
+    param_sets = (
+        parameter_sets if parameter_sets is not None
+        else (program.get("parameterSets") or [])
+    )
     technologies = sorted({
         tech.get("name", "")
         for ps in param_sets for tech in (ps.get("technologies") or [])
@@ -285,11 +294,63 @@ def flatten_program(program, match_reason, include_raw=False):
     return flat
 
 
+def flatten_program_split(program, match_reason, include_raw=False):
+    """Flatten one DSIRE program into one-or-more staging rows, splitting
+    on parameterSets.
+
+    DSIRE often bundles several distinct technologies, or several income
+    tiers of the same technology, into one program record -- each as its
+    own parameterSet with its own technologies/sectors/amount (confirmed
+    by inspecting real records: PEPCO's residential rebate program has 4
+    parameterSets, one each for a heat pump water heater, a thermostat,
+    and two appliance-recycling rebates, each a different dollar amount;
+    Con Edison's geothermal program has one parameterSet tagged
+    "Residential" and a second tagged "Low Income Residential", each with
+    its own amount). Asking a drafter LLM to collapse that into a single
+    incentives.csv row forces it to merge or arbitrarily pick among
+    unrelated amounts/technologies -- splitting first means each row only
+    ever has to reason about one clean, isolated technology+amount, which
+    is also how multi-row programs already work by hand in incentives.csv
+    (e.g. Colorado's heat pump tax credit is 3 rows, one per technology).
+
+    A program with 0 or 1 parameterSets is returned as a single row,
+    identical to calling flatten_program() directly -- no behavior change
+    for the common case. A split program's rows share the program's
+    dsire_id but with a "-<n>" suffix (e.g. "3745-1", "3745-2", ...) so
+    they don't collide in the dsire_id-keyed --resume/dedup logic used by
+    the drafter and resolver scripts, plus "parameter_set_index"/
+    "parameter_set_count" columns so a reviewer (or the drafter's prompt)
+    can see which rows are siblings of the same underlying program.
+    """
+    param_sets = program.get("parameterSets") or []
+    if len(param_sets) <= 1:
+        flat = flatten_program(program, match_reason, include_raw=include_raw)
+        flat["parameter_set_index"] = 1 if param_sets else 0
+        flat["parameter_set_count"] = len(param_sets)
+        return [flat]
+
+    rows = []
+    base_id = program.get("id")
+    for i, ps in enumerate(param_sets, 1):
+        flat = flatten_program(
+            program, match_reason, include_raw=include_raw,
+            parameter_sets=[ps])
+        flat["dsire_id"] = f"{base_id}-{i}"
+        flat["parameter_set_index"] = i
+        flat["parameter_set_count"] = len(param_sets)
+        rows.append(flat)
+    return rows
+
+
 def fetch_updates(session, since, states, category_id, include_raw=False):
     """Query DSIRE for programs updated or newly expired since `since`.
 
-    Returns a de-duplicated list of flattened program rows, tagged with why
-    each one matched (updated, expired, or both).
+    Returns (rows, program_count): a de-duplicated list of flattened
+    staging rows, tagged with why each one matched (updated, expired, or
+    both), and the number of distinct DSIRE programs behind them -- a
+    program with several bundled technologies/tiers is split into
+    several rows (see flatten_program_split()), so row count and program
+    count can differ.
     """
     base_params = {}
     if states:
@@ -309,9 +370,9 @@ def fetch_updates(session, since, states, category_id, include_raw=False):
 
     rows = []
     for program, reasons in matches.values():
-        rows.append(flatten_program(
+        rows.extend(flatten_program_split(
             program, "+".join(sorted(reasons)), include_raw=include_raw))
-    return rows
+    return rows, len(matches)
 
 
 def main():
@@ -396,7 +457,7 @@ def main():
     else:
         category_id = resolve_category_id(session, args.category)
 
-    rows = fetch_updates(
+    rows, program_ct = fetch_updates(
         session, since, states, category_id, include_raw=args.raw_json)
 
     if not rows:
@@ -409,8 +470,8 @@ def main():
     unrelated_ct = total_ct - len(rows)
 
     if not rows:
-        print(f"No matching programs after filtering out {unrelated_ct} "
-              "program(s) with no overlap with Scout's tracked technologies. "
+        print(f"No matching rows after filtering out {unrelated_ct} "
+              "row(s) with no overlap with Scout's tracked technologies. "
               "Re-run with --include-unrelated-tech to see them.")
         return
 
@@ -431,13 +492,18 @@ def main():
 
     updated_ct = sum(1 for r in rows if "updated" in r["match_reason"])
     expired_ct = sum(1 for r in rows if "expired" in r["match_reason"])
-    print(f"\nFound {total_ct} program(s) changed since {since}.")
+    split_ct = sum(1 for r in rows if r["parameter_set_count"] > 1)
+    print(f"\nFound {program_ct} program(s) changed since {since} "
+          f"({total_ct} staging row(s) -- programs bundling several "
+          f"technologies/tiers are split into one row per "
+          f"technology/tier; see 'parameter_set_index'/'parameter_set_"
+          f"count' columns).")
     if unrelated_ct:
-        print(f"Filtered out {unrelated_ct} program(s) with no overlap with "
+        print(f"Filtered out {unrelated_ct} row(s) with no overlap with "
               f"Scout's tracked technologies (solar/wind/EVs/appliances, "
               f"etc.). Re-run with --include-unrelated-tech to see them.")
-    print(f"{len(rows)} program(s) remain: {updated_ct} updated, "
-          f"{expired_ct} newly expired.")
+    print(f"{len(rows)} row(s) remain ({split_ct} from a split program): "
+          f"{updated_ct} updated, {expired_ct} newly expired.")
     print(f"Wrote staging file to {output_path}")
     print("Review each row and hand-translate the relevant ones into "
           "sub_fed/incentives.csv -- this file does not get written to "

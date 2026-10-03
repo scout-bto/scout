@@ -104,6 +104,23 @@ column (`updated` / `expired` / `expired+updated`) — `expired`-only
 rows mean "check whether an existing `incentives.csv` row needs an end
 year," not "add a new row." Run `--help` for the full flag list.
 
+A DSIRE program that bundles several distinct technologies or income
+tiers under one record (confirmed on real data — e.g. PEPCO's residential
+rebate program covers a heat pump water heater, a thermostat, and two
+appliance-recycling rebates, each its own dollar amount) is split into
+one staging row per technology/tier, rather than left as one row an LLM
+would have to arbitrarily merge or pick among. Split rows share the
+program's `dsire_id` with a `-<n>` suffix (e.g. `3745-1`, `3745-2`, ...)
+and carry `parameter_set_index`/`parameter_set_count` columns so you can
+see which rows came from the same program. This also means each split
+row's `scout_relevant` is judged on just its own technology — so, for
+PEPCO, the water-heater and AC-recycling rows are kept while the
+thermostat and fridge-recycling rows are correctly filtered out by
+default, instead of the whole bundle riding along on one relevant match.
+This mirrors how multi-technology programs are already split by hand in
+`incentives.csv` today (e.g. Colorado's heat pump tax credit is 3 rows,
+one per technology).
+
 The staging CSV's columns are a curated subset of what DSIRE's API
 actually returns per program (28 top-level fields) — enough to draft
 most rows, plus `start_date`/`end_date` specifically to feed

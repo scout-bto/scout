@@ -426,6 +426,20 @@ def build_user_message(program):
     )
     fields = [
         f"Program name: {program.get('name', '')}",
+    ]
+    pset_count = int(program.get("parameter_set_count") or 1)
+    if pset_count > 1:
+        pset_index = program.get("parameter_set_index", "?")
+        fields.append(
+            f"Note: this DSIRE program bundles {pset_count} distinct "
+            f"technologies/tiers, each with its own amount. This row is "
+            f"ONLY technology/tier {pset_index} of {pset_count} -- "
+            f"'Technologies'/'Incentive amounts' below are already "
+            f"narrowed to just this one. Draft a row for ONLY what's "
+            f"shown below; don't describe or merge in the program's "
+            f"other technologies/tiers, which are separate staging rows."
+        )
+    fields += [
         f"State: {program.get('state', '')}",
         f"Entire state: {entire_state}",
         f"Program type: {program.get('program_type', '')}",
