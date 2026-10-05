@@ -25,8 +25,13 @@ def parse_boolean(val):
 
 
 def parse_identity(val):
-    """Pass-through for standard text/numeric fields; strips strings."""
-    return val.strip() if isinstance(val, str) else val
+    """Pass-through for standard fields; strips strings and splits semicolon lists."""
+    if isinstance(val, str):
+        if ";" in val:
+            # Split by semicolon and remove any empty trailing strings
+            return [x.strip() for x in val.split(";") if x.strip()]
+        return val.strip()
+    return val
 
 
 def parse_integer(val):
@@ -62,8 +67,8 @@ def _recursive_dict(parts, is_unit):
     """Helper: Recursively nests fields separated by colons."""
     if len(parts) == 1:
         return _parse_terminal_value(parts[0], is_unit)
-    # Force the generated key to lowercase
-    return {parts[0].strip().lower(): _recursive_dict(parts[1:], is_unit)}
+    # Reverted to preserve original case
+    return {parts[0].strip(): _recursive_dict(parts[1:], is_unit)}
 
 
 def _parse_dynamic_nested(val, is_unit):
@@ -83,9 +88,7 @@ def _parse_dynamic_nested(val, is_unit):
         if not p or ":" not in p:
             continue
         sub = [x.strip() for x in p.split(":")]
-
-        # Force the top-level nested key to lowercase
-        key = sub[0].lower()
+        key = sub[0]
         nested = _recursive_dict(sub[1:], is_unit)
 
         if key not in res:
@@ -291,15 +294,22 @@ def populate_json(record_dict, mapping_config):
     output_dict = {}
 
     for col, (json_key, parser_func) in mapping_config.items():
-        if col in record_dict and record_dict[col] is not None:
-            try:
-                parsed_val = parser_func(record_dict[col])
-            except ValueError as e:
-                meas_name = record_dict.get('Name', 'Unknown')
-                raise ValueError(
-                    f"Error parsing '{col}' for '{meas_name}': {e}"
-                )
+        if col in record_dict:
+            raw_val = record_dict[col]
 
+            # Bypass parsing for missing data and assign None directly
+            if raw_val is None:
+                parsed_val = None
+            else:
+                try:
+                    parsed_val = parser_func(raw_val)
+                except ValueError as e:
+                    meas_name = record_dict.get('Name', 'Unknown')
+                    raise ValueError(
+                        f"Error parsing '{col}' for '{meas_name}': {e}"
+                    )
+
+            # Assign the parsed data (handling single strings and nested lists)
             if isinstance(json_key, list):
                 if json_key[0] not in output_dict:
                     output_dict[json_key[0]] = {}

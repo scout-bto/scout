@@ -5,6 +5,7 @@ import sys
 import warnings
 import logging
 import json
+from functools import lru_cache
 from pathlib import Path
 from jsonschema import validate
 
@@ -49,6 +50,9 @@ class FilePaths:
     ECM_COMP = GENERATED / "ecm_competition_data"
     EFF_FS_SPLIT = GENERATED / "eff_fs_splt_data"
     INPUTS = _parent_dir / "inputs"
+    INPUTS_RAW = INPUTS / "raw"
+    INPUTS_PROCESSED = INPUTS / "processed"
+    AEO_DERIVED = INPUTS / "derived"
     RESULTS = _parent_dir / "results"
     PLOTS = RESULTS / "plots"
     METADATA_PATH = INPUTS / "metadata.json"
@@ -71,9 +75,12 @@ class FilePaths:
                 file paths are values.
         """
 
-        downstream_map = {"GENERATED": ["ECM_COMP", "EFF_FS_SPLIT"],
-                          "INPUTS": ["METADATA_PATH"],
-                          "RESULTS": ["PLOTS"]}
+        downstream_map = {
+            "GENERATED": ["ECM_COMP", "EFF_FS_SPLIT"],
+            "INPUTS": ["INPUTS_RAW", "INPUTS_PROCESSED", "AEO_DERIVED", "METADATA_PATH"],
+            "INPUTS_PROCESSED": ["METADATA_PATH"],
+            "RESULTS": ["PLOTS"],
+        }
 
         for var, new_path in paths_to_update.items():
             if var[0] == "_":
@@ -98,6 +105,223 @@ class FilePaths:
         """Reset filepath attributes to the baseline values defined at class definition"""
         for attr, val in cls._base_paths.items():
             setattr(cls, attr, val)
+
+
+SUPPORTED_AEO_YEARS = [2015, 2017, 2018, 2019, 2020,
+                       2021, 2022, 2023, 2025, 2026]
+
+
+class AEOInputRegistry:
+    """Canonical AEO input file names and validation helpers.
+
+    The "raw" mode corresponds to AEO-delivered files staged in
+    ``inputs/raw/`` before preprocessing. The "processed" mode corresponds to
+    files Scout modules read from ``inputs/processed/`` after preprocessing.
+    Some keys in the processed registry are logical lookups for raw-staged AEO
+    inputs that Scout reads directly when no processed copy exists.
+    """
+
+    RAW = {
+        "res_db": "RDM_DBOUT.txt",
+        "res_dgen": "RDM_DGENOUT.txt",
+        "res_mess_xlsx": "rsmess.xlsx",
+        "rsmlgt": "rsmlgt.txt",
+        "cdm_db": "CDM_DBOUT.txt",
+        "cdm_sd": "CDM_SDOUT.txt",
+        "cdm_dgen": "CDM_DGENOUT.txt",
+        "kprem": "kprem.txt",
+        "com_ktekx_xlsx": "ktekx.xlsx",
+    }
+
+    PROCESSED_GENERATED = {
+        "res_db": "RDM_DBOUT.txt",
+        "rsmeqp": "rsmeqp.txt",
+        "rsclass": "rsclass.txt",
+        "rsmlgt": "rsmlgt.txt",
+        "ktek": "ktek.csv",
+    }
+
+    PROCESSED_RAW_LOOKUPS = {
+        "res_dgen": "RDM_DGENOUT.txt",
+        "cdm_db": "CDM_DBOUT.txt",
+        "cdm_sd": "CDM_SDOUT.txt",
+        "cdm_dgen": "CDM_DGENOUT.txt",
+        "kprem": "kprem.txt",
+    }
+
+    PROCESSED = {
+        **PROCESSED_GENERATED,
+        **PROCESSED_RAW_LOOKUPS,
+    }
+
+    MODES = {
+        "raw": RAW,
+        "processed": PROCESSED,
+    }
+
+    @classmethod
+    def files_for_mode(cls, mode: str):
+        """Return filename mapping for a valid mode."""
+        if mode not in cls.MODES:
+            raise ValueError(
+                f"Unsupported AEO input mode '{mode}'. "
+                f"Use one of: {', '.join(sorted(cls.MODES.keys()))}")
+        return cls.MODES[mode]
+
+    @classmethod
+    def path_map(cls, mode: str, input_dir: Path = None):
+        """Return key -> full path mapping for a mode.
+
+        Args:
+            mode: One of "raw" or "processed".
+            input_dir: Optional directory override for all keys in the mode.
+
+        Returns:
+            dict[str, Path]: Mapping from registry key to full file path.
+
+        Notes:
+            For staged AEO inputs that are intentionally kept in ``inputs/raw``
+            rather than copied into ``inputs/processed``, a processed lookup may
+            resolve to the same-named raw file when the processed copy is absent.
+            This keeps raw inputs directly readable without requiring a duplicate
+            processed copy.
+
+            Results are memoized per unique combination of arguments and the
+            *current* values of ``FilePaths.INPUTS_RAW``/``INPUTS_PROCESSED``,
+            so this is safe to call repeatedly (e.g., once per ``EIAData``-like
+            class instantiation) without incurring redundant filesystem stat
+            calls, and the cache automatically invalidates itself if those
+            base directories are later changed (e.g., via ``FilePaths.set_paths``
+            or in tests via monkeypatching). If files are written to `input_dir`
+            paths (e.g., by preprocessing raw AEO inputs into ``inputs/processed``)
+            within the same process *after* a call has already been cached for
+            that same directory, call ``clear_cache()`` to force re-resolution.
+        """
+        return cls._path_map_cached(
+            mode, input_dir, FilePaths.INPUTS_RAW, FilePaths.INPUTS_PROCESSED)
+
+    @classmethod
+    @lru_cache(maxsize=None)
+    def _path_map_cached(cls, mode, input_dir, inputs_raw, inputs_processed):
+        """Cached implementation of `path_map`.
+
+        `inputs_raw`/`inputs_processed` are explicit snapshots of the
+        corresponding `FilePaths` attributes at call time, passed in purely
+        so they participate in the cache key: if either directory changes,
+        subsequent calls get a different cache key and are recomputed rather
+        than returning a stale result.
+        """
+        if input_dir is not None:
+            base = input_dir
+        elif mode == "raw":
+            base = inputs_raw
+        else:
+            base = inputs_processed
+
+        files = cls.files_for_mode(mode)
+        paths = {k: base / v for k, v in files.items()}
+
+        if mode == "processed":
+            if input_dir is None or input_dir == inputs_processed:
+                raw_paths = cls._path_map_cached(
+                    "raw", None, inputs_raw, inputs_processed)
+                for key, path in list(paths.items()):
+                    if (
+                        key in cls.PROCESSED_RAW_LOOKUPS
+                        and (not path.exists())
+                        and (key in raw_paths)
+                        and raw_paths[key].exists()
+                    ):
+                        paths[key] = raw_paths[key]
+
+        return paths
+
+    @classmethod
+    def clear_cache(cls):
+        """Clear memoized `path_map` results.
+
+        Call this if raw/processed AEO input files are created, moved, or
+        removed on disk within the same process after `path_map` has already
+        been called for the affected directories (the cache otherwise has no
+        way to detect filesystem changes that aren't reflected by a change to
+        `FilePaths.INPUTS_RAW`/`INPUTS_PROCESSED` or the `input_dir` argument).
+        """
+        cls._path_map_cached.cache_clear()
+
+    @classmethod
+    def _validate_required_keys(
+            cls,
+            mode: str,
+            paths: dict[str, Path],
+            required_keys: list[str]):
+        """Validate requested keys for a mode.
+
+        Returns the normalized key list.
+        """
+        if required_keys is None:
+            return list(paths.keys())
+
+        unknown = sorted(set(required_keys) - set(paths.keys()))
+        if unknown:
+            valid = ', '.join(sorted(paths.keys()))
+            unknown_str = ', '.join(unknown)
+            raise ValueError(
+                f"Unsupported required_keys for mode '{mode}': {unknown_str}. "
+                f"Valid keys are: {valid}")
+        return required_keys
+
+    @classmethod
+    def missing_for_mode(
+            cls,
+            mode: str,
+            input_dir: Path = None,
+            required_keys: list[str] = None):
+        """Return missing paths for a mode.
+
+        Args:
+            mode: One of "raw" or "processed".
+            input_dir: Optional input directory override.
+            required_keys: Optional subset of file keys for the mode.
+
+        Returns:
+            list[Path]: Missing file paths for the requested mode and keys.
+
+        Raises:
+            ValueError: If ``required_keys`` includes keys not in the mode.
+        """
+        paths = cls.path_map(mode, input_dir)
+        required_keys = cls._validate_required_keys(mode, paths, required_keys)
+        missing = [paths[k] for k in required_keys if not paths[k].exists()]
+        return missing
+
+    @classmethod
+    def assert_present(
+            cls,
+            mode: str,
+            input_dir: Path = None,
+            required_keys: list[str] = None,
+            hint: str = None):
+        """Raise ``FileNotFoundError`` if required files are missing.
+
+        Args:
+            mode: One of "raw" or "processed".
+            input_dir: Optional input directory override.
+            required_keys: Optional subset of file keys for the mode.
+            hint: Optional next-step guidance appended to the error.
+
+        Raises:
+            ValueError: If ``required_keys`` includes keys not in the mode.
+            FileNotFoundError: If one or more required files are missing.
+        """
+        missing = cls.missing_for_mode(mode, input_dir, required_keys)
+        if missing:
+            missing_str = "\n".join([f"  - {p}" for p in missing])
+            text = (
+                f"Missing required AEO input files for mode '{mode}':\n"
+                f"{missing_str}\n")
+            if hint:
+                text += f"\nNext step: {hint}\n"
+            raise FileNotFoundError(text)
 
 
 class Config:
