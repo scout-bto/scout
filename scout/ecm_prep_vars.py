@@ -814,8 +814,14 @@ class UsefulVars(object):
                 # config file or CLI arg, neither of which enforce case)
                 # still matches valid_regions' uppercase state abbreviations.
                 cz_override_set = {cz.upper() for cz in cz_override}
-                out_break_regions = [
-                    r for r in valid_regions if r in cz_override_set]
+                # Only scope when every override value is a state. Other valid
+                # climate_zone values ("all", AIA/IECC region names) or typos
+                # would otherwise be filtered out here, leaving no breakout
+                # region for the affected microsegments; keep the full list
+                # and let downstream validation handle them.
+                if cz_override_set.issubset(valid_regions):
+                    out_break_regions = [
+                        r for r in valid_regions if r in cz_override_set]
             regions_out = [(x, x) for x in out_break_regions]
 
             # Read in mapping for alternate performance/cost unit breakouts
