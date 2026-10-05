@@ -347,5 +347,8 @@ properties:
       write_elec_conv_fracs:
         type: boolean
         default: false
-        description: If true, writes out rates of either fuel or tech. switching to electric equipment.   
-          
+        description: If true, writes out rates of either fuel or tech. switching to electric equipment.
+      first_cost_choice:
+        type: boolean
+        default: false
+        description: If true, consumers always pick the technology with the lowest first cost from among competing options.

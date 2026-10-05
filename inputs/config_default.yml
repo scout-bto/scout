@@ -48,3 +48,4 @@ run:
   report_cfs: false
   no_comp: false
   high_res_comp: false
+  first_cost_choice: false
