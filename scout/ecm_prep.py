@@ -45,7 +45,7 @@ def _fast_copy_measure(m):
     measure's other attributes with copy.deepcopy as before, but reuses its
     already-shallow-copied handyvars object via copy.copy instead.
 
-    markets is also special-cased to use _fast_copy_nested_dict instead of
+    markets is also special-cased to use _copy_dict_tree_shared_leaves instead of
     copy.deepcopy. markets is a plain dict/OrderedDict tree (by construction
     in Measure.__init__) whose non-dict leaves are, by the time this function
     is called (packaging already-prepared measures in MeasurePackage.__init__),
@@ -54,8 +54,8 @@ def _fast_copy_measure(m):
     add_keyvals, breakout_mseg, merge_htcl_overlaps, etc.): all of them either
     rebind a dict key to a new scalar or recurse into a nested dict, never
     mutate a leaf value in place. copy.deepcopy is unusually slow for this
-    tree because it is built of OrderedDicts (see _fast_copy_nested_dict's
-    docstring); _fast_copy_nested_dict gives every dict/OrderedDict level in
+    tree because it is built of OrderedDicts (see _copy_dict_tree_shared_leaves's
+    docstring); _copy_dict_tree_shared_leaves gives every dict/OrderedDict level in
     the tree its own object (so later in-place mutation of one copy's nested
     dicts, e.g. via add_keyvals, can't leak into another copy or the
     original) while sharing only the immutable leaf scalars by reference.
@@ -65,7 +65,7 @@ def _fast_copy_measure(m):
         if k == "handyvars":
             new_m.__dict__[k] = copy.copy(v)
         elif k == "markets":
-            new_m.__dict__[k] = _fast_copy_nested_dict(v)
+            new_m.__dict__[k] = _copy_dict_tree_shared_leaves(v)
         else:
             new_m.__dict__[k] = copy.deepcopy(v)
     return new_m
@@ -88,8 +88,14 @@ def _fast_copy_tsv_shapes(d):
     return {k: v.copy() for k, v in d.items()}
 
 
-def _fast_copy_nested_dict(d):
+def _copy_dict_tree_shared_leaves(d):
     """Fast recursive copy of a nested dict/OrderedDict of dicts.
+
+    Not interchangeable with run.py's _fast_copy_nested_dict: this version
+    preserves each container's class (e.g., OrderedDict stays OrderedDict),
+    copies only dict containers, and shares every non-dict leaf by reference
+    (including numpy arrays, with no error). run.py's version returns plain
+    dicts and raises TypeError on numpy arrays.
 
     Significantly faster than copy.deepcopy for trees such as
     handyvars.out_break_in, which are built entirely of nested dict/
@@ -103,7 +109,7 @@ def _fast_copy_nested_dict(d):
     """
     out = d.__class__()
     for k, v in d.items():
-        out[k] = _fast_copy_nested_dict(v) if isinstance(v, dict) else v
+        out[k] = _copy_dict_tree_shared_leaves(v) if isinstance(v, dict) else v
     return out
 
 
@@ -1086,12 +1092,12 @@ class Measure(object):
 
             # Helper for a fresh, independent deep-copy of the out_break_in.
             # Each breakout slot needs its own copy so accumulation into one slot
-            # doesn't alias into the others. Use _fast_copy_nested_dict instead of
+            # doesn't alias into the others. Use _copy_dict_tree_shared_leaves instead of
             # copy.deepcopy: out_break_in is a pure nested dict/OrderedDict tree,
             # and copy.deepcopy is much slower for OrderedDict than the equivalent
             # hand-rolled recursive copy.
             def _obi():
-                return _fast_copy_nested_dict(self.handyvars.out_break_in)
+                return _copy_dict_tree_shared_leaves(self.handyvars.out_break_in)
 
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
@@ -5899,12 +5905,12 @@ class Measure(object):
             # subsequent technology microsegments
             self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
                 mskeys[2]][eu] = {
-                    "annual adjustment fractions": _fast_copy_nested_dict(
+                    "annual adjustment fractions": _copy_dict_tree_shared_leaves(
                         updated_tsv_fracs),
                     "hourly shapes": _fast_copy_tsv_shapes(
                         updated_tsv_shapes)}
         elif self.handyvars.tsv_hourly_lafs is not None:
-            updated_tsv_fracs = _fast_copy_nested_dict(
+            updated_tsv_fracs = _copy_dict_tree_shared_leaves(
                 self.handyvars.tsv_hourly_lafs[mskeys[1]][bldg_sect][
                     mskeys[2]][eu]["annual adjustment fractions"])
             updated_tsv_shapes = _fast_copy_tsv_shapes(
@@ -11405,11 +11411,11 @@ class MeasurePackage(Measure):
             # Add market breakout information
 
             # Helper for a fresh, independent copy of out_break_in. Use
-            # _fast_copy_nested_dict instead of copy.deepcopy: out_break_in is a
+            # _copy_dict_tree_shared_leaves instead of copy.deepcopy: out_break_in is a
             # pure nested dict/OrderedDict tree, and copy.deepcopy is much slower
             # for OrderedDict than the equivalent hand-rolled recursive copy.
             def _obi():
-                return _fast_copy_nested_dict(self.handyvars.out_break_in)
+                return _copy_dict_tree_shared_leaves(self.handyvars.out_break_in)
 
             # Add energy, carbon, and cost breakouts
             self.markets[adopt_scheme]["mseg_out_break"] = {key: {
@@ -11471,11 +11477,11 @@ class MeasurePackage(Measure):
                 # Loop through all adoption scenarios
                 for a_s in self.handyvars.adopt_schemes_prep:
                     # Shorthand deep copy of measure stock data. Use
-                    # _fast_copy_nested_dict instead of copy.deepcopy: stk_cpy
+                    # _copy_dict_tree_shared_leaves instead of copy.deepcopy: stk_cpy
                     # is only ever read from below (via stk_cpy[cm]["stock"]
                     # [met]["measure"][yr], a numeric leaf), never mutated in
                     # place, so reference-sharing the leaves is safe.
-                    stk_cpy = _fast_copy_nested_dict(m.markets[a_s][
+                    stk_cpy = _copy_dict_tree_shared_leaves(m.markets[a_s][
                         "mseg_adjust"]["contributing mseg keys and values"])
                     # Loop through all contributing msegs for measure
                     for cm in stk_cpy.keys():
@@ -12139,12 +12145,12 @@ class MeasurePackage(Measure):
         # to account for/remove direct overlaps with other measures
         if len(overlap_meas) != 0:
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # operations in the loop. Use _copy_dict_tree_shared_leaves instead of
             # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
             # leaves out of msegs_meas_init (e.g. msegs_meas["energy"]["total"]
             # ["baseline"][yr]), never mutates them in place, so
             # reference-sharing the leaves is safe.
-            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
+            msegs_meas_init = _copy_dict_tree_shared_leaves(msegs_meas)
             # Find base and efficient adjustment fractions
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \
                 self.find_base_eff_adj_fracs(
@@ -12355,11 +12361,11 @@ class MeasurePackage(Measure):
         if htcl_key_match in self.htcl_overlaps[
                 adopt_scheme]["data"].keys():
             # Make a copy of the mseg info. that is unaffected by subsequent
-            # operations in the loop. Use _fast_copy_nested_dict instead of
+            # operations in the loop. Use _copy_dict_tree_shared_leaves instead of
             # copy.deepcopy: find_base_eff_adj_fracs only ever reads numeric
             # leaves out of msegs_meas_init, never mutates them in place, so
             # reference-sharing the leaves is safe.
-            msegs_meas_init = _fast_copy_nested_dict(msegs_meas)
+            msegs_meas_init = _copy_dict_tree_shared_leaves(msegs_meas)
             # Find base and efficient adjustment fractions; directly
             # overlapping measures are none in this case
             base_adj, eff_adj, eff_adj_c, eff_capt_env_frac = \

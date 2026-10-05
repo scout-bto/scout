@@ -793,7 +793,7 @@ class UsefulVars(object):
             # For State-level output breakouts, scope the breakout regions to
             # match ecm_field_updates' climate_zone override when present.
             # Without this, out_break_czones (and every copy of it made by
-            # _obi()/_fast_copy_nested_dict) always enumerates all 50 states
+            # _obi()/_copy_dict_tree_shared_leaves) always enumerates all 50 states
             # regardless of climate_zone, which is pure overhead when running
             # a state-restricted config with no prepared data for the
             # excluded states (e.g. a scoped-down test/dev run). Production
