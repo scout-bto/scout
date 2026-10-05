@@ -2007,97 +2007,114 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
-        # Loop through competing measures and calculate market shares for
-        # each based on their annualized capital and operating costs
-        for ind, m in enumerate(measures_adj):
-            # Set measure markets and market adjustment information
+        # If user requested that consumers always choose the lowest first cost technology from
+        # among the competing options, set market shares directly from unit upfront costs
+        fc_fracs = self.first_cost_mkt_fracs(unit_cost_s_in, yrs_on_mkt) if (
+            opts.first_cost_choice) else None
 
-            # Pre-compute the choice-parameter sub-dict for this measure once
-            # (avoids re-traversing the full dict on every year iteration).
-            try:
-                _choice_params = m.markets[adopt_scheme]["competed"][
-                    "mseg_adjust"]["competed choice parameters"][str(choice_mseg[ind])]
-            except KeyError:
-                _choice_params = None
-
-            # Loop through all years in time horizon
-            for yr in self.handyvars.aeo_years:
-                # Ensure measure is on the market in given year
-                if yr in yrs_on_mkt[ind]:
-                    # Set measure capital and operating cost inputs. * Note:
-                    # operating cost is set to just energy costs (for now), but
-                    # could be expanded to include maintenance and carbon costs
-
-                    # Set capital cost (handle as numpy array or point value)
-                    if isinstance(unit_cost_s_in[ind][yr], numpy.ndarray):
-                        cap_cost = numpy.zeros(len(unit_cost_s_in[ind][yr]))
-                        for i in range(0, len(unit_cost_s_in[ind][yr])):
-                            cap_cost[i] = unit_cost_s_in[ind][yr][i]
+        # Lowest first cost market share: avoid expensive market share calculations and use
+        # precomputed fraction
+        if fc_fracs is not None:
+            for ind in range(len(measures_adj)):
+                for yr in self.handyvars.aeo_years:
+                    if yr in yrs_on_mkt[ind]:
+                        mkt_fracs[ind][yr] = fc_fracs[ind][yr]
+                    elif yr not in years_on_mkt_all:
+                        mkt_fracs[ind][yr] = 1 / len(measures_adj) if len(measures_adj) > 1 else 0
                     else:
-                        cap_cost = unit_cost_s_in[ind][yr]
-                    # Set operating cost (handle as numpy array or point value)
-                    if isinstance(unit_cost_e_in[ind][yr], numpy.ndarray):
-                        op_cost = numpy.zeros(len(unit_cost_e_in[ind][yr]))
-                        for i in range(0, len(unit_cost_e_in[ind][yr])):
-                            op_cost[i] = unit_cost_e_in[ind][yr][i]
-                    else:
-                        op_cost = unit_cost_e_in[ind][yr]
-
-                    # Calculate measure market fraction using log-linear
-                    # regression equation that takes capital/operating
-                    # costs as inputs
-
-                    # Handle case where cost is None
-                    try:
-                        # Calculate weighted sum of incremental capital and
-                        # operating costs
-                        sum_wt = cap_cost * \
-                            _choice_params["b1"][yr] + op_cost * \
-                            _choice_params["b2"][yr]
-
-                        # Guard against cases with very low weighted sums of
-                        # incremental capital and operating costs
-                        if not isinstance(sum_wt, numpy.ndarray) and \
-                                sum_wt < -500:
-                            sum_wt = -500
-                        elif isinstance(sum_wt, numpy.ndarray) and any([
-                                x < -500 for x in sum_wt]):
-                            sum_wt = [-500 if x < -500 else x for x in sum_wt]
-
-                        # Calculate market fraction
-                        mkt_fracs[ind][yr] = numpy.exp(sum_wt)
-                    except TypeError:
                         mkt_fracs[ind][yr] = 0
+        else:
+            # Loop through competing measures and calculate market shares for
+            # each based on their annualized capital and operating costs
+            for ind, m in enumerate(measures_adj):
+                # Set measure markets and market adjustment information
 
-                    # Add calculated market fraction to mkt fraction sum
-                    mkt_fracs_tot[yr] = \
-                        mkt_fracs_tot[yr] + mkt_fracs[ind][yr]
+                # Pre-compute the choice-parameter sub-dict for this measure once
+                # (avoids re-traversing the full dict on every year iteration).
+                try:
+                    _choice_params = m.markets[adopt_scheme]["competed"][
+                        "mseg_adjust"]["competed choice parameters"][str(choice_mseg[ind])]
+                except KeyError:
+                    _choice_params = None
 
-        # Loop through competing measures to normalize their calculated
-        # market shares to the total market share sum; use normalized
-        # market shares to make adjustments to each measure's master
-        # microsegment values
-        for ind, m in enumerate(measures_adj):
-            # Calculate annual market share fraction for the measure and
-            # adjust measure's master microsegment values accordingly
-            for yr in self.handyvars.aeo_years:
-                # Ensure measure is on the market in given year; if not,
-                # the measure either splits the market with other
-                # competing measures if none of those measures is on
-                # the market either, or else has a market share of zero
-                if yr in yrs_on_mkt[ind]:
-                    if ((not isinstance(mkt_fracs_tot[yr], numpy.ndarray) and
-                         mkt_fracs_tot[yr] != 0) or (
-                        isinstance(mkt_fracs_tot[yr], numpy.ndarray) and all(
-                            mkt_fracs_tot[yr] != 0))):
-                        mkt_fracs[ind][yr] = \
-                            mkt_fracs[ind][yr] / mkt_fracs_tot[yr]
-                    else:
+                # Loop through all years in time horizon
+                for yr in self.handyvars.aeo_years:
+                    # Ensure measure is on the market in given year (and cost-based choice applies)
+                    if yr in yrs_on_mkt[ind] and fc_fracs is None:
+                        # Set measure capital and operating cost inputs. * Note:
+                        # operating cost is set to just energy costs (for now), but
+                        # could be expanded to include maintenance and carbon costs
+
+                        # Set capital cost (handle as numpy array or point value)
+                        if isinstance(unit_cost_s_in[ind][yr], numpy.ndarray):
+                            cap_cost = numpy.zeros(len(unit_cost_s_in[ind][yr]))
+                            for i in range(0, len(unit_cost_s_in[ind][yr])):
+                                cap_cost[i] = unit_cost_s_in[ind][yr][i]
+                        else:
+                            cap_cost = unit_cost_s_in[ind][yr]
+                        # Set operating cost (handle as numpy array or point value)
+                        if isinstance(unit_cost_e_in[ind][yr], numpy.ndarray):
+                            op_cost = numpy.zeros(len(unit_cost_e_in[ind][yr]))
+                            for i in range(0, len(unit_cost_e_in[ind][yr])):
+                                op_cost[i] = unit_cost_e_in[ind][yr][i]
+                        else:
+                            op_cost = unit_cost_e_in[ind][yr]
+
+                        # Calculate measure market fraction using log-linear
+                        # regression equation that takes capital/operating
+                        # costs as inputs
+
+                        # Handle case where cost is None
+                        try:
+                            # Calculate weighted sum of incremental capital and
+                            # operating costs
+                            sum_wt = cap_cost * \
+                                _choice_params["b1"][yr] + op_cost * \
+                                _choice_params["b2"][yr]
+
+                            # Guard against cases with very low weighted sums of
+                            # incremental capital and operating costs
+                            if not isinstance(sum_wt, numpy.ndarray) and \
+                                    sum_wt < -500:
+                                sum_wt = -500
+                            elif isinstance(sum_wt, numpy.ndarray) and any([
+                                    x < -500 for x in sum_wt]):
+                                sum_wt = [-500 if x < -500 else x for x in sum_wt]
+
+                            # Calculate market fraction
+                            mkt_fracs[ind][yr] = numpy.exp(sum_wt)
+                        except TypeError:
+                            mkt_fracs[ind][yr] = 0
+
+                        # Add calculated market fraction to mkt fraction sum
+                        mkt_fracs_tot[yr] = \
+                            mkt_fracs_tot[yr] + mkt_fracs[ind][yr]
+
+            # Loop through competing measures to normalize their calculated
+            # market shares to the total market share sum; use normalized
+            # market shares to make adjustments to each measure's master
+            # microsegment values
+            for ind, m in enumerate(measures_adj):
+                # Calculate annual market share fraction for the measure and
+                # adjust measure's master microsegment values accordingly
+                for yr in self.handyvars.aeo_years:
+                    # Ensure measure is on the market in given year; if not,
+                    # the measure either splits the market with other
+                    # competing measures if none of those measures is on
+                    # the market either, or else has a market share of zero
+                    if yr in yrs_on_mkt[ind]:
+                        if ((not isinstance(mkt_fracs_tot[yr], numpy.ndarray) and
+                             mkt_fracs_tot[yr] != 0) or (
+                            isinstance(mkt_fracs_tot[yr], numpy.ndarray) and all(
+                                mkt_fracs_tot[yr] != 0))):
+                            mkt_fracs[ind][yr] = \
+                                mkt_fracs[ind][yr] / mkt_fracs_tot[yr]
+                        else:
+                            mkt_fracs[ind][yr] = 1 / len(measures_adj)
+                    elif yr not in years_on_mkt_all:
                         mkt_fracs[ind][yr] = 1 / len(measures_adj)
-                elif yr not in years_on_mkt_all:
-                    mkt_fracs[ind][yr] = 1 / len(measures_adj)
-                else:
-                    mkt_fracs[ind][yr] = 0
+                    else:
+                        mkt_fracs[ind][yr] = 0
 
         # Calculate final adjustments to market shares to reflect sub-market scaling fractions
         # in the measure definition and/or sub-federal appliance restrictions that affect
@@ -2316,250 +2333,283 @@ class Engine(object):
         yrs_on_mkt, noapply_sbmkt_fracs_regs = self.state_app_reg_screen(
             measures_adj, stk_cost_dat_keys)
 
-        # Initialize a flag that indicates whether any competing measures
-        # have arrays of annualized capital and/or operating costs rather
-        # than point values (resultant of distributions on measure inputs),
-        # for each year in the range above
-        length_array = numpy.repeat(0, len(self.handyvars.aeo_years))
+        # If user requested that consumers always choose the lowest first cost technology from
+        # among the competing options, set market shares directly from unit upfront costs. Upfront
+        # costs are available directly under high resolution competition; otherwise, use the
+        # measure's stock cost under the highest hurdle rate (rate 1), where costs incurred later
+        # in the measure lifetime are discounted most heavily and so approach the upfront cost
+        if opts.first_cost_choice:
+            if opts.high_res_comp is True:
+                first_costs = unit_cost_s_in_unadj
+            else:
+                first_costs = [{
+                    yr: c[yr]["rate 1"] if isinstance(c[yr], dict) else (
+                        numpy.array([x["rate 1"] if isinstance(x, dict) else x for x in c[yr]])
+                        if isinstance(c[yr], numpy.ndarray) else None)
+                    for yr in self.handyvars.aeo_years} for c in unit_cost_s_in]
+            fc_fracs = self.first_cost_mkt_fracs(first_costs, yrs_on_mkt)
+        else:
+            fc_fracs = None
 
-        # Loop through all years in time horizon
-        for ind_l, yr in enumerate(self.handyvars.aeo_years):
-            # Determine whether any of the competing measures have
-            # arrays of annualized capital and/or operating costs for
-            # the given year; if so, find the array length. * Note: all
-            # array lengths should be equal to the 'nsamples' variable
-            # defined in 'ecm_prep.py'
-            if any([isinstance(x[yr], numpy.ndarray) or
-                    isinstance(y[yr], numpy.ndarray) for
-                    x, y in zip(unit_cost_s_in, unit_cost_e_in)]) is True:
-                length_array[ind_l] = next(
-                    (len(x[yr]) or len(y[yr]) for x, y in
-                     zip(unit_cost_s_in, unit_cost_e_in) if isinstance(
-                        x[yr], numpy.ndarray) or isinstance(
-                            y[yr], numpy.ndarray)),
-                    length_array[ind_l])
+        # Lowest first cost market share: avoid expensive market share calculations and use
+        # precomputed fraction
+        if fc_fracs is not None:
+            for ind in range(len(measures_adj)):
+                for yr in self.handyvars.aeo_years:
+                    if yr in yrs_on_mkt[ind]:
+                        mkt_fracs[ind][yr] = fc_fracs[ind][yr]
+                    elif yr not in years_on_mkt_all:
+                        mkt_fracs[ind][yr] = 1 / len(measures_adj) if len(measures_adj) > 1 else 0
+                    else:
+                        mkt_fracs[ind][yr] = 0
+        else:
+            # Initialize a flag that indicates whether any competing measures
+            # have arrays of annualized capital and/or operating costs rather
+            # than point values (resultant of distributions on measure inputs),
+            # for each year in the range above
+            length_array = numpy.repeat(0, len(self.handyvars.aeo_years))
 
-        # Loop through competing measures and calculate market shares for
-        # each based on their annualized capital and operating costs
-        for ind, m in enumerate(measures_adj):
-            # Set measure markets and market adjustment information
             # Loop through all years in time horizon
             for ind_l, yr in enumerate(self.handyvars.aeo_years):
-                # Ensure measure is on the market in given year
-                if yr in yrs_on_mkt[ind]:
-                    # Set measure capital and operating cost inputs. * Note:
-                    # operating cost is set to just energy costs (for now), but
-                    # could be expanded to include maintenance and carbon costs
+                # Determine whether any of the competing measures have
+                # arrays of annualized capital and/or operating costs for
+                # the given year; if so, find the array length. * Note: all
+                # array lengths should be equal to the 'nsamples' variable
+                # defined in 'ecm_prep.py'
+                if any([isinstance(x[yr], numpy.ndarray) or
+                        isinstance(y[yr], numpy.ndarray) for
+                        x, y in zip(unit_cost_s_in, unit_cost_e_in)]) is True:
+                    length_array[ind_l] = next(
+                        (len(x[yr]) or len(y[yr]) for x, y in
+                         zip(unit_cost_s_in, unit_cost_e_in) if isinstance(
+                            x[yr], numpy.ndarray) or isinstance(
+                                y[yr], numpy.ndarray)),
+                        length_array[ind_l])
 
-                    # Handle cases where capital and/or operating cost inputs
-                    # are specified as arrays for at least one of the competing
-                    # measures. In this case, the capital and operating costs
-                    # for all measures must be formatted consistently as arrays
-                    # of the same length
-                    if length_array[ind_l] > 0:
-                        cap_cost, op_cost = ([
-                            {} for n in range(length_array[ind_l])] for
-                            n in range(2))
-                        for i in range(length_array[ind_l]):
-                            # Set capital cost input array
-                            if isinstance(
-                                    unit_cost_s_in[ind][yr], numpy.ndarray):
-                                cap_cost[i] = unit_cost_s_in[ind][yr][i]
-                            else:
-                                cap_cost[i] = unit_cost_s_in[ind][yr]
-                            # Set operating cost input array
-                            if isinstance(
-                                    unit_cost_e_in[ind][yr], numpy.ndarray):
-                                op_cost[i] = unit_cost_e_in[ind][yr][i]
-                            else:
-                                op_cost[i] = unit_cost_e_in[ind][yr]
-                        # Sum capital and operating cost arrays and add to the
-                        # total cost dict entry for the given measure
-                        tot_cost[ind][yr] = [
-                            [] for n in range(length_array[ind_l])]
-                        # Handle case where cost is None
-                        try:
-                            for c_l in range(0, len(tot_cost[ind][yr])):
-                                for dr in sorted(cap_cost[c_l].keys()):
-                                    if op_cost_rate_bins:
-                                        tot_cost[ind][yr][c_l].append(
-                                            cap_cost[c_l][dr] + op_cost[c_l][dr])
-                                    else:
-                                        tot_cost[ind][yr][c_l].append(
-                                            cap_cost[c_l][dr] + op_cost[c_l])
-                        except AttributeError:
-                            pass
-                    # Handle cases where capital and/or operating cost inputs
-                    # are specified as point values for all competing measures
-                    else:
-                        # Set capital cost point value
-                        cap_cost = unit_cost_s_in[ind][yr]
-                        # Set operating cost point value
-                        op_cost = unit_cost_e_in[ind][yr]
+            # Loop through competing measures and calculate market shares for
+            # each based on their annualized capital and operating costs
+            for ind, m in enumerate(measures_adj):
+                # Set measure markets and market adjustment information
+                # Loop through all years in time horizon
+                for ind_l, yr in enumerate(self.handyvars.aeo_years):
+                    # Ensure measure is on the market in given year
+                    if yr in yrs_on_mkt[ind]:
+                        # Set measure capital and operating cost inputs. * Note:
+                        # operating cost is set to just energy costs (for now), but
+                        # could be expanded to include maintenance and carbon costs
 
-                        # Sum capital and operating cost point values and add
-                        # to the total cost dict entry for the given measure
-                        tot_cost[ind][yr] = []
-                        # Handle case where cost is None
-                        try:
-                            for dr in sorted(cap_cost.keys()):
-                                if op_cost_rate_bins:
-                                    tot_cost[ind][yr].append(
-                                        cap_cost[dr] + op_cost[dr])
+                        # Handle cases where capital and/or operating cost inputs
+                        # are specified as arrays for at least one of the competing
+                        # measures. In this case, the capital and operating costs
+                        # for all measures must be formatted consistently as arrays
+                        # of the same length
+                        if length_array[ind_l] > 0:
+                            cap_cost, op_cost = ([
+                                {} for n in range(length_array[ind_l])] for
+                                n in range(2))
+                            for i in range(length_array[ind_l]):
+                                # Set capital cost input array
+                                if isinstance(
+                                        unit_cost_s_in[ind][yr], numpy.ndarray):
+                                    cap_cost[i] = unit_cost_s_in[ind][yr][i]
                                 else:
-                                    tot_cost[ind][yr].append(cap_cost[dr] + op_cost)
-                        except AttributeError:
-                            pass
+                                    cap_cost[i] = unit_cost_s_in[ind][yr]
+                                # Set operating cost input array
+                                if isinstance(
+                                        unit_cost_e_in[ind][yr], numpy.ndarray):
+                                    op_cost[i] = unit_cost_e_in[ind][yr][i]
+                                else:
+                                    op_cost[i] = unit_cost_e_in[ind][yr]
+                            # Sum capital and operating cost arrays and add to the
+                            # total cost dict entry for the given measure
+                            tot_cost[ind][yr] = [
+                                [] for n in range(length_array[ind_l])]
+                            # Handle case where cost is None
+                            try:
+                                for c_l in range(0, len(tot_cost[ind][yr])):
+                                    for dr in sorted(cap_cost[c_l].keys()):
+                                        if op_cost_rate_bins:
+                                            tot_cost[ind][yr][c_l].append(
+                                                cap_cost[c_l][dr] + op_cost[c_l][dr])
+                                        else:
+                                            tot_cost[ind][yr][c_l].append(
+                                                cap_cost[c_l][dr] + op_cost[c_l])
+                            except AttributeError:
+                                pass
+                        # Handle cases where capital and/or operating cost inputs
+                        # are specified as point values for all competing measures
+                        else:
+                            # Set capital cost point value
+                            cap_cost = unit_cost_s_in[ind][yr]
+                            # Set operating cost point value
+                            op_cost = unit_cost_e_in[ind][yr]
 
-        # Precompute, for each year, which measure indices have valid cost data.
-        # This avoids repeating the same `yr in tot_cost[x].keys() and len(...)`
-        # check inside the inner-most discount-rate loops (hot-spot lines ~2311/2319).
-        n_measures = len(measures_adj)
-        valid_inds_array = {  # yr -> list of valid measure indices (array case)
-            yr: [x for x in range(n_measures) if (
-                yr in tot_cost[x] and isinstance(tot_cost[x][yr], list) and
-                len(tot_cost[x][yr]) != 0 and
-                isinstance(tot_cost[x][yr][0], list) and
-                len(tot_cost[x][yr][0]) != 0)]
-            for yr in self.handyvars.aeo_years}
-        valid_inds_point = {  # yr -> list of valid measure indices (point case)
-            yr: [x for x in range(n_measures) if (
-                yr in tot_cost[x] and isinstance(tot_cost[x][yr], list) and
-                len(tot_cost[x][yr]) != 0)]
-            for yr in self.handyvars.aeo_years}
+                            # Sum capital and operating cost point values and add
+                            # to the total cost dict entry for the given measure
+                            tot_cost[ind][yr] = []
+                            # Handle case where cost is None
+                            try:
+                                for dr in sorted(cap_cost.keys()):
+                                    if op_cost_rate_bins:
+                                        tot_cost[ind][yr].append(
+                                            cap_cost[dr] + op_cost[dr])
+                                    else:
+                                        tot_cost[ind][yr].append(cap_cost[dr] + op_cost)
+                            except AttributeError:
+                                pass
 
-        # ---------------------------------------------------------------------------
-        # Precompute per-(yr, discount-bin) the minimum cost and the number of
-        # measures sharing that minimum.  This turns the O(n_measures²) inner
-        # loops that recompute min/sum for every (ind, yr, c_l, ind2) combination
-        # into a single O(n_measures) pass, dramatically cutting the work done in
-        # the hottest section of compete_com_primary.
-        # ---------------------------------------------------------------------------
-        # point case: precomp_pt[yr][ind2] = (min_val, n_min)
-        precomp_pt = {}
-        for yr, valid in valid_inds_point.items():
-            if not valid:
-                precomp_pt[yr] = None
-                continue
-            # Number of discount bins for this year/case
-            n_bins = len(tot_cost[valid[0]][yr])
-            mins = [None] * n_bins
-            counts = [0] * n_bins
-            for x in valid:
-                row = tot_cost[x][yr]
-                for ind2 in range(n_bins):
-                    v = row[ind2]
-                    if mins[ind2] is None or v < mins[ind2]:
-                        mins[ind2] = v
-                        counts[ind2] = 1
-                    elif v == mins[ind2]:
-                        counts[ind2] += 1
-            precomp_pt[yr] = list(zip(mins, counts))
+            # Precompute, for each year, which measure indices have valid cost data.
+            # This avoids repeating the same `yr in tot_cost[x].keys() and len(...)`
+            # check inside the inner-most discount-rate loops (hot-spot lines ~2311/2319).
+            n_measures = len(measures_adj)
+            valid_inds_array = {  # yr -> list of valid measure indices (array case)
+                yr: [x for x in range(n_measures) if (
+                    yr in tot_cost[x] and isinstance(tot_cost[x][yr], list) and
+                    len(tot_cost[x][yr]) != 0 and
+                    isinstance(tot_cost[x][yr][0], list) and
+                    len(tot_cost[x][yr][0]) != 0)]
+                for yr in self.handyvars.aeo_years}
+            valid_inds_point = {  # yr -> list of valid measure indices (point case)
+                yr: [x for x in range(n_measures) if (
+                    yr in tot_cost[x] and isinstance(tot_cost[x][yr], list) and
+                    len(tot_cost[x][yr]) != 0)]
+                for yr in self.handyvars.aeo_years}
 
-        # array case: precomp_arr[yr][c_l][ind2] = (min_val, n_min)
-        precomp_arr = {}
-        for yr, valid in valid_inds_array.items():
-            if not valid:
-                precomp_arr[yr] = None
-                continue
-            n_samples = len(tot_cost[valid[0]][yr])
-            n_bins = len(tot_cost[valid[0]][yr][0])
-            result = [[None] * n_bins for _ in range(n_samples)]
-            counts_arr = [[0] * n_bins for _ in range(n_samples)]
-            for x in valid:
-                samples = tot_cost[x][yr]
-                for c_l in range(n_samples):
-                    row = samples[c_l]
+            # ---------------------------------------------------------------------------
+            # Precompute per-(yr, discount-bin) the minimum cost and the number of
+            # measures sharing that minimum.  This turns the O(n_measures²) inner
+            # loops that recompute min/sum for every (ind, yr, c_l, ind2) combination
+            # into a single O(n_measures) pass, dramatically cutting the work done in
+            # the hottest section of compete_com_primary.
+            # ---------------------------------------------------------------------------
+            # point case: precomp_pt[yr][ind2] = (min_val, n_min)
+            precomp_pt = {}
+            for yr, valid in valid_inds_point.items():
+                if not valid:
+                    precomp_pt[yr] = None
+                    continue
+                # Number of discount bins for this year/case
+                n_bins = len(tot_cost[valid[0]][yr])
+                mins = [None] * n_bins
+                counts = [0] * n_bins
+                for x in valid:
+                    row = tot_cost[x][yr]
                     for ind2 in range(n_bins):
                         v = row[ind2]
-                        if result[c_l][ind2] is None or v < result[c_l][ind2]:
-                            result[c_l][ind2] = v
-                            counts_arr[c_l][ind2] = 1
-                        elif v == result[c_l][ind2]:
-                            counts_arr[c_l][ind2] += 1
-            precomp_arr[yr] = [
-                list(zip(result[c_l], counts_arr[c_l]))
-                for c_l in range(n_samples)]
+                        if mins[ind2] is None or v < mins[ind2]:
+                            mins[ind2] = v
+                            counts[ind2] = 1
+                        elif v == mins[ind2]:
+                            counts[ind2] += 1
+                precomp_pt[yr] = list(zip(mins, counts))
 
-        # Loop through competing measures and use total annualized capital
-        # + operating costs to determine the overall share of the market
-        # that is captured by each measure; use market shares to make
-        # adjustments to each measure's master microsegment values
-        for ind, m in enumerate(measures_adj):
-            # Calculate annual market share fraction for the measure and
-            # adjust measure's master microsegment values accordingly
+            # array case: precomp_arr[yr][c_l][ind2] = (min_val, n_min)
+            precomp_arr = {}
+            for yr, valid in valid_inds_array.items():
+                if not valid:
+                    precomp_arr[yr] = None
+                    continue
+                n_samples = len(tot_cost[valid[0]][yr])
+                n_bins = len(tot_cost[valid[0]][yr][0])
+                result = [[None] * n_bins for _ in range(n_samples)]
+                counts_arr = [[0] * n_bins for _ in range(n_samples)]
+                for x in valid:
+                    samples = tot_cost[x][yr]
+                    for c_l in range(n_samples):
+                        row = samples[c_l]
+                        for ind2 in range(n_bins):
+                            v = row[ind2]
+                            if result[c_l][ind2] is None or v < result[c_l][ind2]:
+                                result[c_l][ind2] = v
+                                counts_arr[c_l][ind2] = 1
+                            elif v == result[c_l][ind2]:
+                                counts_arr[c_l][ind2] += 1
+                precomp_arr[yr] = [
+                    list(zip(result[c_l], counts_arr[c_l]))
+                    for c_l in range(n_samples)]
 
-            # Pre-compute the rate-distribution dict for this measure once
-            # (avoids repeated deep dict traversal on every year iteration).
-            try:
-                _rate_dist_all = m.markets[adopt_scheme]["competed"][
-                    "mseg_adjust"]["competed choice parameters"][
-                        str(choice_mseg[ind])]["rate distribution"]
-            except KeyError:
-                _rate_dist_all = None
+            # Loop through competing measures and use total annualized capital
+            # + operating costs to determine the overall share of the market
+            # that is captured by each measure; use market shares to make
+            # adjustments to each measure's master microsegment values
+            for ind, m in enumerate(measures_adj):
+                # Calculate annual market share fraction for the measure and
+                # adjust measure's master microsegment values accordingly
 
-            # Loop through all years in time horizon
-            for ind_l, yr in enumerate(self.handyvars.aeo_years):
-                # Ensure measure is on the market in given year; if not,
-                # the measure either splits the market with other
-                # competing measures if none of those measures is on
-                # the market either, or else has a market share of zero
-                if yr in yrs_on_mkt[ind]:
-                    # Set the fractions of commericial adopters who fall into
-                    # each discount rate category for this particular
-                    # microsegment
-                    mkt_dists = _rate_dist_all[yr] if _rate_dist_all is not None else {}
+                # Pre-compute the rate-distribution dict for this measure once
+                # (avoids repeated deep dict traversal on every year iteration).
+                try:
+                    _rate_dist_all = m.markets[adopt_scheme]["competed"][
+                        "mseg_adjust"]["competed choice parameters"][
+                            str(choice_mseg[ind])]["rate distribution"]
+                except KeyError:
+                    _rate_dist_all = None
 
-                    # For each discount rate category, find which measure has
-                    # the lowest annualized cost and assign that measure the
-                    # share of commercial market adopters defined for that
-                    # category above
+                # Loop through all years in time horizon
+                for ind_l, yr in enumerate(self.handyvars.aeo_years):
+                    # Ensure measure is on the market in given year; if not,
+                    # the measure either splits the market with other
+                    # competing measures if none of those measures is on
+                    # the market either, or else has a market share of zero
+                    if yr in yrs_on_mkt[ind] and fc_fracs is None:
+                        # Set the fractions of commericial adopters who fall into
+                        # each discount rate category for this particular
+                        # microsegment
+                        mkt_dists = _rate_dist_all[yr] if _rate_dist_all is not None else {}
 
-                    # Handle cases where capital and/or operating cost inputs
-                    # are specified as lists for at least one of the competing
-                    # measures.
-                    if length_array[ind_l] > 0 and len(
-                            tot_cost[ind][yr][0]) != 0:
-                        n_samples = length_array[ind_l]
-                        mkt_fracs[ind][yr] = [0.0] * n_samples
-                        _pc_arr = precomp_arr[yr]   # list[c_l] of list[(min_val, n_min)]
-                        _tc_ind = tot_cost[ind][yr]
-                        for c_l in range(n_samples):
-                            _row = _tc_ind[c_l]
-                            _pc_row = _pc_arr[c_l]
-                            frac_sum = 0.0
-                            for ind2 in range(len(_row)):
-                                min_val, n_min_val_ecms = _pc_row[ind2]
-                                if _row[ind2] == min_val:
-                                    frac_sum += mkt_dists[ind2] / n_min_val_ecms
-                            mkt_fracs[ind][yr][c_l] = frac_sum
-                        # Convert market fractions list to numpy array for
-                        # use in compete_adj function below
-                        mkt_fracs[ind][yr] = numpy.array(
-                            mkt_fracs[ind][yr])
-                    # Handle cases where capital and/or operating cost inputs
-                    # are specified as point values for all competing measures
-                    elif length_array[ind_l] == 0:
-                        if len(tot_cost[ind][yr]) != 0:
-                            _pc_pt = precomp_pt[yr]   # list[(min_val, n_min)]
-                            _tc_ind_yr = tot_cost[ind][yr]
-                            frac_sum = 0.0
-                            for ind2 in range(len(_tc_ind_yr)):
-                                min_val, n_min_val_ecms = _pc_pt[ind2]
-                                if _tc_ind_yr[ind2] == min_val:
-                                    frac_sum += mkt_dists[ind2] / n_min_val_ecms
-                            mkt_fracs[ind][yr] = frac_sum
+                        # For each discount rate category, find which measure has
+                        # the lowest annualized cost and assign that measure the
+                        # share of commercial market adopters defined for that
+                        # category above
+
+                        # Handle cases where capital and/or operating cost inputs
+                        # are specified as lists for at least one of the competing
+                        # measures.
+                        if length_array[ind_l] > 0 and len(
+                                tot_cost[ind][yr][0]) != 0:
+                            n_samples = length_array[ind_l]
+                            mkt_fracs[ind][yr] = [0.0] * n_samples
+                            _pc_arr = precomp_arr[yr]   # list[c_l] of list[(min_val, n_min)]
+                            _tc_ind = tot_cost[ind][yr]
+                            for c_l in range(n_samples):
+                                _row = _tc_ind[c_l]
+                                _pc_row = _pc_arr[c_l]
+                                frac_sum = 0.0
+                                for ind2 in range(len(_row)):
+                                    min_val, n_min_val_ecms = _pc_row[ind2]
+                                    if _row[ind2] == min_val:
+                                        frac_sum += mkt_dists[ind2] / n_min_val_ecms
+                                mkt_fracs[ind][yr][c_l] = frac_sum
+                            # Convert market fractions list to numpy array for
+                            # use in compete_adj function below
+                            mkt_fracs[ind][yr] = numpy.array(
+                                mkt_fracs[ind][yr])
+                        # Handle cases where capital and/or operating cost inputs
+                        # are specified as point values for all competing measures
+                        elif length_array[ind_l] == 0:
+                            if len(tot_cost[ind][yr]) != 0:
+                                _pc_pt = precomp_pt[yr]   # list[(min_val, n_min)]
+                                _tc_ind_yr = tot_cost[ind][yr]
+                                frac_sum = 0.0
+                                for ind2 in range(len(_tc_ind_yr)):
+                                    min_val, n_min_val_ecms = _pc_pt[ind2]
+                                    if _tc_ind_yr[ind2] == min_val:
+                                        frac_sum += mkt_dists[ind2] / n_min_val_ecms
+                                mkt_fracs[ind][yr] = frac_sum
+                            else:
+                                mkt_fracs[ind][yr] = 0
+                        else:
+                            mkt_fracs[ind][yr] = 0
+                    # Lowest first cost rule: use the share assigned to the measure above
+                    elif yr in yrs_on_mkt[ind]:
+                        mkt_fracs[ind][yr] = fc_fracs[ind][yr]
+                    elif yr not in years_on_mkt_all:
+                        if len(measures_adj) > 1:
+                            mkt_fracs[ind][yr] = 1 / len(measures_adj)
                         else:
                             mkt_fracs[ind][yr] = 0
                     else:
                         mkt_fracs[ind][yr] = 0
-                elif yr not in years_on_mkt_all:
-                    if len(measures_adj) > 1:
-                        mkt_fracs[ind][yr] = 1 / len(measures_adj)
-                    else:
-                        mkt_fracs[ind][yr] = 0
-                else:
-                    mkt_fracs[ind][yr] = 0
 
         # Calculate final adjustments to market shares to reflect sub-market scaling fractions
         # in the measure definition and/or sub-federal appliance restrictions that affect
@@ -2613,6 +2663,59 @@ class Engine(object):
                     adj_out_break, adj, mast_list_base, mast_list_eff,
                     adj_list_eff, adj_list_base, yr, mseg_key, m, adopt_scheme,
                     min_mkt_entry_yr, adj_stk_trk, weighting_yrs_map, vs_list_init)
+
+    def first_cost_mkt_fracs(self, first_costs, yrs_on_mkt):
+        """Assign full market share to the lowest first cost measure(s) in a competed set.
+
+        Args:
+            first_costs (list): Per-measure dicts of unit upfront (first) costs by year; values may
+                be point values, numpy arrays (one value per sample), or None.
+            yrs_on_mkt (list): Per-measure lists of years each measure is on the market.
+
+        Returns:
+            List of dicts (one per measure) of market shares by year. Measures not on the market
+            in a year, or without valid cost data, get no share; ties split the share equally.
+            Where costs are arrays, shares are arrays of the same length.
+        """
+        n_meas = len(first_costs)
+        fracs = [{} for _ in range(n_meas)]
+        for yr in self.handyvars.aeo_years:
+            # Costs of measures that can compete this year; inf removes a measure from the race
+            costs = []
+            for i in range(n_meas):
+                c = first_costs[i][yr] if yr in yrs_on_mkt[i] else None
+                if c is None or (isinstance(c, (float, int)) and numpy.isnan(c)):
+                    costs.append(numpy.inf)
+                elif isinstance(c, numpy.ndarray):
+                    c_arr = c.astype(float)
+                    c_arr[numpy.isnan(c_arr)] = numpy.inf
+                    costs.append(c_arr)
+                else:
+                    costs.append(float(c))
+            # Handle case where costs are arrays (one value per sample) for any competing measure
+            n_samp = max([len(c) for c in costs if isinstance(c, numpy.ndarray)] + [0])
+            if n_samp > 0:
+                costs = [numpy.broadcast_to(c, (n_samp,)) for c in costs]
+                min_cost = numpy.min(costs, axis=0)
+            else:
+                min_cost = min(costs)
+            # Measures at the minimum cost share the market evenly
+            valid = numpy.isfinite(min_cost)
+            at_min = [(c == min_cost) & valid for c in costs]
+            n_min = sum(at_min)
+            n_on_mkt = sum(1 for i in range(n_meas) if yr in yrs_on_mkt[i])
+
+            for i in range(n_meas):
+                on_mkt = (yr in yrs_on_mkt[i])
+                fallback_val = (1.0 / n_on_mkt) if (on_mkt and n_on_mkt > 0) else 0.0
+                if n_samp > 0:
+                    shares = numpy.where(at_min[i], 1 / numpy.maximum(n_min, 1), 0.0)
+                    fracs[i][yr] = numpy.where(valid, shares, fallback_val)
+                else:
+                    shares = (1 / n_min) if at_min[i] else 0
+                    fracs[i][yr] = shares if valid else fallback_val
+
+        return fracs
 
     def state_app_reg_screen(self, measures_adj, stk_cost_dat_keys):
         """Determine whether appliance restrictions apply to competed measure mseg.
