@@ -229,6 +229,9 @@ ecm_prep:
       are {energy, power, null}. Default null
   verbose: (boolean) If true, enable verbose mode. Default False
 run:
+  first_cost_choice: (boolean) If true, consumers always pick
+    the technology with the lowest first cost from among competing
+    options. Default False
   high_res_comp: (boolean) If true, resolve competition cost data
     to each market microsegment (rather than averaging across
     all applicable markets). Default False
