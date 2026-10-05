@@ -1626,6 +1626,10 @@ class UsefulVars(object):
         else:
             for k in state_vars:
                 setattr(self, k, None)
+        # Mutable holder for the incentives index (see incentives_by_key). Created here, once,
+        # so that the per-measure shallow copies of this object share the same cache instead of
+        # each rebuilding the index
+        self._incentives_index_cache = {}
         self.save_shp_warn = []
         # When states are used and consideration for panel share data not suppressed, import shares
         if opts.alt_regions == "State" and opts.elec_upgrade_costs not in ["all", "ignore"]:
@@ -1656,6 +1660,28 @@ class UsefulVars(object):
             "240V circuit": 1384  # BTB "typical" dif., central ASHP w/ and w/o new circuit
         }
         self.alt_panel_names = ["-no panel", "-manage"]
+
+    @property
+    def incentives_by_key(self):
+        """Index of incentives rows keyed by (region, building type, vintage).
+
+        Built on first use and cached in a dict shared by all shallow copies of this object
+        (e.g., the per-measure copies made in Measure.__init__), so the index is built once per
+        run. The cache is rebuilt if self.incentives is replaced by a different list. Avoids a
+        full linear scan of self.incentives -- which can have thousands of rows from the
+        itertools.product expansion in import_state_data -- on every lookup.
+
+        Returns:
+            dict: Maps (region, building type, vintage) to a list of incentives rows.
+        """
+        cache = self._incentives_index_cache
+        if cache.get("source") is not self.incentives:
+            index = {}
+            for x in (self.incentives or []):
+                index.setdefault((x[0], x[1], x[2]), []).append(x)
+            cache["source"] = self.incentives
+            cache["index"] = index
+        return cache["index"]
 
     def import_state_data(self, handyfiles, state_vars, valid_regions, opts):
         """Import and further prepare sub-federal adoption driver data.

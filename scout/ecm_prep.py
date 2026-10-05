@@ -3164,21 +3164,11 @@ class Measure(object):
                         # else set to empty list
                         if self.handyvars.incentives is not None and \
                                 len(self.handyvars.incentives) != 0:
-                            # Build (and cache on handyvars, shared across all measures/msegs in
-                            # the current run) an index of incentives rows keyed by (region,
-                            # building type, vintage) the first time it's needed. Avoids a full
-                            # linear scan of self.handyvars.incentives -- which can have
-                            # thousands of rows from the itertools.product expansion in
-                            # import_state_data -- on every call; this was previously a major
-                            # hot loop cost.
-                            incent_by_key = getattr(
-                                self.handyvars, "_incentives_by_key", None)
-                            if incent_by_key is None:
-                                incent_by_key = {}
-                                for x in self.handyvars.incentives:
-                                    incent_by_key.setdefault(
-                                        (x[0], x[1], x[2]), []).append(x)
-                                self.handyvars._incentives_by_key = incent_by_key
+                            # Index of incentives rows keyed by (region, building type,
+                            # vintage), built once per run and cached on UsefulVars (see
+                            # UsefulVars.incentives_by_key); avoids a linear scan of all
+                            # incentives rows on every call
+                            incent_by_key = self.handyvars.incentives_by_key
                             # Pull any relevant incentives mod data that apply to current mseg
                             # (reg/bldg/vnt restriction handled by the key lookup above)
                             incent_mod = [
