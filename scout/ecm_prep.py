@@ -97,15 +97,17 @@ def _copy_dict_tree_shared_leaves(d):
     (including numpy arrays, with no error). run.py's version returns plain
     dicts and raises TypeError on numpy arrays.
 
-    Significantly faster than copy.deepcopy for trees such as
-    handyvars.out_break_in, which are built entirely of nested dict/
-    OrderedDict containers. copy.deepcopy is unusually slow for OrderedDict
-    because it copies via the generic __reduce_ex__-based reconstruction
-    path rather than the fast path used for plain dict. Non-dict leaf
-    values are copied by reference, which is safe because out_break_in's
-    leaves are always empty dict/OrderedDict containers at the point this
-    is used (later code fills them in with new values rather than mutating
-    shared leaf objects in place).
+    Every dict/OrderedDict level is copied; every non-dict leaf is shared
+    with the original by reference. The copy is therefore only safe where
+    leaves are never mutated in place (e.g., via list.append, array item
+    assignment, or += on a shared object); callers may freely add, replace
+    or remove keys and values in the copy. Each call site is responsible for
+    justifying that (see the comments at the call sites).
+
+    Significantly faster than copy.deepcopy for dict-of-dict trees, in
+    particular for OrderedDict, which deepcopy copies via the generic
+    __reduce_ex__-based reconstruction path rather than the fast path used
+    for plain dict.
     """
     out = d.__class__()
     for k, v in d.items():
