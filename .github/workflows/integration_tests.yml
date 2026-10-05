@@ -78,6 +78,14 @@ jobs:
               mv "memory_log_${step}_feature.txt" "results/memory_log_${step}_feature.txt"
             done
 
+            # Save the feature branch's outputs (agg/ecm results, plots, profile
+            # CSVs, memory logs). The master run below writes to the same
+            # filenames and would otherwise overwrite them, so the compare and
+            # baseline-commit steps would see master's numbers, not this branch's.
+            # Kept outside tracked paths so the checkouts below leave it alone.
+            rm -rf "$RUNNER_TEMP/results_feature"
+            cp -a results "$RUNNER_TEMP/results_feature"
+
             # --- Checkout master, on the same runner, back-to-back ---
             git fetch --depth=1 origin master
             git stash  # stash any result files to avoid conflicts
@@ -116,6 +124,15 @@ jobs:
               mv "results/profile_${step}.csv" "results/profile_${step}_master.csv"
               mv "memory_log_${step}_master.txt" "results/memory_log_${step}_master.txt"
             done
+
+            # --- Restore feature branch outputs ---
+            # Keep master's profile CSVs and memory logs, but bring back the
+            # feature branch's result files for the comparison/baseline steps.
+            mkdir -p "$RUNNER_TEMP/results_master_profile"
+            mv results/profile_*_master.csv results/memory_log_*_master.txt "$RUNNER_TEMP/results_master_profile/"
+            rm -rf results
+            cp -a "$RUNNER_TEMP/results_feature" results
+            mv "$RUNNER_TEMP"/results_master_profile/* results/
 
             # --- Restore feature branch ---
             git checkout ${{ github.event.pull_request.head.sha || github.sha }} -- .
