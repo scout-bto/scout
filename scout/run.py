@@ -16,7 +16,6 @@ from scout.utils import PrintFormat as fmt
 import warnings
 import itertools
 import pandas as pd
-from operator import itemgetter
 import os
 
 
@@ -488,6 +487,7 @@ class UsefulVars(object):
                             eu = ["heating", "water heating", "cooking", "drying"]
                         params = [x for x in [
                             state, bldg, vint, fuel, eu, tech, start_yr, apply_frac]]
+                        fields = None
                     # Codes and BPS: unique onsite restrictions and energy reduction columns
                     else:
                         # Ensure that all states are present in output breakout categories
@@ -525,9 +525,12 @@ class UsefulVars(object):
                             # Finalize stretch reduction if blank
                             if pd.isna(strtch_pct_reduce[0]):
                                 strtch_pct_reduce = [0]
-                            params = [x for x in [
+                            params = [
                                 state, bldg_fin, onsite_reduce, lag_pct_reduce, strtch_pct_reduce,
-                                start_yr, apply_frac, regu_type, jurisdiction]]
+                                start_yr, apply_frac, regu_type, jurisdiction]
+                            fields = [
+                                "reg", "bldg", "onsite_reduce", "lag_reduce", "stretch_reduce",
+                                "start_yr", "apply_frac", "regu_type", "jurisdiction"]
                         elif "bps" in k:
                             # Find EUI reduction targets and year to benchmark those targets
                             # against
@@ -538,12 +541,19 @@ class UsefulVars(object):
                                 eui_pct_reduce = [0]
                             if pd.isna(eui_bnch_yr[0]):
                                 eui_bnch_yr = [None]
-                            params = [x for x in [
+                            params = [
                                 state, bldg_fin, onsite_reduce, eui_pct_reduce, eui_bnch_yr,
-                                start_yr, apply_frac, regu_type, jurisdiction]]
-                    # Iterate all expanded parameter info. into a list of lists with every
-                    # possible combination of each parameter
-                    iterable = list(map(list, itertools.product(*params)))
+                                start_yr, apply_frac, regu_type, jurisdiction]
+                            fields = [
+                                "reg", "bldg", "onsite_reduce", "eui_pct_reduce", "eui_bench_yr",
+                                "start_yr", "apply_frac", "regu_type", "jurisdiction"]
+                    # Iterate all expanded parameter info. into a list with every possible
+                    # combination of each parameter; codes/BPS rows are dicts keyed by field name
+                    # such that downstream code does not depend on column positions
+                    if fields is not None:
+                        iterable = [dict(zip(fields, x)) for x in itertools.product(*params)]
+                    else:
+                        iterable = list(map(list, itertools.product(*params)))
 
                     # In the codes case, further iterate through each row in the iterable
                     # and pull in additional data concerning specific energy gains by updating to
@@ -552,14 +562,12 @@ class UsefulVars(object):
                         # Read in potential energy gains from reductions in lag in code adoption
                         # by state/building type
                         lag_potentials = pd.read_csv(handyfiles.codes_lag)
-                        # Set the index to update in each row of the iterable
-                        lag_col = 3
                         # Loop through the iterable rows and update the information
                         for ind_r, row_it in enumerate(iterable):
                             # Determine applicable state and building type of the row to use
                             # in pulling potential energy gain data (potential energy gains are
                             # broken out in the data by state and residential vs. commercial)
-                            state_row, bldg_row = row_it[0:2]
+                            state_row, bldg_row = row_it["reg"], row_it["bldg"]
                             if bldg_row in ["single family home", "mobile home",
                                             "multi family home"]:
                                 bldg_row = "residential"
@@ -570,8 +578,8 @@ class UsefulVars(object):
                             # 'adopt current'), where latter two flag an update. Handle case where
                             # cell was left blank
                             flag_code_update = any(
-                                [isinstance(row_it[lag_col], str) and
-                                 x in row_it[lag_col] for x in ["current", "stretch"]])
+                                [isinstance(row_it["lag_reduce"], str) and
+                                 x in row_it["lag_reduce"] for x in ["current", "stretch"]])
                             # If there is a code update flag, find the potential energy gain
                             # value from updating the code, for the current state and building type
                             if flag_code_update:
@@ -583,7 +591,7 @@ class UsefulVars(object):
                             else:
                                 flag_code_update = 0
                             # Reset to value in original iterable row
-                            iterable[ind_r][lag_col] = flag_code_update
+                            iterable[ind_r]["lag_reduce"] = flag_code_update
                     # Update segment-specific list of state-level inputs and reset attribute
                     state_dat_init.extend(iterable)
                 # Finalize data if not empty list
@@ -1215,11 +1223,11 @@ class Engine(object):
                     # measure capital cost (used in financial metrics
                     # calculations below); set these values to zero for
                     # years in which total number of base/meas units is zero
-                    if nunits_cmp != 0 and (
+                    if nunits_cmp != 0 and ((
                         not isinstance(nunits_meas_cmp, numpy.ndarray) and
-                        nunits_meas_cmp != 0 or
-                            isinstance(nunits_meas_cmp, numpy.ndarray) and all(
-                                nunits_meas_cmp) != 0):
+                        nunits_meas_cmp != 0) or (
+                            isinstance(nunits_meas_cmp, numpy.ndarray) and
+                            all(nunits_meas_cmp))):
                         # Per unit baseline capital cost; note that these costs
                         # are aggregated as a baseline counterfactual for all
                         # units captured by the measure and therefore must be
@@ -1269,8 +1277,8 @@ class Engine(object):
                     life_meas = markets_uc["lifetime"]["measure"]
                     # Ensure that measure lifetime is at least 1 year
                     if isinstance(life_meas, numpy.ndarray) and \
-                            any(life_meas) < 1:
-                        life_meas[numpy.where(life_meas) < 1] = 1
+                            any(life_meas < 1):
+                        life_meas[life_meas < 1] = 1
                     elif not isinstance(life_meas, numpy.ndarray) and \
                             life_meas < 1:
                         life_meas = 1
@@ -1280,11 +1288,11 @@ class Engine(object):
                     # If the total baseline stock is zero or no measure units
                     # have been captured for a given year, set finance metrics
                     # to 999
-                    if nunits_cmp == 0 or (
+                    if nunits_cmp == 0 or ((
                         not isinstance(nunits_meas_cmp, numpy.ndarray) and
-                        nunits_meas_cmp == 0 or
-                            isinstance(nunits_meas_cmp, numpy.ndarray) and (
-                                all(nunits_meas_cmp == 0) or not any(nunits_meas_cmp))):
+                        nunits_meas_cmp == 0) or (
+                            isinstance(nunits_meas_cmp, numpy.ndarray) and
+                            not all(nunits_meas_cmp))):
                         if yr == self.handyvars.aeo_years[0]:
                             stock_unit_cost_res[yr], \
                                 energy_unit_cost_res[yr], \
@@ -6301,11 +6309,11 @@ class Engine(object):
         # Compile all codes/BPS policies into a master list; handle possible assessment of codes
         # without BPS, and vice versa
         if self.handyvars.codes is not None:
-            codes_list = [x + ["code"] for x in self.handyvars.codes]
+            codes_list = [{**x, "policy_type": "code"} for x in self.handyvars.codes]
         else:
             codes_list = []
         if self.handyvars.bps is not None:
-            bps_list = [y + ["bps"] for y in self.handyvars.bps]
+            bps_list = [{**y, "policy_type": "bps"} for y in self.handyvars.bps]
         else:
             bps_list = []
         codes_plus_bps_list = codes_list + bps_list
@@ -6317,7 +6325,7 @@ class Engine(object):
                 "(C) Building Codes", "(C) Building Performance Standards"]]
         # Ensure that codes/BPS are ordered by start year such that their impacts are reflected
         # with the proper staging in cases where there are multiple start years per affected segment
-        codes_plus_bps_list = sorted(codes_plus_bps_list, key=itemgetter(5))
+        codes_plus_bps_list = sorted(codes_plus_bps_list, key=lambda x: x["start_yr"])
 
         # Loop through codes and BPS policies one-by-one and reflect their effects, provided their
         # applicable regions and building types intersect with those of active measures in analysis
@@ -6325,13 +6333,11 @@ class Engine(object):
             # Set up conditions from input data: flag for code vs. standard, region and building
             # type, settings for level of onsite emissions reductions (if applicable), the years
             # the code/BPS is in effect, and the portion of the state the code/BPS applies to
-            code_std_flag = code_std[-1]
-            reg, bldg = code_std[0:2]
-            onsite_reduce = code_std[2]
-            start_yr = code_std[5]
-            apply_frac = code_std[6]
-            regu_type = code_std[7]
-            jurisdiction = code_std[8]
+            code_std_flag = code_std["policy_type"]
+            reg, bldg, onsite_reduce, start_yr, apply_frac, regu_type, jurisdiction = [
+                code_std[x] for x in [
+                    "reg", "bldg", "onsite_reduce", "start_yr", "apply_frac", "regu_type",
+                    "jurisdiction"]]
             # Flag for whether current policy applies to residential buildings (or not)
             res_focus = any(
                 [x in self.handyvars.out_break_bldgtypes[bldg] for x in [
@@ -6373,10 +6379,10 @@ class Engine(object):
                 # processed into a fraction format.) If state does not update code or its code is
                 # already consistent with the latest version, this will be set to zero. Stretch code
                 # adoption is applied on top of this gain
-                lag_reduce = code_std[3]
+                lag_reduce = code_std["lag_reduce"]
                 # For cases with stretch code adoption, set the energy index improvement level
                 # beyond current base code that is represented by stretch code
-                stretch = code_std[4]
+                stretch = code_std["stretch_reduce"]
                 # Finalize energy index gain by adding the stretch code adoption impact on top
                 # of the impact from updating to the latest code version, if applicable
                 if stretch != 0 and lag_reduce != 0:
@@ -6400,7 +6406,7 @@ class Engine(object):
                     # Further apply any assumed commercial compliance fraction
                     apply_frac *= bps_comply_com
                 # Set year to use in benchmarking EUI improvements in the BPS target year
-                bench_yr = code_std[4]
+                bench_yr = code_std["eui_bench_yr"]
                 # Ensure that benchmark year exists; if not, assume it's 5 years before the
                 # starting year
                 if bench_yr is None:
@@ -6418,8 +6424,8 @@ class Engine(object):
                 else:
                     bench_yr_fin = str(bench_yr)
                 # Convert raw input data (in percentage units) to fraction
-                if code_std[3] != 0:
-                    impact_thres_tyr = code_std[3] / 100
+                if code_std["eui_pct_reduce"] != 0:
+                    impact_thres_tyr = code_std["eui_pct_reduce"] / 100
                 else:
                     impact_thres_tyr = 0
                 # Breakout energy index impact by year, for further application below
@@ -6525,7 +6531,7 @@ class Engine(object):
                 # overall energy improvement in the efficient case vs. the baseline, which in turn
                 # is compared against the improvement required by the code/BPS. Also aggregate
                 # cost data so that an overall cost per unit savings can be calculated.
-                energy_capcost_sums = self.sum_energy_data(
+                energy_capcost_sums = self.sum_energy_and_cost_data(
                     reg, bldg, vint, adopt_scheme, prior_yr_rmv, code_bps_meas_to_sum)
 
                 # Calculate average incremental capital cost of energy savings in the measure set;
@@ -6625,7 +6631,9 @@ class Engine(object):
         # Adjust applicability factor to account for codes/BPS that are already in place
         if reg in frac_already_in_place[code_std_flag]["cum_fracs"].keys():
             if bldg in frac_already_in_place[code_std_flag]["cum_fracs"][reg].keys():
-                # Check if policy already exists for jurisdiction (jurisdiction tag and apply_frac)
+                # Check if policy already exists for jurisdiction (jurisdiction tag and apply_frac).
+                # Policies sharing both are assumed to be staged versions (e.g., different start
+                # years) of one policy, not distinct policies that happen to share a fraction
                 if jurisdiction is not None:
                     dup_policy = any(isinstance(item, tuple) and item[0] == jurisdiction and
                                      item[1] == apply_frac for item in
@@ -6659,20 +6667,20 @@ class Engine(object):
                         frac_already_in_place[code_std_flag]["cum_fracs"][reg][bldg][yr] = \
                             impact_times_apply_frac[yr]
                 # Record the jurisdiction of the policy that was represented
-                dup_item = (jurisdiction, apply_frac) if jurisdiction is not None else apply_frac
-                frac_already_in_place[code_std_flag]["duplicates"][reg][bldg].append(dup_item)
+                policy_key = (jurisdiction, apply_frac) if jurisdiction is not None else apply_frac
+                frac_already_in_place[code_std_flag]["duplicates"][reg][bldg].append(policy_key)
             else:
                 frac_already_in_place[code_std_flag]["cum_fracs"][reg][bldg] = {
                     yr: impact_times_apply_frac[yr] for yr in apply_yrs}
                 # Record the jurisdiction of the policy that was represented
-                dup_item = (jurisdiction, apply_frac) if jurisdiction is not None else apply_frac
-                frac_already_in_place[code_std_flag]["duplicates"][reg][bldg] = [dup_item]
+                policy_key = (jurisdiction, apply_frac) if jurisdiction is not None else apply_frac
+                frac_already_in_place[code_std_flag]["duplicates"][reg][bldg] = [policy_key]
         else:
             frac_already_in_place[code_std_flag]["cum_fracs"][reg] = {
                 bldg: {yr: impact_times_apply_frac[yr] for yr in apply_yrs}}
             # Record the jurisdiction of the policy that was represented
-            dup_item = (jurisdiction, apply_frac) if jurisdiction is not None else apply_frac
-            frac_already_in_place[code_std_flag]["duplicates"][reg] = {bldg: [dup_item]}
+            policy_key = (jurisdiction, apply_frac) if jurisdiction is not None else apply_frac
+            frac_already_in_place[code_std_flag]["duplicates"][reg] = {bldg: [policy_key]}
 
         return frac_already_in_place, impact_times_apply_frac
 
@@ -6825,10 +6833,9 @@ class Engine(object):
                             brk_dat_cdbps_capcost_save = [m_cdbps.markets[adopt_scheme][
                                 "mseg_out_break"]["capital cost"][x] for x in [
                                 "baseline", "efficient", "savings"]]
-                        mast_dat_cdbps_capcost_base, mast_dat_cdbps_capcost_eff, \
-                            mast_dat_cdbps_capcost_save = [m_cdbps.markets[adopt_scheme][
-                                "master_mseg"]["cost"]["stock"]["total"][x] for x in [
-                                    "baseline", "efficient"]]
+                        mast_dat_cdbps_capcost_base, mast_dat_cdbps_capcost_eff = [
+                            m_cdbps.markets[adopt_scheme]["master_mseg"]["cost"]["stock"][
+                                "total"][x] for x in ["baseline", "efficient"]]
                         mast_dat_cdbps_capcost_save = \
                             m_cdbps.savings[adopt_scheme]["stock"]["cost savings"]
                     else:
@@ -7188,7 +7195,7 @@ class Engine(object):
             if self.handyvars.aeo_years[0] in \
                     brk_dat_base[reg][bldg][eu].keys():
                 # If applicable, set capital cost breakouts to use in function inputs
-                if brk_dat_cdbps_capcost_base:
+                if brk_dat_cdbps_capcost_base is not False:
                     brk_dat_cdbps_capcost_base_reg_bldg_eu, brk_dat_cdbps_capcost_eff_reg_bldg_eu, \
                         brk_dat_cdbps_capcost_save_reg_bldg_eu = [
                             brk_dat_cdbps_capcost_base[reg][bldg][eu],
@@ -7240,7 +7247,7 @@ class Engine(object):
                             brk_dat_eff_capt_eu_fuel, brk_dat_eff_capt_env_eu_fuel = (
                                 None for n in range(2))
                         # If applicable, set capital cost breakouts to use in function inputs
-                        if brk_dat_cdbps_capcost_base:
+                        if brk_dat_cdbps_capcost_base is not False:
                             brk_dat_cdbps_capcost_base_reg_bldg_eu_fuel, \
                                 brk_dat_cdbps_capcost_eff_reg_bldg_eu_fuel, \
                                 brk_dat_cdbps_capcost_save_reg_bldg_eu_fuel = [
@@ -7325,11 +7332,10 @@ class Engine(object):
             if (yr in apply_yrs and na_base < brk_dat_base[yr]) else 0
             for yr in self.handyvars.aeo_years}
 
-        # Determine incremental capital costs to add to meet additional reduction in energy use
-        if brk_dat_cdbps_capcost_base:
-            add_cost_to_meet_thres = {
-                yr: reduce_base_to_meet_thres[yr] * inc_capcost[yr]
-                for yr in self.handyvars.aeo_years}
+        # Initialize incremental capital costs to add to meet additional reduction in energy use;
+        # these are filled in below from the baseline reduction that is actually applied
+        if brk_dat_cdbps_capcost_base is not False:
+            add_cost_to_meet_thres = {yr: 0 for yr in self.handyvars.aeo_years}
         else:
             add_cost_to_meet_thres = False
 
@@ -7346,6 +7352,9 @@ class Engine(object):
                 reduction_base_yr = reduce_base_to_meet_thres[yr]
             else:
                 reduction_base_yr = brk_dat_base[yr]
+            # Cost of the additional reduction follows the baseline reduction actually applied
+            if add_cost_to_meet_thres is not False:
+                add_cost_to_meet_thres[yr] = reduction_base_yr * inc_capcost[yr]
             # Set segment of efficient market to remove to meet threshold; ensure this never
             # pushes efficient result below zero
             if (brk_dat_eff[yr] - reduce_base_to_meet_thres[yr]) >= 0:
@@ -7389,7 +7398,7 @@ class Engine(object):
             for yr in focus_yrs:
                 brk_dat_cdbps_base[yr] = reduce_base_to_meet_thres[yr]
                 # Set added capital costs to zero in baseline
-                if brk_dat_cdbps_capcost_base and add_cost_to_meet_thres:
+                if brk_dat_cdbps_capcost_base is not False and add_cost_to_meet_thres is not False:
                     brk_dat_cdbps_capcost_base[yr] = 0
         # Add to baseline breakout data if already initialized
         else:
@@ -7404,9 +7413,9 @@ class Engine(object):
                 # Set efficient case to zero
                 brk_dat_cdbps_eff[yr] = 0
                 # Set added capital costs to the full incremental cost in efficient case
-                if brk_dat_cdbps_capcost_eff and add_cost_to_meet_thres:
+                if brk_dat_cdbps_capcost_eff is not False and add_cost_to_meet_thres is not False:
                     brk_dat_cdbps_capcost_eff[yr] = add_cost_to_meet_thres[yr]
-        elif brk_dat_cdbps_capcost_eff and add_cost_to_meet_thres:
+        elif brk_dat_cdbps_capcost_eff is not False and add_cost_to_meet_thres is not False:
             for yr in focus_yrs:
                 brk_dat_cdbps_capcost_eff[yr] += add_cost_to_meet_thres[yr]
 
@@ -7414,16 +7423,15 @@ class Engine(object):
         if len(brk_dat_cdbps_save.keys()) == 0:
             for yr in focus_yrs:
                 brk_dat_cdbps_save[yr] = reduce_base_to_meet_thres[yr]
-                # Set added cap costs in efficient case
-                if brk_dat_cdbps_capcost_save and add_cost_to_meet_thres:
-                    brk_dat_cdbps_capcost_save[yr] = add_cost_to_meet_thres[yr]
+                # Set added cap costs savings (baseline less efficient; baseline cost is zero)
+                if brk_dat_cdbps_capcost_save is not False and add_cost_to_meet_thres is not False:
+                    brk_dat_cdbps_capcost_save[yr] = -add_cost_to_meet_thres[yr]
         else:
             for yr in focus_yrs:
-                # Set efficient case to zero
                 brk_dat_cdbps_save[yr] += reduce_base_to_meet_thres[yr]
-                # Set added capital costs to the full incremental cost in efficient case
-                if brk_dat_cdbps_capcost_save and add_cost_to_meet_thres:
-                    brk_dat_cdbps_capcost_save[yr] += add_cost_to_meet_thres[yr]
+                # Added capital costs reduce savings (baseline cost is zero)
+                if brk_dat_cdbps_capcost_save is not False and add_cost_to_meet_thres is not False:
+                    brk_dat_cdbps_capcost_save[yr] -= add_cost_to_meet_thres[yr]
 
         # Initialize code/BPS master data if it hasn't already been added to, otherwise add to it
 
@@ -7446,7 +7454,7 @@ class Engine(object):
             mast_dat_cdbps_save[yr] = (mast_dat_cdbps_base[yr] - mast_dat_cdbps_eff[yr])
 
         # Update code/BPS master capital cost data if available
-        if mast_dat_cdbps_capcost_base and add_cost_to_meet_thres:
+        if mast_dat_cdbps_capcost_base is not False and add_cost_to_meet_thres is not False:
             if len(mast_dat_cdbps_capcost_base.keys()) == 0:
                 for yr in focus_yrs:
                     mast_dat_cdbps_capcost_base[yr] = 0.0
@@ -7548,8 +7556,9 @@ class Engine(object):
                                         brk_dat_eu_base[fuel][yr] for yr in apply_yrs}
         return rel_elec_eff_init
 
-    def sum_energy_data(self, reg, bldg, vint, adopt_scheme, prior_yr_rmv, code_bps_meas_to_sum):
-        """Sum energy use across all measure data and a given region, building type and vintage.
+    def sum_energy_and_cost_data(
+            self, reg, bldg, vint, adopt_scheme, prior_yr_rmv, code_bps_meas_to_sum):
+        """Sum energy use and capital cost across all measure data for a region/building/vintage.
 
         reg_brk (str): Region name used for current mseg in Scout breakout data.
         bldg_vnt_brk (str): Building type and vintage uses for current mseg in breakout data.
@@ -7562,8 +7571,9 @@ class Engine(object):
         code_bps_meas_to_sum (list): Code or BPS measure objects to include in energy calculations.
 
         Returns:
-            Dict of baseline/efficient case energy use sums across applicable regions, building
-            types, and building vintages of the code/BPS policy, in applicable years for policy.
+            Dict of baseline/efficient case energy use sums (and capital cost sums, when capital
+            cost breakouts are available) across applicable regions, building types, and building
+            vintages of the code/BPS policy, in applicable years for policy.
         """
 
         # Initialize energy sums for base and efficient cases
