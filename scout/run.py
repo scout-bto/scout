@@ -8284,7 +8284,7 @@ def _run_main(opts: argparse.NameSpace):  # noqa: F821
     # Write summary outputs for individual measures to a JSON
     JsonIO.dump_json(a_run.output_ecms, handyfiles.meas_engine_out_ecms)
     # Write summary outputs across all measures to a JSON
-    JsonIO.dump_json(a_run.output_all, handyfiles.meas_engine_out_agg)
+    JsonIO.dump_json(a_run.output_all, handyfiles.meas_engine_out_agg, indent=True)
     print("Data writing complete")
     # Write competition adjustment fractions to a JSON, if applicable
     if a_run.output_ecms_cfs is not None:
