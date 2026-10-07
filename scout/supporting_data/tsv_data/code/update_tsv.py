@@ -165,14 +165,23 @@ def sql_template_vars(bstock_source, version):
     "..kwh" suffix. ComStock's sqft column is "in.sqft..ft2" in every
     release except 2023, which (like old-style ResStock) only has
     "in.sqft" -- confirmed directly against the 2023.1 metadata parquet's
-    schema, since that table predates the "..ft2" rename. """
+    schema, since that table predates the "..ft2" rename.
+
+    ts_trunc is the hour-beginning label (EST) of each raw 15-minute
+    record. Raw stamps are period-ending (first 2018-01-01 00:15, last
+    2019-01-01 00:00), so each is shifted back 15 minutes before
+    truncating: the four intervals of clock hour [H, H+1) then share
+    bucket H, giving exactly 8760 labels 2018-01-01 00:00 through
+    2018-12-31 23:00 with no year wraparound. """
     release = STOCK_RELEASES[version][bstock_source]
     by_state_table = f"{bstock_source}_amy2018_release_{release}_by_state"
     if (bstock_source, release) in NATIVE_TIMESTAMP_RELEASES:
-        ts_trunc = "DATE_TRUNC('hour', ts.\"timestamp\")"
+        ts_trunc = ("DATE_TRUNC('hour', "
+                    "ts.\"timestamp\" - INTERVAL '15' MINUTE)")
     else:
         ts_trunc = ("DATE_TRUNC('hour', "
-                    "from_unixtime(ts.\"timestamp\" / 1000000000))")
+                    "from_unixtime(ts.\"timestamp\" / 1000000000) "
+                    "- INTERVAL '15' MINUTE)")
 
     if bstock_source == "comstock":
         meta_table = f"{bstock_source}_amy2018_release_{release}_parquet"
@@ -354,8 +363,6 @@ def insert_scouttsv_emm(opts):
     emm_shift, _ = _region_tz_shift_hours(
         os.path.join(MAP_DIR, "geo_map.csv"))
     df = pd.read_csv(emm_file)
-    if opts.bstock == 'commercial':
-        df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
 
     df = replace_strings_in_dataframe(df, replacements)
     json_file = BASE_TEMPLATE
@@ -457,8 +464,6 @@ def insert_scouttsv_usstate(opts):
         os.path.join(MAP_DIR, "geo_map.csv"))
     df = pd.read_csv(csv_file)
 
-    if opts.bstock == 'commercial':
-        df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
 
     df = replace_strings_in_dataframe(df, replacements)
     json_file = BASE_TEMPLATE
@@ -723,8 +728,6 @@ def plot_peakday_hourly(opts):
             print(f"{csv_file} not found, skipping peak-day plot.")
             continue
         df = pd.read_csv(csv_file)
-        if opts.bstock == 'commercial':
-            df = df[df['timestamp_hour'] != '2019-01-01 01:00:00.000']
         df = df[df['building_type'].isin(bts)].copy()
         # A handful of buildings can fail the geo_map county join (e.g. a
         # few ComStock 2023 buildings carry an unresolved "Not Applicable"

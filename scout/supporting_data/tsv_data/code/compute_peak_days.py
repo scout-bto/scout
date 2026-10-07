@@ -137,9 +137,6 @@ def load_total_hourly(csv_path, region_col, energy_cols, is_commercial):
     types and the given energy columns) by region and timestamp. """
     usecols = ["timestamp_hour", region_col] + energy_cols
     df = pd.read_csv(csv_path, usecols=usecols)
-    if is_commercial:
-        # Drop a spurious wraparound timestamp row (see update_tsv.py)
-        df = df[df["timestamp_hour"] != "2019-01-01 01:00:00.000"]
     df["total"] = df[energy_cols].sum(axis=1)
     return df.groupby(
         [region_col, "timestamp_hour"], as_index=False)["total"].sum()
