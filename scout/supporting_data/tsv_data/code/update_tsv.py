@@ -13,8 +13,8 @@ from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 
 from compute_peak_days import (
-    COMMERCIAL_ENERGY_COLS, RESIDENTIAL_ENERGY_COLS, WINTER_DAYS,
-    SUMMER_DAYS, WINTER_DAYS_EXTENDED, SUMMER_DAYS_EXTENDED,
+    COMMERCIAL_ENERGY_COLS, RESIDENTIAL_ENERGY_COLS,
+    WINTER_DAYS_EXTENDED, SUMMER_DAYS_EXTENDED,
     BOUNDARY_CHECK_BUFFER_DAYS, load_combined_hourly, find_peak_days,
     _region_tz_shift_hours, _shift_timestamps_to_local)
 
@@ -707,13 +707,14 @@ def _diag_canonical_building_types(bstock):
 
 
 def plot_peakday_hourly(opts):
-    """ For each region, find the winter/summer peak day (highest total
-    load day in that season's window) in the raw stock CSV and plot every
-    end use's hourly load on that day, one subplot per (end use, building
-    type) pair with regions overlaid as separate lines. Saves PNGs to
-    DIAG_DIR. Ported from _diag_hourly.ipynb, using the same
-    winter/summer windows and duplicate-column-free energy columns as
-    compute_peak_days.py (rather than recomputing them). """
+    """ For each region, take the winter/summer peak day shipped in
+    tsv_peak_days_{EMM,State}.csv (computed by find_peak_days on the
+    combined commercial + residential total) and plot every
+    end use's hourly load from the raw stock CSV on that day, one subplot
+    per (end use, building type) pair with regions overlaid as separate
+    lines. Saves PNGs to DIAG_DIR. Ported from _diag_hourly.ipynb, using
+    the same peak days, windows and duplicate-column-free energy columns
+    as compute_peak_days.py (rather than recomputing them). """
     import matplotlib.pyplot as plt
 
     bts = _diag_canonical_building_types(opts.bstock)
@@ -751,17 +752,22 @@ def plot_peakday_hourly(opts):
         df['total'] = df[energy_cols].sum(axis=1)
         regions = sorted(df[geodesc].unique())
 
-        for season_name, season_days in (
-                ('winter', WINTER_DAYS), ('summer', SUMMER_DAYS)):
-            season_df = df[df['dayofyear'].isin(season_days)]
-            daily = season_df.groupby(
-                [geodesc, 'dayofyear'])['total'].sum().reset_index()
-            if daily.empty:
-                print(f"{csv_file}: no {season_name} data, skipping.")
-                continue
-            peak_day = daily.loc[
-                daily.groupby(geodesc)['total'].idxmax()
-            ].set_index(geodesc)['dayofyear']
+        # Use the same peak days that ship in tsv_peak_days_{EMM,State}.csv:
+        # find_peak_days on the combined commercial + residential hourly
+        # total (single highest hour within each season window, on each
+        # region's local clock), rather than a separate definition here.
+        # The plotted bstock's rows are then shown on that day.
+        try:
+            peaks = find_peak_days(
+                load_combined_hourly(geodesc, geodesc, opts.stock_version),
+                geodesc)
+        except FileNotFoundError as e:
+            print(f"{e}, skipping peak-day plot.")
+            continue
+        peaks = peaks.set_index(geodesc)
+
+        for season_name in ('winter', 'summer'):
+            peak_day = peaks[f"{season_name.capitalize()}PeakDay"].astype(int)
 
             # Pre-slice each region's peak-day rows once (one filter pass
             # per region over the full df) rather than re-filtering the
