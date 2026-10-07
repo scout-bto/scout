@@ -6483,15 +6483,25 @@ class Measure(object):
                     # Maximum calc type (pertains only to a peak day)
                     else:
                         # Peak days are keyed by their own region (state or
-                        # EMM, whichever alt_regions resolves to) when
-                        # available; a handful of states (e.g. AK, HI) lack
-                        # their own ComStock/ResStock by-state data and fall
-                        # back to their representative EMM region's peak
-                        # day (tsvmets_reg) instead
+                        # EMM, whichever alt_regions resolves to); only AK
+                        # and HI lack their own ComStock/ResStock by-state
+                        # data and fall back to their representative EMM
+                        # region's peak day (tsvmets_reg). Any other missing
+                        # region (e.g. a dropped row or typo) is an error.
                         peak_days_by_season = self.handyvars.tsv_metrics_data[
                             "peak days"][season]
-                        tsv_metrics_days = [peak_days_by_season.get(
-                            mskeys[1], peak_days_by_season[tsvmets_reg])]
+                        if mskeys[1] in peak_days_by_season:
+                            tsv_metrics_days = [peak_days_by_season[mskeys[1]]]
+                        elif mskeys[1] in self.handyvars.tsv_metrics_data[
+                                "peak day fallback states"]:
+                            tsv_metrics_days = [
+                                peak_days_by_season[tsvmets_reg]]
+                        else:
+                            raise KeyError(
+                                f"No {season} peak day found for region "
+                                f"'{mskeys[1]}' in the TSV peak days data "
+                                "(tsv_peak_days_EMM.csv/"
+                                "tsv_peak_days_State.csv)")
 
                     # Set applicable daily hour range
                     # NOTE: for now, use peak/take periods from 2050 only
