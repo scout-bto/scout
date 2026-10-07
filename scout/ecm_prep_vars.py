@@ -790,7 +790,33 @@ class UsefulVars(object):
                     }
                 else:
                     self.hp_rates_reg_map = None
-            regions_out = [(x, x) for x in valid_regions]
+            # For State-level output breakouts, scope the breakout regions to
+            # match ecm_field_updates' climate_zone override when present.
+            # Without this, out_break_czones (and every copy of it made by
+            # _obi()/_copy_dict_tree_shared_leaves) always enumerates all 50 states
+            # regardless of climate_zone, which is pure overhead when running
+            # a state-restricted config with no prepared data for the
+            # excluded states (e.g. a scoped-down test/dev run). Production
+            # configs don't set ecm_field_updates, so this is a no-op there.
+            out_break_regions = valid_regions
+            if opts.alt_regions == "State" and opts.ecm_field_updates and \
+                    opts.ecm_field_updates.get("climate_zone"):
+                cz_override = opts.ecm_field_updates["climate_zone"]
+                if isinstance(cz_override, str):
+                    cz_override = [cz_override]
+                # Normalize to uppercase so a lowercase override (e.g. from a
+                # config file or CLI arg, neither of which enforce case)
+                # still matches valid_regions' uppercase state abbreviations.
+                cz_override_set = {cz.upper() for cz in cz_override}
+                # Only scope when every override value is a state. Other valid
+                # climate_zone values ("all", AIA/IECC region names) or typos
+                # would otherwise be filtered out here, leaving no breakout
+                # region for the affected microsegments; keep the full list
+                # and let downstream validation handle them.
+                if cz_override_set.issubset(valid_regions):
+                    out_break_regions = [
+                        r for r in valid_regions if r in cz_override_set]
+            regions_out = [(x, x) for x in out_break_regions]
 
             # Read in mapping for alternate performance/cost unit breakouts
             # AIA -> EMM or State mapping
@@ -1600,6 +1626,10 @@ class UsefulVars(object):
         else:
             for k in state_vars:
                 setattr(self, k, None)
+        # Mutable holder for the incentives index (see incentives_by_key). Created here, once,
+        # so that the per-measure shallow copies of this object share the same cache instead of
+        # each rebuilding the index
+        self._incentives_index_cache = {}
         self.save_shp_warn = []
         # When states are used and consideration for panel share data not suppressed, import shares
         if opts.alt_regions == "State" and opts.elec_upgrade_costs not in ["all", "ignore"]:
@@ -1630,6 +1660,28 @@ class UsefulVars(object):
             "240V circuit": 1384  # BTB "typical" dif., central ASHP w/ and w/o new circuit
         }
         self.alt_panel_names = ["-no panel", "-manage"]
+
+    @property
+    def incentives_by_key(self):
+        """Index of incentives rows keyed by (region, building type, vintage).
+
+        Built on first use and cached in a dict shared by all shallow copies of this object
+        (e.g., the per-measure copies made in Measure.__init__), so the index is built once per
+        run. The cache is rebuilt if self.incentives is replaced by a different list. Avoids a
+        full linear scan of self.incentives -- which can have thousands of rows from the
+        itertools.product expansion in import_state_data -- on every lookup.
+
+        Returns:
+            dict: Maps (region, building type, vintage) to a list of incentives rows.
+        """
+        cache = self._incentives_index_cache
+        if cache.get("source") is not self.incentives:
+            index = {}
+            for x in (self.incentives or []):
+                index.setdefault((x[0], x[1], x[2]), []).append(x)
+            cache["source"] = self.incentives
+            cache["index"] = index
+        return cache["index"]
 
     def import_state_data(self, handyfiles, state_vars, valid_regions, opts):
         """Import and further prepare sub-federal adoption driver data.
