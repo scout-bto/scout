@@ -1,7 +1,6 @@
 WITH meta_combined AS (
 	SELECT ts."state", meta."in.nhgis_county_gisjoin",
-		CASE WHEN extract(YEAR FROM {ts_trunc} + INTERVAL '1' HOUR) = 2019 THEN {ts_trunc} - INTERVAL '1' YEAR + INTERVAL '1' HOUR
-		ELSE {ts_trunc} + INTERVAL '1' HOUR END as timestamp_hour,
+		{ts_trunc} as timestamp_hour,
 		meta."in.comstock_building_type" as building_type,
 		ts."out.electricity.cooling.energy_consumption" as cooling,
 		ts."out.electricity.heating.energy_consumption" + ts."out.electricity.heat_recovery.energy_consumption" + ts."out.electricity.heat_rejection.energy_consumption" as heating,
