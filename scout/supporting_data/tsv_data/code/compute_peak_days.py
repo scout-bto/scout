@@ -35,6 +35,70 @@ TSV_DATA_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 WINTER_DAYS = set(range(1, 91)) | set(range(335, 366))
 SUMMER_DAYS = set(range(152, 274))
 
+MAP_DIR = os.path.join(SCRIPT_DIR, "map")
+
+# Standard-time (no-DST) UTC offset in hours for each state's dominant legal
+# time zone. ComStock/ResStock publish every timeseries on an Eastern
+# Standard Time clock regardless of where the building actually is (see the
+# ComStock/ResStock FAQ: "timestamps of all load profiles have been
+# converted to Eastern Standard Time, to prevent issues when aggregating
+# across time zones"), so an EMM region or state whose local standard time
+# isn't Eastern needs its load shape rolled to match -- see
+# update_tsv.py's _apply_tz_shift. A handful of states split
+# across two zones (FL, IN, KY, MI, TN, TX, ND, SD, NE, KS, ID) are assigned
+# their population-majority zone here; that's already an approximation,
+# same as the EMM-region-level dominant-zone approximation those functions
+# make for regions spanning multiple states.
+STATE_TZ_OFFSET = {
+    'CT': -5, 'DE': -5, 'FL': -5, 'GA': -5, 'IN': -5, 'KY': -5, 'ME': -5,
+    'MD': -5, 'MA': -5, 'MI': -5, 'NH': -5, 'NJ': -5, 'NY': -5, 'NC': -5,
+    'OH': -5, 'PA': -5, 'RI': -5, 'SC': -5, 'VT': -5, 'VA': -5, 'WV': -5,
+    'DC': -5,
+    'AL': -6, 'AR': -6, 'IL': -6, 'IA': -6, 'KS': -6, 'LA': -6, 'MN': -6,
+    'MS': -6, 'MO': -6, 'ND': -6, 'NE': -6, 'OK': -6, 'SD': -6, 'TN': -6,
+    'TX': -6, 'WI': -6,
+    'AZ': -7, 'CO': -7, 'ID': -7, 'MT': -7, 'NM': -7, 'UT': -7, 'WY': -7,
+    'CA': -8, 'NV': -8, 'OR': -8, 'WA': -8,
+    'AK': -9,
+    'HI': -10,
+}
+EST_OFFSET = -5
+
+
+def _region_tz_shift_hours(geo_map_path):
+    """ Population-weighted dominant timezone shift (hours, relative to
+    Eastern Standard Time) for every EMM region and state found in
+    geo_map.csv. For a region straddling multiple time zones (e.g. NWPP
+    spans WA/OR/MT), the shift used is whichever single zone holds the most
+    population in that region -- an approximation, but a closer match to
+    reality than applying no shift at all (the status quo). Returns
+    (emm_shift, state_shift), each {region_code: shift_hours}. """
+    geo = pd.read_csv(geo_map_path)
+    geo['tz_offset'] = geo['state_abbr'].map(STATE_TZ_OFFSET)
+
+    def dominant_shift(grp):
+        pop_by_offset = grp.groupby('tz_offset')['population'].sum()
+        return int(pop_by_offset.idxmax() - EST_OFFSET)
+
+    emm_shift = geo.groupby('emm2020_county').apply(dominant_shift).to_dict()
+    state_shift = geo.groupby('state_abbr').apply(dominant_shift).to_dict()
+    return emm_shift, state_shift
+
+
+def _shift_timestamps_to_local(timestamps, shift_hours):
+    """ Move EST timestamps onto a region's local standard time clock,
+    wrapping within the year exactly like update_tsv.py's _apply_tz_shift
+    roll (e.g. 3 hours west: EST Jan 1 00:00-02:00 becomes Dec 31 21:00-23:00
+    of the same year), so peak days are found on the same clock the
+    load shapes are written on. """
+    ts = pd.to_datetime(timestamps)
+    year_start = pd.to_datetime(ts.dt.year.astype(str) + "-01-01")
+    local = ts + pd.Timedelta(hours=shift_hours)
+    year_len = pd.Timedelta(days=365)
+    local = local.where(local >= year_start, local + year_len)
+    local = local.where(local < year_start + year_len, local - year_len)
+    return local.dt.strftime("%Y-%m-%d %H:%M:%S.000")
+
 # Widened versions of the windows above, used only as a diagnostic to flag
 # regions whose in-window peak sits right at a season boundary rather than
 # at an interior local max (e.g. hot, low-heating-load climates where total
@@ -180,8 +244,24 @@ def load_combined_hourly(geo_label, region_col, stock_version):
         res_path, region_col, RESIDENTIAL_ENERGY_COLS, is_commercial=False)
 
     combined = pd.concat([com_hourly, res_hourly], ignore_index=True)
-    return combined.groupby(
+    combined = combined.groupby(
         [region_col, "timestamp_hour"], as_index=False)["total"].sum()
+
+    # Raw timestamps are Eastern Standard Time; shift each region to its own
+    # local standard time (same shift update_tsv.py applies to the load
+    # shapes) so the peak day matches the day ecm_prep applies it to.
+    emm_shift, state_shift = _region_tz_shift_hours(
+        os.path.join(MAP_DIR, "geo_map.csv"))
+    shifts = emm_shift if geo_label == "emm" else state_shift
+    pieces = []
+    for region, grp in combined.groupby(region_col):
+        grp = grp.copy()
+        shift = shifts.get(region, 0)
+        if shift:
+            grp["timestamp_hour"] = _shift_timestamps_to_local(
+                grp["timestamp_hour"], shift)
+        pieces.append(grp)
+    return pd.concat(pieces, ignore_index=True)
 
 
 def compute_for_geography(geo_label, region_col, stock_version):
