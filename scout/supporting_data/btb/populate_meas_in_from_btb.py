@@ -123,16 +123,44 @@ def tier_for_name(name):
 # and it never rewrites the units cell.
 COST_UNITS_OK = {"2023$/unit"}
 
+# Cost Units for costs normalized by the technology's typical capacity.
+# These are produced by dividing the whole-unit $2023 cost by the BTB
+# regression's Typical capacity expressed in kBtu/h (see capacity_kbtuh),
+# as done in the "BTB Key Costs" sheet's "div capacity" columns.
+PER_CAPACITY_COST_UNITS = {
+    "2023$/kBtu/h heating", "2023$/kBtu/h cooling"}
+
+# BTB capacity unit (lowercased) -> multiplier to kBtu/h.
+CAPACITY_TO_KBTUH = {
+    "tons": 12.0, "kbtu/h": 1.0, "mbh": 1.0, "btu/h": 0.001,
+    "btu/hr": 0.001, "kw": 3.412}
+
 _BTB_CITATION = re.compile(
     r"Buildings (?:Annual )?Technology Baseline|\bBTB\b|\bATB\b",
     re.IGNORECASE)
 
 # Phrases in a row's Cost Source Notes showing its installed cost is not a
 # plain BTB cost for the technology (adders such as a typical furnace for
-# dual-fuel heat pumps, oil-tank removal, a scaled breakthrough cost, ...).
+# dual-fuel heat pumps, oil-tank removal, a scaled breakthrough cost, a cost
+# for the technology switched to but keyed under the baseline's name, ...).
 _COMPOSITE_COST_NOTE = re.compile(
     r"also add|tank removal|half the cost|halve|secondary heater|paired"
-    r"|drilling", re.IGNORECASE)
+    r"|drilling|switched to", re.IGNORECASE)
+
+
+def capacity_kbtuh(btb_row):
+    """The BTB row's Typical capacity (regression metric 1) in kBtu/h, or
+    None if metric 1 is not a heating/cooling capacity in a known unit."""
+
+    metric = str(btb_row.get("Regression metric 1 - Metric")).lower()
+    if "capacity" not in metric and "heat output" not in metric:
+        return None
+    factor = CAPACITY_TO_KBTUH.get(
+        str(btb_row.get("Regression metric 1 - Unit")).strip().lower())
+    value = parse_currency(btb_row.get("Regression metric 1 - Typical"))
+    if factor is None or not value:
+        return None
+    return value * factor
 
 
 def cost_skip_reason(row):
@@ -144,9 +172,9 @@ def cost_skip_reason(row):
         if isinstance(row.get(c), str))
     if not _BTB_CITATION.search(cited):
         return "cost source does not cite BTB; left as-is"
-    if row.get("Cost Units") not in COST_UNITS_OK:
+    if row.get("Cost Units") not in COST_UNITS_OK | PER_CAPACITY_COST_UNITS:
         return (f"Cost Units are {row.get('Cost Units')!r}, not a "
-                "whole-unit $2023 cost; left as-is")
+                "whole-unit or per-capacity $2023 cost; left as-is")
     notes = row.get("Cost Source Notes")
     if isinstance(notes, str) and _COMPOSITE_COST_NOTE.search(notes):
         return ("cost notes describe a composite/adjusted cost (adder or "
@@ -519,12 +547,35 @@ def main():
             cost_note = "" if used_regression else (
                 "BTB regression unavailable for this row; cost is BTB's "
                 "precomputed Mid cost at Typical performance")
+            # Without the regression inputs the cost is only available at
+            # Typical performance, which is wrong for other tiers.
+            extra_skip = None
+            if cost is not None and not used_regression and \
+                    entry["bound"] != "Typical":
+                extra_skip = (
+                    "BTB cost regression inputs unavailable for this row, "
+                    "so cost cannot be evaluated at this tier's "
+                    "performance; left as-is")
+            elif cost is not None and \
+                    row.get("Cost Units") in PER_CAPACITY_COST_UNITS:
+                capacity = capacity_kbtuh(btb_row)
+                if capacity is None:
+                    extra_skip = (
+                        "Cost Units are per kBtu/h but BTB capacity is not "
+                        "a known heating/cooling capacity unit; left as-is")
+                else:
+                    cost = {k: round(v / capacity, 2)
+                            for k, v in cost.items()}
+                    cost_note = (cost_note + "; " if cost_note else "") + \
+                        f"divided by BTB typical capacity ({capacity:.4g} " \
+                        "kBtu/h)"
+            row_skip_reason = skip_cost_reason or extra_skip
             cost_cell = cell_state["Installed Cost"]
             cost_unkeyed = is_unkeyed(cost_cell)
             cost_applies = (tech == owner) if cost_unkeyed else bool(
                 re.search(re.escape(tech) + r"\s*:", cost_cell,
                           re.IGNORECASE))
-            if cost_applies and skip_cost_reason:
+            if cost_applies and row_skip_reason:
                 cost = None
                 diff_rows.append({
                     "Name": row.get("Name"), "technology": tech,
@@ -536,7 +587,7 @@ def main():
                     "btb_display_name": entry["btb_display_name"],
                     "projection_scenario": entry["projection_scenario"],
                     "projection_year": entry["projection_year"],
-                    "notes": skip_cost_reason,
+                    "notes": row_skip_reason,
                 })
             elif cost_applies and keep_existing and cost_perf is None and \
                     metric_idx == 2 and entry["sector"] == "residential":

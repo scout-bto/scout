@@ -111,6 +111,17 @@ installed cost at Typical performance, and the `BTB Diff` `notes` column says
 so. Where the performance kept for Min. Efficiency/ESTAR cannot be converted
 to the BTB metric, cost is left alone (`(skipped)`).
 
+**Row guards.** An installed cost is only proposed when the row's cost
+source cites BTB, its `Cost Units` are `2023$/unit` or `2023$/kBtu/h
+heating|cooling`, and its Cost Source Notes describe no adder or scaling
+(dual-fuel furnace, tank removal, breakthrough half-cost, "switched to"
+costs, ...). Per-kBtu/h costs are the whole-unit cost divided by BTB's
+Typical capacity in kBtu/h (the "div capacity" columns of the BTB Key Costs
+sheet). Rows whose cost can't be evaluated at the tier's performance (no
+regression inputs, i.e. commercial Min. Efficiency/ESTAR/Best) are skipped
+rather than given a Typical-performance cost. Every skip is logged in `BTB
+Diff` with its reason.
+
 A cell holding one bare value (e.g. `2.3`, or `new: X; existing: Y` with no
 technology name) is only updated for the row's single Switched-to
 technology (or the Baseline technology if there is no switch), never for
