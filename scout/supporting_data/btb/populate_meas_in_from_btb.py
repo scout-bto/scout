@@ -50,6 +50,11 @@ TIER_KEYWORDS = [
 REGRESSION_BOUND_COL = {"Typical": "Typical", "High": "High"}
 EXISTING_BOUND = "Existing"
 
+# Technologies deliberately crosswalked to the other sector's BTB data
+# (commercial measures using residential-type equipment), exempt from the
+# row-sector check in main().
+CROSS_SECTOR_TECHS = {"res_type_central_AC"}
+
 # Technologies covered by build_tech_crosswalk.py that participate in a
 # shared "heating"/"cooling"/"ventilation" Performance Units key rather
 # than their own tech-name key (seen in combined-package meas_in rows,
@@ -109,6 +114,18 @@ def tier_for_name(name):
     for keyword, tier in TIER_KEYWORDS:
         if keyword in name:
             return tier
+    return None
+
+
+def sector_for_name(name):
+    """Infer a meas_in row's sector from the "(R)"/"(C)" prefix of its Name
+    (present on every row, and consistent with its Building Type column)."""
+
+    if isinstance(name, str):
+        if name.startswith("(R)"):
+            return "residential"
+        if name.startswith("(C)"):
+            return "commercial"
     return None
 
 
@@ -387,9 +404,16 @@ def main():
             "Lifetime": row.get("Lifetime"),
         }
         owner = owner_tech(row)
+        row_sector = sector_for_name(row.get("Name"))
         for tech in techs_for_row(row):
             entry = crosswalk_by_tech_tier.get((tech, tier))
             if entry is None:
+                continue
+            # Some tokens (e.g. "HPWH") are shared by residential and
+            # commercial measures but crosswalked to one sector's BTB row;
+            # leave rows of the other sector alone.
+            if entry["sector"] != row_sector and \
+                    tech not in CROSS_SECTOR_TECHS:
                 continue
             btb_row = get_btb_row(btb_data, entry)
             if btb_row is None:
