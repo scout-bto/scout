@@ -99,6 +99,7 @@ def _shift_timestamps_to_local(timestamps, shift_hours):
     local = local.where(local < year_start + year_len, local - year_len)
     return local.dt.strftime("%Y-%m-%d %H:%M:%S.000")
 
+
 # Widened versions of the windows above, used only as a diagnostic to flag
 # regions whose in-window peak sits right at a season boundary rather than
 # at an interior local max (e.g. hot, low-heating-load climates where total
