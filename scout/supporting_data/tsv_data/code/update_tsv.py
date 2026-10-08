@@ -50,6 +50,7 @@ STOCK_RELEASES = {
     "2023": {"comstock": "2023.1", "resstock": "2024.2"},
 }
 
+
 def _apply_tz_shift(vals, shift_hours):
     """ Roll an 8760-hour load shape by shift_hours to convert it from
     Eastern Standard Time (the clock ComStock/ResStock publish on) into a
@@ -463,7 +464,6 @@ def insert_scouttsv_usstate(opts):
     _, state_shift = _region_tz_shift_hours(
         os.path.join(MAP_DIR, "geo_map.csv"))
     df = pd.read_csv(csv_file)
-
 
     df = replace_strings_in_dataframe(df, replacements)
     json_file = BASE_TEMPLATE
