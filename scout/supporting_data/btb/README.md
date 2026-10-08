@@ -46,20 +46,27 @@ Name/Component/Technology-Measure/Fuel Type text, using the rule table in
 regenerated from scratch each run).
 
 Each matched technology is expanded into the 4 `meas_in` efficiency tiers
-(Ref. Case, Min. Efficiency, ESTAR, Best) using a default mapping to BTB's
-Projection Scenario/year/bound (see `TIER_DEFAULTS`) -- **this default is
-a starting point for review, not a validated result.** In particular:
+(Ref. Case, Min. Efficiency, ESTAR, Best) using a default performance
+"bound" (see `TIER_DEFAULTS`) -- **this default is a starting point for
+review, not a validated result.** The bound sets which performance level is
+used, and cost is then evaluated at that performance:
 
-- All 4 tiers currently draw from the *same* matched BTB Technology ID,
-  varying only scenario/bound/year. Where BTB has a genuinely distinct
-  higher-efficiency product (e.g. a condensing vs. non-condensing gas
-  boiler), this script does not auto-detect and switch technology --
-  those cases surface as `needs_review` (ambiguous, multiple candidates)
-  instead, or may need a manual crosswalk row pointing a specific tier at
-  a different Technology ID.
-- Every row defaults to BTB's 2023 projection year regardless of tier.
-  Adjust `projection_year` by hand in the CSV if a later-vintage
-  projection is more appropriate for a given tier (e.g. ESTAR/Best).
+| Tier | `bound` | Performance | Cost |
+|---|---|---|---|
+| Ref. Case | Typical | BTB Typical | BTB cost regression at BTB Typical |
+| Min. Efficiency, ESTAR | Existing | Left as-is in `meas_in` (set by a standard / ENERGY STAR) | BTB cost regression at the `meas_in` performance |
+| Best | High | BTB High | BTB cost regression at BTB High |
+
+All tiers use BTB's 2023 Reference values (2023 values are the same across
+scenarios for nearly all technologies). Known limits:
+
+- All 4 tiers currently draw from the *same* matched BTB Technology ID.
+  Where BTB has a genuinely distinct higher-efficiency product (e.g. a
+  condensing vs. non-condensing gas boiler), this script does not
+  auto-detect and switch technology -- those cases surface as
+  `needs_review` (ambiguous, multiple candidates) instead, or may need a
+  manual crosswalk row pointing a specific tier at a different Technology ID.
+- There is no Brk. (breakthrough) tier; those rows are skipped.
 
 **Only 48 of the ~100 Scout technology tokens used in `meas_in` have an
 authored rule** (see `MATCH_RULES`); the rest print a warning and are left
@@ -87,6 +94,27 @@ non-`needs_review` crosswalk entry matching that row's inferred tier
 Performance / Installed Cost / Lifetime values would be, converting units
 where needed (see `unit_conversions.py` -- anything without a known
 conversion rule is silently skipped here, not guessed at).
+
+**Cost** is evaluated from BTB's retail-price regression at the tier's
+performance (as in the "BTB Key Costs" sheet that the existing BTB-sourced
+`meas_in` costs came from):
+
+```
+retail    = coef1_mid * metric1_typical + coef2_mid * performance + intercept_mid
+installed = retail * installation_multiplier + installation_adder   # new / retrofit
+```
+
+This needs the multiplier/adder columns, which only the residential BTB CSV
+has, and the performance to be regression metric 2. Otherwise (commercial,
+or other metric layouts) the cost falls back to BTB's precomputed Mid
+installed cost at Typical performance, and the `BTB Diff` `notes` column says
+so. Where the performance kept for Min. Efficiency/ESTAR cannot be converted
+to the BTB metric, cost is left alone (`(skipped)`).
+
+A cell holding one bare value (e.g. `2.3`, or `new: X; existing: Y` with no
+technology name) is only updated for the row's single Switched-to
+technology (or the Baseline technology if there is no switch), never for
+the other technologies in the row.
 
 Writes `bss_meas_v2_btb_proposed.xlsx` (git-ignored, not meant to be
 committed) containing:
