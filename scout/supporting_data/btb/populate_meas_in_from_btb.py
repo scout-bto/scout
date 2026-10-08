@@ -117,6 +117,43 @@ def tier_for_name(name):
     return None
 
 
+# Cost Units that a BTB-regression installed cost (whole-unit, $2023) can be
+# written into. Other units (e.g. 2023$/kBtu/h heating, 2022$/unit) need a
+# capacity normalization or dollar-year adjustment this script doesn't do,
+# and it never rewrites the units cell.
+COST_UNITS_OK = {"2023$/unit"}
+
+_BTB_CITATION = re.compile(
+    r"Buildings (?:Annual )?Technology Baseline|\bBTB\b|\bATB\b",
+    re.IGNORECASE)
+
+# Phrases in a row's Cost Source Notes showing its installed cost is not a
+# plain BTB cost for the technology (adders such as a typical furnace for
+# dual-fuel heat pumps, oil-tank removal, a scaled breakthrough cost, ...).
+_COMPOSITE_COST_NOTE = re.compile(
+    r"also add|tank removal|half the cost|halve|secondary heater|paired"
+    r"|drilling", re.IGNORECASE)
+
+
+def cost_skip_reason(row):
+    """Return why this row's installed cost must not be replaced with a BTB
+    regression cost, or None if it may be."""
+
+    cited = " ".join(
+        str(row.get(c)) for c in ["Cost Source Details", "Cost Source Notes"]
+        if isinstance(row.get(c), str))
+    if not _BTB_CITATION.search(cited):
+        return "cost source does not cite BTB; left as-is"
+    if row.get("Cost Units") not in COST_UNITS_OK:
+        return (f"Cost Units are {row.get('Cost Units')!r}, not a "
+                "whole-unit $2023 cost; left as-is")
+    notes = row.get("Cost Source Notes")
+    if isinstance(notes, str) and _COMPOSITE_COST_NOTE.search(notes):
+        return ("cost notes describe a composite/adjusted cost (adder or "
+                "scaling); left as-is")
+    return None
+
+
 def sector_for_name(name):
     """Infer a meas_in row's sector from the "(R)"/"(C)" prefix of its Name
     (present on every row, and consistent with its Building Type column)."""
@@ -405,6 +442,7 @@ def main():
         }
         owner = owner_tech(row)
         row_sector = sector_for_name(row.get("Name"))
+        skip_cost_reason = cost_skip_reason(row)
         for tech in techs_for_row(row):
             entry = crosswalk_by_tech_tier.get((tech, tier))
             if entry is None:
@@ -486,7 +524,21 @@ def main():
             cost_applies = (tech == owner) if cost_unkeyed else bool(
                 re.search(re.escape(tech) + r"\s*:", cost_cell,
                           re.IGNORECASE))
-            if cost_applies and keep_existing and cost_perf is None and \
+            if cost_applies and skip_cost_reason:
+                cost = None
+                diff_rows.append({
+                    "Name": row.get("Name"), "technology": tech,
+                    "column": "Installed Cost",
+                    "old_value": cost_cell if cost_unkeyed
+                    else find_value_for_key(cost_cell, tech),
+                    "new_value": "(skipped)",
+                    "btb_technology_id": entry["btb_technology_id"],
+                    "btb_display_name": entry["btb_display_name"],
+                    "projection_scenario": entry["projection_scenario"],
+                    "projection_year": entry["projection_year"],
+                    "notes": skip_cost_reason,
+                })
+            elif cost_applies and keep_existing and cost_perf is None and \
                     metric_idx == 2 and entry["sector"] == "residential":
                 cost = None  # cannot place the kept performance on BTB's scale
                 diff_rows.append({
