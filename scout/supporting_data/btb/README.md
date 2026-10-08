@@ -66,7 +66,7 @@ scenarios for nearly all technologies). Known limits:
   auto-detect and switch technology -- those cases surface as
   `needs_review` (ambiguous, multiple candidates) instead, or may need a
   manual crosswalk row pointing a specific tier at a different Technology ID.
-- There is no Brk. (breakthrough) tier; those rows are skipped.
+- Breakthrough ("Brk.") measures are not sourced from BTB and are skipped.
 
 **Only 48 of the ~100 Scout technology tokens used in `meas_in` have an
 authored rule** (see `MATCH_RULES`); the rest print a warning and are left
@@ -95,32 +95,41 @@ Performance / Installed Cost / Lifetime values would be, converting units
 where needed (see `unit_conversions.py` -- anything without a known
 conversion rule is silently skipped here, not guessed at).
 
-**Cost** is evaluated from BTB's retail-price regression at the tier's
-performance (as in the "BTB Key Costs" sheet that the existing BTB-sourced
-`meas_in` costs came from):
+**Cost** starts from BTB's precomputed Mid installed cost, which is at
+Typical performance, and is moved to the tier's performance using BTB's
+retail-price regression (see "Installed costs" in `btb_doc.pdf`):
 
 ```
-retail    = coef1_mid * metric1_typical + coef2_mid * performance + intercept_mid
-installed = retail * installation_multiplier + installation_adder   # new / retrofit
+retail change = coef2_mid * (performance - typical) * unit_multiplier
+installed     = installed_typical + installation_multiplier * retail change
 ```
 
-This needs the multiplier/adder columns, which only the residential BTB CSV
-has, and the performance to be regression metric 2. Otherwise (commercial,
-or other metric layouts) the cost falls back to BTB's precomputed Mid
-installed cost at Typical performance, and the `BTB Diff` `notes` column says
-so. Where the performance kept for Min. Efficiency/ESTAR cannot be converted
-to the BTB metric, cost is left alone (`(skipped)`).
+This is the same as evaluating the full regression and applying the
+installation multiplier/adder (the method of the "BTB Key Costs" sheet), but
+always agrees with BTB at Typical. Per the documentation a technology uses
+either a multiplier or an adder (an adder is a multiplier of 1 for this
+purpose). The residential CSV gives the multiplier; the commercial CSV does
+not, so it is recovered from each row's Low/Mid/High retail and installed
+prices (this reproduces the sheet's commercial multipliers). Only regression
+metric 2 is treated as the performance metric.
 
-**Row guards.** An installed cost is only proposed when the row's cost
-source cites BTB, its `Cost Units` are `2023$/unit` or `2023$/kBtu/h
-heating|cooling`, and its Cost Source Notes describe no adder or scaling
-(dual-fuel furnace, tank removal, breakthrough half-cost, "switched to"
-costs, ...). Per-kBtu/h costs are the whole-unit cost divided by BTB's
-Typical capacity in kBtu/h (the "div capacity" columns of the BTB Key Costs
-sheet). Rows whose cost can't be evaluated at the tier's performance (no
-regression inputs, i.e. commercial Min. Efficiency/ESTAR/Best) are skipped
-rather than given a Typical-performance cost. Every skip is logged in `BTB
-Diff` with its reason.
+**Row guards.** Every row is considered, except breakthrough ("Brk.")
+measures, which are not sourced from BTB. An installed cost is proposed only
+when:
+- the row's `Cost Units` are `2023$/unit`, `2023$/kBtu/h heating|cooling`,
+  or `2022$/unit` (see below);
+- its Cost Source Notes describe no adder or scaling (dual-fuel furnace,
+  tank removal, breakthrough half-cost, "switched to" costs, ...);
+- the cost is not a `$0` placeholder (often a cost deliberately shared with
+  a paired technology).
+
+Per-kBtu/h costs are the whole-unit cost divided by BTB's Typical capacity
+in kBtu/h (the "div capacity" columns of the BTB Key Costs sheet).
+`2022$/unit` rows are only replaced when the cell holds a single cost, and
+their `Cost Units` are then changed to `2023$/unit` (BTB costs are $2023).
+Costs that can't be evaluated at the tier's performance (e.g. kept
+performance that can't be converted to the BTB metric) are skipped. Every
+skip is logged in `BTB Diff` with its reason.
 
 A cell holding one bare value (e.g. `2.3`, or `new: X; existing: Y` with no
 technology name) is only updated for the row's single Switched-to

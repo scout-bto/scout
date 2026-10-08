@@ -117,11 +117,14 @@ def tier_for_name(name):
     return None
 
 
-# Cost Units that a BTB-regression installed cost (whole-unit, $2023) can be
-# written into. Other units (e.g. 2023$/kBtu/h heating, 2022$/unit) need a
-# capacity normalization or dollar-year adjustment this script doesn't do,
-# and it never rewrites the units cell.
+# Cost Units that a BTB installed cost (whole-unit, $2023) can be written
+# into as-is.
 COST_UNITS_OK = {"2023$/unit"}
+
+# Cost Units in an earlier dollar year. BTB costs are $2023, so the cost is
+# only replaced when it is the row's single cost (nothing in the row stays
+# in the old dollar year), and the units cell is updated along with it.
+COST_UNITS_RELABEL = {"2022$/unit": "2023$/unit"}
 
 # Cost Units for costs normalized by the technology's typical capacity.
 # These are produced by dividing the whole-unit $2023 cost by the BTB
@@ -135,9 +138,8 @@ CAPACITY_TO_KBTUH = {
     "tons": 12.0, "kbtu/h": 1.0, "mbh": 1.0, "btu/h": 0.001,
     "btu/hr": 0.001, "kw": 3.412}
 
-_BTB_CITATION = re.compile(
-    r"Buildings (?:Annual )?Technology Baseline|\bBTB\b|\bATB\b",
-    re.IGNORECASE)
+# Breakthrough ("Brk.") measures are assumed costs, not taken from BTB.
+_BREAKTHROUGH_NAME = re.compile(r"\bBrk\.?\b", re.IGNORECASE)
 
 # Phrases in a row's Cost Source Notes showing its installed cost is not a
 # plain BTB cost for the technology (adders such as a typical furnace for
@@ -165,16 +167,13 @@ def capacity_kbtuh(btb_row):
 
 def cost_skip_reason(row):
     """Return why this row's installed cost must not be replaced with a BTB
-    regression cost, or None if it may be."""
+    cost, or None if it may be."""
 
-    cited = " ".join(
-        str(row.get(c)) for c in ["Cost Source Details", "Cost Source Notes"]
-        if isinstance(row.get(c), str))
-    if not _BTB_CITATION.search(cited):
-        return "cost source does not cite BTB; left as-is"
-    if row.get("Cost Units") not in COST_UNITS_OK | PER_CAPACITY_COST_UNITS:
-        return (f"Cost Units are {row.get('Cost Units')!r}, not a "
-                "whole-unit or per-capacity $2023 cost; left as-is")
+    units = row.get("Cost Units")
+    if units not in COST_UNITS_OK | PER_CAPACITY_COST_UNITS | \
+            set(COST_UNITS_RELABEL):
+        return (f"Cost Units are {units!r}, not a whole-unit or "
+                "per-heating/cooling-capacity cost; left as-is")
     notes = row.get("Cost Source Notes")
     if isinstance(notes, str) and _COMPOSITE_COST_NOTE.search(notes):
         return ("cost notes describe a composite/adjusted cost (adder or "
@@ -376,7 +375,9 @@ def is_zero_cost_placeholder(old_cost):
     """
 
     if not isinstance(old_cost, str):
-        return False
+        return parse_currency(old_cost) == 0
+    if ":" not in old_cost:
+        return parse_currency(old_cost) == 0
     for part in old_cost.split(";"):
         if ":" in part:
             val = parse_currency(part.split(":", 1)[1])
@@ -385,46 +386,62 @@ def is_zero_cost_placeholder(old_cost):
     return False
 
 
+def installation_multiplier(btb_row, kind):
+    """Installation cost multiplier (installed = retail * multiplier, or
+    retail + adder for adder-based technologies, which have multiplier 1)
+    for `kind` "new" or "retrofit".
+
+    Residential BTB rows give it directly. Commercial rows don't, so it is
+    recovered from the row's Low/Mid/High retail and installed prices: per
+    the BTB documentation a technology uses either an adder or a multiplier,
+    so whichever of the two reproduces all three installed prices is used.
+
+    Returns None if it cannot be determined (e.g. no retail price).
+    """
+
+    suffix = "New Construction" if kind == "new" else "Retrofit"
+    direct = parse_currency(btb_row.get(f"Installation Multiplier - {suffix}"))
+    if direct is not None:
+        return direct
+    installed_col = ("Typical New Construction Installed Cost ($2023)"
+                     if kind == "new"
+                     else "Typical Retrofit Installed Cost ($2023)")
+    retail = [parse_currency(btb_row.get(
+        f"Typical Retail Price ($2023) - {q}")) for q in ("Low", "Mid", "High")]
+    installed = [parse_currency(btb_row.get(f"{installed_col} - {q}"))
+                 for q in ("Low", "Mid", "High")]
+    if None in retail or None in installed or retail[1] <= 0:
+        return None
+    adder = installed[1] - retail[1]
+    if all(abs((i - r) - adder) <= 0.5 + 0.002 * abs(i)
+           for r, i in zip(retail, installed)):
+        return 1.0
+    multiplier = installed[1] / retail[1]
+    if all(abs(i - multiplier * r) <= 0.5 + 0.005 * abs(i)
+           for r, i in zip(retail, installed)):
+        return multiplier
+    return None
+
+
 def compute_cost(btb_row, metric_idx=None, perf_value=None):
     """Return {"new": ..., "existing": ...} installed cost ($2023).
 
-    When BTB's retail-price regression and installation multiplier/adder
-    are available for the row (residential), the cost is evaluated at
-    `perf_value`, a value of regression metric `metric_idx` in BTB units:
+    Starts from BTB's precomputed Mid installed cost, which is at the Typical
+    performance level, and moves it to `perf_value` (a value of regression
+    metric `metric_idx`, in BTB units) using the retail price regression:
 
-        retail = coef1_mid * metric1_typical + coef2_mid * perf_value
-                 + intercept_mid
-        installed = retail * multiplier + adder   (new / retrofit)
+        retail change = coef2_mid * (perf_value - typical) * unit_multiplier
+        installed     = installed_typical + multiplier * retail change
 
-    This is how the existing BTB-sourced meas_in costs were built (see the
-    "BTB Key Costs" sheet). Otherwise (commercial rows have no multiplier/
-    adder columns, or the performance metric is not regression metric 2),
-    falls back to BTB's precomputed Mid installed cost, which is evaluated
-    at the Typical performance level.
+    (all other regression inputs, e.g. capacity, stay at Typical). This is
+    equivalent to evaluating the full regression and applying the
+    installation multiplier/adder, but always agrees with BTB at Typical.
+    Only regression metric 2 is treated as a performance metric.
 
     Returns:
-        (cost dict or None, True if the regression was used).
+        (cost dict or None, True if the cost was moved off the Typical
+        performance level using the regression).
     """
-
-    if metric_idx == 2 and perf_value is not None:
-        names = {
-            "c1": "Regression metric 1 - Coefficient-Mid",
-            "m1": "Regression metric 1 - Typical",
-            "c2": "Regression metric 2 - Coefficient-Mid",
-            "int": "Regression Intercept - Mid",
-            "mult_new": "Installation Multiplier - New Construction",
-            "mult_ret": "Installation Multiplier - Retrofit",
-            "add_new": "Installation Adder - New Construction",
-            "add_ret": "Installation Adder - Retrofit"}
-        vals = {k: parse_currency(btb_row.get(col))
-                for k, col in names.items()}
-        if all(v is not None for v in vals.values()):
-            retail = (vals["c1"] * vals["m1"] + vals["c2"] * perf_value
-                      + vals["int"])
-            return {
-                "new": round(retail * vals["mult_new"] + vals["add_new"]),
-                "existing": round(
-                    retail * vals["mult_ret"] + vals["add_ret"])}, True
 
     new_val = parse_currency(btb_row.get(
         "Typical New Construction Installed Cost ($2023) - Mid"))
@@ -432,7 +449,23 @@ def compute_cost(btb_row, metric_idx=None, perf_value=None):
         "Typical Retrofit Installed Cost ($2023) - Mid"))
     if new_val is None or existing_val is None:
         return None, False
-    return {"new": round(new_val), "existing": round(existing_val)}, False
+
+    typical = parse_currency(btb_row.get("Regression metric 2 - Typical"))
+    coef = parse_currency(btb_row.get("Regression metric 2 - Coefficient-Mid"))
+    if metric_idx != 2 or perf_value is None or typical is None or \
+            coef is None:
+        return {"new": round(new_val), "existing": round(existing_val)}, False
+
+    unit_mult = parse_currency(btb_row.get("Typical unit multiplier")) or 1.0
+    retail_change = coef * (perf_value - typical) * unit_mult
+    if retail_change == 0:
+        return {"new": round(new_val), "existing": round(existing_val)}, True
+    mult_new = installation_multiplier(btb_row, "new")
+    mult_ret = installation_multiplier(btb_row, "retrofit")
+    if mult_new is None or mult_ret is None:
+        return {"new": round(new_val), "existing": round(existing_val)}, False
+    return {"new": round(new_val + mult_new * retail_change),
+            "existing": round(existing_val + mult_ret * retail_change)}, True
 
 
 def main():
@@ -453,6 +486,8 @@ def main():
 
     diff_rows = []
     for excel_row, (_, row) in enumerate(meas_in_df.iterrows(), start=2):
+        if _BREAKTHROUGH_NAME.search(str(row.get("Name"))):
+            continue
         tier = tier_for_name(row.get("Name"))
         if tier is None:
             continue
@@ -545,17 +580,21 @@ def main():
             cost, used_regression = compute_cost(
                 btb_row, metric_idx, cost_perf)
             cost_note = "" if used_regression else (
-                "BTB regression unavailable for this row; cost is BTB's "
-                "precomputed Mid cost at Typical performance")
-            # Without the regression inputs the cost is only available at
+                "cost is BTB's Mid installed cost at Typical performance")
+            # Without a usable regression the cost is only available at
             # Typical performance, which is wrong for other tiers.
             extra_skip = None
             if cost is not None and not used_regression and \
-                    entry["bound"] != "Typical":
+                    entry["bound"] != "Typical" and cost_perf is not None:
                 extra_skip = (
-                    "BTB cost regression inputs unavailable for this row, "
-                    "so cost cannot be evaluated at this tier's "
-                    "performance; left as-is")
+                    "BTB cost regression not usable for this row, so cost "
+                    "cannot be evaluated at this tier's performance; "
+                    "left as-is")
+            elif cost is not None and not used_regression and \
+                    entry["bound"] == EXISTING_BOUND:
+                extra_skip = (
+                    "kept performance could not be placed on BTB's metric "
+                    "scale, so cost cannot be evaluated at it; left as-is")
             elif cost is not None and \
                     row.get("Cost Units") in PER_CAPACITY_COST_UNITS:
                 capacity = capacity_kbtuh(btb_row)
@@ -575,6 +614,13 @@ def main():
             cost_applies = (tech == owner) if cost_unkeyed else bool(
                 re.search(re.escape(tech) + r"\s*:", cost_cell,
                           re.IGNORECASE))
+            if cost_applies and not row_skip_reason and cost is not None and \
+                    row.get("Cost Units") in COST_UNITS_RELABEL and \
+                    not cost_unkeyed:
+                row_skip_reason = (
+                    f"Cost Units are {row.get('Cost Units')!r} but this row "
+                    "has several technology costs; replacing one with a "
+                    "$2023 BTB cost would mix dollar years; left as-is")
             if cost_applies and row_skip_reason:
                 cost = None
                 diff_rows.append({
@@ -588,23 +634,6 @@ def main():
                     "projection_scenario": entry["projection_scenario"],
                     "projection_year": entry["projection_year"],
                     "notes": row_skip_reason,
-                })
-            elif cost_applies and keep_existing and cost_perf is None and \
-                    metric_idx == 2 and entry["sector"] == "residential":
-                cost = None  # cannot place the kept performance on BTB's scale
-                diff_rows.append({
-                    "Name": row.get("Name"), "technology": tech,
-                    "column": "Installed Cost",
-                    "old_value": cost_cell if cost_unkeyed
-                    else find_value_for_key(cost_cell, tech),
-                    "new_value": "(skipped)",
-                    "btb_technology_id": entry["btb_technology_id"],
-                    "btb_display_name": entry["btb_display_name"],
-                    "projection_scenario": entry["projection_scenario"],
-                    "projection_year": entry["projection_year"],
-                    "notes": "kept performance could not be read or "
-                             "converted to the BTB metric, so cost was "
-                             "not re-evaluated",
                 })
             if cost is not None:
                 if cost_applies:
@@ -658,6 +687,29 @@ def main():
                                 "projection_year": entry["projection_year"],
                                 "notes": cost_note,
                             })
+                            old_units = row.get("Cost Units")
+                            if old_units in COST_UNITS_RELABEL:
+                                new_units = COST_UNITS_RELABEL[old_units]
+                                ws.cell(
+                                    row=excel_row,
+                                    column=col_index["Cost Units"]).value = \
+                                    new_units
+                                diff_rows.append({
+                                    "Name": row.get("Name"),
+                                    "technology": tech,
+                                    "column": "Cost Units",
+                                    "old_value": old_units,
+                                    "new_value": new_units,
+                                    "btb_technology_id":
+                                        entry["btb_technology_id"],
+                                    "btb_display_name":
+                                        entry["btb_display_name"],
+                                    "projection_scenario":
+                                        entry["projection_scenario"],
+                                    "projection_year":
+                                        entry["projection_year"],
+                                    "notes": "BTB costs are $2023",
+                                })
 
             # -- Lifetime --
             lifetime = btb_row.get("Lifetime (Years)")
