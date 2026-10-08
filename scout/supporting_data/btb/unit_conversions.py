@@ -115,11 +115,62 @@ def convert(metric_name, target_unit, value):
         if metric in RATIO_METRICS:
             return value
         if metric in PERCENT_METRICS:
-            return value / 100
+            # Nearly all BTB rows give AFUE on a 0-100 scale, but some
+            # (e.g. oil boilers, Technology ID 8) already use a 0-1 fraction.
+            return value / 100 if value > 1.5 else value
         return None
 
     if metric in DIRECT_PASSTHROUGH_METRICS and \
             DIRECT_PASSTHROUGH_METRICS[metric].lower() == target:
+        return value
+
+    return None
+
+
+def to_btb_metric(metric_name, source_unit, value, btb_scale_ref=None):
+    """Inverse of `convert()`: express a meas_in performance value in the
+    units of a BTB regression metric.
+
+    Used to evaluate BTB's cost regression at a performance level that
+    comes from `meas_in` itself (e.g. an ENERGY STAR or minimum-standard
+    value) rather than from BTB.
+
+    Args:
+        metric_name (str): BTB "Regression metric - Metric" name.
+        source_unit (str): Unit label of the `meas_in` value (e.g. "COP",
+            "AFUE", "UEF").
+        value (float): The `meas_in` performance value.
+        btb_scale_ref (float): A BTB value of the same metric from the same
+            row (e.g. its Typical), used to tell whether that row reports a
+            percent metric on a 0-100 or 0-1 scale.
+
+    Returns:
+        The value in BTB metric units (float), or None if no conversion
+        rule is known.
+    """
+
+    metric = normalize(metric_name)
+    source = normalize(source_unit)
+    if metric is None or source is None:
+        return None
+
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    if source in RATIO_UNIT_LABELS:
+        if metric in BTU_PER_WH_METRICS:
+            return value * BTU_PER_WH_TO_RATIO
+        if metric in RATIO_METRICS:
+            return value
+        if metric in PERCENT_METRICS:
+            fraction_scale = btb_scale_ref is not None and btb_scale_ref <= 1.5
+            return value if fraction_scale else value * 100
+        return None
+
+    if metric in DIRECT_PASSTHROUGH_METRICS and \
+            DIRECT_PASSTHROUGH_METRICS[metric].lower() == source:
         return value
 
     return None

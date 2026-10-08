@@ -24,7 +24,7 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 
-from unit_conversions import convert
+from unit_conversions import convert, to_btb_metric
 
 BASE_DIR = Path(__file__).resolve().parent
 RAW_DIR = BASE_DIR / "raw"
@@ -43,11 +43,12 @@ TIER_KEYWORDS = [
     ("Ref. Case", "Ref. Case"),
 ]
 
-# canonical bound -> BTB regression-metric bound column suffix
-REGRESSION_BOUND_COL = {
-    "Low": "Lower Bound", "Typical": "Typical", "High": "Upper Bound"}
-# canonical bound -> BTB installed-cost column suffix
-COST_BOUND_COL = {"Low": "Low", "Typical": "Mid", "High": "High"}
+# Crosswalk "bound" -> BTB regression-metric column suffix, for tiers whose
+# performance comes from BTB. The special bound "Existing" (Min. Efficiency
+# and ESTAR) instead keeps the performance already in meas_in, which is set
+# by a standard/ENERGY STAR spec rather than by BTB.
+REGRESSION_BOUND_COL = {"Typical": "Typical", "High": "High"}
+EXISTING_BOUND = "Existing"
 
 # Technologies covered by build_tech_crosswalk.py that participate in a
 # shared "heating"/"cooling"/"ventilation" Performance Units key rather
@@ -131,7 +132,7 @@ def find_value_for_key(cell, key):
     keys at all, or None if `key` is not present in a nested cell."""
 
     if not isinstance(cell, str):
-        return None
+        return None if pd.isna(cell) else str(cell)
     if ":" not in cell:
         return cell.strip()
     pattern = re.compile(
@@ -157,6 +158,64 @@ def unit_for_tech(perf_units_cell, tech):
     return None
 
 
+def owner_tech(row):
+    """The one technology an un-keyed cell in this row (a bare value, or a
+    bare "new: X; existing: Y" cost) describes: the Switched-to technology,
+    or the Baseline technology for rows with no switch (e.g. Ref. Case).
+    None if that is not a single technology."""
+
+    for col in ["Switched to Technology", "Baseline Technology"]:
+        val = row.get(col)
+        if isinstance(val, str) and val.strip():
+            parts = [p.strip() for p in val.split(";") if p.strip()]
+            return parts[0] if len(parts) == 1 else None
+    return None
+
+
+_BARE_COST = re.compile(
+    r"\s*new\s*:\s*[^;:]+;\s*existing\s*:\s*[^;:]+", re.IGNORECASE)
+
+
+def is_unkeyed(cell):
+    """True if a meas_in cell holds a single un-keyed value (blank, numeric,
+    plain text, or a bare "new: X; existing: Y" cost) rather than
+    "technology: value" pairs."""
+
+    if not isinstance(cell, str):
+        return True
+    return ":" not in cell or bool(_BARE_COST.fullmatch(cell))
+
+
+# BTB metric names (lowercased) that describe cooling vs. heating output,
+# used to pick the right "cooling:"/"heating:" key when a meas_in cell stores
+# a technology's performance by end use rather than by technology name
+# (e.g. "heating: 2.58; cooling: 4.4" for an ASHP).
+COOLING_METRICS = {
+    "seer", "seer1", "seer2", "eer", "ceer", "ieer", "cooling cop"}
+HEATING_METRICS = {"hspf", "hspf2", "afue", "heating cop"}
+
+
+def perf_key_for_tech(perf_cell, tech, metric_name, owner):
+    """Return the key under which `tech`'s performance is stored in a
+    meas_in Energy Performance cell: the technology name, the end-use key
+    ("heating"/"cooling") implied by the BTB metric, or None if neither is
+    present. A cell with no nesting holds one value, which belongs to `owner`
+    (see owner_tech)."""
+
+    if is_unkeyed(perf_cell):
+        return tech if tech == owner else None
+    flags = re.IGNORECASE
+    if re.search(re.escape(tech) + r"\s*:", perf_cell, flags):
+        return tech
+    metric = metric_name.strip().lower() \
+        if isinstance(metric_name, str) else ""
+    end_use = "cooling" if metric in COOLING_METRICS else \
+        "heating" if metric in HEATING_METRICS else None
+    if end_use and re.search(end_use + r"\s*:", perf_cell, flags):
+        return end_use
+    return None
+
+
 def replace_value_for_key(cell, key, new_value):
     """Substitute the value for `key` in a nested cell (or replace the
     whole cell if it has no nested keys), leaving all other keys/formatting
@@ -164,7 +223,7 @@ def replace_value_for_key(cell, key, new_value):
     a nested cell (caller should not have called this in that case)."""
 
     if not isinstance(cell, str):
-        return cell
+        return new_value
     if ":" not in cell:
         return new_value
     pattern = re.compile(
@@ -176,9 +235,7 @@ def replace_cost_for_key(cell, key, new_cost):
     """Same as replace_value_for_key, but for the "key: new: X; key:
     existing: Y" nesting used by the Installed Cost column."""
 
-    if not isinstance(cell, str):
-        return cell
-    if ":" not in cell:
+    if is_unkeyed(cell):
         # No existing nested cost structure to preserve -- write a fresh
         # "new: X; existing: Y" pair for this (single) technology.
         return f"new: {new_cost['new']}; existing: {new_cost['existing']}"
@@ -246,17 +303,54 @@ def is_zero_cost_placeholder(old_cost):
     return False
 
 
-def compute_cost(btb_row, bound):
-    """Return {"new": ..., "existing": ...} installed cost for a bound."""
+def compute_cost(btb_row, metric_idx=None, perf_value=None):
+    """Return {"new": ..., "existing": ...} installed cost ($2023).
 
-    suffix = COST_BOUND_COL[bound]
-    new_col = f"Typical New Construction Installed Cost ($2023) - {suffix}"
-    existing_col = f"Typical Retrofit Installed Cost ($2023) - {suffix}"
-    new_val = parse_currency(btb_row.get(new_col))
-    existing_val = parse_currency(btb_row.get(existing_col))
+    When BTB's retail-price regression and installation multiplier/adder
+    are available for the row (residential), the cost is evaluated at
+    `perf_value`, a value of regression metric `metric_idx` in BTB units:
+
+        retail = coef1_mid * metric1_typical + coef2_mid * perf_value
+                 + intercept_mid
+        installed = retail * multiplier + adder   (new / retrofit)
+
+    This is how the existing BTB-sourced meas_in costs were built (see the
+    "BTB Key Costs" sheet). Otherwise (commercial rows have no multiplier/
+    adder columns, or the performance metric is not regression metric 2),
+    falls back to BTB's precomputed Mid installed cost, which is evaluated
+    at the Typical performance level.
+
+    Returns:
+        (cost dict or None, True if the regression was used).
+    """
+
+    if metric_idx == 2 and perf_value is not None:
+        names = {
+            "c1": "Regression metric 1 - Coefficient-Mid",
+            "m1": "Regression metric 1 - Typical",
+            "c2": "Regression metric 2 - Coefficient-Mid",
+            "int": "Regression Intercept - Mid",
+            "mult_new": "Installation Multiplier - New Construction",
+            "mult_ret": "Installation Multiplier - Retrofit",
+            "add_new": "Installation Adder - New Construction",
+            "add_ret": "Installation Adder - Retrofit"}
+        vals = {k: parse_currency(btb_row.get(col))
+                for k, col in names.items()}
+        if all(v is not None for v in vals.values()):
+            retail = (vals["c1"] * vals["m1"] + vals["c2"] * perf_value
+                      + vals["int"])
+            return {
+                "new": round(retail * vals["mult_new"] + vals["add_new"]),
+                "existing": round(
+                    retail * vals["mult_ret"] + vals["add_ret"])}, True
+
+    new_val = parse_currency(btb_row.get(
+        "Typical New Construction Installed Cost ($2023) - Mid"))
+    existing_val = parse_currency(btb_row.get(
+        "Typical Retrofit Installed Cost ($2023) - Mid"))
     if new_val is None or existing_val is None:
-        return None
-    return {"new": round(new_val, 2), "existing": round(existing_val, 2)}
+        return None, False
+    return {"new": round(new_val), "existing": round(existing_val)}, False
 
 
 def main():
@@ -292,6 +386,7 @@ def main():
             "Installed Cost": row.get("Installed Cost"),
             "Lifetime": row.get("Lifetime"),
         }
+        owner = owner_tech(row)
         for tech in techs_for_row(row):
             entry = crosswalk_by_tech_tier.get((tech, tier))
             if entry is None:
@@ -301,29 +396,41 @@ def main():
                 continue
 
             # -- Performance --
+            # Ref. Case and Best take performance from BTB (Typical / High).
+            # Min. Efficiency and ESTAR ("Existing" bound) keep the
+            # standard-defined performance already in meas_in; it is only
+            # used below as the point at which cost is evaluated.
             perf_cell = cell_state["Energy Performance"]
             units_cell = row.get("Performance Units")
-            target_unit = unit_for_tech(units_cell, tech)
             metric_idx = None
             for i in (1, 2):
                 if btb_row.get(f"Regression metric {i} - Metric") == \
                         entry["btb_metric_name"]:
                     metric_idx = i
                     break
-            if target_unit and metric_idx:
+            perf_key = perf_key_for_tech(
+                perf_cell, tech, entry["btb_metric_name"], owner)
+            target_unit = (
+                find_value_for_key(units_cell, perf_key) if perf_key
+                else None) or unit_for_tech(units_cell, tech)
+            old_val = find_value_for_key(perf_cell, perf_key) \
+                if perf_key else None
+            keep_existing = entry["bound"] == EXISTING_BOUND
+            cost_perf = None  # performance (BTB units) to evaluate cost at
+            if metric_idx and not keep_existing:
                 raw_val = btb_row.get(
                     f"Regression metric {metric_idx} - "
                     f"{REGRESSION_BOUND_COL[entry['bound']]}")
+                cost_perf = parse_currency(raw_val)
                 converted = convert(
                     entry["btb_metric_name"], target_unit, raw_val) \
-                    if pd.notna(raw_val) else None
-                if converted is not None:
-                    old_val = find_value_for_key(perf_cell, tech)
+                    if target_unit and pd.notna(raw_val) else None
+                if converted is not None and perf_key:
                     new_val_str = f"{converted:.3g}"
                     if old_val != new_val_str:
                         cell_state["Energy Performance"] = \
                             replace_value_for_key(
-                                perf_cell, tech, new_val_str)
+                                perf_cell, perf_key, new_val_str)
                         ws.cell(
                             row=excel_row,
                             column=col_index["Energy Performance"]).value \
@@ -338,16 +445,44 @@ def main():
                                 entry["projection_scenario"],
                             "projection_year": entry["projection_year"],
                         })
+            elif metric_idx and keep_existing and target_unit and old_val:
+                cost_perf = to_btb_metric(
+                    entry["btb_metric_name"], target_unit, old_val,
+                    parse_currency(btb_row.get(
+                        f"Regression metric {metric_idx} - Typical")))
 
             # -- Installed cost --
-            cost = compute_cost(btb_row, entry["bound"])
+            cost, used_regression = compute_cost(
+                btb_row, metric_idx, cost_perf)
+            cost_note = "" if used_regression else (
+                "BTB regression unavailable for this row; cost is BTB's "
+                "precomputed Mid cost at Typical performance")
+            cost_cell = cell_state["Installed Cost"]
+            cost_unkeyed = is_unkeyed(cost_cell)
+            cost_applies = (tech == owner) if cost_unkeyed else bool(
+                re.search(re.escape(tech) + r"\s*:", cost_cell,
+                          re.IGNORECASE))
+            if cost_applies and keep_existing and cost_perf is None and \
+                    metric_idx == 2 and entry["sector"] == "residential":
+                cost = None  # cannot place the kept performance on BTB's scale
+                diff_rows.append({
+                    "Name": row.get("Name"), "technology": tech,
+                    "column": "Installed Cost",
+                    "old_value": cost_cell if cost_unkeyed
+                    else find_value_for_key(cost_cell, tech),
+                    "new_value": "(skipped)",
+                    "btb_technology_id": entry["btb_technology_id"],
+                    "btb_display_name": entry["btb_display_name"],
+                    "projection_scenario": entry["projection_scenario"],
+                    "projection_year": entry["projection_year"],
+                    "notes": "kept performance could not be read or "
+                             "converted to the BTB metric, so cost was "
+                             "not re-evaluated",
+                })
             if cost is not None:
-                cost_cell = cell_state["Installed Cost"]
-                is_nested = isinstance(cost_cell, str) and ":" in cost_cell
-                tech_present = is_nested and re.search(
-                    re.escape(tech) + r"\s*:", cost_cell, re.IGNORECASE)
-                if not is_nested or tech_present:
-                    old_cost = find_value_for_key(cost_cell, tech)
+                if cost_applies:
+                    old_cost = cost_cell if cost_unkeyed \
+                        else find_value_for_key(cost_cell, tech)
                     if is_zero_cost_placeholder(old_cost):
                         diff_rows.append({
                             "Name": row.get("Name"), "technology": tech,
@@ -370,7 +505,13 @@ def main():
                         new_cost_repr = (
                             f"new: {cost['new']}; "
                             f"existing: {cost['existing']}")
-                        if new_full_cost_cell != cost_cell:
+                        same_values = cost_unkeyed and isinstance(
+                            cost_cell, str) and [
+                                float(v) for v in re.findall(
+                                    r"-?\d+\.?\d*", cost_cell)] == [
+                                float(cost["new"]), float(cost["existing"])]
+                        if new_full_cost_cell != cost_cell and \
+                                not same_values:
                             cell_state["Installed Cost"] = new_full_cost_cell
                             ws.cell(
                                 row=excel_row,
@@ -388,19 +529,20 @@ def main():
                                 "projection_scenario":
                                     entry["projection_scenario"],
                                 "projection_year": entry["projection_year"],
+                                "notes": cost_note,
                             })
 
             # -- Lifetime --
             lifetime = btb_row.get("Lifetime (Years)")
             if pd.notna(lifetime):
                 lifetime_cell = cell_state["Lifetime"]
+                life_unkeyed = is_unkeyed(lifetime_cell)
                 old_lifetime = find_value_for_key(lifetime_cell, tech)
                 new_lifetime_str = f"{float(lifetime):.3g}"
                 if old_lifetime != new_lifetime_str and (
-                        not isinstance(lifetime_cell, str)
-                        or ":" not in lifetime_cell
-                        or re.search(re.escape(tech) + r"\s*:",
-                                     lifetime_cell, re.IGNORECASE)):
+                        tech == owner if life_unkeyed
+                        else re.search(re.escape(tech) + r"\s*:",
+                                       lifetime_cell, re.IGNORECASE)):
                     cell_state["Lifetime"] = replace_value_for_key(
                         lifetime_cell, tech, new_lifetime_str)
                     ws.cell(row=excel_row,

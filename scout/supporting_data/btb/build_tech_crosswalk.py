@@ -17,11 +17,11 @@ tech_crosswalk.csv is left untouched unless --refresh is passed.
 
 Each matched Scout technology is expanded into 4 rows, one per meas_in
 efficiency tier (Ref. Case, Min. Efficiency, ESTAR, Best), using a default
-mapping from tier to BTB "Projection Scenario" + regression/cost "bound"
-that the user asked to have proposed here for review rather than trusted
-outright -- see TIER_DEFAULTS below and the README. In particular, note
-that tiers here always draw from the *same* matched BTB Technology ID,
-varying only scenario/bound/year; where BTB has a genuinely distinct
+mapping from tier to BTB "Projection Scenario" + performance "bound" that
+is proposed here for review rather than trusted outright -- see
+TIER_DEFAULTS below and the README. In particular, note that tiers here
+always draw from the *same* matched BTB Technology ID, varying only the
+performance level at which cost is evaluated; where BTB has a genuinely distinct
 higher-efficiency product class (e.g. condensing vs. non-condensing gas
 boilers), this script does not attempt to auto-detect and switch to it --
 such cases surface naturally as ambiguous (multiple candidates) matches
@@ -42,15 +42,20 @@ RAW_DIR = BASE_DIR / "raw"
 XLSX_PATH = BASE_DIR / "bss_meas_v2.xlsx"
 CROSSWALK_PATH = BASE_DIR / "tech_crosswalk.csv"
 
-# meas_in efficiency tier -> default BTB Projection Scenario/year/bound.
-# "bound" uses a canonical Low/Typical/High vocabulary; translated to BTB's
-# actual column-naming (regression metrics use Lower Bound/Typical/Upper
-# Bound, costs use Low/Mid/High) in populate_meas_in_from_btb.py.
+# meas_in efficiency tier -> default BTB scenario/year/performance "bound".
+# Ref. Case and Best take performance from BTB (its Typical and High
+# values); cost is then evaluated from BTB's cost regression at that
+# performance. Min. Efficiency and ESTAR performance is set by a standard or
+# ENERGY STAR spec, so the "Existing" bound keeps the value already in
+# meas_in and only evaluates BTB's cost regression at it. 2023 values are
+# the same across BTB scenarios for nearly all technologies, so Reference is
+# used throughout. See populate_meas_in_from_btb.py.
 TIER_DEFAULTS = {
     "Ref. Case": {"scenario": "Reference", "year": 2023, "bound": "Typical"},
-    "Min. Efficiency": {"scenario": "Reference", "year": 2023, "bound": "Low"},
-    "ESTAR": {"scenario": "Advanced", "year": 2023, "bound": "Typical"},
-    "Best": {"scenario": "Advanced", "year": 2023, "bound": "High"},
+    "Min. Efficiency": {
+        "scenario": "Reference", "year": 2023, "bound": "Existing"},
+    "ESTAR": {"scenario": "Reference", "year": 2023, "bound": "Existing"},
+    "Best": {"scenario": "Reference", "year": 2023, "bound": "High"},
 }
 
 # Whichever meas_in unit label (COP, AFUE, BTU out/BTU in, UEF, ...) a given
