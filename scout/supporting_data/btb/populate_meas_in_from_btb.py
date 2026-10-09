@@ -145,6 +145,7 @@ def relabel_cost_units(units):
 
     return units.replace(units[:4], "2023", 1)
 
+
 # BTB capacity unit (lowercased) -> multiplier to kBtu/h.
 CAPACITY_TO_KBTUH = {
     "tons": 12.0, "kbtu/h": 1.0, "mbh": 1.0, "btu/h": 0.001,
