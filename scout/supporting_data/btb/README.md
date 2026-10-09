@@ -77,7 +77,13 @@ Rows come out flagged `needs_review = True` (and no BTB id filled in) when:
 - More than one BTB row matched (`match_confidence = ambiguous` -- the
   `notes` column lists every candidate found).
 
-Re-running this script only *adds* missing `(technology, tier)` rows --
+A token used by both residential and commercial measures (e.g. `HPWH`) has
+a rule, and so crosswalk rows, for each sector; the populate step picks the
+entry matching the `(R)`/`(C)` prefix of the measure's Name. Tokens that
+only have the other sector's entry are left alone (except those deliberately
+crosswalked across sectors, `CROSS_SECTOR_TECHS`).
+
+Re-running this script only *adds* missing `(technology, sector, tier)` rows --
 existing rows (including ones you've hand-corrected) are left alone. Pass
 `--refresh` to recompute everything from scratch (discards manual edits).
 
@@ -116,8 +122,8 @@ metric 2 is treated as the performance metric.
 **Row guards.** Every row is considered, except breakthrough ("Brk.")
 measures, which are not sourced from BTB. An installed cost is proposed only
 when:
-- the row's `Cost Units` are `2023$/unit`, `2023$/kBtu/h heating|cooling`,
-  or `2022$/unit` (see below);
+- the row's `Cost Units` are `2023$/unit` or `2023$/kBtu/h` of heating,
+  cooling or water heating capacity, or the same in 2022$ (see below);
 - its Cost Source Notes describe no adder or scaling (dual-fuel furnace,
   tank removal, breakthrough half-cost, "switched to" costs, ...);
 - the cost is not a `$0` placeholder (often a cost deliberately shared with
@@ -125,8 +131,8 @@ when:
 
 Per-kBtu/h costs are the whole-unit cost divided by BTB's Typical capacity
 in kBtu/h (the "div capacity" columns of the BTB Key Costs sheet).
-`2022$/unit` rows are only replaced when the cell holds a single cost, and
-their `Cost Units` are then changed to `2023$/unit` (BTB costs are $2023).
+2022$ rows are only replaced when the cell holds a single cost, and
+their `Cost Units` are then changed to 2023$ (BTB costs are $2023).
 Costs that can't be evaluated at the tier's performance (e.g. kept
 performance that can't be converted to the BTB metric) are skipped. Every
 skip is logged in `BTB Diff` with its reason.
