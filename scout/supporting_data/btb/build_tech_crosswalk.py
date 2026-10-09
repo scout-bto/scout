@@ -104,6 +104,7 @@ MATCH_RULES = {
     "general service (LED)": [("residential", ["led a19"], [])],
     # -- Residential Appliances --
     "dishwasher": [("residential", ["dishwasher"], ["connected"])],
+    "HP dryer": [("residential", ["clothes dryer", "heat pump"], [])],
     "electric dryer": [
         ("residential", ["clothes dryer", "electric"],
          ["compact", "connected", "gas", "heat pump"])],
