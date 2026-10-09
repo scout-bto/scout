@@ -12,7 +12,7 @@ entry at all), so matching here is keyword-based against the descriptive
 columns rather than a hard requirement on that column.
 
 This script is meant to be re-run as BTB data updates, but should not
-clobber human edits: any (scout_technology, sector) pair already present in
+clobber human edits: any (scout_technology, sector, tier) row already present in
 tech_crosswalk.csv is left untouched unless --refresh is passed.
 
 Each matched Scout technology is expanded into 4 rows, one per meas_in
@@ -92,9 +92,12 @@ MATCH_RULES = {
     "resistance heat": [
         ("residential", ["furnace", "electric resistance"], [])],
     # -- Residential Water Heating --
+    # "HPWH" is used by both residential and commercial measures; each
+    # sector gets its own crosswalk rows (see build_rows_for_technology).
     "HPWH": [
         ("residential", ["water heater", "hp tank"],
-         ["new circuit", "240v"])],
+         ["new circuit", "240v"]),
+        ("commercial", ["water heater", "heat pump"], [])],
     "elec_water_heater": [
         ("residential", ["water heater", "electric instantaneous"], [])],
     # -- Residential Lighting --
@@ -248,13 +251,27 @@ def performance_metric_for_row(row):
 
 def build_rows_for_technology(scout_tech, rules):
     """Match one Scout technology token against BTB data and expand across
-    all four meas_in efficiency tiers.
+    all four meas_in efficiency tiers, separately for each sector the token
+    has a rule in (the same token can be used by residential and commercial
+    measures).
 
     Returns a list of crosswalk row dicts.
     """
 
+    rows = []
+    for sector in dict.fromkeys(rule[0] for rule in rules):
+        rows.extend(build_rows_for_sector(
+            scout_tech, sector,
+            [rule for rule in rules if rule[0] == sector]))
+    return rows
+
+
+def build_rows_for_sector(scout_tech, sector, rules):
+    """Crosswalk rows (one per tier) for one Scout technology in one
+    sector."""
+
     all_candidates = []
-    for sector, include_kw, exclude_kw in rules:
+    for _, include_kw, exclude_kw in rules:
         df = load_btb(sector)
         cands = find_candidates(df, include_kw, exclude_kw)
         for _, cand in cands.iterrows():
@@ -264,7 +281,7 @@ def build_rows_for_technology(scout_tech, rules):
     if len(all_candidates) == 0:
         for tier in TIER_DEFAULTS:
             rows.append({
-                "scout_technology": scout_tech, "sector": "",
+                "scout_technology": scout_tech, "sector": sector,
                 "tier": tier, "btb_technology_id": "",
                 "btb_display_name": "", "btb_mapping_name": "",
                 "btb_metric_name": "",
@@ -281,7 +298,7 @@ def build_rows_for_technology(scout_tech, rules):
             for sector, cand in all_candidates)
         for tier in TIER_DEFAULTS:
             rows.append({
-                "scout_technology": scout_tech, "sector": "",
+                "scout_technology": scout_tech, "sector": sector,
                 "tier": tier, "btb_technology_id": "",
                 "btb_display_name": "", "btb_mapping_name": "",
                 "btb_metric_name": "",
@@ -293,7 +310,7 @@ def build_rows_for_technology(scout_tech, rules):
             })
         return rows
 
-    sector, cand = all_candidates[0]
+    _, cand = all_candidates[0]
     metric_idx, metric_name = performance_metric_for_row(cand)
     needs_review = metric_name is None
     notes = "" if metric_name is not None else (
@@ -321,7 +338,8 @@ def main(refresh):
     if CROSSWALK_PATH.exists() and not refresh:
         existing = pd.read_csv(CROSSWALK_PATH)
         already_covered = set(
-            zip(existing["scout_technology"], existing["tier"]))
+            zip(existing["scout_technology"], existing["sector"],
+                existing["tier"]))
     else:
         already_covered = set()
 
@@ -336,7 +354,8 @@ def main(refresh):
         rules = MATCH_RULES[scout_tech]
         rows = build_rows_for_technology(scout_tech, rules)
         for row in rows:
-            if (row["scout_technology"], row["tier"]) not in already_covered:
+            if (row["scout_technology"], row["sector"],
+                    row["tier"]) not in already_covered:
                 new_rows.append(row)
 
     if existing is not None:
@@ -346,7 +365,7 @@ def main(refresh):
     else:
         out = pd.DataFrame(new_rows, columns=CROSSWALK_COLUMNS)
 
-    out = out.sort_values(["scout_technology", "tier"]).reset_index(drop=True)
+    out = out.sort_values(["scout_technology", "sector", "tier"]).reset_index(drop=True)
     out.to_csv(CROSSWALK_PATH, index=False)
     n_review = int(out["needs_review"].astype(bool).sum())
     print(f"Wrote {len(out)} rows to {CROSSWALK_PATH} "

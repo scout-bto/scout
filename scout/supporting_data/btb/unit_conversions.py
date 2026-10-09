@@ -57,7 +57,7 @@ BTU_PER_WH_METRICS = {
 # BTB "Regression metric - Metric" names that are already a dimensionless
 # ratio (0-1-ish scale, e.g. a COP) and need no conversion to reach a
 # ratio-labeled target unit.
-RATIO_METRICS = {"heating cop", "cooling cop"}
+RATIO_METRICS = {"cop", "heating cop", "cooling cop"}
 
 # BTB "Regression metric - Metric" names reported as a 0-100 percentage
 # (e.g. AFUE Typical value of 90, meaning 90%) that meas_in instead stores

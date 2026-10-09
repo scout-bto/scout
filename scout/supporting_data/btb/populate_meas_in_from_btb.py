@@ -117,21 +117,33 @@ def tier_for_name(name):
     return None
 
 
-# Cost Units that a BTB installed cost (whole-unit, $2023) can be written
-# into as-is.
-COST_UNITS_OK = {"2023$/unit"}
-
-# Cost Units in an earlier dollar year. BTB costs are $2023, so the cost is
-# only replaced when it is the row's single cost (nothing in the row stays
-# in the old dollar year), and the units cell is updated along with it.
-COST_UNITS_RELABEL = {"2022$/unit": "2023$/unit"}
-
-# Cost Units for costs normalized by the technology's typical capacity.
-# These are produced by dividing the whole-unit $2023 cost by the BTB
+# Cost Units a BTB installed cost can be written into: whole-unit costs
+# ("2023$/unit") or costs per kBtu/h of heating, cooling or water heating
+# capacity, in 2023$ (BTB's dollar year) or 2022$. A 2022$ row is only
+# replaced when it holds a single cost (nothing in the row stays in the old
+# dollar year), and its Cost Units are then relabeled as 2023$.
+# Per-capacity costs are the whole-unit $2023 cost divided by the BTB
 # regression's Typical capacity expressed in kBtu/h (see capacity_kbtuh),
 # as done in the "BTB Key Costs" sheet's "div capacity" columns.
-PER_CAPACITY_COST_UNITS = {
-    "2023$/kBtu/h heating", "2023$/kBtu/h cooling"}
+_COST_UNITS = re.compile(
+    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating))$")
+COST_UNITS_YEARS = {2022, 2023}
+
+
+def cost_units_info(units):
+    """Return (dollar year, is_per_capacity) for a supported Cost Units
+    string, or None if the units are not supported."""
+
+    match = _COST_UNITS.match(units) if isinstance(units, str) else None
+    if not match or int(match.group(1)) not in COST_UNITS_YEARS:
+        return None
+    return int(match.group(1)), match.group(2) != "unit"
+
+
+def relabel_cost_units(units):
+    """The same Cost Units, in 2023$."""
+
+    return units.replace(units[:4], "2023", 1)
 
 # BTB capacity unit (lowercased) -> multiplier to kBtu/h.
 CAPACITY_TO_KBTUH = {
@@ -170,10 +182,10 @@ def cost_skip_reason(row):
     cost, or None if it may be."""
 
     units = row.get("Cost Units")
-    if units not in COST_UNITS_OK | PER_CAPACITY_COST_UNITS | \
-            set(COST_UNITS_RELABEL):
+    if cost_units_info(units) is None:
         return (f"Cost Units are {units!r}, not a whole-unit or "
-                "per-heating/cooling-capacity cost; left as-is")
+                "per-heating/cooling/water-heating-capacity cost; "
+                "left as-is")
     notes = row.get("Cost Source Notes")
     if isinstance(notes, str) and _COMPOSITE_COST_NOTE.search(notes):
         return ("cost notes describe a composite/adjusted cost (adder or "
@@ -489,7 +501,7 @@ def main():
     crosswalk = pd.read_csv(CROSSWALK_PATH)
     crosswalk = crosswalk[~crosswalk["needs_review"].astype(bool)]
     crosswalk_by_tech_tier = {
-        (row["scout_technology"], row["tier"]): row
+        (row["scout_technology"], row["sector"], row["tier"]): row
         for _, row in crosswalk.iterrows()}
 
     meas_in_df = pd.read_excel(XLSX_PATH, sheet_name=SHEET_NAME)
@@ -521,14 +533,18 @@ def main():
         row_sector = sector_for_name(row.get("Name"))
         skip_cost_reason = cost_skip_reason(row)
         for tech in techs_for_row(row):
-            entry = crosswalk_by_tech_tier.get((tech, tier))
+            # Tokens shared by residential and commercial measures (e.g.
+            # "HPWH") have a crosswalk entry per sector. A token with only
+            # the other sector's entry is left alone, unless it is
+            # deliberately crosswalked across sectors.
+            entry = crosswalk_by_tech_tier.get((tech, row_sector, tier))
+            if entry is None and tech in CROSS_SECTOR_TECHS:
+                entry = next(
+                    (crosswalk_by_tech_tier[(tech, sector, tier)]
+                     for sector in ("residential", "commercial")
+                     if (tech, sector, tier) in crosswalk_by_tech_tier),
+                    None)
             if entry is None:
-                continue
-            # Some tokens (e.g. "HPWH") are shared by residential and
-            # commercial measures but crosswalked to one sector's BTB row;
-            # leave rows of the other sector alone.
-            if entry["sector"] != row_sector and \
-                    tech not in CROSS_SECTOR_TECHS:
                 continue
             btb_row = get_btb_row(btb_data, entry)
             if btb_row is None:
@@ -607,6 +623,7 @@ def main():
                         f"Regression metric {metric_idx} - Typical")))
 
             # -- Installed cost --
+            units_info = cost_units_info(row.get("Cost Units"))
             cost, used_regression = compute_cost(
                 btb_row, metric_idx, cost_perf)
             cost_note = "" if used_regression else (
@@ -625,8 +642,7 @@ def main():
                 extra_skip = (
                     "kept performance could not be placed on BTB's metric "
                     "scale, so cost cannot be evaluated at it; left as-is")
-            elif cost is not None and \
-                    row.get("Cost Units") in PER_CAPACITY_COST_UNITS:
+            elif cost is not None and units_info and units_info[1]:
                 capacity = capacity_kbtuh(btb_row)
                 if capacity is None:
                     extra_skip = (
@@ -645,7 +661,7 @@ def main():
                 re.search(re.escape(tech) + r"\s*:", cost_cell,
                           re.IGNORECASE))
             if cost_applies and not row_skip_reason and cost is not None and \
-                    row.get("Cost Units") in COST_UNITS_RELABEL and \
+                    units_info and units_info[0] != 2023 and \
                     not cost_unkeyed:
                 row_skip_reason = (
                     f"Cost Units are {row.get('Cost Units')!r} but this row "
@@ -718,8 +734,8 @@ def main():
                                 "notes": cost_note,
                             })
                             old_units = row.get("Cost Units")
-                            if old_units in COST_UNITS_RELABEL:
-                                new_units = COST_UNITS_RELABEL[old_units]
+                            if units_info and units_info[0] != 2023:
+                                new_units = relabel_cost_units(old_units)
                                 ws.cell(
                                     row=excel_row,
                                     column=col_index["Cost Units"]).value = \
