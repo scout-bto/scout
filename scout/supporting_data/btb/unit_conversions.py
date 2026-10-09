@@ -69,6 +69,7 @@ PERCENT_METRICS = {"afue"}
 # dedicated (non-ratio) unit that BTB and meas_in both use as-is.
 DIRECT_PASSTHROUGH_METRICS = {
     "uef": "UEF", "sef": "UEF", "suef": "UEF", "cef": "CEF",
+    "combined energy factor": "CEF",
     "efficacy": "lm/W",
 }
 
