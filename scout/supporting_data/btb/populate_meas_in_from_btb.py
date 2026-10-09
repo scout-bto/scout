@@ -276,6 +276,20 @@ COOLING_METRICS = {
 HEATING_METRICS = {"hspf", "hspf2", "afue", "heating cop"}
 
 
+def metric_conflicts_with_token(tech, metric_name):
+    """True if `tech` is a heating-only or cooling-only token (suffix "-heat"
+    or "-cool") and the crosswalk's BTB metric is for the other end use.
+
+    BTB often gives one metric for a row that several Scout tokens map to
+    (e.g. only Heating COP for ground source heat pumps), so the metric can't
+    be used as the performance of the token for the other end use."""
+
+    metric = metric_name.strip().lower() \
+        if isinstance(metric_name, str) else ""
+    return (tech.endswith("-cool") and metric in HEATING_METRICS) or \
+        (tech.endswith("-heat") and metric in COOLING_METRICS)
+
+
 def perf_key_for_tech(perf_cell, tech, metric_name, owner):
     """Return the key under which `tech`'s performance is stored in a
     meas_in Energy Performance cell: the technology name, the end-use key
@@ -535,6 +549,8 @@ def main():
                     break
             perf_key = perf_key_for_tech(
                 perf_cell, tech, entry["btb_metric_name"], owner)
+            metric_conflict = metric_conflicts_with_token(
+                tech, entry["btb_metric_name"])
             target_unit = (
                 find_value_for_key(units_cell, perf_key) if perf_key
                 else None) or unit_for_tech(units_cell, tech)
@@ -550,7 +566,20 @@ def main():
                 converted = convert(
                     entry["btb_metric_name"], target_unit, raw_val) \
                     if target_unit and pd.notna(raw_val) else None
-                if converted is not None and perf_key:
+                if metric_conflict and perf_key:
+                    diff_rows.append({
+                        "Name": row.get("Name"), "technology": tech,
+                        "column": "Energy Performance",
+                        "old_value": old_val, "new_value": "(skipped)",
+                        "btb_technology_id": entry["btb_technology_id"],
+                        "btb_display_name": entry["btb_display_name"],
+                        "projection_scenario": entry["projection_scenario"],
+                        "projection_year": entry["projection_year"],
+                        "notes": f"BTB metric {entry['btb_metric_name']!r} "
+                                 "is for the other end use than this token; "
+                                 "performance left as-is",
+                    })
+                elif converted is not None and perf_key:
                     new_val_str = f"{converted:.3g}"
                     if old_val != new_val_str:
                         cell_state["Energy Performance"] = \
@@ -570,7 +599,8 @@ def main():
                                 entry["projection_scenario"],
                             "projection_year": entry["projection_year"],
                         })
-            elif metric_idx and keep_existing and target_unit and old_val:
+            elif metric_idx and keep_existing and target_unit and old_val \
+                    and not metric_conflict:
                 cost_perf = to_btb_metric(
                     entry["btb_metric_name"], target_unit, old_val,
                     parse_currency(btb_row.get(
