@@ -31,8 +31,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "csv")
 TSV_DATA_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 
-# Matches HandyVars.tsv_metrics_data["season days"]["all"] in ecm_prep.py
-WINTER_DAYS = set(range(1, 91)) | set(range(335, 366))
+# Summer matches HandyVars.tsv_metrics_data["season days"]["all"] in
+# ecm_prep.py. Winter is deliberately narrower than ecm_prep's (days 1-90 +
+# 335-365): the full window ends Mar 31, and in warm/western states (AZ, NV,
+# CA, UT) the highest "winter" load then lands at the Mar edge as load ramps
+# toward the cooling season. Most states peak in Jan (a few in Feb), so
+# Dec 1 - Feb 28 captures the typical winter peak.
+WINTER_DAYS = set(range(1, 60)) | set(range(335, 366))
 SUMMER_DAYS = set(range(152, 274))
 
 MAP_DIR = os.path.join(SCRIPT_DIR, "map")
@@ -109,7 +114,7 @@ def _shift_timestamps_to_local(timestamps, shift_hours):
 # 30 days, clipped so winter/summer stay non-overlapping.
 BOUNDARY_CHECK_BUFFER_DAYS = 30
 WINTER_DAYS_EXTENDED = (
-    set(range(1, 91 + BOUNDARY_CHECK_BUFFER_DAYS)) |
+    set(range(1, 60 + BOUNDARY_CHECK_BUFFER_DAYS)) |
     set(range(335 - BOUNDARY_CHECK_BUFFER_DAYS, 366)))
 SUMMER_DAYS_EXTENDED = set(range(
     152 - BOUNDARY_CHECK_BUFFER_DAYS, 274 + BOUNDARY_CHECK_BUFFER_DAYS))

@@ -818,7 +818,7 @@ def plot_peakday_hourly(opts):
 PLOT_EXTRA_BUFFER_DAYS = 30
 _WIDE_BUFFER_DAYS = BOUNDARY_CHECK_BUFFER_DAYS + PLOT_EXTRA_BUFFER_DAYS
 WINTER_DAYS_WIDE = (
-    set(range(1, 91 + _WIDE_BUFFER_DAYS)) |
+    set(range(1, 60 + _WIDE_BUFFER_DAYS)) |
     set(range(335 - _WIDE_BUFFER_DAYS, 366)))
 SUMMER_DAYS_WIDE = set(range(
     152 - _WIDE_BUFFER_DAYS, 274 + _WIDE_BUFFER_DAYS))
@@ -851,11 +851,11 @@ def plot_boundary_trend(opts):
     ]
     # Official window start/end day(s) a still-rising curve would be
     # artificially cut off at (see WINTER_DAYS/SUMMER_DAYS in
-    # compute_peak_days.py). Winter is defined as day 1-90 plus day
+    # compute_peak_days.py). Winter is defined as day 1-59 plus day
     # 335-365, which — on the shifted x-axis below — is one continuous
-    # span from day 335 (x=-30) to day 90 (x=90), so those are its two
+    # span from day 335 (x=-30) to day 59 (x=59), so those are its two
     # edges; summer is a single day 152-273 span.
-    official_edges = {"Winter": [335, 90], "Summer": [152, 273]}
+    official_edges = {"Winter": [335, 59], "Summer": [152, 273]}
 
     for geodesc in ('emm', 'state'):
         try:

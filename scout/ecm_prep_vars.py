@@ -1472,7 +1472,11 @@ class UsefulVars(object):
                     x for x in sum_days if wknd_day_flags[(x - 1)] != 1]
                 sum_days_wknd = [
                     x for x in sum_days if wknd_day_flags[(x - 1)] == 1]
-                # Winter days of year
+                # Winter days of year (Dec 1 - Mar 31). Note: this is wider
+                # than the winter window used to find each region's peak day
+                # (Dec 1 - Feb 28, WINTER_DAYS in supporting_data/tsv_data/
+                # code/compute_peak_days.py), which was narrowed so warm/
+                # western regions' peaks don't land at the Mar edge.
                 wint_days = (list(
                             range(1, 91)) + list(range(335, 366)))
                 wint_days_wkdy = [
