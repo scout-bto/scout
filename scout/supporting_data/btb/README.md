@@ -133,7 +133,10 @@ when:
 
 Per-kBtu/h costs are the whole-unit cost divided by a capacity in kBtu/h:
 - *Heating, cooling, water heating*: BTB's Typical capacity (the "div
-  capacity" columns of the BTB Key Costs sheet).
+  capacity" columns of the BTB Key Costs sheet). The commercial gas storage
+  water heater is described by volume, so it uses the 199 kBtu/h that the
+  Key Costs sheet divides by (cell AG55; Scout assumes about 200 kBtu/h for
+  a typical commercial gas water heater).
 - *Cooking*: BTB's ranges have no capacity, so the range's Combined Idle
   Energy Rate is used (10.35 kBtu/h for the gas range; 1.4 kW = 4.78 kBtu/h
   for the electric range).
@@ -200,8 +203,9 @@ updating the exported `meas_in.csv`.
 
 **Measure-level rows.** Measures whose baseline technology is the
 placeholder `all` have no technology to match on, so the crosswalk has rows
-keyed by the measure's exact `Name` (the residential gas water heater
-measures and the commercial gas/electric range measures). A row with
+keyed by the measure's exact `Name` (the residential and commercial gas
+water heater measures, the commercial gas/electric range measures, and the
+residential reference-case electric range add-ons). A row with
 `measure_type = full service` also changes a zero-cost reference-case
 add-on to a full service measure carrying the BTB cost.
 

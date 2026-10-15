@@ -154,11 +154,11 @@ def relabel_cost_units(units):
     return units.replace(units[:4], "2023", 1)
 
 
-# Capacity in kBtu/h of the typical BTB commercial refrigeration unit, from
-# the EIA "Updated Buildings Sector Appliance and Equipment Costs and
-# Efficiencies" report, Appendix C (2022 typical case; the cooling capacity in
-# the table for each type), used where BTB describes the unit by volume,
-# area or ice output rather than capacity. Keyed by (sector, BTB technology
+# Capacity in kBtu/h of the typical BTB commercial unit where BTB describes
+# it by volume, area or ice output rather than capacity. For refrigeration it
+# comes from the EIA "Updated Buildings Sector Appliance and Equipment Costs
+# and Efficiencies" report, Appendix C (2022 typical case; the cooling
+# capacity in the table for each type). Keyed by (sector, BTB technology
 # ID). Where the BTB typical unit is the same size as EIA's, the capacity is
 # EIA's; for the walk-ins (BTB 112 sq ft vs EIA's 240 sq ft cooler and 161 sq
 # ft freezer) it is scaled by floor area.
@@ -171,6 +171,11 @@ BTB_UNIT_CAPACITY_KBTUH = {
     ("commercial", 30): 4.700,   # beverage merchandiser, 27 ft3 (EIA 27 ft3)
     ("commercial", 18): 4.580,   # ice machine, 700 lb/day (EIA 700 lb/day)
     ("commercial", 31): 1.810,   # vending machine, 35 ft3 (EIA 35 ft3)
+    # Commercial gas storage water heater (BTB: 100 gallons). The capacity
+    # is the 199 kBtu/h that the BTB Key Costs sheet divides its cost by
+    # (cell AG55), close to the 200 kBtu/h typical EIA commercial gas water
+    # heater capacity Scout assumes (ecm_cost_convert.json).
+    ("commercial", 65): 199.0,
 }
 
 # BTB capacity unit (lowercased) -> multiplier to kBtu/h.
