@@ -6,6 +6,7 @@ output files used by Scout. This module restructures those files
 to be consistent with the prior format, as expected by the other
 modules used to convert the AEO data into the format used by Scout.
 """
+import warnings
 import os
 import csv
 from pathlib import Path
@@ -15,6 +16,12 @@ from scout import mseg_techdata as rmt
 from scout.config import AEOInputRegistry as air
 from scout.config import FilePaths as fp
 
+# Silence the specific openpyxl DrawingML warning
+warnings.filterwarnings(
+    "ignore", 
+    message=".*DrawingML support is incomplete.*", 
+    category=UserWarning
+)
 
 class EIAFiles(object):
     """AEO data file reprocessing.
@@ -194,12 +201,14 @@ class EIAFiles(object):
             # names row
             f.write('\t'.join(rmt.r_nlt_l_names) + '\n')
             # data rows
-            for row_num in range(22, 52):
-                f.write(
-                    '\t'.join(
-                        str(rsclass.cell(row=row_num, column=c).value) for c in cols
-                    ) + '\n'
-                )
+            for row_num in range(22, rsclass.max_row + 1):
+                row_data = [rsclass.cell(row=row_num, column=c).value for c in cols]
+                
+                # Stop processing if the row is entirely empty
+                if all(val is None for val in row_data):
+                    break
+                
+                f.write('\t'.join(str(val) for val in row_data) + '\n')
 
     def generate_rsmeqp(self):
         """Construct rsmeqp.txt file from data in combined XLSX file."""
