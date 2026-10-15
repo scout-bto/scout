@@ -39,8 +39,12 @@ TIER_KEYWORDS = [
     # a "Min. Efficiency ESTAR ..." style name meant for a different tier.
     ("Min. Efficiency", "Min. Efficiency"),
     ("ESTAR", "ESTAR"),
+    ("ENERGY STAR", "ESTAR"),
     ("Best", "Best"),
     ("Ref. Case", "Ref. Case"),
+    # Induction ranges are the high-efficiency range option (the existing
+    # cost notes call them "High").
+    ("Induction", "Best"),
 ]
 
 # Crosswalk "bound" -> BTB regression-metric column suffix, for tiers whose
@@ -89,7 +93,9 @@ def normalize_btb(df, sector):
     if sector == "commercial":
         rename.update({
             "Year": "Projection Year", "Scenario": "Projection Scenario"})
-    return df.rename(columns=rename)
+    df = df.rename(columns=rename)
+    df["btb_sector"] = sector
+    return df
 
 
 def load_btb_data():
@@ -128,7 +134,7 @@ def tier_for_name(name):
 # regression's Typical capacity expressed in kBtu/h (see capacity_kbtuh),
 # as done in the "BTB Key Costs" sheet's "div capacity" columns.
 _COST_UNITS = re.compile(
-    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating|cooking))$")
+    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating|cooking|refrigeration))$")
 COST_UNITS_YEARS = {2022, 2023}
 
 
@@ -148,6 +154,25 @@ def relabel_cost_units(units):
     return units.replace(units[:4], "2023", 1)
 
 
+# Capacity in kBtu/h of the typical BTB commercial refrigeration unit, from
+# the EIA "Updated Buildings Sector Appliance and Equipment Costs and
+# Efficiencies" report, Appendix C (2022 typical case; the cooling capacity in
+# the table for each type), used where BTB describes the unit by volume,
+# area or ice output rather than capacity. Keyed by (sector, BTB technology
+# ID). Where the BTB typical unit is the same size as EIA's, the capacity is
+# EIA's; for the walk-ins (BTB 112 sq ft vs EIA's 240 sq ft cooler and 161 sq
+# ft freezer) it is scaled by floor area.
+BTB_UNIT_CAPACITY_KBTUH = {
+    ("commercial", 61): 4.340,   # reach-in freezer, 49 ft3 (EIA 49 ft3)
+    ("commercial", 62): 2.349,   # reach-in refrigerator, 46 ft3 (EIA 46 ft3)
+    ("commercial", 88): 11.850,  # supermarket display case (EIA 12 ft case)
+    ("commercial", 69): 23.500 * 112 / 161,  # walk-in freezer, scaled
+    ("commercial", 70): 41.024 * 112 / 240,  # walk-in cooler, scaled
+    ("commercial", 30): 4.700,   # beverage merchandiser, 27 ft3 (EIA 27 ft3)
+    ("commercial", 18): 4.580,   # ice machine, 700 lb/day (EIA 700 lb/day)
+    ("commercial", 31): 1.810,   # vending machine, 35 ft3 (EIA 35 ft3)
+}
+
 # BTB capacity unit (lowercased) -> multiplier to kBtu/h.
 CAPACITY_TO_KBTUH = {
     "tons": 12.0, "kbtu/h": 1.0, "mbh": 1.0, "btu/h": 0.001,
@@ -155,11 +180,6 @@ CAPACITY_TO_KBTUH = {
 
 # Breakthrough ("Brk.") measures are assumed costs, not taken from BTB.
 _BREAKTHROUGH_NAME = re.compile(r"\bBrk\.?\b", re.IGNORECASE)
-
-# Cooking costs are per kBtu/h of cooking capacity, but BTB gives no cooking
-# capacity for its ranges. The existing commercial range cost notes state
-# the basis used for them (EIA assumes ~2.6 kBtu/h), reused here.
-COOKING_CAPACITY_KBTUH = 2.6
 
 # Cost Source Notes phrases describing a cost built from more than the
 # technology's own BTB cost. These are rebuilt from BTB pieces where
@@ -208,22 +228,19 @@ _VOLTAGE_IN_DESCRIPTION = re.compile(r"120V\s?HP")
 BACKUP_FURNACE_TECH = {"gas": "furnace (NG)", "oil": "furnace (distillate)"}
 
 
-def cost_capacity_kbtuh(units, btb_row):
-    """The capacity in kBtu/h that a per-capacity cost in `units` is divided
-    by: the assumed cooking capacity for cooking costs, otherwise BTB's
-    Typical capacity (None if BTB has no known capacity)."""
-
-    if isinstance(units, str) and units.endswith("kBtu/h cooking"):
-        return COOKING_CAPACITY_KBTUH
-    return capacity_kbtuh(btb_row)
-
-
 def capacity_kbtuh(btb_row):
     """The BTB row's Typical capacity (regression metric 1) in kBtu/h, or
-    None if metric 1 is not a heating/cooling capacity in a known unit."""
+    None if metric 1 is not a capacity in a known unit. The commercial
+    ranges have no cooking capacity, so their Combined Idle Energy Rate
+    (BTU/h for gas, kW for electric) is used. Commercial refrigeration units
+    use the EIA capacities in BTB_UNIT_CAPACITY_KBTUH."""
 
+    key = (btb_row.get("btb_sector"), btb_row.get("tech_id"))
+    if key in BTB_UNIT_CAPACITY_KBTUH:
+        return BTB_UNIT_CAPACITY_KBTUH[key]
     metric = str(btb_row.get("Regression metric 1 - Metric")).lower()
-    if "capacity" not in metric and "heat output" not in metric:
+    if not any(name in metric for name in (
+            "capacity", "heat output", "combined idle energy rate")):
         return None
     factor = CAPACITY_TO_KBTUH.get(
         str(btb_row.get("Regression metric 1 - Unit")).strip().lower())
@@ -654,10 +671,34 @@ def main():
             "Lifetime": row.get("Lifetime"),
         }
         owner = owner_tech(row)
+        type_logged = False
         row_sector = sector_for_name(row.get("Name"))
+        row_techs = techs_for_row(row)
+        row_entries = {
+            t: crosswalk_by_tech_tier.get((t, row_sector, tier))
+            for t in row_techs}
+        if owner is None and is_unkeyed(cell_state["Installed Cost"]) \
+                and is_zero_cost_placeholder(cell_state["Installed Cost"]) \
+                and any(e is not None and entry_value(e, "measure_type")
+                        for e in row_entries.values()):
+            # A zero-cost add-on covering several technologies becomes a
+            # full service measure with a cost entry per technology.
+            cell_state["Installed Cost"] = "; ".join(
+                f"{t}: new: 0; {t}: existing: 0" for t in row_techs
+                if row_entries[t] is not None)
+        cost_keys = [t for t in row_techs if isinstance(
+            cell_state["Installed Cost"], str) and re.search(
+                re.escape(t) + r"\s*:", cell_state["Installed Cost"])]
+        # A keyed cost cell in an earlier dollar year is only updated when
+        # every technology in it has a crosswalk entry, so that all its
+        # costs can move to $2023 together (units are relabeled below).
+        all_keys_mapped = bool(cost_keys) and all(
+            row_entries.get(t) is not None for t in cost_keys)
+        cost_written = set()
+        row_relabeled = False
         skip_cost_reason = cost_skip_reason(row)
         cost_notes = row.get("Cost Source Notes")
-        for tech in techs_for_row(row):
+        for tech in row_techs:
             # Tokens shared by residential and commercial measures (e.g.
             # "HPWH") have a crosswalk entry per sector. A token with only
             # the other sector's entry is left alone, unless it is
@@ -838,8 +879,7 @@ def main():
                         "cost notes describe an adjustment that cannot be "
                         "rebuilt from BTB; left as-is")
                 elif skip_reason is None and units_info and units_info[1]:
-                    capacity = cost_capacity_kbtuh(
-                        row.get("Cost Units"), cost_btb_row)
+                    capacity = capacity_kbtuh(cost_btb_row)
                     if capacity is None:
                         skip_reason = (
                             "Cost Units are per kBtu/h but BTB capacity is "
@@ -862,7 +902,8 @@ def main():
                         cost_note = (cost_note + "; " if cost_note else "") \
                             + extra_note
                 if skip_reason is None and units_info and \
-                        units_info[0] != 2023 and not cost_unkeyed:
+                        units_info[0] != 2023 and not cost_unkeyed and \
+                        not all_keys_mapped:
                     skip_reason = (
                         f"Cost Units are {row.get('Cost Units')!r} but this "
                         "row has several technology costs; replacing one "
@@ -883,6 +924,7 @@ def main():
                         "this row); left as-is"),
                 })
             elif cost is not None and cost_applies:
+                cost_written.add(tech)
                 new_full_cost_cell = replace_cost_for_key(
                     cost_cell, tech, cost)
                 new_cost_repr = (
@@ -908,7 +950,9 @@ def main():
                         "notes": cost_note,
                     })
                 old_units = row.get("Cost Units")
-                if units_info and units_info[0] != 2023 and cost_unkeyed:
+                if units_info and units_info[0] != 2023 and cost_unkeyed \
+                        and not row_relabeled:
+                    row_relabeled = True
                     new_units = relabel_cost_units(old_units)
                     ws.cell(row=excel_row,
                             column=col_index["Cost Units"]).value = new_units
@@ -923,7 +967,9 @@ def main():
                         "notes": "BTB costs are $2023",
                     })
                 old_type = row.get("Measure Type")
-                if new_type and old_type != new_type:
+                if new_type and old_type != new_type and \
+                        not type_logged:
+                    type_logged = True
                     ws.cell(row=excel_row,
                             column=col_index["Measure Type"]).value = new_type
                     diff_rows.append({
@@ -940,6 +986,9 @@ def main():
 
             # -- Lifetime --
             lifetime = btb_row.get("Lifetime (Years)")
+            lifetime_override = entry.get("lifetime_value")
+            if pd.notna(lifetime_override):
+                lifetime = float(lifetime_override)
             if pd.notna(lifetime) and not holds_switched:
                 lifetime_cell = cell_state["Lifetime"]
                 life_unkeyed = is_unkeyed(lifetime_cell)
@@ -967,10 +1016,29 @@ def main():
                         "projection_scenario": entry["projection_scenario"],
                         "projection_year": entry["projection_year"],
                         "notes": (
-                            f"BTB lifetime {new_lifetime_str} not used. "
+                            f"BTB lifetime {btb_row.get('Lifetime (Years)')}"
+                            " not used. "
                             + (entry_value(entry, "notes") or ""))
-                        if keep_lifetime else "",
+                        if keep_lifetime else (
+                            (entry_value(entry, "notes") or "")
+                            if pd.notna(lifetime_override) else ""),
                     })
+
+        old_units = row.get("Cost Units")
+        units_info = cost_units_info(old_units)
+        if cost_keys and cost_written and not row_relabeled and \
+                units_info and units_info[0] != 2023 and all_keys_mapped:
+            new_units = relabel_cost_units(old_units)
+            ws.cell(row=excel_row,
+                    column=col_index["Cost Units"]).value = new_units
+            unwritten = [t for t in cost_keys if t not in cost_written]
+            diff_rows.append({
+                "Name": row.get("Name"), "technology": "",
+                "column": "Cost Units", "old_value": old_units,
+                "new_value": new_units,
+                "notes": "BTB costs are $2023" + (
+                    f"; WARNING: {unwritten} not updated, so the row mixes "
+                    "dollar years" if unwritten else "")})
 
     if "BTB Diff" in wb.sheetnames:
         del wb["BTB Diff"]

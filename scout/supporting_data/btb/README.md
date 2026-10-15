@@ -131,12 +131,29 @@ when:
   measure (see "Measure-level rows");
 - the Cost Source Notes describe nothing that can't be rebuilt from BTB.
 
-Per-kBtu/h costs are the whole-unit cost divided by BTB's Typical capacity
-in kBtu/h (the "div capacity" columns of the BTB Key Costs sheet). BTB gives
-no cooking capacity for ranges, so cooking costs use the 2.6 kBtu/h that the
-existing commercial range cost notes state EIA assumes.
-2022$ rows are only replaced when the cell holds a single cost, and
-their `Cost Units` are then changed to 2023$ (BTB costs are $2023).
+Per-kBtu/h costs are the whole-unit cost divided by a capacity in kBtu/h:
+- *Heating, cooling, water heating*: BTB's Typical capacity (the "div
+  capacity" columns of the BTB Key Costs sheet).
+- *Cooking*: BTB's ranges have no capacity, so the range's Combined Idle
+  Energy Rate is used (10.35 kBtu/h for the gas range; 1.4 kW = 4.78 kBtu/h
+  for the electric range).
+- *Refrigeration*: BTB describes the units by volume, area or ice output, so
+  the capacities come from the EIA report "Updated Buildings Sector Appliance
+  and Equipment Costs and Efficiencies", Appendix C (2022 typical cooling
+  capacity), in `BTB_UNIT_CAPACITY_KBTUH`. Where EIA's typical unit is the
+  same size as BTB's the EIA capacity is used as is (reach-in freezer 49 ft3,
+  4.34 kBtu/h; reach-in refrigerator 46 ft3, 2.349; beverage merchandiser
+  27 ft3, 4.7; vending machine 35 ft3, 1.81; ice machine 700 lb/day, 4.58).
+  Two cases don't correspond and are assumptions: the walk-in freezer and
+  cooler are 112 sq ft in BTB against EIA's 161 sq ft (23.5 kBtu/h) and 240
+  sq ft (41.0 kBtu/h), so their capacities are scaled by floor area (16.35
+  and 19.14 kBtu/h); and BTB's display case (51 ft2 of display area) is
+  paired with EIA's 12 ft case (11.85 kBtu/h) without a size check.
+
+The zero-cost reference-case refrigeration add-on, which covers eight
+technologies in one cost cell, becomes a full service measure with a cost
+entry for each technology.
+
 Costs that can't be evaluated at the tier's performance (e.g. kept
 performance that can't be converted to the BTB metric) are skipped. Every
 skip is logged in `BTB Diff` with its reason.
@@ -148,7 +165,10 @@ Notes:
   or oil (Furnace Oil-Fired) furnace; existing construction = the heat pump
   alone, as the existing backup unit is kept.
 - *Oil-tank removal*: existing construction includes $1,030 (2023$) for tank
-  removal. This comes from the existing notes (2015 EIA report), not BTB.
+  removal when the heat pump fully replaces an oil or propane system. This
+  comes from the existing notes (2015 EIA report), not BTB. It is not
+  counted in the dual-fuel rows above, where the backup furnace is kept and
+  so nothing is removed.
 - *Electric boiler rows* ("switched to elec boiler"): the baseline boiler's
   cost, performance and lifetime entries describe the electric boiler
   switched to, so the cost comes from BTB's electric boiler and the
@@ -159,8 +179,11 @@ Notes:
   whatever the tier (used for the heat pump dryer, whose BTB cost regression
   falls as efficiency rises).
 - `keep_lifetime = yes` leaves the existing lifetime alone (used for the
-  electric dryer, whose BTB lifetime of 22.3 years is judged implausible and
-  flagged as a potential BTB issue).
+  electric dryer, beverage merchandisers and ice machines, whose BTB
+  lifetimes of 22.3, 31 and 21 years are judged implausible and flagged as
+  potential BTB issues).
+- `lifetime_value` uses a given lifetime instead of BTB's (used for
+  induction ranges: 11 years like the electric range, instead of BTB's 17).
 
 **Other rules.** Commercial rows that represent a residential-type furnace
 in a commercial setting (their cost notes say "residential furnaces") use the
@@ -208,25 +231,27 @@ row where this fires, since it's a heuristic, not a certainty.
 
 ## Known issues in the BTB data
 
-Places where the BTB data look wrong and the pipeline departs from them.
-Each is marked where it applies: a note on the `tech_crosswalk.csv` rows,
-and a note in the `BTB Diff` sheet on the affected cell. Use this section
-as the evidence if they are reported to the BTB authors (see the
-documentation, `btb_doc.pdf`; dataset: data.openei.org/submissions/8342).
+A running list of places where the BTB data look wrong and the pipeline
+departs from them, to be sent to the BTB team for review once the work is
+done (see `btb_doc.pdf` for the authors; dataset:
+data.openei.org/submissions/8342). Each is marked where it applies: a note on
+the `tech_crosswalk.csv` rows, and a note in the `BTB Diff` sheet on the
+affected cell. Add new issues here as they come up.
 
-Flagged in review (existing value kept or BTB value overridden):
+Flagged in review (decision taken):
 
 | BTB entry | What is wrong | What we do |
 |---|---|---|
 | Clothes Dryer Electric (residential ID 14) | Lifetime 22.33 years, implausibly long | Keep the existing 13 (`keep_lifetime = yes`) |
 | Clothes Dryer Heat Pump (residential ID 17) | The CEF cost coefficient is negative (-4.67), so cost falls as efficiency rises: Typical (CEF 5.45) is $1,595 but BTB's High (CEF 11) would be $1,569 | Use the Typical cost for every tier (`cost_at = Typical`) |
+| Beverage Merchandisers - Standard (commercial ID 30) | Lifetime 31 years; the existing value is 10, and EIA's Appendix C gives 10 | Keep the existing 10 (`keep_lifetime = yes`) |
+| Commercial Ice Machine Standard (commercial ID 18) | Lifetime 21 years; the existing value is 10, and EIA's Appendix C gives 8.5 | Keep the existing 10 (`keep_lifetime = yes`) |
+| Cooking Range Electric / Gas / Induction (residential IDs 27 / 28 / 29) | Lifetimes 11 / 15 / 17 years. Gas matches EIA (15) but electric differs from EIA (17), and induction lasting longer than an electric resistance range is not credible | Use 11 for electric (BTB's value) and for induction (`lifetime_value = 11`) |
 
 Observed while building the pipeline, not yet reviewed:
 
 | BTB entry | Observation |
 |---|---|
-| Beverage Merchandisers - Standard (commercial ID 30) | Lifetime 31 years (existing value 10) |
-| Commercial Ice Machine Standard (commercial ID 18) | Lifetime 21 years (existing value 10) |
 | Boiler Oil (residential ID 8) | The precomputed retail price ($3,767) differs from the price its own regression gives ($3,982); installed costs follow the former |
 | Commercial Ground Source Heat Pump (commercial ID 10) | Its Notes say "There is no available efficiency data" and "Typical retail price refers to the total installed cost"; only Heating COP is given |
 
