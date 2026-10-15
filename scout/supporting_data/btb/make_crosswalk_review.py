@@ -34,39 +34,30 @@ FLAGS = {
         "Also used by commercial heat pump rows, which are skipped today "
         "(their costs are the residential system cost / 36 kBtu/h). "
         "Apply this entry to them?"),
-    ("GSHP", "residential"): (
-        "Also used by a commercial row; same question as ASHP."),
     ("rooftop_ASHP-cool", "commercial"): (
         "Same BTB row (RTU heat pump, IEER) for cool and heat. Is one row "
         "correct for both?"),
     ("rooftop_ASHP-heat", "commercial"): (
         "Same BTB row as rooftop_ASHP-cool. IEER is a cooling metric, so "
         "heating performance is not updated from BTB."),
-    ("pkg_terminal_HP-cool", "commercial"): (
-        "BTB packaged terminal entry (no EIA values existed). One BTB row "
-        "(EER) serves both cool and heat."),
-    ("pkg_terminal_HP-heat", "commercial"): (
-        "BTB metric is EER (cooling), so heating performance is not "
-        "updated from BTB."),
     ("comm_GSHP-cool", "commercial"): (
         "BTB has only Heating COP for this technology: cooling performance "
         "stays manual. Acceptable?"),
     ("comm_GSHP-heat", "commercial"): (
         "Same BTB row as comm_GSHP-cool (Heating COP only; cooling "
         "capacity is the size metric)."),
+    ("Commercial Walk-In Freezers", "commercial"): (
+        "Refrigeration cost per kBtu/h uses EIA's capacity (23.5 kBtu/h, "
+        "161 sq ft) scaled to BTB's 112 sq ft = 16.35 kBtu/h. Right?"),
+    ("Commercial Walk-In Refrigerators", "commercial"): (
+        "Refrigeration cost per kBtu/h uses EIA's capacity (41.0 kBtu/h, "
+        "240 sq ft) scaled to BTB's 112 sq ft = 19.14 kBtu/h. Right?"),
+    ("Commercial Supermarket Display Cases", "commercial"): (
+        "BTB gives 51 ft2 display area; EIA's 12 ft case (11.85 kBtu/h) "
+        "is used without a size check. Do they correspond?"),
     ("elec_boiler", "commercial"): (
         "Chose BTB 'Boiler - Electric Hot Water' over 'Electric Steam'. "
         "Right?"),
-    ("electric_res-heat", "residential"): (
-        "From the review list (Furnace Electric Resistance, used by "
-        "commercial rows). The manual cost (64 $/kBtu/h) was the "
-        "commercial unit heater; this gives 44."),
-    ("res_type_gasHP-cool", "residential"): (
-        "From the review list (Heat Pump Gas-fired, used by commercial "
-        "rows). The manual cost (317 $/kBtu/h) was the engine-driven gas "
-        "RTAC; this gives 266."),
-    ("res_type_gasHP-heat", "residential"): (
-        "Same as res_type_gasHP-cool."),
     ("res_type_central_AC", "residential"): (
         "Deliberately mapped to the residential central AC for commercial "
         "rows. Confirm."),
@@ -76,16 +67,6 @@ FLAGS = {
     ("induction", "residential"): (
         "BTB metric is Volume (not a performance metric): costs cannot "
         "move with performance."),
-    ("(C) Ref. Case Gas Range", "commercial"): (
-        "Zero-cost add-on becomes full service with the BTB range cost, "
-        "per kBtu/h cooking using the 2.6 kBtu/h assumed by EIA (stated "
-        "for the electric range). Right for gas too?"),
-    ("(C) Ref. Case Electric Range", "commercial"): (
-        "Zero-cost add-on becomes full service; cost per kBtu/h cooking "
-        "using 2.6 kBtu/h."),
-    ("(C) Ref. Case Electric Range TS", "commercial"): (
-        "Zero-cost add-on becomes full service; cost per kBtu/h cooking "
-        "using 2.6 kBtu/h."),
 }
 
 COLUMN_WIDTHS = [26, 12, 10, 38, 38, 22, 10, 12, 36, 70, 14, 22, 40]
