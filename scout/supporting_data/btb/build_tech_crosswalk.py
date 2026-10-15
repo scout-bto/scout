@@ -64,12 +64,49 @@ TIER_DEFAULTS = {
 # just records which BTB regression metric would supply the performance
 # value, and leaves the convertibility check (see unit_conversions.py) to
 # the populate step.
+#
+# Two optional columns override the default handling for a row:
+# - cost_at: "Typical" evaluates the cost at BTB's Typical performance
+#   whatever the tier's performance is (used where BTB's cost regression is
+#   not trusted at the tier's performance).
+# - keep_lifetime: "yes" leaves the measure's existing lifetime alone (used
+#   where BTB's lifetime is judged implausible).
+# - measure_type: the Measure Type ("full service") to set on the measure
+#   when its BTB cost is written, for reference-case measures that were
+#   entered as zero-cost add-ons.
 CROSSWALK_COLUMNS = [
     "scout_technology", "sector", "tier", "btb_technology_id",
     "btb_display_name", "btb_mapping_name", "btb_metric_name",
     "projection_scenario", "projection_year", "bound", "match_confidence",
-    "needs_review", "notes",
+    "needs_review", "notes", "cost_at", "measure_type", "keep_lifetime",
 ]
+
+# scout_technology -> value of the keep_lifetime column for its rows.
+KEEP_LIFETIME = {
+    # BTB's electric dryer lifetime is 22.3 years, implausibly long; keep the
+    # existing 13 and treat it as a potential issue with the BTB data.
+    "electric dryer": "yes",
+}
+
+# scout_technology -> note recorded on its crosswalk rows, explaining a
+# decision to depart from BTB. Also shown in populate_meas_in_from_btb.py's
+# BTB Diff sheet where the override applies.
+TECH_NOTES = {
+    "electric dryer": (
+        "Potential BTB issue: BTB lifetime (22.3 y) is implausibly long; "
+        "existing lifetime kept"),
+    "HP dryer": (
+        "Potential BTB issue: BTB cost regression has a negative slope on "
+        "CEF (Best would cost less than Typical); cost evaluated at BTB "
+        "Typical for every tier"),
+}
+
+# scout_technology -> value of the cost_at column for its rows.
+COST_AT = {
+    # BTB's HP dryer cost regression falls as efficiency rises, which is
+    # not credible; use the Typical cost for every tier.
+    "HP dryer": "Typical",
+}
 
 # Rule table: scout_technology -> matching rule(s). Each rule is matched
 # against a lowercased concatenation of Display Name / Component /
@@ -83,6 +120,8 @@ MATCH_RULES = {
     "ASHP": [("residential", ["air source heat pump"], ["new circuit"])],
     "GSHP": [("residential", ["ground source heat pump"], [])],
     "boiler (distillate)": [("residential", ["boiler", "oil"], ["gas"])],
+    "boiler (NG)": [("residential", ["boilers gas (condensing)"], [])],
+    "NGHP": [("residential", ["heat pump gas-fired"], [])],
     "furnace (NG)": [
         ("residential", ["furnace", "gas"], ["air conditioner"])],
     "furnace (distillate)": [("residential", ["furnace", "oil"], [])],
@@ -105,6 +144,9 @@ MATCH_RULES = {
     # -- Residential Appliances --
     "dishwasher": [("residential", ["dishwasher"], ["connected"])],
     "HP dryer": [("residential", ["clothes dryer", "heat pump"], [])],
+    "dehumidifier": [("residential", ["dehumidifier portable"], [])],
+    "pool pumps": [("residential", ["pool pumps typical"], [])],
+    "stove (wood)": [("residential", ["wood pellet stove"], [])],
     "electric dryer": [
         ("residential", ["clothes dryer", "electric"],
          ["compact", "connected", "gas", "heat pump"])],
@@ -120,6 +162,17 @@ MATCH_RULES = {
         ("commercial", ["electric rooftop unit"], ["heat pump", "gas heat"])],
     "res_type_central_AC": [
         ("residential", ["central air conditioner"], ["furnace"])],
+    # Tokens used by commercial measures but deliberately crosswalked to a
+    # residential BTB entry (see CROSS_SECTOR_TECHS in
+    # populate_meas_in_from_btb.py).
+    "res_type_gasHP-cool": [
+        ("residential", ["heat pump gas-fired"], [])],
+    "res_type_gasHP-heat": [
+        ("residential", ["heat pump gas-fired"], [])],
+    "electric_res-heat": [
+        ("residential", ["furnace", "electric resistance"], [])],
+    "wall-window_room_AC": [
+        ("residential", ["room air conditioner"], ["connected"])],
     "comm_GSHP-cool": [
         ("commercial", ["ground source heat pump"], [])],
     "comm_GSHP-heat": [
@@ -184,6 +237,27 @@ MATCH_RULES = {
 }
 
 
+# Measure-level rules for measures whose Baseline Technology is the
+# placeholder "all" (so there is no technology token to match on):
+# measure Name -> (sector, include keywords, exclude keywords, measure type
+# to set when the BTB cost is written, or None). One crosswalk row is made
+# per measure, for the tier given by its Name.
+MEASURE_RULES = {
+    "(R) Ref. Case Gas WH": (
+        "residential", ["water heater gas storage"], [], None),
+    "(R) Best Gas WH": (
+        "residential", ["water heater gas storage"], [], None),
+    # Reference-case cooking measures entered as zero-cost add-ons become
+    # full service measures carrying the BTB range cost.
+    "(C) Ref. Case Gas Range": (
+        "commercial", ["natural gas range", "griddle"], [], "full service"),
+    "(C) Ref. Case Electric Range": (
+        "commercial", ["electric range", "griddle"], [], "full service"),
+    "(C) Ref. Case Electric Range TS": (
+        "commercial", ["electric range", "griddle"], [], "full service"),
+}
+
+
 def load_btb(sector):
     """Load a BTB CSV and return it with a normalized 'search_text' column.
 
@@ -221,6 +295,15 @@ def find_candidates(df, include_kw, exclude_kw):
         and not any(kw in t for kw in exclude_kw))
     matched = df[mask].dropna(subset=["tech_id"])
     return matched.drop_duplicates(subset=["tech_id"])
+
+
+def tier_for_name(name):
+    """The meas_in efficiency tier named in a measure's Name."""
+
+    for keyword in ["Min. Efficiency", "ESTAR", "Best", "Ref. Case"]:
+        if keyword in name:
+            return keyword
+    return None
 
 
 def scout_technologies_in_use(xlsx_path):
@@ -355,8 +438,22 @@ def main(refresh):
         rules = MATCH_RULES[scout_tech]
         rows = build_rows_for_technology(scout_tech, rules)
         for row in rows:
+            row["cost_at"] = COST_AT.get(scout_tech)
+            row["keep_lifetime"] = KEEP_LIFETIME.get(scout_tech)
+            if scout_tech in TECH_NOTES:
+                row["notes"] = TECH_NOTES[scout_tech]
             if (row["scout_technology"], row["sector"],
                     row["tier"]) not in already_covered:
+                new_rows.append(row)
+
+    for name, (sector, include_kw, exclude_kw, meas_type) in \
+            MEASURE_RULES.items():
+        tier = tier_for_name(name)
+        for row in build_rows_for_sector(
+                name, sector, [(sector, include_kw, exclude_kw)]):
+            if row["tier"] == tier and (
+                    name, sector, tier) not in already_covered:
+                row["measure_type"] = meas_type
                 new_rows.append(row)
 
     if existing is not None:

@@ -53,7 +53,9 @@ EXISTING_BOUND = "Existing"
 # Technologies deliberately crosswalked to the other sector's BTB data
 # (commercial measures using residential-type equipment), exempt from the
 # row-sector check in main().
-CROSS_SECTOR_TECHS = {"res_type_central_AC"}
+CROSS_SECTOR_TECHS = {
+    "res_type_central_AC", "res_type_gasHP-cool", "res_type_gasHP-heat",
+    "electric_res-heat", "wall-window_room_AC"}
 
 # Technologies covered by build_tech_crosswalk.py that participate in a
 # shared "heating"/"cooling"/"ventilation" Performance Units key rather
@@ -126,7 +128,7 @@ def tier_for_name(name):
 # regression's Typical capacity expressed in kBtu/h (see capacity_kbtuh),
 # as done in the "BTB Key Costs" sheet's "div capacity" columns.
 _COST_UNITS = re.compile(
-    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating))$")
+    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating|cooking))$")
 COST_UNITS_YEARS = {2022, 2023}
 
 
@@ -154,13 +156,66 @@ CAPACITY_TO_KBTUH = {
 # Breakthrough ("Brk.") measures are assumed costs, not taken from BTB.
 _BREAKTHROUGH_NAME = re.compile(r"\bBrk\.?\b", re.IGNORECASE)
 
-# Phrases in a row's Cost Source Notes showing its installed cost is not a
-# plain BTB cost for the technology (adders such as a typical furnace for
-# dual-fuel heat pumps, oil-tank removal, a scaled breakthrough cost, a cost
-# for the technology switched to but keyed under the baseline's name, ...).
-_COMPOSITE_COST_NOTE = re.compile(
-    r"also add|tank removal|half the cost|halve|secondary heater|paired"
-    r"|drilling|switched to", re.IGNORECASE)
+# Cooking costs are per kBtu/h of cooking capacity, but BTB gives no cooking
+# capacity for its ranges. The existing commercial range cost notes state
+# the basis used for them (EIA assumes ~2.6 kBtu/h), reused here.
+COOKING_CAPACITY_KBTUH = 2.6
+
+# Cost Source Notes phrases describing a cost built from more than the
+# technology's own BTB cost. These are rebuilt from BTB pieces where
+# possible (see composite_adjustment).
+_ALSO_ADD_FURNACE = re.compile(
+    r"also add retail cost of typical (gas|oil) furnace", re.IGNORECASE)
+_TANK_REMOVAL = re.compile(r"tank removal", re.IGNORECASE)
+_ELEC_BOILER_COST = re.compile(
+    r"switched to elec boiler|commercial electric boiler unit",
+    re.IGNORECASE)
+_UNHANDLED_COMPOSITE = re.compile(
+    r"half the cost|halve|add retail|also add", re.IGNORECASE)
+
+# Oil-tank removal added to existing-construction costs when distillate or
+# propane equipment is replaced (800 2014$ = 1030 2023$ per the 2015 EIA
+# report cited in the existing cost notes). Not a BTB value.
+TANK_REMOVAL_COST = 1030
+
+# Technologies whose cost entry, in the rows described by _ELEC_BOILER_COST,
+# holds the cost of the electric boiler switched to.
+BOILER_COST_KEYS = {"gas_boiler", "oil_boiler", "boiler (NG)",
+                    "boiler (distillate)"}
+
+# Commercial rows representing a residential-type furnace in a commercial
+# setting say so in their cost notes; the commercial furnace tokens then take
+# the residential furnace's BTB entry (cost, performance and lifetime).
+_RESIDENTIAL_FURNACE_NOTE = re.compile(r"residential furnaces", re.IGNORECASE)
+RESIDENTIAL_FURNACE_ALIAS = {
+    "oil_furnace": "furnace (distillate)", "gas_furnace": "furnace (NG)"}
+
+# Edits to specific measures requested in review, applied to the proposed
+# workbook and logged in the BTB Diff sheet: old measure Name -> new Name
+# (optional) and cell values for other columns. Descriptions have "120V"
+# dropped from "120V HP" wherever the Name is changed this way.
+MEASURE_EDITS = {
+    # No 120V heat pump dryers are on the market. The fuel switch installs
+    # a 240V circuit for the new load.
+    "(R) Best 120V HP Dryer FS": {
+        "Name": "(R) Best HP Dryer FS",
+        "Electrical Upgrade Costs": "panel: false; 240V circuit: true"},
+    "(R) Best 120V HP Dryer TS": {"Name": "(R) Best HP Dryer TS"},
+}
+_VOLTAGE_IN_DESCRIPTION = re.compile(r"120V\s?HP")
+
+# Scout furnace token whose BTB cost is added for a dual-fuel backup.
+BACKUP_FURNACE_TECH = {"gas": "furnace (NG)", "oil": "furnace (distillate)"}
+
+
+def cost_capacity_kbtuh(units, btb_row):
+    """The capacity in kBtu/h that a per-capacity cost in `units` is divided
+    by: the assumed cooking capacity for cooking costs, otherwise BTB's
+    Typical capacity (None if BTB has no known capacity)."""
+
+    if isinstance(units, str) and units.endswith("kBtu/h cooking"):
+        return COOKING_CAPACITY_KBTUH
+    return capacity_kbtuh(btb_row)
 
 
 def capacity_kbtuh(btb_row):
@@ -185,13 +240,54 @@ def cost_skip_reason(row):
     units = row.get("Cost Units")
     if cost_units_info(units) is None:
         return (f"Cost Units are {units!r}, not a whole-unit or "
-                "per-heating/cooling/water-heating-capacity cost; "
+                "per-heating/cooling/water-heating/cooking-capacity cost; "
                 "left as-is")
-    notes = row.get("Cost Source Notes")
-    if isinstance(notes, str) and _COMPOSITE_COST_NOTE.search(notes):
-        return ("cost notes describe a composite/adjusted cost (adder or "
-                "scaling); left as-is")
     return None
+
+
+def composite_adjustment(notes, sector, crosswalk, btb_data):
+    """Amounts to add to a technology's BTB cost to rebuild a composite cost
+    described by the row's Cost Source Notes.
+
+    - "also add retail cost of typical gas/oil furnace" (dual-fuel heat
+      pump): the new-construction cost also includes the backup furnace's BTB
+      cost; existing construction keeps the existing backup unit, so is the
+      heat pump alone.
+    - "tank removal": existing-construction cost includes oil-tank removal.
+
+    Returns:
+        ({"new": x, "existing": y}, note) or None if the notes describe an
+        adjustment that cannot be rebuilt from BTB.
+    """
+
+    none = {"new": 0, "existing": 0}
+    if not isinstance(notes, str):
+        return none, ""
+    match = _ALSO_ADD_FURNACE.search(notes)
+    if match:
+        fuel = match.group(1).lower()
+        entry = crosswalk.get((BACKUP_FURNACE_TECH[fuel], sector, "Ref. Case"))
+        btb_row = get_btb_row(btb_data, entry) if entry is not None else None
+        furnace = compute_cost(btb_row)[0] if btb_row is not None else None
+        if furnace is None:
+            return None
+        return ({"new": furnace["new"], "existing": 0},
+                f"new construction includes the BTB typical {fuel} furnace "
+                f"(${furnace['new']}); existing keeps the existing backup")
+    if _TANK_REMOVAL.search(notes):
+        return ({"new": 0, "existing": TANK_REMOVAL_COST},
+                f"existing includes ${TANK_REMOVAL_COST} oil-tank removal "
+                "(from the existing notes, not BTB)")
+    if _UNHANDLED_COMPOSITE.search(notes):
+        return None
+    return none, ""
+
+
+def entry_value(entry, column):
+    """A crosswalk entry's value for an optional text column, or None."""
+
+    value = entry.get(column)
+    return value if isinstance(value, str) and value else None
 
 
 def sector_for_name(name):
@@ -255,12 +351,13 @@ def unit_for_tech(perf_units_cell, tech):
 def owner_tech(row):
     """The one technology an un-keyed cell in this row (a bare value, or a
     bare "new: X; existing: Y" cost) describes: the Switched-to technology,
-    or the Baseline technology for rows with no switch (e.g. Ref. Case).
-    None if that is not a single technology."""
+    or the Baseline technology for rows with no switch (e.g. Ref. Case) or
+    that switch to "same" (the technology is unchanged). None if that is not
+    a single technology."""
 
     for col in ["Switched to Technology", "Baseline Technology"]:
         val = row.get(col)
-        if isinstance(val, str) and val.strip():
+        if isinstance(val, str) and val.strip() and val.strip() != "same":
             parts = [p.strip() for p in val.split(";") if p.strip()]
             return parts[0] if len(parts) == 1 else None
     return None
@@ -495,6 +592,28 @@ def compute_cost(btb_row, metric_idx=None, perf_value=None):
             "existing": round(existing_val + mult_ret * retail_change)}, True
 
 
+def apply_measure_edits(row, edits, ws, excel_row, col_index, diff_rows):
+    """Apply the MEASURE_EDITS for one measure to the workbook, log each in
+    `diff_rows`, and return the row with the edited values."""
+
+    row = row.copy()
+    edits = dict(edits)
+    if "Name" in edits and isinstance(row.get("Description"), str):
+        edits["Description"] = _VOLTAGE_IN_DESCRIPTION.sub(
+            "HP", row["Description"])
+    for column, new_value in edits.items():
+        old_value = row.get(column)
+        if old_value == new_value:
+            continue
+        ws.cell(row=excel_row, column=col_index[column]).value = new_value
+        diff_rows.append({
+            "Name": row.get("Name"), "technology": "", "column": column,
+            "old_value": old_value, "new_value": new_value,
+            "notes": "edit requested in review (not from BTB)"})
+        row[column] = new_value
+    return row
+
+
 def main():
     """Build the BTB-proposed workbook and diff sheet."""
 
@@ -515,6 +634,10 @@ def main():
     for excel_row, (_, row) in enumerate(meas_in_df.iterrows(), start=2):
         if _BREAKTHROUGH_NAME.search(str(row.get("Name"))):
             continue
+        edits = MEASURE_EDITS.get(row.get("Name"))
+        if edits:
+            row = apply_measure_edits(
+                row, edits, ws, excel_row, col_index, diff_rows)
         tier = tier_for_name(row.get("Name"))
         if tier is None:
             continue
@@ -533,6 +656,7 @@ def main():
         owner = owner_tech(row)
         row_sector = sector_for_name(row.get("Name"))
         skip_cost_reason = cost_skip_reason(row)
+        cost_notes = row.get("Cost Source Notes")
         for tech in techs_for_row(row):
             # Tokens shared by residential and commercial measures (e.g.
             # "HPWH") have a crosswalk entry per sector. A token with only
@@ -545,11 +669,34 @@ def main():
                      for sector in ("residential", "commercial")
                      if (tech, sector, tier) in crosswalk_by_tech_tier),
                     None)
+            if entry is None and tech == "all":
+                # Measures with no technology token (baseline "all") are
+                # crosswalked by measure name.
+                entry = crosswalk_by_tech_tier.get(
+                    (row.get("Name"), row_sector, tier))
             if entry is None:
                 continue
+            if tech in RESIDENTIAL_FURNACE_ALIAS and isinstance(
+                    cost_notes, str) and _RESIDENTIAL_FURNACE_NOTE.search(
+                        cost_notes):
+                entry = crosswalk_by_tech_tier.get(
+                    (RESIDENTIAL_FURNACE_ALIAS[tech], "residential", tier),
+                    entry)
+            if tech == owner == "resistance heat" and isinstance(
+                    cost_notes, str) and _ELEC_BOILER_COST.search(cost_notes):
+                # "resistance heat" here is the commercial electric boiler
+                # named in the cost notes, not a resistance furnace.
+                entry = crosswalk_by_tech_tier.get(
+                    ("elec_boiler", "commercial", tier), entry)
             btb_row = get_btb_row(btb_data, entry)
             if btb_row is None:
                 continue
+            # In electric boiler rows the baseline boiler's entries hold
+            # the values of the electric boiler switched to: take the cost
+            # from the electric boiler's BTB row (below) and leave
+            # performance and lifetime alone.
+            holds_switched = tech in BOILER_COST_KEYS and isinstance(
+                cost_notes, str) and bool(_ELEC_BOILER_COST.search(cost_notes))
 
             # -- Performance --
             # Ref. Case and Best take performance from BTB (Typical / High).
@@ -564,7 +711,7 @@ def main():
                         entry["btb_metric_name"]:
                     metric_idx = i
                     break
-            perf_key = perf_key_for_tech(
+            perf_key = None if holds_switched else perf_key_for_tech(
                 perf_cell, tech, entry["btb_metric_name"], owner)
             metric_conflict = metric_conflicts_with_token(
                 tech, entry["btb_metric_name"])
@@ -625,164 +772,204 @@ def main():
 
             # -- Installed cost --
             units_info = cost_units_info(row.get("Cost Units"))
+            cost_btb_row, cost_metric_idx, cost_perf_value = \
+                btb_row, metric_idx, cost_perf
+            if entry_value(entry, "cost_at") == "Typical" and metric_idx:
+                cost_perf_value = parse_currency(btb_row.get(
+                    f"Regression metric {metric_idx} - Typical"))
+            if holds_switched:
+                boiler_entry = crosswalk_by_tech_tier.get(
+                    ("elec_boiler", "commercial", tier))
+                boiler_row = get_btb_row(btb_data, boiler_entry) \
+                    if boiler_entry is not None else None
+                if boiler_row is not None:
+                    cost_btb_row, cost_metric_idx, cost_perf_value = \
+                        boiler_row, None, None
             cost, used_regression = compute_cost(
-                btb_row, metric_idx, cost_perf)
+                cost_btb_row, cost_metric_idx, cost_perf_value)
             cost_note = "" if used_regression else (
                 "cost is BTB's Mid installed cost at Typical performance")
-            # Without a usable regression the cost is only available at
-            # Typical performance, which is wrong for other tiers.
-            extra_skip = None
-            if cost is not None and not used_regression and \
-                    entry["bound"] != "Typical" and cost_perf is not None:
-                extra_skip = (
-                    "BTB cost regression not usable for this row, so cost "
-                    "cannot be evaluated at this tier's performance; "
-                    "left as-is")
-            elif cost is not None and not used_regression and \
-                    entry["bound"] == EXISTING_BOUND:
-                extra_skip = (
-                    "kept performance could not be placed on BTB's metric "
-                    "scale, so cost cannot be evaluated at it; left as-is")
-            elif cost is not None and units_info and units_info[1]:
-                capacity = capacity_kbtuh(btb_row)
-                if capacity is None:
-                    extra_skip = (
-                        "Cost Units are per kBtu/h but BTB capacity is not "
-                        "a known heating/cooling capacity unit; left as-is")
-                else:
-                    cost = {k: round(v / capacity, 2)
-                            for k, v in cost.items()}
-                    cost_note = (cost_note + "; " if cost_note else "") + \
-                        f"divided by BTB typical capacity ({capacity:.4g} " \
-                        "kBtu/h)"
-            row_skip_reason = skip_cost_reason or extra_skip
+            if entry_value(entry, "cost_at") == "Typical":
+                cost_note = (cost_note + "; " if cost_note else "") + \
+                    (entry_value(entry, "notes") or
+                     "cost kept at BTB Typical for every tier")
+
             cost_cell = cell_state["Installed Cost"]
             cost_unkeyed = is_unkeyed(cost_cell)
             cost_applies = (tech == owner) if cost_unkeyed else bool(
                 re.search(re.escape(tech) + r"\s*:", cost_cell,
                           re.IGNORECASE))
-            if cost_applies and not row_skip_reason and cost is not None and \
-                    units_info and units_info[0] != 2023 and \
-                    not cost_unkeyed:
-                row_skip_reason = (
-                    f"Cost Units are {row.get('Cost Units')!r} but this row "
-                    "has several technology costs; replacing one with a "
-                    "$2023 BTB cost would mix dollar years; left as-is")
-            if cost_applies and row_skip_reason:
-                cost = None
+            old_cost = None
+            if cost_applies:
+                old_cost = cost_cell if cost_unkeyed \
+                    else find_value_for_key(cost_cell, tech)
+            new_type = entry_value(entry, "measure_type")
+            # A $0 cost is a deliberate placeholder (shared equipment, or a
+            # reference-case add-on), unless the crosswalk turns the add-on
+            # into a full service measure carrying the BTB cost.
+            zero_placeholder = cost_applies and not new_type and \
+                is_zero_cost_placeholder(old_cost)
+
+            skip_reason = None
+            if cost is not None and cost_applies and not zero_placeholder:
+                skip_reason = skip_cost_reason
+                adjustment = composite_adjustment(
+                    cost_notes, entry["sector"], crosswalk_by_tech_tier,
+                    btb_data)
+                if skip_reason is None and cost_btb_row is btb_row and \
+                        not used_regression and \
+                        entry["bound"] != "Typical" and \
+                        cost_perf_value is not None:
+                    # Without a usable regression the cost is only available
+                    # at Typical performance, wrong for other tiers.
+                    skip_reason = (
+                        "BTB cost regression not usable for this row, so "
+                        "cost cannot be evaluated at this tier's "
+                        "performance; left as-is")
+                elif skip_reason is None and cost_btb_row is btb_row and \
+                        not used_regression and \
+                        entry["bound"] == EXISTING_BOUND:
+                    skip_reason = (
+                        "kept performance could not be placed on BTB's "
+                        "metric scale, so cost cannot be evaluated at it; "
+                        "left as-is")
+                elif skip_reason is None and adjustment is None:
+                    skip_reason = (
+                        "cost notes describe an adjustment that cannot be "
+                        "rebuilt from BTB; left as-is")
+                elif skip_reason is None and units_info and units_info[1]:
+                    capacity = cost_capacity_kbtuh(
+                        row.get("Cost Units"), cost_btb_row)
+                    if capacity is None:
+                        skip_reason = (
+                            "Cost Units are per kBtu/h but BTB capacity is "
+                            "not a known heating/cooling capacity unit; "
+                            "left as-is")
+                    else:
+                        cost = {k: round(v / capacity, 2)
+                                for k, v in cost.items()}
+                        cost_note = (cost_note + "; " if cost_note else "") \
+                            + f"divided by {capacity:.4g} kBtu/h"
+                        if adjustment and any(adjustment[0].values()):
+                            skip_reason = (
+                                "cost notes describe an adjustment that "
+                                "is not defined per kBtu/h; left as-is")
+                elif skip_reason is None:
+                    extra, extra_note = adjustment
+                    cost = {"new": cost["new"] + extra["new"],
+                            "existing": cost["existing"] + extra["existing"]}
+                    if extra_note:
+                        cost_note = (cost_note + "; " if cost_note else "") \
+                            + extra_note
+                if skip_reason is None and units_info and \
+                        units_info[0] != 2023 and not cost_unkeyed:
+                    skip_reason = (
+                        f"Cost Units are {row.get('Cost Units')!r} but this "
+                        "row has several technology costs; replacing one "
+                        "with a $2023 BTB cost would mix dollar years; "
+                        "left as-is")
+            if cost_applies and (zero_placeholder or skip_reason):
                 diff_rows.append({
                     "Name": row.get("Name"), "technology": tech,
-                    "column": "Installed Cost",
-                    "old_value": cost_cell if cost_unkeyed
-                    else find_value_for_key(cost_cell, tech),
+                    "column": "Installed Cost", "old_value": old_cost,
                     "new_value": "(skipped)",
                     "btb_technology_id": entry["btb_technology_id"],
                     "btb_display_name": entry["btb_display_name"],
                     "projection_scenario": entry["projection_scenario"],
                     "projection_year": entry["projection_year"],
-                    "notes": row_skip_reason,
+                    "notes": skip_reason if skip_reason else (
+                        "existing cost is $0 -- a deliberate placeholder "
+                        "(e.g. cost shared with a paired technology in "
+                        "this row); left as-is"),
                 })
-            if cost is not None:
-                if cost_applies:
-                    old_cost = cost_cell if cost_unkeyed \
-                        else find_value_for_key(cost_cell, tech)
-                    if is_zero_cost_placeholder(old_cost):
-                        diff_rows.append({
-                            "Name": row.get("Name"), "technology": tech,
-                            "column": "Installed Cost",
-                            "old_value": old_cost, "new_value": "(skipped)",
-                            "btb_technology_id": entry["btb_technology_id"],
-                            "btb_display_name": entry["btb_display_name"],
-                            "projection_scenario":
-                                entry["projection_scenario"],
-                            "projection_year": entry["projection_year"],
-                            "notes": "existing cost is $0 -- likely "
-                                     "intentionally shared with a paired "
-                                     "heating/cooling technology in this "
-                                     "row to avoid double-counting; left "
-                                     "unchanged, review manually",
-                        })
-                    else:
-                        new_full_cost_cell = replace_cost_for_key(
-                            cost_cell, tech, cost)
-                        new_cost_repr = (
-                            f"new: {cost['new']}; "
-                            f"existing: {cost['existing']}")
-                        same_values = cost_unkeyed and isinstance(
-                            cost_cell, str) and [
-                                float(v) for v in re.findall(
-                                    r"-?\d+\.?\d*", cost_cell)] == [
-                                float(cost["new"]), float(cost["existing"])]
-                        if new_full_cost_cell != cost_cell and \
-                                not same_values:
-                            cell_state["Installed Cost"] = new_full_cost_cell
-                            ws.cell(
-                                row=excel_row,
-                                column=col_index["Installed Cost"]).value = \
-                                new_full_cost_cell
-                            diff_rows.append({
-                                "Name": row.get("Name"), "technology": tech,
-                                "column": "Installed Cost",
-                                "old_value": old_cost,
-                                "new_value": new_cost_repr,
-                                "btb_technology_id":
-                                    entry["btb_technology_id"],
-                                "btb_display_name":
-                                    entry["btb_display_name"],
-                                "projection_scenario":
-                                    entry["projection_scenario"],
-                                "projection_year": entry["projection_year"],
-                                "notes": cost_note,
-                            })
-                            old_units = row.get("Cost Units")
-                            if units_info and units_info[0] != 2023:
-                                new_units = relabel_cost_units(old_units)
-                                ws.cell(
-                                    row=excel_row,
-                                    column=col_index["Cost Units"]).value = \
-                                    new_units
-                                diff_rows.append({
-                                    "Name": row.get("Name"),
-                                    "technology": tech,
-                                    "column": "Cost Units",
-                                    "old_value": old_units,
-                                    "new_value": new_units,
-                                    "btb_technology_id":
-                                        entry["btb_technology_id"],
-                                    "btb_display_name":
-                                        entry["btb_display_name"],
-                                    "projection_scenario":
-                                        entry["projection_scenario"],
-                                    "projection_year":
-                                        entry["projection_year"],
-                                    "notes": "BTB costs are $2023",
-                                })
-
-            # -- Lifetime --
-            lifetime = btb_row.get("Lifetime (Years)")
-            if pd.notna(lifetime):
-                lifetime_cell = cell_state["Lifetime"]
-                life_unkeyed = is_unkeyed(lifetime_cell)
-                old_lifetime = find_value_for_key(lifetime_cell, tech)
-                new_lifetime_str = f"{float(lifetime):.3g}"
-                if old_lifetime != new_lifetime_str and (
-                        tech == owner if life_unkeyed
-                        else re.search(re.escape(tech) + r"\s*:",
-                                       lifetime_cell, re.IGNORECASE)):
-                    cell_state["Lifetime"] = replace_value_for_key(
-                        lifetime_cell, tech, new_lifetime_str)
+            elif cost is not None and cost_applies:
+                new_full_cost_cell = replace_cost_for_key(
+                    cost_cell, tech, cost)
+                new_cost_repr = (
+                    f"new: {cost['new']}; existing: {cost['existing']}")
+                same_values = cost_unkeyed and isinstance(
+                    cost_cell, str) and [
+                        float(v) for v in re.findall(
+                            r"-?\d+\.?\d*", cost_cell)] == [
+                        float(cost["new"]), float(cost["existing"])]
+                if new_full_cost_cell != cost_cell and not same_values:
+                    cell_state["Installed Cost"] = new_full_cost_cell
                     ws.cell(row=excel_row,
-                            column=col_index["Lifetime"]).value = \
-                        cell_state["Lifetime"]
+                            column=col_index["Installed Cost"]).value = \
+                        new_full_cost_cell
                     diff_rows.append({
                         "Name": row.get("Name"), "technology": tech,
-                        "column": "Lifetime",
-                        "old_value": old_lifetime,
-                        "new_value": new_lifetime_str,
+                        "column": "Installed Cost", "old_value": old_cost,
+                        "new_value": new_cost_repr,
                         "btb_technology_id": entry["btb_technology_id"],
                         "btb_display_name": entry["btb_display_name"],
                         "projection_scenario": entry["projection_scenario"],
                         "projection_year": entry["projection_year"],
+                        "notes": cost_note,
+                    })
+                old_units = row.get("Cost Units")
+                if units_info and units_info[0] != 2023 and cost_unkeyed:
+                    new_units = relabel_cost_units(old_units)
+                    ws.cell(row=excel_row,
+                            column=col_index["Cost Units"]).value = new_units
+                    diff_rows.append({
+                        "Name": row.get("Name"), "technology": tech,
+                        "column": "Cost Units", "old_value": old_units,
+                        "new_value": new_units,
+                        "btb_technology_id": entry["btb_technology_id"],
+                        "btb_display_name": entry["btb_display_name"],
+                        "projection_scenario": entry["projection_scenario"],
+                        "projection_year": entry["projection_year"],
+                        "notes": "BTB costs are $2023",
+                    })
+                old_type = row.get("Measure Type")
+                if new_type and old_type != new_type:
+                    ws.cell(row=excel_row,
+                            column=col_index["Measure Type"]).value = new_type
+                    diff_rows.append({
+                        "Name": row.get("Name"), "technology": tech,
+                        "column": "Measure Type", "old_value": old_type,
+                        "new_value": new_type,
+                        "btb_technology_id": entry["btb_technology_id"],
+                        "btb_display_name": entry["btb_display_name"],
+                        "projection_scenario": entry["projection_scenario"],
+                        "projection_year": entry["projection_year"],
+                        "notes": "zero-cost add-on becomes a full service "
+                                 "measure carrying the BTB cost",
+                    })
+
+            # -- Lifetime --
+            lifetime = btb_row.get("Lifetime (Years)")
+            if pd.notna(lifetime) and not holds_switched:
+                lifetime_cell = cell_state["Lifetime"]
+                life_unkeyed = is_unkeyed(lifetime_cell)
+                old_lifetime = find_value_for_key(lifetime_cell, tech)
+                new_lifetime_str = f"{float(lifetime):.3g}"
+                life_applies = (tech == owner) if life_unkeyed else bool(
+                    re.search(re.escape(tech) + r"\s*:", lifetime_cell,
+                              re.IGNORECASE))
+                if life_applies and old_lifetime != new_lifetime_str:
+                    keep_lifetime = entry_value(entry, "keep_lifetime") == "yes"
+                    if not keep_lifetime:
+                        cell_state["Lifetime"] = replace_value_for_key(
+                            lifetime_cell, tech, new_lifetime_str)
+                        ws.cell(row=excel_row,
+                                column=col_index["Lifetime"]).value = \
+                            cell_state["Lifetime"]
+                    diff_rows.append({
+                        "Name": row.get("Name"), "technology": tech,
+                        "column": "Lifetime",
+                        "old_value": old_lifetime,
+                        "new_value": "(skipped)" if keep_lifetime
+                        else new_lifetime_str,
+                        "btb_technology_id": entry["btb_technology_id"],
+                        "btb_display_name": entry["btb_display_name"],
+                        "projection_scenario": entry["projection_scenario"],
+                        "projection_year": entry["projection_year"],
+                        "notes": (
+                            f"BTB lifetime {new_lifetime_str} not used. "
+                            + (entry_value(entry, "notes") or ""))
+                        if keep_lifetime else "",
                     })
 
     if "BTB Diff" in wb.sheetnames:

@@ -123,19 +123,64 @@ metric 2 is treated as the performance metric.
 measures, which are not sourced from BTB. An installed cost is proposed only
 when:
 - the row's `Cost Units` are `2023$/unit` or `2023$/kBtu/h` of heating,
-  cooling or water heating capacity, or the same in 2022$ (see below);
-- its Cost Source Notes describe no adder or scaling (dual-fuel furnace,
-  tank removal, breakthrough half-cost, "switched to" costs, ...);
-- the cost is not a `$0` placeholder (often a cost deliberately shared with
-  a paired technology).
+  cooling, water heating or cooking capacity, or the same in 2022$ (see
+  below);
+- the cost is not a `$0` placeholder (a cost deliberately shared with a
+  paired technology, or an airflow system anchored on the heating/cooling
+  cost), unless the crosswalk turns a zero-cost add-on into a full service
+  measure (see "Measure-level rows");
+- the Cost Source Notes describe nothing that can't be rebuilt from BTB.
 
 Per-kBtu/h costs are the whole-unit cost divided by BTB's Typical capacity
-in kBtu/h (the "div capacity" columns of the BTB Key Costs sheet).
+in kBtu/h (the "div capacity" columns of the BTB Key Costs sheet). BTB gives
+no cooking capacity for ranges, so cooking costs use the 2.6 kBtu/h that the
+existing commercial range cost notes state EIA assumes.
 2022$ rows are only replaced when the cell holds a single cost, and
 their `Cost Units` are then changed to 2023$ (BTB costs are $2023).
 Costs that can't be evaluated at the tier's performance (e.g. kept
 performance that can't be converted to the BTB metric) are skipped. Every
 skip is logged in `BTB Diff` with its reason.
+
+**Composite costs** are rebuilt from BTB pieces, using the row's Cost Source
+Notes:
+- *Dual-fuel heat pump* ("also add retail cost of typical gas/oil furnace"):
+  new construction = the heat pump plus BTB's typical gas (Furnace Gas-fired)
+  or oil (Furnace Oil-Fired) furnace; existing construction = the heat pump
+  alone, as the existing backup unit is kept.
+- *Oil-tank removal*: existing construction includes $1,030 (2023$) for tank
+  removal. This comes from the existing notes (2015 EIA report), not BTB.
+- *Electric boiler rows* ("switched to elec boiler"): the baseline boiler's
+  cost, performance and lifetime entries describe the electric boiler
+  switched to, so the cost comes from BTB's electric boiler and the
+  performance and lifetime of those entries are left alone.
+
+**Overrides** (optional crosswalk columns):
+- `cost_at = Typical` evaluates the cost at BTB's Typical performance
+  whatever the tier (used for the heat pump dryer, whose BTB cost regression
+  falls as efficiency rises).
+- `keep_lifetime = yes` leaves the existing lifetime alone (used for the
+  electric dryer, whose BTB lifetime of 22.3 years is judged implausible and
+  flagged as a potential BTB issue).
+
+**Other rules.** Commercial rows that represent a residential-type furnace
+in a commercial setting (their cost notes say "residential furnaces") use the
+residential furnace's BTB entry for `oil_furnace` and `gas_furnace`.
+
+**Measure edits.** `MEASURE_EDITS` in `populate_meas_in_from_btb.py` lists
+edits to specific measures that came out of review and are not derived from
+BTB: the best heat pump dryer measures lose "120V" from their Name and
+Description (no 120V products are on the market), and the fuel switch
+measure gets `240V circuit: true` for its Electrical Upgrade Costs. They are
+applied to the proposed workbook and logged in `BTB Diff`. Renaming a
+measure also means regenerating its file under `ecm_definitions/` and
+updating the exported `meas_in.csv`.
+
+**Measure-level rows.** Measures whose baseline technology is the
+placeholder `all` have no technology to match on, so the crosswalk has rows
+keyed by the measure's exact `Name` (the residential gas water heater
+measures and the commercial gas/electric range measures). A row with
+`measure_type = full service` also changes a zero-cost reference-case
+add-on to a full service measure carrying the BTB cost.
 
 A cell holding one bare value (e.g. `2.3`, or `new: X; existing: Y` with no
 technology name) is only updated for the row's single Switched-to
@@ -160,6 +205,30 @@ under "cool" to avoid double-counting). The script recognizes this pattern
 and leaves those cells alone (logged in the diff as `(skipped)` with a
 note) rather than reintroducing a double-count -- but double-check any
 row where this fires, since it's a heuristic, not a certainty.
+
+## Known issues in the BTB data
+
+Places where the BTB data look wrong and the pipeline departs from them.
+Each is marked where it applies: a note on the `tech_crosswalk.csv` rows,
+and a note in the `BTB Diff` sheet on the affected cell. Use this section
+as the evidence if they are reported to the BTB authors (see the
+documentation, `btb_doc.pdf`; dataset: data.openei.org/submissions/8342).
+
+Flagged in review (existing value kept or BTB value overridden):
+
+| BTB entry | What is wrong | What we do |
+|---|---|---|
+| Clothes Dryer Electric (residential ID 14) | Lifetime 22.33 years, implausibly long | Keep the existing 13 (`keep_lifetime = yes`) |
+| Clothes Dryer Heat Pump (residential ID 17) | The CEF cost coefficient is negative (-4.67), so cost falls as efficiency rises: Typical (CEF 5.45) is $1,595 but BTB's High (CEF 11) would be $1,569 | Use the Typical cost for every tier (`cost_at = Typical`) |
+
+Observed while building the pipeline, not yet reviewed:
+
+| BTB entry | Observation |
+|---|---|
+| Beverage Merchandisers - Standard (commercial ID 30) | Lifetime 31 years (existing value 10) |
+| Commercial Ice Machine Standard (commercial ID 18) | Lifetime 21 years (existing value 10) |
+| Boiler Oil (residential ID 8) | The precomputed retail price ($3,767) differs from the price its own regression gives ($3,982); installed costs follow the former |
+| Commercial Ground Source Heat Pump (commercial ID 10) | Its Notes say "There is no available efficiency data" and "Typical retail price refers to the total installed cost"; only Heating COP is given |
 
 ## After reviewing
 
