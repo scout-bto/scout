@@ -289,6 +289,11 @@ MEASURE_RULES = {
         "residential", ["cooking range", "electric"], ["induction"], None),
     "(R) Ref. Case Electric Range TS": (
         "residential", ["cooking range", "electric"], ["induction"], None),
+    # Reference-case commercial gas water heater, entered as a zero-cost
+    # add-on, becomes a full service measure carrying the BTB cost.
+    "(C) Ref. Case Gas WH": (
+        "commercial", ["water heater", "gas storage"],
+        ["booster", "instantaneous"], "full service"),
     # Reference-case cooking measures entered as zero-cost add-ons become
     # full service measures carrying the BTB range cost.
     "(C) Ref. Case Gas Range": (

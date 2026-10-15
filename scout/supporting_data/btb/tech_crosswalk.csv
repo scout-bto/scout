@@ -2,6 +2,7 @@ scout_technology,sector,tier,btb_technology_id,btb_display_name,btb_mapping_name
 (C) Ref. Case Electric Range,commercial,Ref. Case,90.0,Commercial Electric Range with Griddle and Oven,Commercial Electric Range with Griddle and Oven,Combined Energy Efficiency,Reference,2023,Typical,high,False,,,full service,,
 (C) Ref. Case Electric Range TS,commercial,Ref. Case,90.0,Commercial Electric Range with Griddle and Oven,Commercial Electric Range with Griddle and Oven,Combined Energy Efficiency,Reference,2023,Typical,high,False,,,full service,,
 (C) Ref. Case Gas Range,commercial,Ref. Case,89.0,Commercial Natural Gas Range with Griddle and Oven,Commercial Natural Gas Range with Griddle and Oven,Combined Energy Efficiency,Reference,2023,Typical,high,False,,,full service,,
+(C) Ref. Case Gas WH,commercial,Ref. Case,65.0,Commercial Water Heater Gas Storage,Commercial Gas-Fired Water Heaters,Thermal Efficiency,Reference,2023,Typical,high,False,,,full service,,
 (R) Best Gas WH,residential,Best,165.0,Water Heater Gas Storage,Gas-Fired WH,UEF,Reference,2023,High,high,False,,,,,
 (R) Ref. Case Electric Range,residential,Ref. Case,27.0,Cooking Range Electric,Electric Ranges,Volume,Reference,2023,Typical,high,False,,,,,
 (R) Ref. Case Electric Range TS,residential,Ref. Case,27.0,Cooking Range Electric,Electric Ranges,Volume,Reference,2023,Typical,high,False,,,,,
