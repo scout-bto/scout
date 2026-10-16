@@ -39,6 +39,7 @@ ecm_prep:
     retrofit_type: null
     retrofit_multiplier: null
     retrofit_mult_year: null
+  high_data_ctr: false
 run:
   results_directory: null
   verbose: false

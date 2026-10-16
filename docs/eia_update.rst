@@ -57,8 +57,11 @@ Use this quick checklist when updating Scout to a new AEO release.
    * ``rsmess.xlsx``
    * ``rsmlgt.txt``
    * ``CDM_DBOUT.txt``
+   * ``CDM_DBOUT_hdc.txt``
    * ``CDM_SDOUT.txt``
+   * ``CDM_SDOUT_hdc.txt``
    * ``CDM_DGENOUT.txt``
+   * ``CDM_DGENOUT_hdc.txt``
    * ``kprem.txt``
    * ``ktekx.xlsx``
 
@@ -118,8 +121,11 @@ Use this quick checklist when updating Scout to a new AEO release.
    Expected output includes the following files:
 
    * ``mseg_res_com_cz.json``
+   * ``mseg_res_com_cz_hdc.json``
    * ``mseg_res_com_emm.gz``
+   * ``mseg_res_com_emm_hdc.gz``
    * ``mseg_res_com_state.gz``
+   * ``mseg_res_com_state_hdc.gz``
    * ``cpl_res_com_cz.gz``
    * ``cpl_res_com_emm.gz``
    * ``cpl_res_com_cdiv.gz``
