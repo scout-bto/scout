@@ -1,0 +1,240 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://scout.energy.gov/schemas/results-plots-all-runs/v1.0.0",
+  "version": "1.0.0",
+  "title": "Scout Results Plots (All Runs)",
+  "description": "Schema for the PDF figures in the ./results/plots for any run configuration.",
+  "notes": [
+    "Structure: adoption scenario folder -> metric folder (energy, co2, cost)",
+    "-> the three figures in that folder (byECM, Aggregate, CostEffective).",
+    "Run options that change the figures:",
+    "alt_regions: energy in TWh (EMM), TBtu (State), or Quads (AIA);",
+    "site_energy: 'Site Energy' with no site-source tag;",
+    "captured_energy: 'CE S-S' instead of 'FF S-S';",
+    "health_costs: snapshot year 2020 and energy in Quads;",
+    "tsv_metrics: energy in GWh or GW, CO2 in Tt, cost in Million $,",
+    "and a suffix such as ', Pk. Prd. Sum. (S)' in the axis labels;",
+    "adopt_scn_restrict: only one adoption scenario folder is plotted.",
+    "No figures are written when run.py uses trim_vars or report_custom_yrs."
+  ],
+  "anyOf": [
+    {"required": ["max_adopt_potential"]},
+    {"required": ["tech_potential"]}
+  ],
+  "properties": {
+    "max_adopt_potential": {
+      "description": "Measures capture their applicable markets as baseline stock turns over.",
+      "$ref": "#/definitions/scenario"
+    },
+    "tech_potential": {
+      "description": "Measures capture their full applicable markets immediately.",
+      "$ref": "#/definitions/scenario"
+    }
+  },
+  "definitions": {
+    "scenario": {
+      "description": "Contents of one adoption scenario folder.",
+      "required": ["energy", "co2", "cost"],
+      "properties": {
+        "energy": {"description": "Site or primary energy results.", "$ref": "#/definitions/metricFolder"},
+        "co2": {"description": "CO₂ emissions results.", "$ref": "#/definitions/metricFolder"},
+        "cost": {"description": "Energy cost results.", "$ref": "#/definitions/metricFolder"}
+      }
+    },
+    "metricFolder": {
+      "description": "Contents of one metric folder (energy, co2, or cost).",
+      "notes": ["The three folders share this definition; names and labels differ only by metric."],
+      "required": ["byECM", "Aggregate", "CostEffective"],
+      "properties": {
+        "byECM": {
+          "description": "Annual energy use, CO₂ emissions, or energy cost for each measure.",
+          "notes": [
+            "Reference case vs. with measure,",
+            "each with and without measure competition."
+          ],
+          "properties": {
+            "file": {"pattern": "^Total (Energy|CO2|Cost)-(MAP|TP)-byECM\\.pdf$"},
+            "panels": {
+              "description": "Panels in plot order.",
+              "notes": ["The first is 'All ECMs' (competed totals summed across all measures)."],
+              "items": {"$ref": "#/definitions/byEcmPanel"}
+            }
+          }
+        },
+        "Aggregate": {
+          "description": "Competed savings summed across all measures.",
+          "properties": {
+            "file": {"pattern": "^Total (Energy Savings|Avoided CO2|Cost Savings)-(MAP|TP)-Aggregate\\.pdf$"},
+            "panels": {
+              "description": "Three stacked panels of competed savings across all measures.",
+              "notes": ["Broken out by region, building class, and end use."],
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {"$ref": "#/definitions/aggregatePanel"}
+            }
+          }
+        },
+        "CostEffective": {
+          "description": "Measure cost effectiveness vs. competed savings.",
+          "notes": [
+            "Savings: competed savings in the snapshot year.",
+            "Metrics: for one unit installed in the snapshot year, over the measure lifetime,",
+            "assuming that year's savings every year.",
+            "Each point is a measure with non-zero savings",
+            "Codes/standards measures are excluded."
+          ],
+          "properties": {
+            "file": {"pattern": "^Cost Effective (Energy Savings|Avoided CO2|Operation Cost Savings)-(MAP|TP)\\.pdf$"},
+            "snapshot_year": {
+              "description": "Single year shown in this figure; appears in the x-axis label.",
+              "notes": [
+                "Savings (x): competed savings in this year only, not cumulative.",
+                "Metrics (y): for one unit installed in this year, over the measure lifetime.",
+                "2050 by default; 2020 for public health cost (PHC) runs."
+              ],
+              "enum": [2050, 2020]
+            },
+            "panels": {
+              "description": "One scatter panel per financial metric.",
+              "notes": ["In this order: IRR, payback, CCE, CCC."],
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {"$ref": "#/definitions/costEffPanel"}
+            }
+          }
+        }
+      }
+    },
+    "byEcmPanel": {
+      "description": "One measure's panel.",
+      "notes": [
+        "Lines: reference case uncompeted (thick grey),",
+        "with measure uncompeted (light grey),",
+        "reference case competed and with measure competed",
+        "(navy and light blue for technical potential;",
+        "red and pink for max adoption potential),",
+        "The 'All ECMs' panel has meaningful competed lines only."
+      ],
+      "properties": {
+        "title": {"description": "Measure name, or 'All ECMs'."},
+        "x_axis": {
+          "properties": {
+            "range": {
+              "description": "First and last modeled year plotted.",
+              "notes": ["The first year depends on the baseline data; the last is 2050."],
+              "items": [{"type": "integer", "minimum": 2015}, {"const": 2050}],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "y_axis": {
+          "description": "Annual energy use, CO₂ emissions, or energy cost.",
+          "properties": {
+            "label": {"anyOf": [
+              {"pattern": "^Site Energy \\((TWh|TBtu|Quads|GWh|GW)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Primary Energy \\((TWh|TBtu|Quads|GWh|GW), (FF|CE) S-S(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^CO₂ Emissions \\((Mt|Tt)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Energy Cost \\((Billion|Million) \\$(, [^()]+ \\([SWI]\\))?\\)$"}
+            ]}
+          }
+        }
+      }
+    },
+    "aggregatePanel": {
+      "description": "Annual savings for each breakout category with non-zero savings.",
+      "notes": [
+        "the annual total (solid dark grey),",
+        "and the cumulative total on a right-hand axis (dotted grey).",
+        "The panel is blank if total savings are zero."
+      ],
+      "properties": {
+        "title": {"pattern": "^(Energy Savings|Avoided CO₂|Cost Savings) by (Region|Building Class|End Use)$"},
+        "x_axis": {
+          "properties": {
+            "range": {
+              "description": "First and last modeled year plotted.",
+              "notes": ["The first year depends on the baseline data; the last is 2050."],
+              "items": [{"type": "integer", "minimum": 2015}, {"const": 2050}],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "y_axis": {
+          "description": "Left axis: annual savings.",
+          "properties": {
+            "label": {"anyOf": [
+              {"pattern": "^Annual Site Energy Savings \\((TWh|TBtu|Quads|GWh|GW)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Annual Primary Energy Savings \\((TWh|TBtu|Quads|GWh|GW), (FF|CE) S-S(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Annual Avoided CO₂ Emissions \\((Mt|Tt)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Annual Energy Cost Savings \\((Billion|Million) \\$(, [^()]+ \\([SWI]\\))?\\)$"}
+            ]}
+          }
+        },
+        "y2_axis": {
+          "description": "Right axis: cumulative savings from the first modeled year.",
+          "properties": {
+            "label": {"anyOf": [
+              {"pattern": "^Cumulative Site Energy Savings \\((TWh|TBtu|Quads|GWh|GW)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Cumulative Primary Energy Savings \\((TWh|TBtu|Quads|GWh|GW), (FF|CE) S-S(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Cumulative Avoided CO₂ Emissions \\((Mt|Tt)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^Cumulative Energy Cost Savings \\((Billion|Million) \\$(, [^()]+ \\([SWI]\\))?\\)$"}
+            ]}
+          }
+        }
+      }
+    },
+    "costEffPanel": {
+      "description": "Scatter of measures: competed savings (x) vs. financial metric (y).",
+      "notes": [
+        "A dotted line marks the cost-effectiveness threshold;",
+        "the cost-effective side is shaded.",
+        "The five cost-effective measures with the largest savings",
+        "are numbered on the plot and listed in the top-right corner."
+      ],
+      "properties": {
+        "title": {"enum": [
+          "Internal Rate of Return (IRR)",
+          "Simple Payback",
+          "Cost of Conserved Energy (CCE)",
+          "Cost of Conserved CO₂ (CCC)"
+        ]},
+        "x_axis": {
+          "description": "Competed savings in the snapshot year.",
+          "properties": {
+            "label": {"anyOf": [
+              {"pattern": "^(2050|2020) Site Energy Savings \\(Competed, (TWh|TBtu|Quads|GWh|GW)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^(2050|2020) Primary Energy Savings \\(Competed, (TWh|TBtu|Quads|GWh|GW), (FF|CE) S-S(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^(2050|2020) Avoided CO₂ Emissions \\(Competed, (Mt|Tt)(, [^()]+ \\([SWI]\\))?\\)$"},
+              {"pattern": "^(2050|2020) Energy Cost Savings \\(Competed, (Billion|Million) \\$(, [^()]+ \\([SWI]\\))?\\)$"}
+            ]}
+          }
+        },
+        "y_axis": {
+          "description": "Financial metric.",
+          "properties": {
+            "label": {"enum": [
+              "IRR (%)",
+              "Payback (years)",
+              "CCE ($/MMBtu saved)",
+              "CCC ($/t CO₂ avoided)"
+            ]}
+          }
+        },
+        "threshold": {"description": "Cost-effectiveness threshold (dotted line)."},
+        "cost_effective_region": {
+          "description": "Shaded side of the threshold where measures count as cost effective."
+        },
+        "cost_effective_impact": {
+          "description": "Top-left label: total savings of the cost-effective measures.",
+          "pattern": "^Cost effective impact: -?\\d+(\\.\\d+)? (TWh|TBtu|Quads|GWh|GW|Mt|Tt|Billion \\$|Million \\$)$"
+        },
+        "top_measures": {
+          "description": "Top-right list of up to five cost-effective measures.",
+          "notes": ["Ranked by savings, as '<rank> <measure name>'."]
+        }
+      }
+    }
+  }
+}
