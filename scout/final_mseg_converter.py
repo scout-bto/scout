@@ -1835,6 +1835,13 @@ def main():
     performance, and lifetime data, when the script is run, this
     function requests user input to determine the appropriate files
     to import.
+
+    For stock and energy data, each run produces two versions of the
+    output: one from the AEO Reference Case commercial data and one from the
+    High Electricity Demand side case, with '_hdc' appended to the file names
+    (output file names carry the same '_hdc' appendage). No user input is needed to
+    select between the two. Cost, performance, and lifetime data are the same
+    across cases.
     """
 
     # Obtain user input regarding what data are to be processed. Include two
@@ -2282,79 +2289,92 @@ def main():
     # Define years vector using year data from metadata
     years = list(range(metajson['min year'], metajson['max year'] + 1))
 
-    # Open the microsegments JSON file that has data on a census
-    # division basis and traverse the database to convert it to
-    # a custom region basis
-    with open(handyvars.json_in, 'r') as jsi:
-        msjson_cdiv = json.load(jsi)
-        # Do not convert non-envelope technology characteristics data to a
-        # state-level resolution (these data remain with the original
-        # Census breakout)
-        if input_var[0] == '1' or (
-                input_var[0] == '2' and input_var[1] != '3'):
-            # Convert data
-            result = clim_converter(
-                msjson_cdiv, res_cd_cz_conv, com_cd_cz_conv, input_var[0],
-                flag_map_dat, reg_list, cdiv_list)
-        else:
-            result = msjson_cdiv
+    # Stock/energy data are processed in both versions (AEO ref and High Elec Dmd. '_hdc',
+    # with outputs distinguished by the same '_hdc' appendage). Cost, performance, and
+    # lifetime data have no '_hdc' version, only one version is processed
+    # in that case based on the AEO Reference Case files.
+    suffixes = cm.FILE_SUFFIXES if input_var[0] == '1' else ('',)
+    variants = []
+    for suffix in suffixes:
+        json_in = cm.add_suffix(handyvars.json_in, suffix)
+        if not json_in.exists():
+            raise FileNotFoundError(
+                "Expected input file " + str(json_in) + " not found; confirm "
+                "that the upstream data processing scripts have been run.")
+        variants.append(
+            (json_in, cm.add_suffix(handyvars.json_out, suffix).name))
 
-        # If cost, performance, and lifetime data are indicated based
-        # on user input, open the envelope cost, performance, and
-        # lifetime database and the cost conversion factors database,
-        # then add those data to the microsegments data that were just
-        # converted to a custom region basis
-        if input_var[0] == '2':
-            with open(handyvars.addl_cpl_data, 'r') as jscpl, open(
-                    handyvars.conv_factors, 'r') as jsconv:
-                jscpl_data = json.load(jscpl)
-                jsconv_data = json.load(jsconv)
+    for json_in, json_out in variants:
+        # Open the microsegments JSON file that has data on a census
+        # division basis and traverse the database to convert it to
+        # a custom region basis
+        with open(json_in, 'r') as jsi:
+            msjson_cdiv = json.load(jsi)
+            # Do not convert non-envelope technology characteristics data to a
+            # state-level resolution (these data remain with the original
+            # Census breakout)
+            if input_var[0] == '1' or (
+                    input_var[0] == '2' and input_var[1] != '3'):
+                # Convert data
+                result = clim_converter(
+                    msjson_cdiv, res_cd_cz_conv, com_cd_cz_conv, input_var[0],
+                    flag_map_dat, reg_list, cdiv_list)
+            else:
+                result = msjson_cdiv
 
-                # Add envelope components' cost, performance and
-                # lifetime data to the result dict
-                result = walk(
-                    jscpl_data, jsconv_data, env_perf_convert, years, result,
-                    aia_list, cdiv_list, emm_list)
+            # If cost, performance, and lifetime data are indicated based
+            # on user input, open the envelope cost, performance, and
+            # lifetime database and the cost conversion factors database,
+            # then add those data to the microsegments data that were just
+            # converted to a custom region basis
+            if input_var[0] == '2':
+                with open(handyvars.addl_cpl_data, 'r') as jscpl, open(
+                        handyvars.conv_factors, 'r') as jsconv:
+                    jscpl_data = json.load(jscpl)
+                    jsconv_data = json.load(jsconv)
 
-    # Record the disaggregation choices and source data version behind
-    # the EMM/state stock and energy data, for reproducibility (issue
-    # #576) -- these are the only outputs for which input_var[2]/[3]
-    # (the electricity-only-vs-all-fuels and technology-vs-end-use
-    # disaggregation choices) were actually prompted for and used.
-    if handyvars.json_out in ('mseg_res_com_emm.json', 'mseg_res_com_state.json'):
-        result["_cdiv_disagg_info"] = {
-            "prep_settings": {
-                "gen_disagg_level": GEN_DISAGG_LABELS.get(
-                    input_var[2], input_var[2]),
-                "elec_disagg_level": ELEC_DISAGG_LABELS.get(
-                    input_var[3], input_var[3]),
-            },
-            "sdr_version": load_sdr_version(),
-        }
+                    # Add envelope components' cost, performance and
+                    # lifetime data to the result dict
+                    result = walk(
+                        jscpl_data, jsconv_data, env_perf_convert, years, result,
+                        aia_list, cdiv_list, emm_list)
 
-    # Write the updated dict of data to a new JSON file. Written to an
-    # explicit path under STOCK_ENERGY (package data, resolved via
-    # scout/config.py regardless of install mode or invocation cwd)
-    # instead of the bare relative filename, so this step no longer needs
-    # to be run from a particular directory for output to land correctly.
-    json_out_path = fp.STOCK_ENERGY / handyvars.json_out
-    with open(json_out_path, 'w') as jso:
-        json.dump(result, jso, indent=2)
-        # Compress CPL file
-        if handyvars.json_out.startswith('cpl'):
-            zip_out_cpl = fp.STOCK_ENERGY / (
-                handyvars.json_out.split('.')[0] + '.gz')
-            with gzip.GzipFile(zip_out_cpl, 'w') as fout_cpl:
-                fout_cpl.write(json.dumps(result).encode('utf-8'))
-        # Compress stock/energy EMM and state files
-        if handyvars.json_out in [
-                'mseg_res_com_state.json', 'mseg_res_com_emm.json']:
-            zip_out_se = fp.STOCK_ENERGY / (
-                handyvars.json_out.split('.')[0] + '.gz')
-            with gzip.GzipFile(zip_out_se, 'w') as fout_se:
-                fout_se.write(json.dumps(result).encode('utf-8'))
-        print("File " + str(json_out_path) +
-              " has been created with the updated data.")
+        # Record the disaggregation choices and source data version behind
+        # the EMM/state stock and energy data, for reproducibility (issue
+        # #576) -- these are the only outputs for which input_var[2]/[3]
+        # (the electricity-only-vs-all-fuels and technology-vs-end-use
+        # disaggregation choices) were actually prompted for and used.
+        if handyvars.json_out in ('mseg_res_com_emm.json', 'mseg_res_com_state.json'):
+            result["_cdiv_disagg_info"] = {
+                "prep_settings": {
+                    "gen_disagg_level": GEN_DISAGG_LABELS.get(
+                        input_var[2], input_var[2]),
+                    "elec_disagg_level": ELEC_DISAGG_LABELS.get(
+                        input_var[3], input_var[3]),
+                },
+                "sdr_version": load_sdr_version(),
+            }
+
+        # Write the updated dict of data to a new JSON file. Written to an
+        # explicit path under STOCK_ENERGY
+        json_out_path = fp.STOCK_ENERGY / json_out
+        with open(json_out_path, 'w') as jso:
+            json.dump(result, jso, indent=2)
+            # Compress CPL file
+            if handyvars.json_out.startswith('cpl'):
+                zip_out_cpl = fp.STOCK_ENERGY / (
+                    json_out.split('.')[0] + '.gz')
+                with gzip.GzipFile(zip_out_cpl, 'w') as fout_cpl:
+                    fout_cpl.write(json.dumps(result).encode('utf-8'))
+            # Compress stock/energy EMM and state files
+            if handyvars.json_out in [
+                    'mseg_res_com_state.json', 'mseg_res_com_emm.json']:
+                zip_out_se = fp.STOCK_ENERGY / (
+                    json_out.split('.')[0] + '.gz')
+                with gzip.GzipFile(zip_out_se, 'w') as fout_se:
+                    fout_se.write(json.dumps(result).encode('utf-8'))
+            print("File " + str(json_out_path) +
+                  " has been created with the updated data.")
 
 
 if __name__ == '__main__':

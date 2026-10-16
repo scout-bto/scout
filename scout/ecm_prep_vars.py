@@ -2066,8 +2066,11 @@ class UsefulInputFiles(object):
     """
 
     def __init__(self, opts):
+        # Use the stock/energy files built from the High Electricity Demand (data center
+        # growth) side case (file names appended with '_hdc') when requested
+        hdc = "_hdc" if opts.high_data_ctr else ""
         if opts.alt_regions == 'AIA':
-            self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_cz.json"
+            self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_cz{hdc}.json"
             self.msegs_cpl_in = fp.STOCK_ENERGY / "cpl_res_com_cz.gz"
             self.iecc_reg_map = fp.CONVERT_DATA / "geo_map" / "IECC_AIA_ColSums.txt"
             self.ba_reg_map = fp.CONVERT_DATA / "geo_map" / "BA_AIA_ColSums.txt"
@@ -2089,7 +2092,7 @@ class UsefulInputFiles(object):
                 else:
                     self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals.json"
         elif opts.alt_regions == 'EMM':
-            self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_emm.gz"
+            self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_emm{hdc}.gz"
             self.msegs_cpl_in = fp.STOCK_ENERGY / "cpl_res_com_emm.gz"
             self.ash_emm_map = fp.CONVERT_DATA / "geo_map" / "ASH_EMM_ColSums.txt"
             self.aia_altreg_map = fp.CONVERT_DATA / "geo_map" / "AIA_EMM_ColSums.txt"
@@ -2113,7 +2116,7 @@ class UsefulInputFiles(object):
                 else:
                     self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_emm.json"
         elif opts.alt_regions == 'State':
-            self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_state.gz"
+            self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_state{hdc}.gz"
             self.msegs_cpl_in = fp.STOCK_ENERGY / "cpl_res_com_cdiv.gz"
             self.aia_altreg_map = fp.CONVERT_DATA / "geo_map" / "AIA_State_ColSums.txt"
             self.iecc_reg_map = fp.CONVERT_DATA / "geo_map" / "IECC_State_ColSums.txt"
