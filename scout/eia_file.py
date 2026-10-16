@@ -18,10 +18,11 @@ from scout.config import FilePaths as fp
 
 # Silence the specific openpyxl DrawingML warning
 warnings.filterwarnings(
-    "ignore", 
-    message=".*DrawingML support is incomplete.*", 
+    "ignore",
+    message=".*DrawingML support is incomplete.*",
     category=UserWarning
 )
+
 
 class EIAFiles(object):
     """AEO data file reprocessing.
@@ -203,11 +204,11 @@ class EIAFiles(object):
             # data rows
             for row_num in range(22, rsclass.max_row + 1):
                 row_data = [rsclass.cell(row=row_num, column=c).value for c in cols]
-                
+
                 # Stop processing if the row is entirely empty
                 if all(val is None for val in row_data):
                     break
-                
+
                 f.write('\t'.join(str(val) for val in row_data) + '\n')
 
     def generate_rsmeqp(self):
