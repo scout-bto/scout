@@ -19,7 +19,7 @@ metrics -- expressed in Btu of output per watt-hour of input -- convert to
 that same dimensionless ratio by dividing by 3.412 (Btu/hr per W; see
 `"EER": {"COP": 3.412}` there). That Btu/Wh relationship holds regardless
 of the specific metric's name (SEER, SEER2, EER, CEER, HSPF, HSPF2 are all
-seasonal or point-in-time variants of the same Btu/Wh basis), so one
+seasonal or point-in-time variants of the same Btu/Wh basis, as is IEER), so one
 conversion factor covers all of them here.
 
 Because the target unit is whatever the destination `meas_in` cell already
@@ -51,7 +51,7 @@ RATIO_UNIT_LABELS = {"cop", "afue", "btu out/btu in"}
 # point-in-time) that convert to the ratio labels above by dividing by
 # BTU_PER_WH_TO_RATIO.
 BTU_PER_WH_METRICS = {
-    "seer", "seer1", "seer2", "eer", "ceer", "hspf", "hspf2",
+    "seer", "seer1", "seer2", "eer", "ceer", "ieer", "hspf", "hspf2",
 }
 
 # BTB "Regression metric - Metric" names that are already a dimensionless

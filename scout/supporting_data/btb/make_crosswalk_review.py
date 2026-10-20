@@ -30,43 +30,12 @@ OUT_PATH = BASE_DIR / "tech_crosswalk_review.xlsx"
 # (scout_technology, sector) -> open question about the mapping. Edit as
 # questions are answered; the yellow-highlighted column in the output.
 FLAGS = {
-    ("ASHP", "residential"): (
-        "Also used by commercial heat pump rows, which are skipped today "
-        "(their costs are the residential system cost / 36 kBtu/h). "
-        "Apply this entry to them?"),
-    ("rooftop_ASHP-cool", "commercial"): (
-        "Same BTB row (RTU heat pump, IEER) for cool and heat. Is one row "
-        "correct for both?"),
-    ("rooftop_ASHP-heat", "commercial"): (
-        "Same BTB row as rooftop_ASHP-cool. IEER is a cooling metric, so "
-        "heating performance is not updated from BTB."),
     ("comm_GSHP-cool", "commercial"): (
         "BTB has only Heating COP for this technology: cooling performance "
         "stays manual. Acceptable?"),
     ("comm_GSHP-heat", "commercial"): (
         "Same BTB row as comm_GSHP-cool (Heating COP only; cooling "
         "capacity is the size metric)."),
-    ("Commercial Walk-In Freezers", "commercial"): (
-        "Refrigeration cost per kBtu/h uses EIA's capacity (23.5 kBtu/h, "
-        "161 sq ft) scaled to BTB's 112 sq ft = 16.35 kBtu/h. Right?"),
-    ("Commercial Walk-In Refrigerators", "commercial"): (
-        "Refrigeration cost per kBtu/h uses EIA's capacity (41.0 kBtu/h, "
-        "240 sq ft) scaled to BTB's 112 sq ft = 19.14 kBtu/h. Right?"),
-    ("Commercial Supermarket Display Cases", "commercial"): (
-        "BTB gives 51 ft2 display area; EIA's 12 ft case (11.85 kBtu/h) "
-        "is used without a size check. Do they correspond?"),
-    ("elec_boiler", "commercial"): (
-        "Chose BTB 'Boiler - Electric Hot Water' over 'Electric Steam'. "
-        "Right?"),
-    ("res_type_central_AC", "residential"): (
-        "Deliberately mapped to the residential central AC for commercial "
-        "rows. Confirm."),
-    ("electric range", "residential"): (
-        "BTB metric is Volume (not a performance metric): costs cannot "
-        "move with performance."),
-    ("induction", "residential"): (
-        "BTB metric is Volume (not a performance metric): costs cannot "
-        "move with performance."),
 }
 
 COLUMN_WIDTHS = [26, 12, 10, 38, 38, 22, 10, 12, 36, 70, 14, 22, 40]

@@ -61,6 +61,12 @@ CROSS_SECTOR_TECHS = {
     "res_type_central_AC", "res_type_gasHP-cool", "res_type_gasHP-heat",
     "electric_res-heat", "wall-window_room_AC"}
 
+# Commercial rows whose cost notes say they use residential system costs
+# (divided by the typical residential capacity, 36 kBtu/h) take the
+# residential ASHP entry for their cost only; performance and lifetime stay
+# as they are.
+_RESIDENTIAL_SYSTEM_NOTE = re.compile(r"residential system", re.IGNORECASE)
+
 # Technologies covered by build_tech_crosswalk.py that participate in a
 # shared "heating"/"cooling"/"ventilation" Performance Units key rather
 # than their own tech-name key (seen in combined-package meas_in rows,
@@ -134,7 +140,7 @@ def tier_for_name(name):
 # regression's Typical capacity expressed in kBtu/h (see capacity_kbtuh),
 # as done in the "BTB Key Costs" sheet's "div capacity" columns.
 _COST_UNITS = re.compile(
-    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating|cooking|refrigeration))$")
+    r"(20\d\d)\$/(unit|kBtu/h (?:heating|cooling|water heating|cooking))$")
 COST_UNITS_YEARS = {2022, 2023}
 
 
@@ -155,22 +161,8 @@ def relabel_cost_units(units):
 
 
 # Capacity in kBtu/h of the typical BTB commercial unit where BTB describes
-# it by volume, area or ice output rather than capacity. For refrigeration it
-# comes from the EIA "Updated Buildings Sector Appliance and Equipment Costs
-# and Efficiencies" report, Appendix C (2022 typical case; the cooling
-# capacity in the table for each type). Keyed by (sector, BTB technology
-# ID). Where the BTB typical unit is the same size as EIA's, the capacity is
-# EIA's; for the walk-ins (BTB 112 sq ft vs EIA's 240 sq ft cooler and 161 sq
-# ft freezer) it is scaled by floor area.
+# it by volume rather than capacity. Keyed by (sector, BTB technology ID).
 BTB_UNIT_CAPACITY_KBTUH = {
-    ("commercial", 61): 4.340,   # reach-in freezer, 49 ft3 (EIA 49 ft3)
-    ("commercial", 62): 2.349,   # reach-in refrigerator, 46 ft3 (EIA 46 ft3)
-    ("commercial", 88): 11.850,  # supermarket display case (EIA 12 ft case)
-    ("commercial", 69): 23.500 * 112 / 161,  # walk-in freezer, scaled
-    ("commercial", 70): 41.024 * 112 / 240,  # walk-in cooler, scaled
-    ("commercial", 30): 4.700,   # beverage merchandiser, 27 ft3 (EIA 27 ft3)
-    ("commercial", 18): 4.580,   # ice machine, 700 lb/day (EIA 700 lb/day)
-    ("commercial", 31): 1.810,   # vending machine, 35 ft3 (EIA 35 ft3)
     # Commercial gas storage water heater (BTB: 100 gallons). The capacity
     # is the 199 kBtu/h that the BTB Key Costs sheet divides its cost by
     # (cell AG55), close to the 200 kBtu/h typical EIA commercial gas water
@@ -215,11 +207,58 @@ _RESIDENTIAL_FURNACE_NOTE = re.compile(r"residential furnaces", re.IGNORECASE)
 RESIDENTIAL_FURNACE_ALIAS = {
     "oil_furnace": "furnace (distillate)", "gas_furnace": "furnace (NG)"}
 
+# EIA typical-case costs (2022$/kBtu/h cooling capacity) for the commercial
+# refrigeration technologies, from the "Updated Buildings Sector Appliance and
+# Equipment Costs and Efficiencies" report, Appendix C: new = Retail Equipment
+# Cost and existing = Total Installed Cost (2022 Typical column) divided by
+# the typical unit's cooling capacity. Values as (new, existing); the table
+# page, retail $, installed $ and capacity (kBtu/h) are in the comments.
+EIA_REFRIGERATION_COST = {
+    # p. 97: 3,175 and 4,125 over 4.340
+    "Commercial Reach-In Freezers": (732, 950),
+    # p. 94: 2,780 and 3,643 over 2.349
+    "Commercial Reach-In Refrigerators": (1183, 1551),
+    # p. 91: 9,500 and 11,500 over 11.850
+    "Commercial Supermarket Display Cases": (802, 970),
+    # p. 104: 22,850 and 24,850 over 23.500
+    "Commercial Walk-In Freezers": (972, 1057),
+    # p. 100: 19,847 and 23,897 over 41.024
+    "Commercial Walk-In Refrigerators": (484, 583),
+    # p. 112: 2,762 and 2,762 over 4.700
+    "Commercial Beverage Merchandisers": (588, 588),
+    # p. 108: 3,020 over 4.580; installed is EIA's published $732/kBtu/h
+    # (3,350 over 4.580 is 731.4; EIA's figure uses an unrounded capacity)
+    "Commercial Ice Machines": (659, 732),
+    # p. 115: 3,272 and 3,489 over 1.810
+    "Commercial Refrigerated Vending Machines": (1808, 1928),
+}
+
 # Edits to specific measures requested in review, applied to the proposed
 # workbook and logged in the BTB Diff sheet: old measure Name -> new Name
 # (optional) and cell values for other columns. Descriptions have "120V"
 # dropped from "120V HP" wherever the Name is changed this way.
 MEASURE_EDITS = {
+    # Refrigeration measures use EIA values entirely (cost, capacity and
+    # lifetime, 2022$), not a mix of BTB and EIA: the zero-cost reference-case
+    # add-on becomes a full service measure with EIA's typical retail (new)
+    # and total installed (existing) costs per kBtu/h of cooling capacity.
+    # (C) Best Refrigeration already holds EIA's High values.
+    "(C) Ref. Case Refrigeration": {
+        "_note": "EIA Appendix C typical-case values (not BTB)",
+        "Measure Type": "full service",
+        "Installed Cost": "; ".join(
+            f"{tech}: new: {new}; {tech}: existing: {existing}"
+            for tech, (new, existing) in EIA_REFRIGERATION_COST.items()),
+        "Cost Source Notes": (
+            "Retail (new) and total installed (existing) cost for typical "
+            "efficiency refrigeration units in 2022, normalized by the "
+            "typical unit's cooling capacity (kBtu/h)"),
+        "Cost Source Details": (
+            "Updated Buildings Sector Appliance and Equipment Costs and "
+            "Efficiencies: Appendix C; U.S. Energy Information "
+            "Administration; 2023; [97, 94, 91, 104, 100, 112, 108, 115]; "
+            "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/"
+            "appendix-c.pdf")},
     # No 120V heat pump dryers are on the market. The fuel switch installs
     # a 240V circuit for the new load.
     "(R) Best 120V HP Dryer FS": {
@@ -237,8 +276,8 @@ def capacity_kbtuh(btb_row):
     """The BTB row's Typical capacity (regression metric 1) in kBtu/h, or
     None if metric 1 is not a capacity in a known unit. The commercial
     ranges have no cooking capacity, so their Combined Idle Energy Rate
-    (BTU/h for gas, kW for electric) is used. Commercial refrigeration units
-    use the EIA capacities in BTB_UNIT_CAPACITY_KBTUH."""
+    (BTU/h for gas, kW for electric) is used. Units BTB describes by volume
+    use the capacities in BTB_UNIT_CAPACITY_KBTUH."""
 
     key = (btb_row.get("btb_sector"), btb_row.get("tech_id"))
     if key in BTB_UNIT_CAPACITY_KBTUH:
@@ -267,7 +306,25 @@ def cost_skip_reason(row):
     return None
 
 
-def composite_adjustment(notes, sector, crosswalk, btb_data):
+# "Pt." in a heat pump measure's Name marks a dual-fuel (partial) measure that
+# keeps its backup furnace. Some cost notes do not say so ("also add retail
+# cost of typical furnace"), so the Name is used too: "NG" in it means a gas
+# backup furnace, "Other Fossil" an oil one.
+_DUAL_FUEL_NAME = re.compile(r"\bPt\.")
+
+
+def dual_fuel_from_name(name):
+    """The backup furnace fuel ("gas"/"oil") implied by a dual-fuel heat
+    pump measure's Name, or None if it is not a dual-fuel measure."""
+
+    if not isinstance(name, str) or not _DUAL_FUEL_NAME.search(name):
+        return None
+    if "NG" in name:
+        return "gas"
+    return "oil" if "Other Fossil" in name else None
+
+
+def composite_adjustment(notes, sector, crosswalk, btb_data, name=None):
     """Amounts to add to a technology's BTB cost to rebuild a composite cost
     described by the row's Cost Source Notes.
 
@@ -286,8 +343,8 @@ def composite_adjustment(notes, sector, crosswalk, btb_data):
     if not isinstance(notes, str):
         return none, ""
     match = _ALSO_ADD_FURNACE.search(notes)
-    if match:
-        fuel = match.group(1).lower()
+    fuel = match.group(1).lower() if match else dual_fuel_from_name(name)
+    if fuel:
         entry = crosswalk.get((BACKUP_FURNACE_TECH[fuel], sector, "Ref. Case"))
         btb_row = get_btb_row(btb_data, entry) if entry is not None else None
         furnace = compute_cost(btb_row)[0] if btb_row is not None else None
@@ -614,12 +671,33 @@ def compute_cost(btb_row, metric_idx=None, perf_value=None):
             "existing": round(existing_val + mult_ret * retail_change)}, True
 
 
+def residential_ashp_cooling(meas_in_df):
+    """The cooling COP of the residential heat pump measures for each tier,
+    {tier: COP}, taken from the first residential measure switching to ASHP
+    in that tier. Commercial rows that use residential system costs are
+    costed at these performance levels."""
+
+    out = {}
+    for _, row in meas_in_df.iterrows():
+        name = str(row.get("Name"))
+        tier = tier_for_name(name)
+        if not name.startswith("(R)") or tier is None or tier in out or \
+                str(row.get("Switched to Technology")).strip() != "ASHP":
+            continue
+        value = find_value_for_key(row.get("Energy Performance"), "cooling")
+        number = parse_currency(value)
+        if number:
+            out[tier] = number
+    return out
+
+
 def apply_measure_edits(row, edits, ws, excel_row, col_index, diff_rows):
     """Apply the MEASURE_EDITS for one measure to the workbook, log each in
     `diff_rows`, and return the row with the edited values."""
 
     row = row.copy()
     edits = dict(edits)
+    note = edits.pop("_note", "edit requested in review (not from BTB)")
     if "Name" in edits and isinstance(row.get("Description"), str):
         edits["Description"] = _VOLTAGE_IN_DESCRIPTION.sub(
             "HP", row["Description"])
@@ -631,7 +709,7 @@ def apply_measure_edits(row, edits, ws, excel_row, col_index, diff_rows):
         diff_rows.append({
             "Name": row.get("Name"), "technology": "", "column": column,
             "old_value": old_value, "new_value": new_value,
-            "notes": "edit requested in review (not from BTB)"})
+            "notes": note})
         row[column] = new_value
     return row
 
@@ -651,6 +729,8 @@ def main():
 
     wb = openpyxl.load_workbook(XLSX_PATH)
     ws = wb[SHEET_NAME]
+
+    res_hp_cooling = residential_ashp_cooling(meas_in_df)
 
     diff_rows = []
     for excel_row, (_, row) in enumerate(meas_in_df.iterrows(), start=2):
@@ -715,6 +795,13 @@ def main():
                      for sector in ("residential", "commercial")
                      if (tech, sector, tier) in crosswalk_by_tech_tier),
                     None)
+            cost_only = False
+            if entry is None and tech == "ASHP" and \
+                    row_sector == "commercial" and isinstance(
+                        cost_notes, str) and \
+                    _RESIDENTIAL_SYSTEM_NOTE.search(cost_notes):
+                entry = crosswalk_by_tech_tier.get(("ASHP", "residential", tier))
+                cost_only = entry is not None
             if entry is None and tech == "all":
                 # Measures with no technology token (baseline "all") are
                 # crosswalked by measure name.
@@ -757,7 +844,8 @@ def main():
                         entry["btb_metric_name"]:
                     metric_idx = i
                     break
-            perf_key = None if holds_switched else perf_key_for_tech(
+            perf_key = None if (holds_switched or cost_only) else \
+                perf_key_for_tech(
                 perf_cell, tech, entry["btb_metric_name"], owner)
             metric_conflict = metric_conflicts_with_token(
                 tech, entry["btb_metric_name"])
@@ -809,6 +897,12 @@ def main():
                                 entry["projection_scenario"],
                             "projection_year": entry["projection_year"],
                         })
+            elif metric_idx and keep_existing and cost_only and \
+                    tier in res_hp_cooling:
+                cost_perf = to_btb_metric(
+                    entry["btb_metric_name"], "COP", res_hp_cooling[tier],
+                    parse_currency(btb_row.get(
+                        f"Regression metric {metric_idx} - Typical")))
             elif metric_idx and keep_existing and target_unit and old_val \
                     and not metric_conflict:
                 cost_perf = to_btb_metric(
@@ -861,7 +955,7 @@ def main():
                 skip_reason = skip_cost_reason
                 adjustment = composite_adjustment(
                     cost_notes, entry["sector"], crosswalk_by_tech_tier,
-                    btb_data)
+                    btb_data, row.get("Name"))
                 if skip_reason is None and cost_btb_row is btb_row and \
                         not used_regression and \
                         entry["bound"] != "Typical" and \
@@ -891,14 +985,16 @@ def main():
                             "not a known heating/cooling capacity unit; "
                             "left as-is")
                     else:
-                        cost = {k: round(v / capacity, 2)
+                        # Adders (a backup furnace, tank removal) are
+                        # whole-unit costs, so they are divided by the same
+                        # capacity.
+                        extra, extra_note = adjustment
+                        cost = {k: round((v + extra[k]) / capacity, 2)
                                 for k, v in cost.items()}
                         cost_note = (cost_note + "; " if cost_note else "") \
                             + f"divided by {capacity:.4g} kBtu/h"
-                        if adjustment and any(adjustment[0].values()):
-                            skip_reason = (
-                                "cost notes describe an adjustment that "
-                                "is not defined per kBtu/h; left as-is")
+                        if extra_note:
+                            cost_note += "; " + extra_note
                 elif skip_reason is None:
                     extra, extra_note = adjustment
                     cost = {"new": cost["new"] + extra["new"],
@@ -994,7 +1090,7 @@ def main():
             lifetime_override = entry.get("lifetime_value")
             if pd.notna(lifetime_override):
                 lifetime = float(lifetime_override)
-            if pd.notna(lifetime) and not holds_switched:
+            if pd.notna(lifetime) and not holds_switched and not cost_only:
                 lifetime_cell = cell_state["Lifetime"]
                 life_unkeyed = is_unkeyed(lifetime_cell)
                 old_lifetime = find_value_for_key(lifetime_cell, tech)

@@ -84,27 +84,11 @@ CROSSWALK_COLUMNS = [
     "lifetime_value",
 ]
 
-# scout_technology -> Measure Type to set on the reference-case measure when
-# its BTB cost is written. The reference-case refrigeration measure is a
-# zero-cost add-on covering all of these technologies; with BTB costs it
-# becomes a full service measure.
-REF_CASE_MEASURE_TYPE = {
-    tech: "full service" for tech in [
-        "Commercial Reach-In Freezers", "Commercial Reach-In Refrigerators",
-        "Commercial Supermarket Display Cases", "Commercial Walk-In Freezers",
-        "Commercial Walk-In Refrigerators",
-        "Commercial Beverage Merchandisers", "Commercial Ice Machines",
-        "Commercial Refrigerated Vending Machines"]}
-
 # scout_technology -> value of the keep_lifetime column for its rows.
 KEEP_LIFETIME = {
     # BTB's electric dryer lifetime is 22.3 years, implausibly long; keep the
     # existing 13 and treat it as a potential issue with the BTB data.
     "electric dryer": "yes",
-    # BTB's beverage merchandiser (31 y) and ice machine (21 y) lifetimes are
-    # implausibly long (EIA: 10 and 8.5 y); keep the existing 10.
-    "Commercial Beverage Merchandisers": "yes",
-    "Commercial Ice Machines": "yes",
 }
 
 # scout_technology -> lifetime (years) used instead of BTB's.
@@ -119,12 +103,6 @@ LIFETIME_VALUE = {
 # decision to depart from BTB. Also shown in populate_meas_in_from_btb.py's
 # BTB Diff sheet where the override applies.
 TECH_NOTES = {
-    "Commercial Beverage Merchandisers": (
-        "Potential BTB issue: BTB lifetime (31 y) is implausibly long (EIA "
-        "10 y); existing lifetime kept"),
-    "Commercial Ice Machines": (
-        "Potential BTB issue: BTB lifetime (21 y) is implausibly long (EIA "
-        "8.5 y); existing lifetime kept"),
     "induction": (
         "Potential BTB issue: BTB lifetimes are electric range 11, gas 15, "
         "induction 17; induction set to 11 like the electric range"),
@@ -253,23 +231,8 @@ MATCH_RULES = {
     # -- Commercial Lighting --
     "LED": [("commercial", ["led troffer", "panel"], ["dimming", "control"])],
 
-    # -- Commercial Refrigeration --
-    "Commercial Ice Machines": [
-        ("commercial", ["ice machine", "standard"], [])],
-    "Commercial Beverage Merchandisers": [
-        ("commercial", ["beverage merchandisers", "standard"], [])],
-    "Commercial Refrigerated Vending Machines": [
-        ("commercial", ["refrigerated vending machine", "standard"], [])],
-    "Commercial Reach-In Freezers": [
-        ("commercial", ["reach-in freezer"], [])],
-    "Commercial Reach-In Refrigerators": [
-        ("commercial", ["reach-in refrigerator"], [])],
-    "Commercial Walk-In Freezers": [
-        ("commercial", ["walk-in", "freezer"], [])],
-    "Commercial Walk-In Refrigerators": [
-        ("commercial", ["walk-in", "cooler"], [])],
-    "Commercial Supermarket Display Cases": [
-        ("commercial", ["supermarket display cases"], [])],
+    # Commercial refrigeration measures use EIA values entirely (see
+    # MEASURE_EDITS in populate_meas_in_from_btb.py), so have no rules here.
 }
 
 
@@ -488,8 +451,6 @@ def main(refresh):
             row["cost_at"] = COST_AT.get(scout_tech)
             row["keep_lifetime"] = KEEP_LIFETIME.get(scout_tech)
             row["lifetime_value"] = LIFETIME_VALUE.get(scout_tech)
-            if row["tier"] == "Ref. Case":
-                row["measure_type"] = REF_CASE_MEASURE_TYPE.get(scout_tech)
             if scout_tech in TECH_NOTES:
                 row["notes"] = TECH_NOTES[scout_tech]
             if (row["scout_technology"], row["sector"],
