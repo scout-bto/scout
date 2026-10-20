@@ -140,23 +140,12 @@ Per-kBtu/h costs are the whole-unit cost divided by a capacity in kBtu/h:
 - *Cooking*: BTB's ranges have no capacity, so the range's Combined Idle
   Energy Rate is used (10.35 kBtu/h for the gas range; 1.4 kW = 4.78 kBtu/h
   for the electric range).
-- *Refrigeration*: BTB describes the units by volume, area or ice output, so
-  the capacities come from the EIA report "Updated Buildings Sector Appliance
-  and Equipment Costs and Efficiencies", Appendix C (2022 typical cooling
-  capacity), in `BTB_UNIT_CAPACITY_KBTUH`. Where EIA's typical unit is the
-  same size as BTB's the EIA capacity is used as is (reach-in freezer 49 ft3,
-  4.34 kBtu/h; reach-in refrigerator 46 ft3, 2.349; beverage merchandiser
-  27 ft3, 4.7; vending machine 35 ft3, 1.81; ice machine 700 lb/day, 4.58).
-  Two cases don't correspond and are assumptions: the walk-in freezer and
-  cooler are 112 sq ft in BTB against EIA's 161 sq ft (23.5 kBtu/h) and 240
-  sq ft (41.0 kBtu/h), so their capacities are scaled by floor area (16.35
-  and 19.14 kBtu/h); and BTB's display case (51 ft2 of display area) is
-  paired with EIA's 12 ft case (11.85 kBtu/h) without a size check.
+- *Refrigeration* is not taken from BTB at all (see below).
 
-The zero-cost reference-case refrigeration add-on, which covers eight
-technologies in one cost cell, becomes a full service measure with a cost
-entry for each technology.
-
+2022$ rows are only replaced when the cell holds a single cost, or when
+every technology in a multi-technology cell has a crosswalk entry (so all
+its costs move to $2023 together); their `Cost Units` are then changed to
+2023$ (BTB costs are $2023).
 Costs that can't be evaluated at the tier's performance (e.g. kept
 performance that can't be converted to the BTB metric) are skipped. Every
 skip is logged in `BTB Diff` with its reason.
@@ -182,15 +171,43 @@ Notes:
   whatever the tier (used for the heat pump dryer, whose BTB cost regression
   falls as efficiency rises).
 - `keep_lifetime = yes` leaves the existing lifetime alone (used for the
-  electric dryer, beverage merchandisers and ice machines, whose BTB
-  lifetimes of 22.3, 31 and 21 years are judged implausible and flagged as
-  potential BTB issues).
+  electric dryer, whose BTB lifetime of 22.3 years is judged implausible
+  and flagged as a potential BTB issue).
 - `lifetime_value` uses a given lifetime instead of BTB's (used for
   induction ranges: 11 years like the electric range, instead of BTB's 17).
+
+**Commercial heat pump rows.** Commercial rows whose cost notes say "Uses
+residential system costs and normalizes by typical capacity of residential
+systems (36 kBtu/h)" take the residential ASHP entry for their *cost only*,
+divided by BTB's 3-ton capacity (36 kBtu/h); their performance and lifetime
+are left alone. Min. Efficiency and ESTAR rows are costed at the residential
+tier performance (taken from the residential heat pump measures), not at the
+commercial row's own values. Dual-fuel rows are recognized by "Pt." in the
+Name, as well as by their cost notes: new construction adds the BTB furnace
+(gas or oil, from "NG" or "Other Fossil" in the Name) and existing is the heat
+pump alone. The other commercial heat pump rows (the "RTU" ones, costed per
+kBtu/h from commercial rooftop heat pumps) are not covered by this rule and
+are left as they are.
+
+**IEER** is treated like the other Btu/Wh efficiency metrics (divided by
+3.412), so rooftop unit cooling performance can be updated from BTB.
 
 **Other rules.** Commercial rows that represent a residential-type furnace
 in a commercial setting (their cost notes say "residential furnaces") use the
 residential furnace's BTB entry for `oil_furnace` and `gas_furnace`.
+
+**Refrigeration uses EIA entirely.** The commercial refrigeration
+technologies (reach-in freezers and refrigerators, supermarket display cases,
+walk-in freezers and refrigerators, beverage merchandisers, ice machines,
+vending machines) have no BTB rules. BTB describes them by volume, area or
+ice output rather than capacity, and EIA's report "Updated Buildings Sector
+Appliance and Equipment Costs and Efficiencies" (Appendix C) gives each one's
+cost, cooling capacity and lifetime, so using EIA throughout avoids mixing
+sources and dollar years (EIA is 2022$) within a measure. The zero-cost
+reference-case measure `(C) Ref. Case Refrigeration` becomes a full service
+measure with EIA's typical retail (new) and total installed (existing) costs
+per kBtu/h (`EIA_REFRIGERATION_COST`); `(C) Best Refrigeration` already holds
+EIA's High values.
 
 **Measure edits.** `MEASURE_EDITS` in `populate_meas_in_from_btb.py` lists
 edits to specific measures that came out of review and are not derived from
@@ -248,8 +265,8 @@ Flagged in review (decision taken):
 |---|---|---|
 | Clothes Dryer Electric (residential ID 14) | Lifetime 22.33 years, implausibly long | Keep the existing 13 (`keep_lifetime = yes`) |
 | Clothes Dryer Heat Pump (residential ID 17) | The CEF cost coefficient is negative (-4.67), so cost falls as efficiency rises: Typical (CEF 5.45) is $1,595 but BTB's High (CEF 11) would be $1,569 | Use the Typical cost for every tier (`cost_at = Typical`) |
-| Beverage Merchandisers - Standard (commercial ID 30) | Lifetime 31 years; the existing value is 10, and EIA's Appendix C gives 10 | Keep the existing 10 (`keep_lifetime = yes`) |
-| Commercial Ice Machine Standard (commercial ID 18) | Lifetime 21 years; the existing value is 10, and EIA's Appendix C gives 8.5 | Keep the existing 10 (`keep_lifetime = yes`) |
+| Beverage Merchandisers - Standard (commercial ID 30) | Lifetime 31 years; EIA's Appendix C gives 10 | Not used: refrigeration measures use EIA entirely |
+| Commercial Ice Machine Standard (commercial ID 18) | Lifetime 21 years; EIA's Appendix C gives 8.5 | Not used: refrigeration measures use EIA entirely |
 | Cooking Range Electric / Gas / Induction (residential IDs 27 / 28 / 29) | Lifetimes 11 / 15 / 17 years. Gas matches EIA (15) but electric differs from EIA (17), and induction lasting longer than an electric resistance range is not credible | Use 11 for electric (BTB's value) and for induction (`lifetime_value = 11`) |
 
 Observed while building the pipeline, not yet reviewed:
