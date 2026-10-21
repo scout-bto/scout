@@ -302,10 +302,29 @@ Observed while building the pipeline, not yet reviewed:
 
 ## After reviewing
 
-There is currently no automated "apply" step -- copy whichever proposed
-values you accept from `bss_meas_v2_btb_proposed.xlsx` into
-`bss_meas_v2.xlsx` by hand. The proposed workbook already carries the matching
-Source Notes/Details (see "Source notes and details" above), so copy those
-cells together with the values they describe. Then re-export the `meas_in`
-sheet to `ecm_definitions/meas_pkg_gen_io/inputs/meas_in.csv` for
-`meas_pkg_gen.py` to pick up.
+There is currently no automated "apply" step. The BTB values stay proposals
+(`bss_meas_v2_btb_proposed.xlsx`, which is git-ignored) until they are
+accepted and copied into `bss_meas_v2.xlsx`, so this work does not itself
+change `meas_in.csv` or the measure JSON files.
+
+Do the following after merging into the branch that holds the current measure
+set, not before: `meas_in.csv` and the JSON files in `ecm_definitions/` are
+edited on that branch too, so regenerating them from an older copy would
+conflict on nearly every file.
+
+1. Copy the accepted values from the proposed workbook into
+   `bss_meas_v2.xlsx` by hand. The proposed workbook already carries the
+   matching Source Notes/Details (see "Source notes and details" above), so
+   copy those cells together with the values they describe.
+2. Export the `meas_in` sheet with Excel's "CSV UTF-8 (Comma delimited)" to
+   `ecm_definitions/meas_pkg_gen_io/inputs/meas_in.csv`. Export through Excel
+   rather than a script, because some cells are formulas (for example
+   `=1-(397/510)`) and the proposed workbook has lost their cached values.
+   The export will also pick up other edits made to the workbook since the
+   last export (for example Market Entry Year or Author Details), so review
+   the `git diff` to tell them apart from the BTB changes.
+3. Run `python meas_pkg_gen.py` from the repository root to regenerate the
+   measure JSON files, and copy them into `ecm_definitions/`.
+4. The two heat pump dryer measures were renamed (`(R) Best 120V HP Dryer
+   FS/TS` to `(R) Best HP Dryer FS/TS`), so delete the old-named JSON files
+   in `ecm_definitions/`.
