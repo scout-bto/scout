@@ -200,9 +200,14 @@ tier performance (taken from the residential heat pump measures), not at the
 commercial row's own values. Dual-fuel rows are recognized by "Pt." in the
 Name, as well as by their cost notes: new construction adds the BTB furnace
 (gas or oil, from "NG" or "Other Fossil" in the Name) and existing is the heat
-pump alone. The other commercial heat pump rows (the "RTU" ones, costed per
-kBtu/h from commercial rooftop heat pumps) are not covered by this rule and
-are left as they are.
+pump alone. The other commercial heat pump rows (the "RTU" ones, costed per kBtu/h
+from commercial rooftop heat pumps) take BTB's standard RTU Heat Pump (7.5
+tons = 90 kBtu/h; the cold climate version is not used) for cost only,
+evaluated at the IEER of each tier from EIA's "Updated Buildings Sector
+Appliance and Equipment Costs and Efficiencies" report (p. 139, 2023):
+Min. Efficiency 14.25 (typical), ESTAR 15.3 (ENERGY STAR v4.0), Best 20.3
+(`RTU_TIER_IEER`). Their COPs (3.4, 3.5, 3.7) are EIA's values for the same
+tiers and are left as they are; dual-fuel rows do not add a furnace.
 
 **IEER** is treated like the other Btu/Wh efficiency metrics (divided by
 3.412), so rooftop unit cooling performance can be updated from BTB.
@@ -221,14 +226,18 @@ cost, cooling capacity and lifetime, so using EIA throughout avoids mixing
 sources and dollar years (EIA is 2022$) within a measure. The zero-cost
 reference-case measure `(C) Ref. Case Refrigeration` becomes a full service
 measure with EIA's typical retail (new) and total installed (existing) costs
-per kBtu/h (`EIA_REFRIGERATION_COST`); `(C) Best Refrigeration` already holds
-EIA's High values.
+per kBtu/h (`EIA_REFRIGERATION_COST`) and EIA's lifetimes
+(`EIA_REFRIGERATION_LIFETIME`: 10 years, except ice machines 8.5 and vending
+machines 13.5); `(C) Best Refrigeration` already holds EIA's High values.
 
 **Measure edits.** `MEASURE_EDITS` in `populate_meas_in_from_btb.py` lists
 edits to specific measures that came out of review and are not derived from
 BTB: the best heat pump dryer measures lose "120V" from their Name and
 Description (no 120V products are on the market), and the fuel switch
-measure gets `240V circuit: true` for its Electrical Upgrade Costs. They are
+measure gets `240V circuit: true` for its Electrical Upgrade Costs; and the
+commercial ground source heat pump's cooling COP is set to 6.33 (EIA's EER of
+21.6, p. 141, divided by 3.412) because BTB has no cooling efficiency for it
+(its heating COP comes from BTB through the crosswalk). They are
 applied to the proposed workbook and logged in `BTB Diff`. Renaming a
 measure also means regenerating its file under `ecm_definitions/` and
 updating the exported `meas_in.csv`.

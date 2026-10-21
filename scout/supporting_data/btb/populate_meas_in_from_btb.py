@@ -67,6 +67,16 @@ CROSS_SECTOR_TECHS = {
 # as they are.
 _RESIDENTIAL_SYSTEM_NOTE = re.compile(r"residential system", re.IGNORECASE)
 
+# The other commercial heat pump rows (their switched-to technology is ASHP)
+# are costed from commercial rooftop heat pumps, so take BTB's standard RTU
+# Heat Pump (rooftop_ASHP-heat's entry, 7.5 tons = 90 kBtu/h) for cost only,
+# evaluated at the IEER of each tier from the EIA "Updated Buildings Sector
+# Appliance and Equipment Costs and Efficiencies" report (p. 139, 2023):
+# Min. Efficiency at the typical IEER of 14.25, ESTAR at ENERGY STAR v4.0's
+# 15.3, Best at the high-efficiency 20.3. The rows keep their existing COPs
+# (3.4, 3.5, 3.7), which are the EIA values for the same tiers.
+RTU_TIER_IEER = {"Min. Efficiency": 14.25, "ESTAR": 15.3, "Best": 20.3}
+
 # Technologies covered by build_tech_crosswalk.py that participate in a
 # shared "heating"/"cooling"/"ventilation" Performance Units key rather
 # than their own tech-name key (seen in combined-package meas_in rows,
@@ -241,6 +251,20 @@ EIA_REFRIGERATION_COST = {
     "Commercial Refrigerated Vending Machines": (1808, 1928),
 }
 
+# EIA average lifetimes (years) for the same technologies (Appendix C; the
+# walk-ins are 12 for the insulated box and 10 for the compressor, and the
+# compressor life is used where it is broken out).
+EIA_REFRIGERATION_LIFETIME = {
+    "Commercial Reach-In Freezers": 10,
+    "Commercial Reach-In Refrigerators": 10,
+    "Commercial Supermarket Display Cases": 10,
+    "Commercial Walk-In Freezers": 10,
+    "Commercial Walk-In Refrigerators": 10,
+    "Commercial Beverage Merchandisers": 10,
+    "Commercial Ice Machines": 8.5,
+    "Commercial Refrigerated Vending Machines": 13.5,
+}
+
 # Edits to specific measures requested in review, applied to the proposed
 # workbook and logged in the BTB Diff sheet: old measure Name -> new Name
 # (optional) and cell values for other columns. Descriptions have "120V"
@@ -266,7 +290,31 @@ MEASURE_EDITS = {
             "Efficiencies: Appendix C; U.S. Energy Information "
             "Administration; 2023; [97, 94, 91, 104, 100, 112, 108, 115]; "
             "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/"
+            "appendix-c.pdf"),
+        "Lifetime": "; ".join(
+            f"{tech}: {years:g}"
+            for tech, years in EIA_REFRIGERATION_LIFETIME.items()),
+        "Lifetime Source Notes": (
+            "Average lifetimes for typical efficiency refrigeration units in "
+            "2022 (use average compressor life where broken out)"),
+        "Lifetime Source Details": (
+            "Updated Buildings Sector Appliance and Equipment Costs and "
+            "Efficiencies: Appendix C; U.S. Energy Information "
+            "Administration; 2023; [97, 94, 91, 104, 100, 112, 108, 115]; "
+            "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/"
             "appendix-c.pdf")},
+    # The commercial ground source heat pump's cooling COP is EIA's EER of
+    # 21.6 (p. 141) divided by 3.412 (the 4.13 it replaces matched neither
+    # that nor the 6.88 first calculated with a typo of 3.14). BTB has no
+    # cooling efficiency for it, so the heating COP comes from BTB through
+    # the crosswalk.
+    "(C) Ref. Case GSHP": {
+        "_note": "cooling COP from EIA: EER 21.6 / 3.412 (p. 141), per review",
+        "Energy Performance": lambda old: replace_value_for_key(
+            old, "comm_GSHP-cool", "6.33"),
+        "Performance Source Notes": lambda old: (
+            f"{old.rstrip('. ')}; cooling COP is EIA's EER of 21.6 "
+            "divided by 3.412")},
     # No 120V heat pump dryers are on the market. The fuel switch installs
     # a 240V circuit for the new load.
     "(R) Best 120V HP Dryer FS": {
@@ -773,6 +821,8 @@ def apply_measure_edits(row, edits, ws, excel_row, col_index, diff_rows):
             "HP", row["Description"])
     for column, new_value in edits.items():
         old_value = row.get(column)
+        if callable(new_value):
+            new_value = new_value(old_value)
         if old_value == new_value:
             continue
         ws.cell(row=excel_row, column=col_index[column]).value = new_value
@@ -876,6 +926,12 @@ def main():
                     _RESIDENTIAL_SYSTEM_NOTE.search(cost_notes):
                 entry = crosswalk_by_tech_tier.get(("ASHP", "residential", tier))
                 cost_only = entry is not None
+            rtu_cost = False
+            if entry is None and tech == "ASHP" and tech == owner and \
+                    row_sector == "commercial" and tier in RTU_TIER_IEER:
+                entry = crosswalk_by_tech_tier.get(
+                    ("rooftop_ASHP-heat", "commercial", tier))
+                cost_only = rtu_cost = entry is not None
             if entry is None and tech == "all":
                 # Measures with no technology token (baseline "all") are
                 # crosswalked by measure name.
@@ -988,6 +1044,9 @@ def main():
                     parse_currency(btb_row.get(
                         f"Regression metric {metric_idx} - Typical")))
 
+            if rtu_cost:
+                cost_perf = RTU_TIER_IEER[tier]
+
             # -- Installed cost --
             units_info = cost_units_info(row.get("Cost Units"))
             cost_btb_row, cost_metric_idx, cost_perf_value = \
@@ -1018,8 +1077,13 @@ def main():
                     "High": "high performance"}.get(
                         entry["bound"],
                         "the performance already in the measure")
-            what = "installed cost of the residential system" if cost_only \
-                else "installed cost"
+            what = "installed cost of the residential system" if (
+                cost_only and not rtu_cost) else (
+                    "installed cost of the commercial rooftop heat pump"
+                    if rtu_cost else "installed cost")
+            if rtu_cost:
+                perf_phrase = (f"IEER {RTU_TIER_IEER[tier]:g} (EIA 2023 "
+                               "value for the tier)")
             cost_src = f"BTB {what} (mid estimate, 2023$) at {perf_phrase}"
             cost_cell = cell_state["Installed Cost"]
             cost_unkeyed = is_unkeyed(cost_cell)
@@ -1042,7 +1106,7 @@ def main():
                 skip_reason = skip_cost_reason
                 adjustment = composite_adjustment(
                     cost_notes, entry["sector"], crosswalk_by_tech_tier,
-                    btb_data, row.get("Name"))
+                    btb_data, None if rtu_cost else row.get("Name"))
                 if skip_reason is None and cost_btb_row is btb_row and \
                         not used_regression and \
                         entry["bound"] != "Typical" and \
