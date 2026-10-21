@@ -150,6 +150,21 @@ Costs that can't be evaluated at the tier's performance (e.g. kept
 performance that can't be converted to the BTB metric) are skipped. Every
 skip is logged in `BTB Diff` with its reason.
 
+**Source notes and details.** Whenever the pipeline changes a performance,
+cost or lifetime value from BTB it also updates that category's Source Notes
+and Source Details, logging each in `BTB Diff`:
+- Source Details gets the BTB citation ("2024 Buildings Technology Baseline;
+  Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.; 2024; NA;
+  https://data.openei.org/submissions/8342"), in the form the measure
+  generator reads.
+- Source Notes describes what was used (for example "BTB installed cost
+  (mid estimate, 2023$) at high performance, divided by 10.35 kBtu/h"),
+  including adders such as a backup furnace.
+- If every entry in the cell came from BTB, the old source is replaced;
+  otherwise BTB is added to the existing source (notes get the technologies
+  listed, details get a second line), so entries that were not touched stay
+  correctly cited.
+
 **Composite costs** are rebuilt from BTB pieces, using the row's Cost Source
 Notes:
 - *Dual-fuel heat pump* ("also add retail cost of typical gas/oil furnace"):
@@ -280,9 +295,8 @@ Observed while building the pipeline, not yet reviewed:
 
 There is currently no automated "apply" step -- copy whichever proposed
 values you accept from `bss_meas_v2_btb_proposed.xlsx` into
-`bss_meas_v2.xlsx` by hand (and update the corresponding Source
-Notes/Details columns to cite BTB, e.g. title "2024 Buildings Technology
-Baseline", author Guidehouse/NREL, year 2024/2025, url
-https://data.openei.org/submissions/8342), then re-export the `meas_in`
+`bss_meas_v2.xlsx` by hand. The proposed workbook already carries the matching
+Source Notes/Details (see "Source notes and details" above), so copy those
+cells together with the values they describe. Then re-export the `meas_in`
 sheet to `ecm_definitions/meas_pkg_gen_io/inputs/meas_in.csv` for
 `meas_pkg_gen.py` to pick up.

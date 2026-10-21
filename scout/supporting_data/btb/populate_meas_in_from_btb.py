@@ -207,6 +207,14 @@ _RESIDENTIAL_FURNACE_NOTE = re.compile(r"residential furnaces", re.IGNORECASE)
 RESIDENTIAL_FURNACE_ALIAS = {
     "oil_furnace": "furnace (distillate)", "gas_furnace": "furnace (NG)"}
 
+# Citation written to a "... Source Details" cell when values come from BTB,
+# in the "title; author; year; pages; url" form the measure generator reads.
+BTB_SOURCE_DETAILS = (
+    "2024 Buildings Technology Baseline; Moore, N., Wilson, E., Butrico, M., "
+    "Langevin, J., & Ciraulo, R.; 2024; NA; "
+    "https://data.openei.org/submissions/8342")
+_BTB_CITED = re.compile(r"Buildings Technology Baseline|submissions/8342")
+
 # EIA typical-case costs (2022$/kBtu/h cooling capacity) for the commercial
 # refrigeration technologies, from the "Updated Buildings Sector Appliance and
 # Equipment Costs and Efficiencies" report, Appendix C: new = Retail Equipment
@@ -671,6 +679,68 @@ def compute_cost(btb_row, metric_idx=None, perf_value=None):
             "existing": round(existing_val + mult_ret * retail_change)}, True
 
 
+def update_sources(row, category, updates, cell, ws, excel_row, col_index,
+                   diff_rows):
+    """Cite BTB in a row's "<category> Source Notes" and "... Details".
+
+    Args:
+        category: "Performance", "Cost" or "Lifetime".
+        updates: {technology: description} for the technologies whose
+            values were written from BTB in this row.
+        cell: the row's cell for this category before any edits, to judge
+            whether every entry in it came from BTB.
+
+    If every entry in the cell was updated the old source no longer applies
+    and is replaced; otherwise BTB is added to the existing source, so the
+    entries that were not touched stay correctly cited.
+    """
+
+    if not updates:
+        return
+    techs = sorted(updates)
+    if is_unkeyed(cell):
+        full = len(techs) == 1
+    else:
+        keys = [t for t in techs if re.search(
+            re.escape(t) + r"\s*:", cell, re.IGNORECASE)]
+        all_keys = [t for t in techs_in_cell(row, cell)]
+        full = bool(all_keys) and set(all_keys) <= set(keys)
+    description = "; ".join(dict.fromkeys(updates.values()))
+    notes_col, details_col = f"{category} Source Notes", \
+        f"{category} Source Details"
+    old_notes, old_details = row.get(notes_col), row.get(details_col)
+    old_notes = old_notes if isinstance(old_notes, str) else ""
+    old_details = old_details if isinstance(old_details, str) else ""
+    if full or not old_notes:
+        new_notes = description
+    else:
+        new_notes = f"{old_notes}; {description} ({', '.join(techs)})"
+    if full or not old_details:
+        new_details = BTB_SOURCE_DETAILS
+    elif _BTB_CITED.search(old_details):
+        new_details = old_details
+    else:
+        new_details = old_details + "\n" + BTB_SOURCE_DETAILS
+    for column, old, new in ((notes_col, old_notes, new_notes),
+                             (details_col, old_details, new_details)):
+        if new == old:
+            continue
+        ws.cell(row=excel_row, column=col_index[column]).value = new
+        diff_rows.append({
+            "Name": row.get("Name"), "technology": ", ".join(techs),
+            "column": column, "old_value": old, "new_value": new,
+            "notes": "source updated to cite BTB" + (
+                "" if full else " (added to the existing source)")})
+
+
+def techs_in_cell(row, cell):
+    """The row's technology tokens that appear as keys of a "tech: value"
+    cell."""
+
+    return [t for t in techs_for_row(row) if re.search(
+        re.escape(t) + r"\s*:", cell, re.IGNORECASE)]
+
+
 def residential_ashp_cooling(meas_in_df):
     """The cooling COP of the residential heat pump measures for each tier,
     {tier: COP}, taken from the first residential measure switching to ASHP
@@ -781,6 +851,10 @@ def main():
             row_entries.get(t) is not None for t in cost_keys)
         cost_written = set()
         row_relabeled = False
+        src_updates = {"Performance": {}, "Cost": {}, "Lifetime": {}}
+        src_cells = {"Performance": cell_state["Energy Performance"],
+                     "Cost": cell_state["Installed Cost"],
+                     "Lifetime": cell_state["Lifetime"]}
         skip_cost_reason = cost_skip_reason(row)
         cost_notes = row.get("Cost Source Notes")
         for tech in row_techs:
@@ -887,6 +961,10 @@ def main():
                             row=excel_row,
                             column=col_index["Energy Performance"]).value \
                             = cell_state["Energy Performance"]
+                        src_updates["Performance"][tech] = (
+                            f"BTB {entry['bound'].lower()} performance "
+                            "value (2023 Reference scenario), converted to "
+                            "Scout units where necessary")
                         diff_rows.append({
                             "Name": row.get("Name"), "technology": tech,
                             "column": "Energy Performance",
@@ -934,6 +1012,15 @@ def main():
                     (entry_value(entry, "notes") or
                      "cost kept at BTB Typical for every tier")
 
+            perf_phrase = "typical performance (every tier)" if entry_value(
+                entry, "cost_at") == "Typical" else {
+                    "Typical": "typical performance",
+                    "High": "high performance"}.get(
+                        entry["bound"],
+                        "the performance already in the measure")
+            what = "installed cost of the residential system" if cost_only \
+                else "installed cost"
+            cost_src = f"BTB {what} (mid estimate, 2023$) at {perf_phrase}"
             cost_cell = cell_state["Installed Cost"]
             cost_unkeyed = is_unkeyed(cost_cell)
             cost_applies = (tech == owner) if cost_unkeyed else bool(
@@ -993,8 +1080,10 @@ def main():
                                 for k, v in cost.items()}
                         cost_note = (cost_note + "; " if cost_note else "") \
                             + f"divided by {capacity:.4g} kBtu/h"
+                        cost_src += f", divided by {capacity:.4g} kBtu/h"
                         if extra_note:
                             cost_note += "; " + extra_note
+                            cost_src += "; " + extra_note
                 elif skip_reason is None:
                     extra, extra_note = adjustment
                     cost = {"new": cost["new"] + extra["new"],
@@ -1002,6 +1091,7 @@ def main():
                     if extra_note:
                         cost_note = (cost_note + "; " if cost_note else "") \
                             + extra_note
+                        cost_src += "; " + extra_note
                 if skip_reason is None and units_info and \
                         units_info[0] != 2023 and not cost_unkeyed and \
                         not all_keys_mapped:
@@ -1036,6 +1126,7 @@ def main():
                             r"-?\d+\.?\d*", cost_cell)] == [
                         float(cost["new"]), float(cost["existing"])]
                 if new_full_cost_cell != cost_cell and not same_values:
+                    src_updates["Cost"][tech] = cost_src
                     cell_state["Installed Cost"] = new_full_cost_cell
                     ws.cell(row=excel_row,
                             column=col_index["Installed Cost"]).value = \
@@ -1101,6 +1192,8 @@ def main():
                 if life_applies and old_lifetime != new_lifetime_str:
                     keep_lifetime = entry_value(entry, "keep_lifetime") == "yes"
                     if not keep_lifetime:
+                        src_updates["Lifetime"][tech] = (
+                            "BTB expected average equipment lifetime")
                         cell_state["Lifetime"] = replace_value_for_key(
                             lifetime_cell, tech, new_lifetime_str)
                         ws.cell(row=excel_row,
@@ -1124,6 +1217,10 @@ def main():
                             (entry_value(entry, "notes") or "")
                             if pd.notna(lifetime_override) else ""),
                     })
+
+        for category, updates in src_updates.items():
+            update_sources(row, category, updates, src_cells[category], ws,
+                           excel_row, col_index, diff_rows)
 
         old_units = row.get("Cost Units")
         units_info = cost_units_info(old_units)
