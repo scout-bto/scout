@@ -30,44 +30,12 @@ OUT_PATH = BASE_DIR / "tech_crosswalk_review.xlsx"
 # (scout_technology, sector) -> open question about the mapping. Edit as
 # questions are answered; the yellow-highlighted column in the output.
 FLAGS = {
-    ("comm_GSHP-cool", "commercial"): (
-        "Your calculation 21.6 / 3.14 = 6.88 (EIA p. 141) looks like a typo: "
-        "Scout's EER-to-COP factor is 3.412 (scout/ecm_prep_vars.py line "
-        "1270), which gives 21.6 / 3.412 = 6.33. The existing manual cooling "
-        "COP in meas_in T68 is 4.13 (an EER of about 14.1), which matches "
-        "neither. Should the cooling COP be updated to 6.33? BTB has only a "
-        "heating COP for this technology, so the cooling value would stay "
-        "manual."),
-    ("comm_GSHP-heat", "commercial"): (
-        "BTB's typical heating COP is 3.6; the existing value in meas_in "
-        "T68 is 3.2 and the script now proposes 3.6. Should it be updated "
-        "to 3.6?"),
 }
 
 # Review rows for decisions that are not (yet) crosswalk entries: rows that
 # are left as they are today and a proposed mapping for them. Shown with
 # "(proposed)" in scout_technology and appended to the review table.
-EXTRA_ROWS = [{
-    "scout_technology": "ASHP in commercial RTU rows (proposed)",
-    "sector": "commercial",
-    "btb_technology_id": 1,
-    "btb_display_name": "RTU Heat Pump Standard",
-    "btb_mapping_name": "",
-    "btb_performance_metric": "IEER",
-    "n_rows_same_sector": 15,
-    "n_rows_other_sector": 0,
-    "measure_type_set": "",
-    "flag_for_review": (
-        "15 commercial rows (X71-X72 Min. Efficiency, X80-X84 ESTAR, "
-        "X89-X96 Best) are costed per kBtu/h from commercial rooftop heat "
-        "pumps, not the residential system, so they are left as they are. "
-        "Map them to BTB's RTU Heat Pump (7.5 tons = 90 kBtu/h)? BTB's "
-        "typical gives 163.3 new / 170.4 existing, matching the "
-        "Min. Efficiency rows (164/171). ESTAR (172/179) and Best "
-        "(212/220) are higher, and their performance (3.5; 3.8/3.7) is not "
-        "on the IEER scale (typical 14.25, high 20.3), so BTB's regression "
-        "can't be applied at those levels directly. How should ESTAR and "
-        "Best be costed?")}]
+EXTRA_ROWS = []
 
 COLUMN_WIDTHS = [26, 12, 10, 38, 38, 22, 10, 12, 36, 70, 14, 22, 40]
 
