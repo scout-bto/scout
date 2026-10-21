@@ -31,12 +31,43 @@ OUT_PATH = BASE_DIR / "tech_crosswalk_review.xlsx"
 # questions are answered; the yellow-highlighted column in the output.
 FLAGS = {
     ("comm_GSHP-cool", "commercial"): (
-        "BTB has only Heating COP for this technology: cooling performance "
-        "stays manual. Acceptable?"),
+        "Your calculation 21.6 / 3.14 = 6.88 (EIA p. 141) looks like a typo: "
+        "Scout's EER-to-COP factor is 3.412 (scout/ecm_prep_vars.py line "
+        "1270), which gives 21.6 / 3.412 = 6.33. The existing manual cooling "
+        "COP in meas_in T68 is 4.13 (an EER of about 14.1), which matches "
+        "neither. Should the cooling COP be updated to 6.33? BTB has only a "
+        "heating COP for this technology, so the cooling value would stay "
+        "manual."),
     ("comm_GSHP-heat", "commercial"): (
-        "Same BTB row as comm_GSHP-cool (Heating COP only; cooling "
-        "capacity is the size metric)."),
+        "BTB's typical heating COP is 3.6; the existing value in meas_in "
+        "T68 is 3.2 and the script now proposes 3.6. Should it be updated "
+        "to 3.6?"),
 }
+
+# Review rows for decisions that are not (yet) crosswalk entries: rows that
+# are left as they are today and a proposed mapping for them. Shown with
+# "(proposed)" in scout_technology and appended to the review table.
+EXTRA_ROWS = [{
+    "scout_technology": "ASHP in commercial RTU rows (proposed)",
+    "sector": "commercial",
+    "btb_technology_id": 1,
+    "btb_display_name": "RTU Heat Pump Standard",
+    "btb_mapping_name": "",
+    "btb_performance_metric": "IEER",
+    "n_rows_same_sector": 15,
+    "n_rows_other_sector": 0,
+    "measure_type_set": "",
+    "flag_for_review": (
+        "15 commercial rows (X71-X72 Min. Efficiency, X80-X84 ESTAR, "
+        "X89-X96 Best) are costed per kBtu/h from commercial rooftop heat "
+        "pumps, not the residential system, so they are left as they are. "
+        "Map them to BTB's RTU Heat Pump (7.5 tons = 90 kBtu/h)? BTB's "
+        "typical gives 163.3 new / 170.4 existing, matching the "
+        "Min. Efficiency rows (164/171). ESTAR (172/179) and Best "
+        "(212/220) are higher, and their performance (3.5; 3.8/3.7) is not "
+        "on the IEER scale (typical 14.25, high 20.3), so BTB's regression "
+        "can't be applied at those levels directly. How should ESTAR and "
+        "Best be costed?")}]
 
 COLUMN_WIDTHS = [26, 12, 10, 38, 38, 22, 10, 12, 36, 70, 14, 22, 40]
 
@@ -95,6 +126,14 @@ def build_review():
             "mapping_ok (Y/N)": "", "correct_btb_id_or_name": "",
             "colleague_notes": "",
         })
+    ids = crosswalk.drop_duplicates("scout_technology").set_index(
+        "scout_technology")
+    for extra in EXTRA_ROWS:
+        row = {"mapping_ok (Y/N)": "", "correct_btb_id_or_name": "",
+               "colleague_notes": "", **extra}
+        mapping = ids["btb_mapping_name"].get("rooftop_ASHP-heat")
+        row["btb_mapping_name"] = mapping if isinstance(mapping, str) else ""
+        rows.append(row)
     review = pd.DataFrame(rows)
     return review.sort_values(["sector", "scout_technology"]).reset_index(
         drop=True)
@@ -120,6 +159,9 @@ def write_workbook(review):
         "Rows whose scout_technology starts with (R) or (C) are "
         "measure-level rows for measures with no technology token "
         "(baseline 'all'); measure_type_set shows a Measure Type change.",
+        "Rows with (proposed) in scout_technology are not in "
+        "tech_crosswalk.csv: they are rows left as they are today, with a "
+        "proposed mapping to review.",
         "Technologies with no mapping are in "
         "technologies_without_btb_rule.xlsx.",
     ]})
