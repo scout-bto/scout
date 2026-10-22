@@ -3192,14 +3192,16 @@ class Measure(object):
                             if base_cpl_swtch:
                                 # Pull data in the following cases: 1) tech switching (not fuel),
                                 # and incentive mod applies to original fuel and switched to tech.
-                                # 2) fuel switching without retaining original fuel backup, and
-                                # incentive mod applies to that fuel switch case. 3) fuel switching
-                                # with retaining original fuel backup, and incentive mod applies to
-                                # that fuel switch case and allows original fuel backup
+                                # 2) fuel switching without retaining original fuel backup (full
+                                # electrification), matching incentives where backup is optional
+                                # ('yes') or not retained ('no'), but NOT where backup is required ('required').
+                                # 3) fuel switching with retaining original fuel backup (dual-fuel),
+                                # matching incentives where backup is optional ('yes') or required ('required'),
+                                # but NOT where backup is prohibited ('no').
                                 incent_mod_swtch = [x for x in incent_mod if ((
                                     ((self.fuel_switch_to is None) or  # no fuel switch
-                                     (self.backup_fuel_fraction is None or  # no backup or backup ok
-                                      self.backup_fuel_fraction is not None and x[7] == "yes")) and
+                                     ((self.backup_fuel_fraction is None and x[7] in ["no", "yes"]) or
+                                      (self.backup_fuel_fraction is not None and x[7] in ["yes", "required"]))) and
                                     (x[5] == mskeys_swtch[3] and x[6] == mskeys[3])) and  # fuel
                                     (x[4] == "all" or x[4] == mskeys_swtch[-2]))]  # tech
                             # Non fuel or tech switching case
@@ -5514,8 +5516,9 @@ class Measure(object):
                             meas_val_yrs_max.append(val_adjs)
                         # Assess replacement incentives (if available) first
                         if len(rpl) != 0:
-                            # Initialize list of replacement incentives
+                            # Initialize list of replacement incentives and grouped values for deduplication
                             rpl_vals = []
+                            rpl_vals_by_group = {}
                             # Loop through all available replacements for current mseg, add to list
                             for r in rpl:
                                 # Check for rebate level and if present, ensure that rebate units
@@ -5647,7 +5650,12 @@ class Measure(object):
                                         and perf <= perf_thres_val)):
                                     # Set and account for applicability factor
                                     appl_frac = r[-1]
-                                    rpl_vals.append(incent_lev * appl_frac)
+                                    # Deduplication key to group competing tiers of the same program/source
+                                    # (distinguishes state, building type, vintage, end use, tech, fuel, base fuel, scope, ira, and applicable fraction)
+                                    dedup_key = (r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[9], r[10], appl_frac)
+                                    if dedup_key not in rpl_vals_by_group:
+                                        rpl_vals_by_group[dedup_key] = []
+                                    rpl_vals_by_group[dedup_key].append(incent_lev * appl_frac)
                                 # If units don't match, append incentive value of zero and continue
                                 elif not suppress_ira and perf_thres_units != units:
                                     fmt.verboseprint(
@@ -5658,6 +5666,12 @@ class Measure(object):
                                         " and microsegment " + str(mskeys), "warning")
                                     rpl_vals.append(0)
                                     continue
+                            # For each group of competing tiers (e.g. cold-climate vs non-cold-climate
+                            # within the same program/fraction), select the highest qualifying incentive
+                            # to prevent artificial additive stacking, while allowing incentives across
+                            # distinct programs (e.g. federal, state, utility) to stack.
+                            if rpl_vals_by_group:
+                                rpl_vals.extend([max(vals) for vals in rpl_vals_by_group.values()])
                             # Determine the sum of replacement incentives to use based on data
                             # assembled above; reset baseline or measure tech. incentive
                             # to this value.

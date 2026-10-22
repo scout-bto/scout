@@ -127,8 +127,14 @@ def setup_data():
              'yes', 'replace', 'federal', True, 0, 'warm climates: 2.76; cold climates: 2.93',
              'COP', 0, 0, '$/unit', 2024, 2025, 1.0],
             ['CA', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
+             'other fuel', 'no', 'replace', 'non-federal', True, 0, '2.69',
+             'COP', False, 4000, '$/unit', 2024, 2031, 0.308],
+            ['CA', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
+             'other fuel', 'no', 'replace', 'non-federal', True, 0, '2.69',
+             'COP', 0, 0, '$/unit', 2024, 2031, 0.308],
+            ['CA', 'single family home', 'existing', 'heating', 'ASHP', 'electricity',
              'other fuel', 'no', 'replace', 'non-federal', False, 0, '2.69',
-             'COP', 0, 8000, '$/unit', 2024, 2031, 0.244],
+             'COP', False, 8000, '$/unit', 2024, 2031, 0.244],
             ['CA', 'single family home', 'existing', 'cooling', 'ASHP', 'electricity',
              'other fuel', 'no', 'replace', 'non-federal', False, 0, '2.69',
              'COP', 0, 0, '$/unit', 2024, 2031, 0.244]
@@ -220,6 +226,10 @@ def setup_data():
             ]]
 
     low_volume_rate_out = [[
+            ['CA', 'single family home', 'new', 'all', 'all', 'electricity', 0.06,
+             False, 302, 2026, False, 1],
+            ['CA', 'single family home', 'existing', 'all', 'all', 'electricity', 0.06,
+             False, 302, 2026, False, 1],
             ['CA', 'multi family home', 'new', 'all', 'all', 'electricity', 0.06,
              False, 302, 2026, False, 1],
             ['CA', 'multi family home', 'existing', 'all', 'all', 'electricity', 0.06,

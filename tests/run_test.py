@@ -29159,6 +29159,12 @@ class StateImportTest(unittest.TestCase, CommonMethods):
         # Set subset of variables that should be tested
         cls.test_vars = [k for k in cls.test_paths.keys() if "lag" not in k]
         cls.state_appl_regs_out = [[
+            ['CO', 'single family home', 'new', 'natural gas', 'heating', 'furnace (NG)',
+             2025, 0.04],
+            ['CO', 'single family home', 'new', 'natural gas', 'heating', 'all', 2030, 0.22],
+            ['CO', 'single family home', 'new', 'natural gas', 'cooking', 'all', 2030, 0.22],
+            ['CO', 'multi family home', 'new', 'natural gas', 'heating', 'all', 2030, 0.22],
+            ['CO', 'multi family home', 'new', 'natural gas', 'cooking', 'all', 2030, 0.22],
             ['CA', 'single family home', 'new', 'natural gas', 'heating', 'all', 2025, 0.04],
             ['CA', 'single family home', 'new', 'natural gas', 'water heating', 'all', 2025, 0.04],
             ['CA', 'single family home', 'existing', 'natural gas', 'heating', 'all', 2025, 0.04],
@@ -29251,16 +29257,16 @@ class StateImportTest(unittest.TestCase, CommonMethods):
              ['CA', 'Multi Family Homes (Existing)', 0, 20.0, 2022.0, 2024, 0.039, 'local'],
              ['CA', 'Commercial (Existing)', 0, 20.0, 2022.0, 2026, 0.039, 'local'],
              ['CA', 'Multi Family Homes (Existing)', 0, 20.0, 2022.0, 2026, 0.039, 'local'],
-             ['CA', 'Commercial (Existing)', 20.0, 20.0, 2030.0, 2035, 1.0, 'state'],
-             ['CA', 'Multi Family Homes (Existing)', 20.0, 20.0, 2030.0, 2035, 1.0, 'state'],
-             ['CA', 'Commercial (Existing)', 100.0, 20.0, 2030.0, 2045, 1.0, 'state'],
-             ['CA', 'Multi Family Homes (Existing)', 100.0, 20.0, 2030.0, 2045, 1.0, 'state'],
              ['CO', 'Commercial (Existing)', 0, 13.0, 2021.0, 2026, 1.0, 'state'],
              ['CO', 'Multi Family Homes (Existing)', 0, 13.0, 2021.0, 2026, 1.0, 'state'],
              ['CO', 'Commercial (Existing)', 0, 29.0, 2021.0, 2030, 1.0, 'state'],
              ['CO', 'Multi Family Homes (Existing)', 0, 29.0, 2021.0, 2030, 1.0, 'state'],
              ['CA', 'Commercial (Existing)', 30.0, 0, None, 2030, 0.03254094, 'federal'],
              ['CO', 'Commercial (Existing)', 30.0, 0, None, 2030, 0.03254094, 'federal'],
+             ['CA', 'Commercial (Existing)', 20.0, 20.0, 2030.0, 2035, 1.0, 'state'],
+             ['CA', 'Multi Family Homes (Existing)', 20.0, 20.0, 2030.0, 2035, 1.0, 'state'],
+             ['CA', 'Commercial (Existing)', 100.0, 20.0, 2030.0, 2045, 1.0, 'state'],
+             ['CA', 'Multi Family Homes (Existing)', 100.0, 20.0, 2030.0, 2045, 1.0, 'state'],
              ['CA', 'Commercial (Existing)', 100.0, 0, None, 2045, 0.03254094, 'federal'],
              ['CO', 'Commercial (Existing)', 100.0, 0, None, 2045, 0.03254094, 'federal']
              ],

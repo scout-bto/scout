@@ -385,10 +385,25 @@ class UsefulVars(object):
             try:
                 # Read in variable-specific data
                 state_regs_dat = pd.read_csv(getattr(handyfiles, k))
-                # Filter by scenario
-                state_regs_dat = state_regs_dat[state_regs_dat["scenario"] == scn_name]
+                # Drop rows where all elements are NaN
+                state_regs_dat = state_regs_dat.dropna(how="all")
+                # Drop trailing unnamed columns that may have been created by spreadsheet exports
+                state_regs_dat = state_regs_dat[
+                    [c for c in state_regs_dat.columns if not c.startswith("Unnamed")]]
+                # Filter by scenario: anchor on ref. case and add incremental rows for other scns.
+                if scn_name == "reference":
+                    state_regs_dat = state_regs_dat[state_regs_dat["scenario"] == "reference"]
+                elif scn_name == "aeo":
+                    state_regs_dat = state_regs_dat[state_regs_dat["scenario"] == "aeo"]
+                else:
+                    state_regs_dat = pd.concat([
+                        state_regs_dat[state_regs_dat["scenario"] == "reference"],
+                        state_regs_dat[state_regs_dat["scenario"] == scn_name]],
+                        ignore_index=True)
                 # Remove scenario column from df after filtering
                 state_regs_dat = state_regs_dat.drop("scenario", axis=1)
+                # Drop duplicate rows across scenarios if any identical rows exist
+                state_regs_dat = state_regs_dat.drop_duplicates().reset_index(drop=True)
                 # Initialize segment-specific list of state-level inputs
                 state_dat_init = []
                 for index, row in state_regs_dat.iterrows():

@@ -1773,10 +1773,24 @@ class UsefulVars(object):
             try:
                 # Read in input-specific data
                 state_econ_dat = pd.read_csv(getattr(handyfiles, k))
-                # Filter by scenarios
-                state_econ_dat = state_econ_dat[state_econ_dat["scenario"] == scn_name]
+                # Drop rows where all elements are NaN
+                state_econ_dat = state_econ_dat.dropna(how="all")
+                # Drop any trailing unnamed columns that may have been created by spreadsheet exports
+                state_econ_dat = state_econ_dat[[c for c in state_econ_dat.columns if not c.startswith("Unnamed")]]
+                # Filter by scenario: anchor on reference case and add incremental rows for other scenarios
+                if scn_name == "reference":
+                    state_econ_dat = state_econ_dat[state_econ_dat["scenario"] == "reference"]
+                elif scn_name == "aeo":
+                    state_econ_dat = state_econ_dat[state_econ_dat["scenario"] == "aeo"]
+                else:
+                    state_econ_dat = pd.concat([
+                        state_econ_dat[state_econ_dat["scenario"] == "reference"],
+                        state_econ_dat[state_econ_dat["scenario"] == scn_name]],
+                        ignore_index=True)
                 # Remove scenario column from df
                 state_econ_dat = state_econ_dat.drop("scenario", axis=1)
+                # Drop duplicate rows across scenarios if any identical rows exist
+                state_econ_dat = state_econ_dat.drop_duplicates().reset_index(drop=True)
                 # Initialize segment-specific list of state-level inputs
                 state_dat_init = []
                 # Loop through and finalize all rows in the data
@@ -1870,10 +1884,12 @@ class UsefulVars(object):
                         # and, for extensions, the level of increase in incentive to pair w/
                         # extension
                         backup, mod, scope, ira, increase = [x for x in row.values[8:-9]]
-                        # Finalize flag for backup allowance; blanks or negative tags set to no
-                        if not isinstance(backup, str) or backup in [
-                                "N", "n", "no", "No", "false", "False"]:
+                        # Finalize flag for backup allowance: 'no', 'yes', or 'required'
+                        if not isinstance(backup, str) or backup.strip() in [
+                                "N", "n", "no", "No", "false", "False", ""]:
                             backup = ["no"]
+                        elif backup.strip().lower() in ["required", "req"]:
+                            backup = ["required"]
                         else:
                             backup = ["yes"]
                         # Finalize type of mod; ensure that modification is tagged correctly
