@@ -1,7 +1,7 @@
 {
   "name": "(C) Ref. Case Electric Range TS",
   "_description": "Counterfactual commercial electric range, tech. switch to same (accounting)",
-  "measure_type": "add-on",
+  "measure_type": "full service",
   "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
@@ -25,19 +25,19 @@
     ],
     "source_data": null
   },
-  "installed_cost": 0.0,
-  "cost_units": "2022$/kBtu/h cooking",
+  "installed_cost": {
+    "new": 2518.84,
+    "existing": 2518.84
+  },
+  "cost_units": "2023$/kBtu/h cooking",
   "installed_cost_source": {
-    "notes": [
-      "Ref. case cost (no additional cost)",
-      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
-    ],
+    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 4.777 kBtu/h",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 167,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "add_elec_infr_cost": null,
@@ -62,6 +62,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

@@ -25,8 +25,8 @@
   "htcl_tech_link": null,
   "tech_switch_to": null,
   "energy_efficiency": {
-    "comm_GSHP-heat": 3.2,
-    "comm_GSHP-cool": 4.13,
+    "comm_GSHP-heat": 3.6,
+    "comm_GSHP-cool": 6.33,
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0
   },
@@ -36,19 +36,32 @@
     "ventilation": "relative savings (constant)"
   },
   "energy_efficiency_source": {
-    "notes": "Typical efficiency level in 2023.",
-    "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 141,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-    }
+    "notes": [
+      "Typical efficiency level in 2023",
+      "cooling COP is EIA's EER of 21.6 divided by 3.412",
+      "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (comm_GSHP-heat)"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": 141,
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "installed_cost": {
     "comm_GSHP-heat": {
-      "new": 573.0,
-      "existing": 573.0
+      "new": 1075.0,
+      "existing": 1075.0
     },
     "comm_GSHP-cool": {
       "new": 0.0,
@@ -59,8 +72,20 @@
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "Typical efficiency costs in 2023, normalized by capacity",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical efficiency costs in 2023, normalized by capacity",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 48 kBtu/h (comm_GSHP-heat)"
+    ],
+    "source_data": [
+      "Buildings Annual Technology Baseline. NREL, forthcoming",
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 15.0,
@@ -95,6 +120,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

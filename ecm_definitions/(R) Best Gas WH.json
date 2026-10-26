@@ -29,31 +29,31 @@
     }
   },
   "installed_cost": {
-    "new": 4737.0,
-    "existing": 7608.0
+    "new": 4738.0,
+    "existing": 7609.0
   },
-  "cost_units": "2022$/unit",
+  "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Buildings Technology Baseline using Best performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+    "notes": "BTB installed cost (mid estimate, 2023$) at high performance",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 56,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "add_elec_infr_cost": null,
-  "product_lifetime": 14.5,
+  "product_lifetime": 14.0,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average lifetime for typical residential gass:fired storage water heaters",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 56,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": null,
@@ -65,6 +65,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

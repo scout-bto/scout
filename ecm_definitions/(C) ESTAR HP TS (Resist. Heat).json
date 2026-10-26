@@ -56,13 +56,19 @@
     }
   },
   "installed_cost": {
-    "new": 172.0,
-    "existing": 179.0
+    "new": 171.56,
+    "existing": 179.01
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "ENERGY STAR costs in 2023 normalized by capacity.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost of the commercial rooftop heat pump (mid estimate, 2023$) at IEER 15.3 (EIA 2023 value for the tier), divided by 90 kBtu/h",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": true,
@@ -107,6 +113,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

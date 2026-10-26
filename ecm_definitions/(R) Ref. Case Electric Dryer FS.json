@@ -29,28 +29,19 @@
     }
   },
   "installed_cost": {
-    "new": 580.0,
-    "existing": 710.0
+    "new": 820.0,
+    "existing": 866.0
   },
-  "cost_units": "2022$/unit",
+  "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Retail (new) and total installed (existing) cost for typical electric dryer in 2022.",
-    "source_data": [
-      {
-        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A: Clothes Dryer (Gas)",
-        "author": "U.S. Energy Information Administration",
-        "year": 2023,
-        "pages": 97,
-        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-      },
-      {
-        "title": "Service Upgrades for Electrification Retrofits Study Final Report",
-        "author": "NV5 and Redwood Energy",
-        "year": 2022,
-        "pages": 33,
-        "url": "https://pda.energydataweb.com/api/view/2635/Service%20Upgrades%20for%20Electrification%20Retrofits%20Study%20FINAL.pdf"
-      }
-    ]
+    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": false,
@@ -77,6 +68,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

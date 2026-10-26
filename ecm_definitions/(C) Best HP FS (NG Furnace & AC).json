@@ -30,7 +30,7 @@
   "htcl_tech_link": "ng furnace+cac&rac",
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "cooling": 6.6,
+    "cooling": 4.6,
     "heating": 3.6,
     "ventilation": 0.0
   },
@@ -43,7 +43,8 @@
     "notes": [
       "High' ASHP performance in 2023",
       "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
-      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)"
+      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)",
+      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (res_type_central_AC, wall-window_room_AC)"
     ],
     "source_data": [
       {
@@ -66,20 +67,30 @@
         "year": 2014,
         "pages": 17,
         "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
       }
     ]
   },
   "installed_cost": {
-    "new": 554.0,
-    "existing": 559.0
+    "new": 553.97,
+    "existing": 559.31
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": [
-      "Uses residential system costs and normalizes by typical capacity of residential systems (36 kBtu/h)",
-      "Retail (new) and total installed (existing) for 'High' ASHPs in 2023"
-    ],
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost of the residential system (mid estimate, 2023$) at high performance, divided by 36 kBtu/h",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": false,
@@ -121,6 +132,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }
