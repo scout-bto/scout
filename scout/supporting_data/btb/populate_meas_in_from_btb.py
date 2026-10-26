@@ -535,18 +535,35 @@ def metric_conflicts_with_token(tech, metric_name):
         (tech.endswith("-heat") and metric in COOLING_METRICS)
 
 
-def perf_key_for_tech(perf_cell, tech, metric_name, owner):
+def switched_techs(row):
+    """The technology tokens a meas_in row switches to (empty if the row
+    has no switch, or switches to "same")."""
+
+    val = row.get("Switched to Technology")
+    if not isinstance(val, str) or val.strip() in ("", "same"):
+        return []
+    return [p.strip() for p in val.split(";") if p.strip()]
+
+
+def perf_key_for_tech(perf_cell, tech, metric_name, owner, end_use_ok=True):
     """Return the key under which `tech`'s performance is stored in a
     meas_in Energy Performance cell: the technology name, the end-use key
     ("heating"/"cooling") implied by the BTB metric, or None if neither is
     present. A cell with no nesting holds one value, which belongs to `owner`
-    (see owner_tech)."""
+    (see owner_tech).
+
+    `end_use_ok` is False for a baseline technology in a row that switches
+    technology: there the end-use keys hold the performance of the
+    technology switched to (e.g. a heat pump's heating COP), not that of
+    the technology it replaces (e.g. the furnace's AFUE)."""
 
     if is_unkeyed(perf_cell):
         return tech if tech == owner else None
     flags = re.IGNORECASE
     if re.search(re.escape(tech) + r"\s*:", perf_cell, flags):
         return tech
+    if not end_use_ok:
+        return None
     metric = metric_name.strip().lower() \
         if isinstance(metric_name, str) else ""
     end_use = "cooling" if metric in COOLING_METRICS else \
@@ -876,6 +893,7 @@ def main():
             "Lifetime": row.get("Lifetime"),
         }
         owner = owner_tech(row)
+        row_switched = switched_techs(row)
         type_logged = False
         row_sector = sector_for_name(row.get("Name"))
         row_techs = techs_for_row(row)
@@ -976,7 +994,8 @@ def main():
                     break
             perf_key = None if (holds_switched or cost_only) else \
                 perf_key_for_tech(
-                perf_cell, tech, entry["btb_metric_name"], owner)
+                perf_cell, tech, entry["btb_metric_name"], owner,
+                end_use_ok=not row_switched or tech in row_switched)
             metric_conflict = metric_conflicts_with_token(
                 tech, entry["btb_metric_name"])
             target_unit = (

@@ -35,7 +35,7 @@
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
     "cooling": 6.62,
-    "heating": 0.87,
+    "heating": 3.6,
     "secondary heating": 0.0
   },
   "energy_efficiency_units": {
@@ -48,7 +48,7 @@
       "High efficiency ASHP performance in 2023",
       "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
       "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)",
-      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (ASHP, central AC, furnace (distillate), room AC)"
+      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (ASHP)"
     ],
     "source_data": [
       {
@@ -172,6 +172,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 11:29:33"
+    "timestamp": "2026-10-26 13:59:32"
   }
 }
