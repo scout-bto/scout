@@ -224,6 +224,13 @@ BTB_SOURCE_DETAILS = (
     "Langevin, J., & Ciraulo, R.; 2024; NA; "
     "https://data.openei.org/submissions/8342")
 _BTB_CITED = re.compile(r"Buildings Technology Baseline|submissions/8342")
+# How hand-transcribed values cited BTB before it was published. The
+# published citation (BTB_SOURCE_DETAILS) replaces it; kept alongside it,
+# the generator would write a free-text source next to a structured one,
+# which the ECM schema rejects.
+_FORTHCOMING_BTB = re.compile(
+    r"Buildings Annual Technology Baseline\.? NREL, forthcoming\.?",
+    re.IGNORECASE)
 
 # EIA typical-case costs (2022$/kBtu/h cooling capacity) for the commercial
 # refrigeration technologies, from the "Updated Buildings Sector Appliance and
@@ -789,12 +796,15 @@ def update_sources(row, category, updates, cell, ws, excel_row, col_index,
     else:
         new_notes = append_note(
             old_notes, f"{description} ({', '.join(techs)})")
-    if full or not old_details:
+    kept_details = "\n".join(
+        line for line in old_details.split("\n")
+        if line.strip() and not _FORTHCOMING_BTB.fullmatch(line.strip()))
+    if full or not kept_details:
         new_details = BTB_SOURCE_DETAILS
-    elif _BTB_CITED.search(old_details):
-        new_details = old_details
+    elif _BTB_CITED.search(kept_details):
+        new_details = kept_details
     else:
-        new_details = old_details + "\n" + BTB_SOURCE_DETAILS
+        new_details = kept_details + "\n" + BTB_SOURCE_DETAILS
     for column, old, new in ((notes_col, old_notes, new_notes),
                              (details_col, old_details, new_details)):
         if new == old:

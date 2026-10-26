@@ -480,6 +480,36 @@ def test_update_sources_adds_to_the_source_when_only_some_entries_changed():
     assert diff3 == []
 
 
+def test_update_sources_replaces_the_forthcoming_btb_citation():
+    cell = ("furnace (NG): new: 1; furnace (NG): existing: 2; "
+            "central AC: new: 3; central AC: existing: 4")
+    row = pd.Series({
+        "Name": "(R) Ref. Case NG Furnace & AC",
+        "Baseline Technology": "furnace (NG); central AC",
+        "Switched to Technology": np.nan,
+        "Cost Source Notes": "BTB cost",
+        "Cost Source Details":
+            "Buildings Annual Technology Baseline. NREL, forthcoming"})
+    sheet, cols = sheet_for(["Cost Source Notes", "Cost Source Details"])
+    pop.update_sources(
+        row, "Cost", {"furnace (NG)": "BTB installed cost"}, cell,
+        sheet, 2, cols, [])
+    # only some entries changed, but the old citation is BTB's own
+    assert sheet.cell(2, 2).value == pop.BTB_SOURCE_DETAILS
+    # other sources are kept, and the result parses to structured sources
+    row["Cost Source Details"] = (
+        "EIA; EIA; 2023; 5; https://eia.gov\n"
+        "Buildings Annual Technology Baseline. NREL, forthcoming")
+    sheet2, cols2 = sheet_for(["Cost Source Notes", "Cost Source Details"])
+    pop.update_sources(
+        row, "Cost", {"furnace (NG)": "BTB installed cost"}, cell,
+        sheet2, 2, cols2, [])
+    details = sheet2.cell(2, 2).value
+    assert details == ("EIA; EIA; 2023; 5; https://eia.gov\n" +
+                       pop.BTB_SOURCE_DETAILS)
+    assert all(isinstance(s, dict) for s in parse_source_details(details))
+
+
 def test_update_sources_does_nothing_without_updates():
     row = pd.Series({"Name": "x"})
     sheet, cols = sheet_for(["Cost Source Notes", "Cost Source Details"])
