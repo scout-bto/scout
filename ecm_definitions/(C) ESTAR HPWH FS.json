@@ -32,18 +32,18 @@
     }
   },
   "installed_cost": {
-    "new": 324.0,
-    "existing": 351.0
+    "new": 63.52,
+    "existing": 63.52
   },
-  "cost_units": "2022$/kBtu/h water heating",
+  "cost_units": "2023$/kBtu/h water heating",
   "installed_cost_source": {
-    "notes": "2022 ESTAR v2.0 retail (new) and total installed (existing) cost value",
+    "notes": "BTB installed cost (mid estimate, 2023$) at the performance already in the measure, divided by 157 kBtu/h",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 154,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "add_elec_infr_cost": null,
@@ -68,6 +68,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

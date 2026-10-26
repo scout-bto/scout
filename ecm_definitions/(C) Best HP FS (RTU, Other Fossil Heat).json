@@ -33,7 +33,7 @@
   "htcl_tech_link": "other fossil rtu+rtac or chiller",
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "cooling": 3.8,
+    "cooling": 6.83,
     "heating": 3.7,
     "ventilation": 0.4
   },
@@ -46,7 +46,8 @@
     "notes": [
       "High' performance in 2023",
       "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source). Ventilation savings are based on ComStock simulations of a variable speed HP RTU with energy recovery",
-      "savings are averaged across all states."
+      "savings are averaged across all states.",
+      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (rooftop_AC)"
     ],
     "source_data": [
       {
@@ -62,17 +63,30 @@
         "year": 2014,
         "pages": 17,
         "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
       }
     ]
   },
   "installed_cost": {
-    "new": 212.0,
-    "existing": 220.0
+    "new": 210.87,
+    "existing": 220.03
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "High' costs in 2023 normalized by capacity.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost of the commercial rooftop heat pump (mid estimate, 2023$) at IEER 20.3 (EIA 2023 value for the tier), divided by 90 kBtu/h",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 21.0,
@@ -111,6 +125,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

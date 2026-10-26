@@ -50,11 +50,11 @@
     },
     "central AC": {
       "new": 7477.0,
-      "existing": 7804.0
+      "existing": 7805.0
     },
     "room AC": {
       "new": 672.0,
-      "existing": 826.0
+      "existing": 825.0
     },
     "secondary heater": {
       "new": 100.0,
@@ -63,8 +63,20 @@
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "High efficiency equipment for new (retail) and existing (total installed) contexts. Secondary heater costs based on rough assessment of online retail data.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "High efficiency equipment for new (retail) and existing (total installed) contexts. Secondary heater costs based on rough assessment of online retail data.",
+      "BTB installed cost (mid estimate, 2023$) at high performance (central AC, room AC)"
+    ],
+    "source_data": [
+      "Buildings Annual Technology Baseline. NREL, forthcoming",
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
@@ -144,6 +156,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

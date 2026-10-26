@@ -28,10 +28,10 @@
   "tech_switch_to": null,
   "energy_efficiency": {
     "rooftop_ASHP-heat": 3.4,
-    "rooftop_ASHP-cool": 3.4,
+    "rooftop_ASHP-cool": 4.18,
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0,
-    "pkg_terminal_HP-cool": 3.4,
+    "pkg_terminal_HP-cool": 3.31,
     "pkg_terminal_HP-heat": 3.4
   },
   "energy_efficiency_units": {
@@ -40,14 +40,26 @@
     "ventilation": "relative savings (constant)"
   },
   "energy_efficiency_source": {
-    "notes": "Typical efficiency level in 2023.",
-    "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 139,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-    }
+    "notes": [
+      "Typical efficiency level in 2023.",
+      "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (pkg_terminal_HP-cool, rooftop_ASHP-cool)"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": 139,
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "installed_cost": {
     "rooftop_ASHP-heat": {
@@ -61,8 +73,8 @@
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0,
     "pkg_terminal_HP-heat": {
-      "new": 163.3,
-      "existing": 170.4
+      "new": 310.33,
+      "existing": 329.56
     },
     "pkg_terminal_HP-cool": {
       "new": 0.0,
@@ -71,8 +83,20 @@
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "Typical efficiency costs in 2023, normalized by capacity",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical efficiency costs in 2023, normalized by capacity",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 9 kBtu/h (pkg_terminal_HP-heat)"
+    ],
+    "source_data": [
+      "Buildings Annual Technology Baseline. NREL, forthcoming",
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 15.0,
@@ -109,6 +133,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }

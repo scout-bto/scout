@@ -36,7 +36,7 @@
   "energy_efficiency": {
     "gas_boiler": 0.85,
     "gas_chiller": 1.2,
-    "rooftop_AC": 4.3,
+    "rooftop_AC": 4.34,
     "scroll_chiller": 4.6,
     "reciprocating_chiller": 4.1,
     "centrifugal_chiller": 11.3,
@@ -50,13 +50,25 @@
     "ventilation": "relative savings (constant)"
   },
   "energy_efficiency_source": {
-    "notes": "Typical value for performance, converted to Scout units where necessary.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical value for performance, converted to Scout units where necessary.",
+      "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (rooftop_AC)"
+    ],
+    "source_data": [
+      "Buildings Annual Technology Baseline. NREL, forthcoming",
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "installed_cost": {
     "gas_boiler": {
-      "new": 122.0,
-      "existing": 122.0
+      "new": 122.32,
+      "existing": 122.32
     },
     "gas_chiller": {
       "new": 78.33,
@@ -64,7 +76,7 @@
     },
     "scroll_chiller": {
       "new": 74.34,
-      "existing": 81.28
+      "existing": 81.29
     },
     "reciprocating_chiller": {
       "new": 69.9,
@@ -79,16 +91,31 @@
       "existing": 78.65
     },
     "rooftop_AC": {
-      "new": 112.0,
-      "existing": 113.0
+      "new": 97.18,
+      "existing": 98.02
     },
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "Typical efficiency costs in 2023, normalized by capacity",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical efficiency costs in 2023, normalized by capacity",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 800 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 90 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 1080 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 1140 kBtu/h (gas_boiler, reciprocating_chiller, rooftop_AC, scroll_chiller)"
+    ],
+    "source_data": [
+      "Buildings Annual Technology Baseline. NREL, forthcoming",
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 25.0,
@@ -128,6 +155,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 11:29:33"
   }
 }
