@@ -312,9 +312,9 @@ MEASURE_EDITS = {
         "_note": "cooling COP from EIA: EER 21.6 / 3.412 (p. 141), per review",
         "Energy Performance": lambda old: replace_value_for_key(
             old, "comm_GSHP-cool", "6.33"),
-        "Performance Source Notes": lambda old: (
-            f"{old.rstrip('. ')}; cooling COP is EIA's EER of 21.6 "
-            "divided by 3.412")},
+        "Performance Source Notes": lambda old: append_note(
+            old.rstrip(". "),
+            "cooling COP is EIA's EER of 21.6 divided by 3.412")},
     # No 120V heat pump dryers are on the market. The fuel switch installs
     # a 240V circuit for the new load.
     "(R) Best 120V HP Dryer FS": {
@@ -744,6 +744,14 @@ def compute_cost(btb_row, metric_idx=None, perf_value=None):
             "existing": round(existing_val + mult_ret * retail_change)}, True
 
 
+def append_note(old, note):
+    """`old` with "; `note`" added, or `old` unchanged if it already
+    contains `note`, so rerunning on a workbook that already holds the
+    proposed values does not repeat the note."""
+
+    return old if note in old else f"{old}; {note}"
+
+
 def update_sources(row, category, updates, cell, ws, excel_row, col_index,
                    diff_rows):
     """Cite BTB in a row's "<category> Source Notes" and "... Details".
@@ -779,7 +787,8 @@ def update_sources(row, category, updates, cell, ws, excel_row, col_index,
     if full or not old_notes:
         new_notes = description
     else:
-        new_notes = f"{old_notes}; {description} ({', '.join(techs)})"
+        new_notes = append_note(
+            old_notes, f"{description} ({', '.join(techs)})")
     if full or not old_details:
         new_details = BTB_SOURCE_DETAILS
     elif _BTB_CITED.search(old_details):

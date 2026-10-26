@@ -470,6 +470,14 @@ def test_update_sources_adds_to_the_source_when_only_some_entries_changed():
         sheet2, 2, cols2, diff2)
     assert sheet2.cell(2, 2).value is None
     assert [d["column"] for d in diff2] == ["Cost Source Notes"]
+    # nor is the added note, once the notes hold it
+    row["Cost Source Notes"] = notes
+    sheet3, cols3 = sheet_for(["Cost Source Notes", "Cost Source Details"])
+    diff3 = []
+    pop.update_sources(
+        row, "Cost", {"furnace (NG)": "BTB installed cost"}, cell,
+        sheet3, 2, cols3, diff3)
+    assert diff3 == []
 
 
 def test_update_sources_does_nothing_without_updates():
@@ -512,6 +520,20 @@ def test_apply_measure_edits_accepts_functions_of_the_old_value():
         "comm_GSHP-heat: 3.2; comm_GSHP-cool: 6.33"
     assert out["Performance Source Notes"].startswith(
         "Typical efficiency level in 2023; cooling COP")
+    # applying the edits again (a rerun on the edited workbook) changes
+    # nothing
+    diff = []
+    again = pop.apply_measure_edits(
+        out, pop.MEASURE_EDITS["(C) Ref. Case GSHP"], sheet, 2, cols, diff)
+    assert diff == []
+    assert again["Performance Source Notes"] == \
+        out["Performance Source Notes"]
+
+
+def test_append_note():
+    assert pop.append_note("EIA", "BTB (ASHP)") == "EIA; BTB (ASHP)"
+    assert pop.append_note("EIA; BTB (ASHP)", "BTB (ASHP)") == \
+        "EIA; BTB (ASHP)"
 
 
 def test_refrigeration_edit_covers_all_eight_technologies():
