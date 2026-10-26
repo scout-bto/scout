@@ -181,6 +181,22 @@ def test_perf_key_for_tech():
     # a bare value belongs to the owner only
     assert pop.perf_key_for_tech("2.3", "HPWH", "UEF", "HPWH") == "HPWH"
     assert pop.perf_key_for_tech("2.3", "other", "UEF", "HPWH") is None
+    # a technology being replaced can't fill the end-use keys, which hold
+    # the switched-to technology's performance, but keeps its own key
+    assert pop.perf_key_for_tech(
+        end_use, "furnace (NG)", "AFUE", "ASHP", end_use_ok=False) is None
+    assert pop.perf_key_for_tech(
+        keyed, "central AC", "SEER1", "ASHP", end_use_ok=False) == \
+        "central AC"
+
+
+def test_switched_techs():
+    assert pop.switched_techs({"Switched to Technology": "ASHP"}) == ["ASHP"]
+    assert pop.switched_techs(
+        {"Switched to Technology": "ASHP; HPWH"}) == ["ASHP", "HPWH"]
+    assert pop.switched_techs({"Switched to Technology": "same"}) == []
+    assert pop.switched_techs({"Switched to Technology": np.nan}) == []
+    assert pop.switched_techs({}) == []
 
 
 def test_metric_conflicts_with_token():

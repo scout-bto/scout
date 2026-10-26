@@ -253,7 +253,11 @@ add-on to a full service measure carrying the BTB cost.
 A cell holding one bare value (e.g. `2.3`, or `new: X; existing: Y` with no
 technology name) is only updated for the row's single Switched-to
 technology (or the Baseline technology if there is no switch), never for
-the other technologies in the row.
+the other technologies in the row. Likewise, in a row that switches
+technology, a cell keyed by end use (`heating: X; cooling: Y`) holds the
+switched-to technology's performance, so only that technology's BTB value
+is written to it, never a baseline technology's (e.g. a furnace's AFUE is
+not written to a heat pump's heating COP).
 
 Writes `bss_meas_v2_btb_proposed.xlsx` (git-ignored, not meant to be
 committed) containing:

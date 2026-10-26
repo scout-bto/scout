@@ -34,7 +34,7 @@
   "tech_switch_to": "elec_boiler",
   "energy_efficiency": {
     "heating": 0.98,
-    "cooling": 4.34,
+    "cooling": 4.3,
     "ventilation": 0.0
   },
   "energy_efficiency_units": {
@@ -45,19 +45,9 @@
   "energy_efficiency_source": {
     "notes": [
       "Typical boiler efficiency for heating",
-      "typical cooling efficiencies, converted to Scout units where needed.",
-      "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (rooftop_AC)"
+      "typical cooling efficiencies, converted to Scout units where needed."
     ],
-    "source_data": [
-      "Buildings Annual Technology Baseline. NREL, forthcoming",
-      {
-        "title": "2024 Buildings Technology Baseline",
-        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
-        "year": 2024,
-        "pages": null,
-        "url": "https://data.openei.org/submissions/8342"
-      }
-    ]
+    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
   },
   "installed_cost": {
     "oil_boiler": {
@@ -147,6 +137,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 11:29:33"
+    "timestamp": "2026-10-26 13:59:32"
   }
 }
