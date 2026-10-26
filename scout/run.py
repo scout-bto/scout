@@ -45,7 +45,7 @@ class UsefulInputFiles(object):
             heating, cooking, drying, and other end uses.
     """
 
-    def __init__(self, energy_out, regions, grid_decarb):
+    def __init__(self, energy_out, regions, grid_decarb, high_data_ctr=False):
         self.glob_vars = fp.GENERATED / "glob_run_vars.json"
         self.meas_summary_data = fp.GENERATED / "ecm_prep.json"
         self.meas_compete_data = fp.ECM_COMP
@@ -59,12 +59,15 @@ class UsefulInputFiles(object):
         self.codes = fp.SUB_FED / "codes.csv"
         self.codes_lag = fp.SUB_FED / "codes_lag.csv"
         self.bps = fp.SUB_FED / "bps.csv"
+        # Use the stock/energy files built from the High Electricity Demand (data center
+        # growth) side case (file names appended with '_hdc') when requested
+        hdc = "_hdc" if high_data_ctr else ""
         # Set heating/cooling energy totals file conditional on: 1) regional
         # breakout used, and 2) whether site energy data, source energy data
         # (fossil equivalent site-source conversion), or source energy data
         # (captured energy site-source conversion) are needed
         if regions == "AIA":
-            self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_cz.json"
+            self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_cz{hdc}.json"
             if energy_out[0] == "site":
                 self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site.json"
             elif energy_out[0] == "fossil_equivalent":
@@ -82,7 +85,7 @@ class UsefulInputFiles(object):
                     "(fossil fuel equivalent), and source (captured "
                     "energy) are currently supported)")
         elif regions == "EMM":
-            self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_emm.gz"
+            self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_emm{hdc}.gz"
             if energy_out[0] == "site":
                 self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site_emm.json"
             elif energy_out[0] == "fossil_equivalent":
@@ -100,7 +103,7 @@ class UsefulInputFiles(object):
                     "(fossil fuel equivalent), and source (captured "
                     "energy) are currently supported)")
         elif regions == "State":
-            self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_state.gz"
+            self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_state{hdc}.gz"
             if energy_out[0] == "site":
                 self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site_state.json"
             elif energy_out[0] == "fossil_equivalent":
@@ -8128,13 +8131,19 @@ def main(opts: argparse.NameSpace):  # noqa: F821
     else:
         report_stk_costs = False
 
+    # Set a flag for the high data center side case baseline
+    if measures_objlist[0].usr_opts.get("high_data_ctr") is True:
+        high_data_ctr = True
+    else:
+        high_data_ctr = False
+
     # Re-instantiate useful input files object when site energy is output
     # instead of the default source energy or regional breakdown other than
     # default AIA climate zone breakdown is chosen or a high grid decarb.
-    # scheme is assumed
+    # scheme is assumed or the high data center baseline is chosen
     if energy_out[0] != "fossil_equivalent" or regions != "AIA" or \
-            grid_decarb is True:
-        handyfiles = UsefulInputFiles(energy_out, regions, grid_decarb)
+            grid_decarb is True or high_data_ctr is True:
+        handyfiles = UsefulInputFiles(energy_out, regions, grid_decarb, high_data_ctr)
     # Re-instantiate useful variables object
     handyvars = UsefulVars(
         handyfiles, opts, brk_vars, brkout, regions, state_appl_regs, codes, bps, exog_rates)

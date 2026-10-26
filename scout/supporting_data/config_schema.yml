@@ -305,6 +305,11 @@ properties:
             default: false
             description: Report baseline and measure unit capital costs, including summaries across segments and full breakouts.
 
+      high_data_ctr:
+        type: boolean
+        default: false
+        description: If true, choose the High Electricity Demand EIA side case forecast as a baseline instead of the Reference Case. This side case assumes high data center load growth.
+
 
   run:
     type: object

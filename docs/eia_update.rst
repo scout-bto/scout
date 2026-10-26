@@ -57,8 +57,11 @@ Use this quick checklist when updating Scout to a new AEO release.
    * ``rsmess.xlsx``
    * ``rsmlgt.txt``
    * ``CDM_DBOUT.txt``
+   * ``CDM_DBOUT_hdc.txt``
    * ``CDM_SDOUT.txt``
+   * ``CDM_SDOUT_hdc.txt``
    * ``CDM_DGENOUT.txt``
+   * ``CDM_DGENOUT_hdc.txt``
    * ``kprem.txt``
    * ``ktekx.xlsx``
 
@@ -71,37 +74,40 @@ Use this quick checklist when updating Scout to a new AEO release.
 
 3. **Generate Metadata**::
 
-   python -m scout.mseg_meta -y 2026
+   python -m scout/mseg_meta.py -y 2026
 
    Outputs ``inputs/metadata.json``. Confirm it has ``min year``,
    ``max year``, and ``aeo_base_year`` set correctly.
 
 4. **Rebuild microsegment and CPL data products**::
-
-   python tests/com_mseg_test.py
    
-   python -m scout.mseg -y 2026
+   python -m scout/mseg.py -y 2026
 
-   python -m scout.mseg_techdata -y 2026
+   python -m scout/mseg_techdata.py -y 2026
 
-   python -m scout.com_mseg -y 2026
+   python -m scout/com_mseg.py -y 2026
 
-   python -m scout.com_mseg_tech -y 2026
+   python -m scout/com_mseg_tech.py -y 2026
 
    Intermediate JSON artifacts are written to ``inputs/derived``
    (for example ``mseg_res_cdiv.json``, ``mseg_res_com_cdiv.json``,
    ``cpl_res_cdiv.json``, and ``cpl_res_com_cdiv.json``).
 
-   python tests/final_mseg_converter_test.py
+   python -m scout/final_mseg_converter.py
 
-   python -m scout.final_mseg_converter
+   First, update the microsegment products: 
 
-   Select options ``1,1`` when prompted.
+   Select options ``1,1`` when prompted. This develops climate zone-specific data.
 
-   Also run with the following options in separate runs:
+   After this first run, run again with the following options, which develop EMM-resolve and state-resolved data:
 
    * ``1,2,2,1``
    * ``1,3,2,1``
+
+   Then, update the cost, performance, and lifetime (CPL) products for all three geographic region types:
+
+   * ``2,1``
+   * ``2,2``
    * ``2,3``
 
    .. note::
@@ -112,15 +118,20 @@ Use this quick checklist when updating Scout to a new AEO release.
 
       There is an open issue for this warning.
 
-   Expected output includes ``mseg_res_com_cz.json``.
-
-   Move these final output files to
-   ``scout/supporting_data/stock_energy_tech_data``, then commit and push:
+   Expected output includes the following files:
 
    * ``mseg_res_com_cz.json``
+   * ``mseg_res_com_cz_hdc.json``
    * ``mseg_res_com_emm.gz``
+   * ``mseg_res_com_emm_hdc.gz``
    * ``mseg_res_com_state.gz``
+   * ``mseg_res_com_state_hdc.gz``
+   * ``cpl_res_com_cz.gz``
+   * ``cpl_res_com_emm.gz``
    * ``cpl_res_com_cdiv.gz``
+
+   Move these final output files to
+   ``scout/supporting_data/stock_energy_tech_data`` then commit and push to the repository.
 
 5. **Update emissions/price conversion datasets**:
 

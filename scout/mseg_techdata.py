@@ -124,10 +124,11 @@ tech_eia_nonlt = {"ASHP": ["EIA_EQUIP", "ELEC_HP", "ELEC_HP2", "ELEC_HP4",
                                           "DIST_RAD4", "AFUE"],
                   "resistance heat": ["EIA_EQUIP", "ELEC_RAD", "ELEC_RAD2",
                                       "ELEC_RAD2", "AFUE"],
-                  "furnace (distillate)": ["EIA_EQUIP", "DIST_FA", "DIST_FA2",
+                  "furnace (distillate)": ["EIA_EQUIP", "DIST_FA", "DIST_FA3",
                                            "DIST_FA4", "AFUE"],
-                  "furnace (kerosene)": ["EIA_EQUIP", "KERO_FA", "KERO_FA2",
-                                         "KERO_FA4", "AFUE"],
+                  # Kerosene tech. data are no longer available in the EIA files
+                  # "furnace (kerosene)": ["EIA_EQUIP", "KERO_FA", "KERO_FA2",
+                  #                        "KERO_FA4", "AFUE"],
                   "furnace (LPG)": ["EIA_EQUIP", "LPG_FA", "LPG_FA2",
                                     "LPG_FA4", "AFUE"],
                   "furnace (NG)": ["EIA_EQUIP", "NG_FA", "NG_FA2", "NG_FA4",
@@ -653,6 +654,7 @@ def list_generator_techdata(eia_nlt_cp, eia_nlt_l, eia_lt,
                         match_list_typ_perfcost, match_list_best_perfcost,
                         match_list_incent_perfcost]]
             else:
+                print(filter_info)
                 raise ValueError("No EIA performance/cost data match for" +
                                  " non-lighting technology!")
 
@@ -747,6 +749,7 @@ def list_generator_techdata(eia_nlt_cp, eia_nlt_l, eia_lt,
             # If there were no matches for lifetime data on the technology,
             # yield an error
             if life_match_ct == 0:
+                print(filter_info)
                 raise ValueError(
                     "No EIA lifetime data match for non-lighting technology!")
 
