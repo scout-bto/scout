@@ -60,16 +60,13 @@
       "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
       "BTB installed cost (mid estimate, 2023$) at typical performance (boiler (NG))"
     ],
-    "source_data": [
-      "Buildings Annual Technology Baseline. NREL, forthcoming",
-      {
-        "title": "2024 Buildings Technology Baseline",
-        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
-        "year": 2024,
-        "pages": null,
-        "url": "https://data.openei.org/submissions/8342"
-      }
-    ]
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
@@ -152,6 +149,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 13:59:32"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

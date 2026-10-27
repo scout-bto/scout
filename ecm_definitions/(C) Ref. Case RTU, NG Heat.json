@@ -62,16 +62,13 @@
       "Typical value for performance, converted to Scout units where necessary.",
       "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (rooftop_AC)"
     ],
-    "source_data": [
-      "Buildings Annual Technology Baseline. NREL, forthcoming",
-      {
-        "title": "2024 Buildings Technology Baseline",
-        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
-        "year": 2024,
-        "pages": null,
-        "url": "https://data.openei.org/submissions/8342"
-      }
-    ]
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "installed_cost": {
     "gas_furnace": {
@@ -131,16 +128,13 @@
       "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 1080 kBtu/h",
       "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 1140 kBtu/h (gas_eng-driven_RTAC, reciprocating_chiller, res_type_gasHP-cool, res_type_gasHP-heat, rooftop_AC, scroll_chiller)"
     ],
-    "source_data": [
-      "Buildings Annual Technology Baseline. NREL, forthcoming",
-      {
-        "title": "2024 Buildings Technology Baseline",
-        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
-        "year": 2024,
-        "pages": null,
-        "url": "https://data.openei.org/submissions/8342"
-      }
-    ]
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 21.0,
@@ -184,6 +178,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 13:59:32"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }
