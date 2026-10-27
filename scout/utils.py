@@ -34,6 +34,20 @@ class JsonIO:
         Returns:
             dict: .json data as a dict
         """
+        if _ORJSON_AVAILABLE:
+            # orjson's decoder is substantially faster than stdlib json for
+            # large files (e.g. the multi-hundred-MB baseline/measure data
+            # used by run.py).
+            try:
+                with open(filepath, 'rb') as handle:
+                    return _orjson.loads(handle.read())
+            except ValueError:
+                # orjson needs one large contiguous allocation, which can fail
+                # on very large files even when the JSON itself is well-formed
+                # (e.g. "not enough memory to allocate buffer for parsing").
+                # Fall back to stdlib's incremental parser, which tolerates
+                # tight memory better despite being slower.
+                pass
         with open(filepath, 'r') as handle:
             try:
                 data = json.load(handle)
@@ -42,28 +56,55 @@ class JsonIO:
         return data
 
     @staticmethod
-    def dump_json(data, filepath: Path):
+    def loads_bytes(data):
+        """Parse JSON from an in-memory bytes/str payload (e.g., decompressed gzip content).
+
+        Args:
+            data: JSON payload as bytes, bytearray, or str.
+
+        Returns:
+            Parsed JSON data.
+        """
+        if _ORJSON_AVAILABLE:
+            try:
+                return _orjson.loads(data)
+            except ValueError as e:
+                raise ValueError(f"Error parsing JSON data: {str(e)}") from None
+        if isinstance(data, (bytes, bytearray)):
+            data = data.decode('utf-8')
+        try:
+            return json.loads(data)
+        except ValueError as e:
+            raise ValueError(f"Error parsing JSON data: {str(e)}") from None
+
+    @staticmethod
+    def dump_json(data, filepath: Path, indent: bool = False):
         """Export data to .json file
 
         Args:
             data: data to write to .json file
             filepath (pathlib.Path): filepath of .json file
+            indent (bool, optional): pretty-print with 2-space indentation.
+                Defaults to False (compact output) since most callers write
+                multi-hundred-MB generated result files that nothing reads
+                for human readability, and indentation adds meaningful
+                CPU/memory cost at that size. Pass True for small, hand-
+                curated/reviewed files (e.g. supporting_data references)
+                where staying diffable in git matters more than write speed.
         """
         if _ORJSON_AVAILABLE:
             # orjson is 5-10x faster than stdlib json for numeric-heavy data.
             # It natively serialises numpy scalars/arrays and does not require
-            # a custom encoder.  We request non-string keys (e.g. integer year
-            # keys) to be serialised and pretty-print with 2-space indent to
-            # stay consistent with the previous output format.
-            raw = _orjson.dumps(
-                data,
-                option=_orjson.OPT_NON_STR_KEYS | _orjson.OPT_INDENT_2,
-                default=_orjson_default,
-            )
+            # a custom encoder. We request non-string keys (e.g. integer year
+            # keys) to be serialised.
+            option = _orjson.OPT_NON_STR_KEYS
+            if indent:
+                option |= _orjson.OPT_INDENT_2
+            raw = _orjson.dumps(data, option=option, default=_orjson_default)
             Path(filepath).write_bytes(raw)
         else:
             with open(filepath, "w") as handle:
-                json.dump(data, handle, indent=2, cls=MyEncoder)
+                json.dump(data, handle, indent=2 if indent else None, cls=MyEncoder)
 
 
 class MyEncoder(json.JSONEncoder):

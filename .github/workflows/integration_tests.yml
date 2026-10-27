@@ -71,7 +71,6 @@ jobs:
             # Clear ecm_prep cache so the feature branch starts from a cold cache
             rm -rf generated/ecm_competition_data/*.pkl.gz
             rm -f  generated/ecm_prep.json
-
             for step in "${steps[@]}"; do
               log_file="memory_log_feature_${step}.txt"
 
@@ -83,17 +82,33 @@ jobs:
               mv "$log_file" "results/memory_log_${step}_feature.txt"
             done
 
-            # --- Checkout master ---
+            # Save the feature branch's outputs (agg/ecm results, plots, profile
+            # CSVs, memory logs). The master run below writes to the same
+            # filenames and would otherwise overwrite them, so the compare and
+            # baseline-commit steps would see master's numbers, not this branch's.
+            # Kept outside tracked paths so the checkouts below leave it alone.
+            rm -rf "$RUNNER_TEMP/results_feature"
+            cp -a results "$RUNNER_TEMP/results_feature"
+
+            # --- Checkout master, on the same runner, back-to-back ---
             git fetch --depth=1 origin master
             git stash  # stash any result files to avoid conflicts
             git checkout origin/master -- .
+
+            # Use feature branch's integration_test.yml so this is a code-only
+            # comparison — otherwise master runs a lighter config and the
+            # timing delta stops meaning anything.
+            git fetch --depth=1 origin ${{ github.event.pull_request.head.sha || github.sha }}
+            git show ${{ github.event.pull_request.head.sha || github.sha }}:tests/integration_testing/integration_test.yml > tests/integration_testing/integration_test.yml
+
             pip install -c .github/constraints.txt ".[dev]" psrecord --quiet
 
             # --- Profile MASTER branch ---
-            # Clear cache so master also starts from a cold cache
+            # Clear cache so master also starts from a cold cache (otherwise
+            # it would load ecm_prep's cached output/competition data from
+            # the feature run above instead of recomputing it)
             rm -rf generated/ecm_competition_data/*.pkl.gz
             rm -f  generated/ecm_prep.json
-
             for step in "${steps[@]}"; do
               log_file="memory_log_master_${step}.txt"
 
@@ -104,6 +119,15 @@ jobs:
               mv "results/profile_${step}.csv" "results/profile_${step}_master.csv"
               mv "$log_file" "results/memory_log_${step}_master.txt"
             done
+
+            # --- Restore feature branch outputs ---
+            # Keep master's profile CSVs and memory logs, but bring back the
+            # feature branch's result files for the comparison/baseline steps.
+            mkdir -p "$RUNNER_TEMP/results_master_profile"
+            mv results/profile_*_master.csv results/memory_log_*_master.txt "$RUNNER_TEMP/results_master_profile/"
+            rm -rf results
+            cp -a "$RUNNER_TEMP/results_feature" results
+            mv "$RUNNER_TEMP"/results_master_profile/* results/
 
             # --- Restore feature branch ---
             git checkout ${{ github.event.pull_request.head.sha || github.sha }} -- .
@@ -148,7 +172,6 @@ jobs:
           else
             echo "profile_comparison=" >> $GITHUB_OUTPUT
           fi
-
       - name: Compare integration test results
         id: compare
         run: |
