@@ -10,7 +10,8 @@ on:
 jobs:
   run-test:
     name: Integration Testing (Ubuntu)
-    runs-on: ubuntu-latest
+    # Pinned: python 3.10.17 (used for baselines) isn't built for newer Ubuntu
+    runs-on: ubuntu-24.04
     timeout-minutes: 600
     permissions:
       contents: write
