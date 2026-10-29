@@ -1754,6 +1754,12 @@ class UsefulVars(object):
                 state_econ_dat = state_econ_dat[state_econ_dat["scenario"] == scn_name]
                 # Remove scenario column from df
                 state_econ_dat = state_econ_dat.drop("scenario", axis=1)
+                # Optional program identifier column (incentives data): read it by name and
+                # remove it so that positional parsing of the remaining columns is unaffected
+                prog_ids = None
+                if "program id" in state_econ_dat.columns:
+                    prog_ids = state_econ_dat["program id"]
+                    state_econ_dat = state_econ_dat.drop("program id", axis=1)
                 # Initialize segment-specific list of state-level inputs
                 state_dat_init = []
                 # Loop through and finalize all rows in the data
@@ -1847,10 +1853,15 @@ class UsefulVars(object):
                         # and, for extensions, the level of increase in incentive to pair w/
                         # extension
                         backup, mod, scope, ira, increase = [x for x in row.values[8:-9]]
-                        # Finalize flag for backup allowance; blanks or negative tags set to no
-                        if not isinstance(backup, str) or backup in [
-                                "N", "n", "no", "No", "false", "False"]:
+                        # Finalize flag for backup allowance: 'no' (backup not allowed; blanks or
+                        # negative tags), 'required' (incentive requires that the existing
+                        # fuel-fired system be retained as backup, e.g., IRA HEEHRA heat pump
+                        # rebates), or 'yes' (backup allowed but not required)
+                        if not isinstance(backup, str) or backup.strip() in [
+                                "N", "n", "no", "No", "false", "False", ""]:
                             backup = ["no"]
+                        elif backup.strip().lower() in ["required", "req"]:
+                            backup = ["required"]
                         else:
                             backup = ["yes"]
                         # Finalize type of mod; ensure that modification is tagged correctly
@@ -1886,10 +1897,23 @@ class UsefulVars(object):
                         credit[0], rebate[0] = [
                             x if not numpy.isnan(x) else False for x in (credit[0], rebate[0])]
                         # Pull all parameters together in a master list
+                        # Set program identifier, used in ecm_prep to treat alternative
+                        # tiers/options
+                        # of the same program (and same applicable fraction) as competing rather
+                        # than additive; rows without an identifier get a unique one, so they
+                        # continue to stack additively as before
+                        if prog_ids is not None and isinstance(prog_ids.loc[index], str) and \
+                                prog_ids.loc[index].strip():
+                            prog_id = [prog_ids.loc[index].strip()]
+                        else:
+                            prog_id = ["row " + str(index)]
+                        # Pull all parameters together in a master list; note that the program
+                        # identifier is placed at index 10 (after scope) so that the positive
+                        # indices 0-9 and all negative indices used in ecm_prep are unchanged
                         params = [
-                            state, bldg, vint, eu, tech, fuel, fuel_base, backup, mod, scope, ira,
-                            increase, perf_lev, perf_units, credit, rebate, rebate_units,
-                            start_yr, end_yr, apply_frac]
+                            state, bldg, vint, eu, tech, fuel, fuel_base, backup, mod, scope,
+                            prog_id, ira, increase, perf_lev, perf_units, credit, rebate,
+                            rebate_units, start_yr, end_yr, apply_frac]
                         # For heat pump segments, ensure that if a user has specified incentives
                         # for one of heating or cooling end uses, the other end use is zeroed out
                         # (otherwise user-specified HP incentives might be combined with HP
