@@ -590,6 +590,11 @@ def test_reconciled_rate_scenarios_never_trip_validation():
     epv.validate_rate_fractions(ref, res[len(ref):], "aggressive")
 
 
+# Field names of an exploded appliance regulation row (see run.UsefulVars.import_state_data)
+APPL_FIELDS = ["reg", "bldg", "vint", "fuel", "eu", "tech", "start_yr", "apply_frac",
+               "jurisdiction", "regu_type"]
+
+
 def test_run_validate_state_fractions():
     from scout import run
     vf = run.UsefulVars.validate_state_fractions
@@ -612,11 +617,11 @@ def test_run_validate_state_fractions():
     # Overlap within the reference is attributed to the reference
     with pytest.raises(ValueError, match="scenario 'reference'"):
         vf("bps", "aggressive", [row(0.6), row(0.5)], ["reference"] * 2)
-    # Appliance regs: [state, bldg, vint, fuel, eu, tech, start, frac, jurisdiction, type]
+    # Appliance regs: rows are dicts keyed by APPL_FIELDS
 
     def ar(frac, tech="all", yr=2025, jur=None, typ=None):
-        return ["CA", "single family home", "new", "natural gas", "heating", tech, yr, frac, jur,
-                typ]
+        return dict(zip(APPL_FIELDS, ["CA", "single family home", "new", "natural gas", "heating",
+                                      tech, yr, frac, jur, typ]))
 
     # Same-tech rows summing to 1 pass; a tech of 'all' overlaps a specific tech (0.6 + 0.5)
     vf("state_appl_regs", "reference", [ar(0.6, "furnace"), ar(0.4, "furnace")], ["reference"] * 2)
@@ -688,7 +693,7 @@ def _screen(rows, years=range(2025, 2051), fuel_switch=None):
                                  backup_fuel_fraction=None)
     me = types.SimpleNamespace(handyvars=types.SimpleNamespace(
         aeo_years=[str(y) for y in years],
-        state_appl_regs=[seg + (r + [None])[:5] for r in rows]))
+        state_appl_regs=[dict(zip(APPL_FIELDS, seg + (r + [None])[:5])) for r in rows]))
     on_mkt, fracs = run.Engine.state_app_reg_screen(me, [meas], [[key]])
     return on_mkt[0], fracs[0]
 
@@ -758,7 +763,7 @@ def test_import_appl_regs_reads_jurisdiction_column(tmp_path):
     hv.validate_state_fractions = run.UsefulVars.validate_state_fractions
     run.UsefulVars.import_state_data(hv, types.SimpleNamespace(state_appl_regs=f),
                                      ["state_appl_regs"], ["aggressive"])
-    assert [(r[6], r[7], r[8]) for r in hv.state_appl_regs] == [
+    assert [(r["start_yr"], r["apply_frac"], r["jurisdiction"]) for r in hv.state_appl_regs] == [
         (2029, 0.2, None), (2030, 0.6, "CARB"), (2035, 0.67, "CARB")]
 
 
@@ -832,7 +837,7 @@ def test_import_appl_regs_reads_type_column(tmp_path):
     hv.validate_state_fractions = run.UsefulVars.validate_state_fractions
     run.UsefulVars.import_state_data(hv, types.SimpleNamespace(state_appl_regs=f),
                                      ["state_appl_regs"], ["aggressive"])
-    assert [(r[6], r[8], r[9]) for r in hv.state_appl_regs] == [
+    assert [(r["start_yr"], r["jurisdiction"], r["regu_type"]) for r in hv.state_appl_regs] == [
         (2029, "BAAQMD", "local"), (2028, None, None), (2030, "CARB", "state")]
 
 

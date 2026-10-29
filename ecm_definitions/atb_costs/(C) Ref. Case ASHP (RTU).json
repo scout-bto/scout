@@ -1,7 +1,7 @@
 {
   "name": "(C) Ref. Case ASHP (RTU)",
   "_description": "Ref. case central air source heat pump heating and cooling plus ventilation",
-  "measure_type": "fulll service",
+  "measure_type": "full service",
   "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,

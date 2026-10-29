@@ -381,12 +381,12 @@ class UsefulVars(object):
             rows (list): Exploded input rows.
             origins (list): Scenario each row came from (aligned with rows).
         """
-        # Segment size and column positions differ by input type; for appl_regs, a tech of
-        # 'all' (index 5) overlaps any tech
+        # Segment keys differ by input type; for appl_regs, a tech of 'all' (segment index 5)
+        # overlaps any tech
         if "appl_regs" in k:
-            n_seg, start_ix, frac_ix, wild = 6, 6, 7, (5,)
+            seg_keys, wild = ["reg", "bldg", "vint", "fuel", "eu", "tech"], (5,)
         else:
-            n_seg, start_ix, frac_ix, wild = 2, "start_yr", "apply_frac", ()
+            seg_keys, wild = ["reg", "bldg", "regu_type"], ()
         # Entry format: (segment, start year, end year, fraction, origin[, jurisdiction, type]),
         # where origin is the scenario the row came from ('reference' or the scenario name); it is
         # used only to check the reference alone first and to label rows in the error message.
@@ -395,12 +395,9 @@ class UsefulVars(object):
         # Appl. regs: jurisdiction and type are the optional trailing elements after origin; they
         # are not part of the segment key and are read by check_fraction_sums to decide which rows
         # count toward the sum.
-        if "appl_regs" in k:
-            entries = [(tuple(r[:n_seg]), r[start_ix], None, r[frac_ix], o, r[8], r[9])
-                       for r, o in zip(rows, origins)]
-        else:
-            entries = [((r["reg"], r["bldg"], r["regu_type"]), r[start_ix], None,
-                        r[frac_ix], o) for r, o in zip(rows, origins)]
+        entries = [(tuple(r[x] for x in seg_keys), r["start_yr"], None, r["apply_frac"], o) + (
+                   (r["jurisdiction"], r["regu_type"]) if "appl_regs" in k else ())
+                   for r, o in zip(rows, origins)]
         # Check the reference rows alone first so that their problems are not blamed on a scenario
         check_fraction_sums([e for e in entries if e[4] == "reference"], k + ".csv", "reference",
                             wild=wild)
@@ -463,7 +460,6 @@ class UsefulVars(object):
                     if "appl_regs" in k:
                         start_yr, apply_frac = [
                             [row["start year"]], [row["applicable fraction"]]]
-                        regu_type = None
                         # Jurisdiction (or program) that the row is a stage of; rows that share
                         # one are cumulative stages of the same policy (blank if not specified)
                         jurisdiction = row.get("jurisdiction")
@@ -473,15 +469,15 @@ class UsefulVars(object):
                         # Policy type: a 'state' row is a statewide target that already includes
                         # any local programs in the same segment (the engine nets them out), while
                         # a 'local' row is an additive program; blank rows are treated as 'local'
-                        policy_type = row.get("type")
-                        policy_type = (
-                            None if not isinstance(policy_type, str) or not policy_type.strip()
-                            else policy_type.strip().lower())
-                        if policy_type not in [None, "state", "local"]:
+                        regu_type = row.get("type")
+                        regu_type = (
+                            None if not isinstance(regu_type, str) or not regu_type.strip()
+                            else regu_type.strip().lower())
+                        if regu_type not in [None, "state", "local"]:
                             raise ValueError(
                                 "Invalid type '{}' in appl_regs.csv: use 'state' or "
-                                "'local'".format(policy_type))
-                        policy_type = [policy_type]
+                                "'local'".format(regu_type))
+                        regu_type = [regu_type]
                     else:
                         start_yr = [row["start year"]]
                         apply_frac = [row["applicable fraction"]]
@@ -570,8 +566,10 @@ class UsefulVars(object):
                             eu = ["heating", "water heating", "cooking", "drying"]
                         params = [x for x in [
                             state, bldg, vint, fuel, eu, tech, start_yr, apply_frac,
-                            jurisdiction, policy_type]]
-                        fields = None
+                            jurisdiction, regu_type]]
+                        fields = [
+                            "reg", "bldg", "vint", "fuel", "eu", "tech", "start_yr", "apply_frac",
+                            "jurisdiction", "regu_type"]
                     # Codes and BPS: unique onsite restrictions and energy reduction columns
                     else:
                         # Ensure that all states are present in output breakout categories
@@ -632,12 +630,9 @@ class UsefulVars(object):
                                 "reg", "bldg", "onsite_reduce", "eui_pct_reduce", "eui_bench_yr",
                                 "start_yr", "apply_frac", "regu_type", "jurisdiction"]
                     # Iterate all expanded parameter info. into a list with every possible
-                    # combination of each parameter; codes/BPS rows are dicts keyed by field name
-                    # such that downstream code does not depend on column positions
-                    if fields is not None:
-                        iterable = [dict(zip(fields, x)) for x in itertools.product(*params)]
-                    else:
-                        iterable = list(map(list, itertools.product(*params)))
+                    # combination of each parameter; rows are dicts keyed by field name such that
+                    # downstream code does not depend on column positions
+                    iterable = [dict(zip(fields, x)) for x in itertools.product(*params)]
 
                     # In the codes case, further iterate through each row in the iterable
                     # and pull in additional data concerning specific energy gains by updating to
@@ -2848,15 +2843,17 @@ class Engine(object):
                                       mseg_separate[3], mseg_separate[4]]
             # Determine which (if any) rows in restrictions data apply to current mseg information
             restrict_rows_no_tech = [
-                x for x in self.handyvars.state_appl_regs if x[:5] == ctb_mseg_params_notech]
+                x for x in self.handyvars.state_appl_regs if
+                [x["reg"], x["bldg"], x["vint"], x["fuel"], x["eu"]] == ctb_mseg_params_notech]
             # If tech column does not cover "all" technologies, further check for tech restrictions
-            if not any([x[5] == "all" for x in restrict_rows_no_tech]):
+            if not any([x["tech"] == "all" for x in restrict_rows_no_tech]):
                 # Assume that tech names in input file map to standard Scout/EIA technology names;
                 # therefore, remove any additional information that may have been appended to such
                 # names during preparation to further distinguish msegs with exogenous fuel
                 # switching rates and/or specific heating and cooling tech pairings
                 restrict_rows = [
-                    x for x in restrict_rows_no_tech if mseg_separate[-2].split("-")[0] in x[5]]
+                    x for x in restrict_rows_no_tech if
+                    mseg_separate[-2].split("-")[0] in x["tech"]]
             else:
                 restrict_rows = restrict_rows_no_tech
         else:
@@ -2881,30 +2878,35 @@ class Engine(object):
             for yr in self.handyvars.aeo_years:
                 # Find which restrictions apply to the current year (either already on the books
                 # or on the books as of the current year)
-                yr_rows = [x for x in restrict_rows if x[6] <= int(yr)]
+                yr_rows = [x for x in restrict_rows if x["start_yr"] <= int(yr)]
                 # If restrictions apply and any of them applies to 100% of the segment, set the
                 # % applicability to 100%; otherwise, sum the applicability percentages of all
                 # other restrictions that apply
-                if any([x[7] == 1 for x in yr_rows]):
+                if any([x["apply_frac"] == 1 for x in yr_rows]):
                     effect_frac[yr] = 1
                 else:
                     # Latest stage of each jurisdiction (if several share the latest start year
                     # they are tiers of the same stage, and the largest fraction is used);
                     # statewide ('state') targets are kept apart from additive ('local') programs
                     state_fracs, local_fracs = [], []
-                    for jur in dict.fromkeys([x[8] for x in yr_rows if x[8] is not None]):
-                        stages = [x for x in yr_rows if x[8] == jur]
-                        last_start = max([x[6] for x in stages])
-                        top = max([x for x in stages if x[6] == last_start], key=lambda x: x[7])
-                        (state_fracs if top[9] == "state" else local_fracs).append(top[7])
-                    state_fracs.extend([x[7] for x in yr_rows if x[8] is None and x[9] == "state"])
+                    for jur in dict.fromkeys(
+                            [x["jurisdiction"] for x in yr_rows if x["jurisdiction"] is not None]):
+                        stages = [x for x in yr_rows if x["jurisdiction"] == jur]
+                        last_start = max([x["start_yr"] for x in stages])
+                        top = max([x for x in stages if x["start_yr"] == last_start],
+                                  key=lambda x: x["apply_frac"])
+                        (state_fracs if top["regu_type"] == "state" else local_fracs).append(
+                            top["apply_frac"])
+                    state_fracs.extend([x["apply_frac"] for x in yr_rows if
+                                        x["jurisdiction"] is None and x["regu_type"] == "state"])
                     # Sum percentages of rows without a jurisdiction; remove any duplicate
                     # applicability fractions from the sum, under the assumption that they
                     # represent a policy twice (e.g., one city representing 15% of a state
                     # implements it in 2025, and then expands to more types of equipment in 2030,
                     # so for a segment affected in both years the policy shows up twice)
-                    untagged = sum(numpy.unique(
-                        [x[7] for x in yr_rows if x[8] is None and x[9] != "state"]))
+                    untagged = sum(numpy.unique([x["apply_frac"] for x in yr_rows if
+                                                 x["jurisdiction"] is None and
+                                                 x["regu_type"] != "state"]))
                     # A statewide target already includes the local programs in the segment (so
                     # these are not counted twice): the restricted share is the larger of the
                     # target and the sum of the local programs; capped at 100% in case inputs

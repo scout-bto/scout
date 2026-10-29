@@ -16225,9 +16225,10 @@ class ResCompeteTest(unittest.TestCase, CommonMethods, Constants):
 
         # Sample state-level appliance emissions regulation input that effectively removes
         # natural gas furnaces from market availability in CA starting in 2010
-        hv_a_stds.state_appl_regs = [[
-            "CA", "single family home", "existing", "natural gas", "heating", "all",
-            2010, 1, None, None]]
+        hv_a_stds.state_appl_regs = [{
+            "reg": "CA", "bldg": "single family home", "vint": "existing", "fuel": "natural gas",
+            "eu": "heating", "tech": "all", "start_yr": 2010, "apply_frac": 1,
+            "jurisdiction": None, "regu_type": None}]
 
         # Test max adoption potential case
         test_adopt_scheme_a_stds = "Max adoption potential"
@@ -29231,6 +29232,9 @@ class StateImportTest(unittest.TestCase, CommonMethods):
              2030, 0.22, 'CO Clean Heat Standard', 'state']
             ]
             ]
+        cls.appl_regs_fields = [
+            "reg", "bldg", "vint", "fuel", "eu", "tech", "start_yr", "apply_frac", "jurisdiction",
+            "regu_type"]
         cls.codes_fields = [
             "reg", "bldg", "onsite_reduce", "lag_reduce", "stretch_reduce", "start_yr",
             "apply_frac", "regu_type"]
@@ -29326,7 +29330,8 @@ class StateImportTest(unittest.TestCase, CommonMethods):
                                           self.test_opts[case_ind]["bps"]])
             # Check to ensure that both outputs match test values
             for output, expected in zip(
-                    [self.hvobj.state_appl_regs,
+                    [[[x[f] for f in self.appl_regs_fields] for x in self.hvobj.state_appl_regs]
+                     if self.hvobj.state_appl_regs is not None else None,
                      [[x[f] for f in self.codes_fields] for x in self.hvobj.codes]
                      if self.hvobj.codes is not None else None,
                      [[x[f] for f in self.bps_fields] for x in self.hvobj.bps]
