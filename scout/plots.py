@@ -137,7 +137,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
         else:
             phc_flag = 'high'
     else:
-        snap_yr = '2050'
+        snap_yr = '2030'
         snap_yr_set = ['2030', '2050']
         phc_flag = False
 
@@ -186,34 +186,6 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
     # Set list of possible building classes and associated colors for aggregate
     # savings plot
     bclasses_out_agg = list(handyvars.out_break_bldgtypes.keys())
-    # Set list of possible building classes and associated colors for cost
-    # effectiveness plot
-    if compete_results_agg["Output Resolution"] == "detail" or \
-            "bldg" in compete_results_agg["Output Resolution"]:
-        bclasses_out_finmets = [
-            ['Single Family Homes (New)', 'Multi Family Homes (New)',
-             'Manufactured Homes (New)', 'Single Family Homes (Existing)',
-             'Multi Family Homes (Existing)', 'Manufactured Homes (Existing)',
-             'Hospitals (Existing)'],
-            ['Hospitals (New)',
-             'Large Offices (New)', 'Small/Medium Offices (New)',
-             'Retail (New)', 'Hospitality (New)', 'Education (New)'
-             'Assembly/Other (New)', 'Warehouses (New)',
-             'Large Offices (Existing)', 'Small/Medium Offices (Existing)',
-             'Retail (Existing)', 'Hospitality (Existing)',
-             'Education (Existing)', 'Assembly/Other (Existing)',
-             'Warehouses (Existing)']]
-    elif "codesbps" in compete_results_agg["Output Resolution"]:
-        bclasses_out_finmets = [
-            'Single Family/Manufactured Homes (New)',
-            'Single Family/Manufactured Homes (Existing)',
-            'Multi Family Homes (New)',
-            'Multi Family Homes (Existing)',
-            'Commercial (New)', 'Commercial (Existing)']
-    else:
-        bclasses_out_finmets = [
-            ['Residential (New)', 'Residential (Existing)'],
-            ['Commercial (New)', 'Commercial (Existing)']]
 
     # Set list of possible fuel types for data aggregation
     ftypes_out = list(handyvars.out_break_fuels.keys())
@@ -221,11 +193,6 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
     cmb = plt.get_cmap("tab20", len(bclasses_out_agg))
     bclasses_out_agg_col = [
         mpl.colors.rgb2hex(cmb(i)) for i in range(cmb.N)]
-    # Set list of possible building classes and associated shapes/legend
-    # entries for cost effectiveness plot
-
-    bclasses_out_finmets_shp = ["o", "s"]  # circle, square
-    bclasses_out_finmets_lgnd = ['Residential', 'Commercial']
     # Set list of possible end uses and associated colors/legend entries for
     # aggregate savings plot
     euses_out_agg = list(handyvars.out_break_enduses.keys())
@@ -241,9 +208,12 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                          ['Lighting'],
                          ['Water Heating'], ['Refrigeration'], ['Cooking'],
                          ['Computers and Electronics'], ['Other']]
-    cmef = plt.get_cmap("tab20", len(euses_out_finmets))
+    # Use the tab10 colors, skipping its gray (#7f7f7f), which is reserved for
+    # points that span 'Multiple' end uses
+    cmef = plt.get_cmap("tab10").colors
     euses_out_finmets_col = [
-        mpl.colors.rgb2hex(cmef(i)) for i in range(cmef.N)]
+        mpl.colors.rgb2hex(c) for i, c in enumerate(cmef) if i != 7][
+            :len(euses_out_finmets)]
     euses_out_finmets_lgnd = ['HVAC', 'Envelope', 'Lighting', 'Water Heating',
                               'Refrigeration', 'Cooking', 'Electronics',
                               'Other']
@@ -1013,37 +983,27 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                                         var_names_compete_save[v]][
                                         str(years[yr])] * unit_translate
 
-                                    # Determine the outline color, shape, and
-                                    # fill color parameters needed to
+                                    # Determine the point shape used to
                                     # distinguish ECM points on the cost
-                                    # effectiveness plots by their climate
-                                    # zone, building type, and end use
-                                    # categories
-
-                                    # Set ECM's applicable building type
+                                    # effectiveness plots by building type:
+                                    # circle for residential, square for
+                                    # commercial, and triangle for ECMs that
+                                    # apply to both ('Multiple'). Residential
+                                    # building classes are named either
+                                    # 'Residential (...)' or '... Homes (...)'
+                                    # across all output breakout settings
                                     bldg = results_database_filters[
                                         'Applicable Building Classes']
-                                    # Match applicable building classes to
-                                    # building type names used in plotting
-
-                                    bldg_match = numpy.empty((len(
-                                        bclasses_out_finmets) * len(
-                                        bclasses_out_finmets[0])),
-                                        dtype=object)
-
-                                    for b in range(len(bclasses_out_finmets)):
-                                        if sum([item in bclasses_out_finmets[b]
-                                                for item in bldg]) > 0:
-                                            bldg_match[b] = b
-
-                                    if pd.Series(bldg_match).nunique() >= 1:
-                                        results_finmets[(m-1), (len(fin_metrics) + 2)] = "^"
+                                    bldg_res = [
+                                        ("Residential" in b or "Homes" in b)
+                                        for b in bldg]
+                                    if bldg_res and all(bldg_res):
+                                        bldg_shp = "o"
+                                    elif bldg_res and not any(bldg_res):
+                                        bldg_shp = "s"
                                     else:
-                                        results_finmets[(m-1), (len(fin_metrics) + 2)] = \
-                                            bclasses_out_finmets_shp[
-                                            [x for x in list(pd.Series(
-                                                bldg_match)) if x is not None][
-                                                0]]
+                                        bldg_shp = "^"
+                                    results_finmets[(m-1), (len(fin_metrics) + 2)] = bldg_shp
 
                                     # Determine appropriate ECM point fill
                                     # color for applicable end uses
@@ -1067,7 +1027,7 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                                     # applicable end uses; otherwise set
                                     # to the point fill color appropriate for
                                     # the matched end use
-                                    if pd.Series(euse_match).nunique() >= 1:
+                                    if pd.Series(euse_match).nunique() != 1:
                                         results_finmets[
                                             (m-1), (len(fin_metrics) + 3)] = "#7f7f7f"
                                     else:
@@ -1625,8 +1585,10 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                              transform=axc.transAxes,
                              zorder=1)
 
-                    # Construct top 5 ECM name labels
-                    label_meas = ''
+                    # Construct top 5 ECM name labels; start the list one line
+                    # down so that it does not overlap the cost effective
+                    # impact label in the top left corner
+                    label_meas = '\n'
                     for i in meas_names_lgnd:
                         label_meas = label_meas + i + '\n'
                     # Plot top 5 ECM name labels
@@ -1663,52 +1625,44 @@ def run_plot(meas_summary, a_run, handyvars, measures_objlist, regions,
                     axc.set_xlim(0, 1)
                     axc.set_ylim(0, 1)
 
-            # Add a series of legends to the second page of the PDF device
-            # that distinguish the applicable climate zone, building type,
-            # and end use of each ECM point on the plot by point outline
-            # color, shape, and fill color, respectively
-            # Initialize a blank plot region to put the legends in
+            # Add legends to the right of the plots that distinguish the
+            # applicable building type and end use of each ECM point by point
+            # shape and fill color, respectively
 
-            # Add legend for applicable building type
-
-            # Building type shape parameter
-            bclasses_shp = bclasses_out_finmets_shp + ["^"]
-            # Building type legend text
-            bclasses_lgnd = bclasses_out_finmets_lgnd + ["Multiple"]
-            # End use legend colors
-            euses_col = euses_out_finmets_col + ["#7f7f7f"]
-            # End use legend text
-            euses_lgnd = euses_out_finmets_lgnd + ["Multiple"]
+            # Building type legend shapes and text
+            bclasses_shp = ["o", "s", "^"]
+            bclasses_lgnd = ["Residential", "Commercial", "Multiple"]
             # Building type plots
             plots1 = []
             for i in range(len(bclasses_shp)):
                 plots1.append(axc.scatter([], [], color="black",
                               marker=bclasses_shp[i]))
+            # End use legend colors
+            euses_col = euses_out_finmets_col + ["#7f7f7f"]
+            # End use legend text
+            euses_lgnd = euses_out_finmets_lgnd + ["Multiple"]
             # End use plots
             plots2 = []
             for i in range(len(euses_col)):
                 plots2.append(axc.scatter([], [], marker="o",
                               color=euses_col[i]))
-            # Building type legend
-            leg1 = axc.legend(plots1, bclasses_lgnd,
-                              loc='lower left',
-                              frameon=False,
-                              bbox_to_anchor=(0.1, -0.335, 1, 1),
-                              bbox_transform=fig.transFigure,
-                              title='Building Type')
-            # End use legend
-            leg2 = axc.legend(plots2, euses_lgnd,
-                              loc='lower left',
-                              frameon=False,
-                              bbox_to_anchor=(0.25, -0.335, 1, 1),
-                              bbox_transform=fig.transFigure,
-                              title='End Use')
-            # Add plot legends
-            axc.add_artist(leg1)
-            axc.add_artist(leg2)
-            # Generate cost effectiveness figure
+            # Building type and end use legends, attached to the figure
+            # (rather than to one of the plots) and stacked in the space to
+            # the right of the plots
+            fig.legend(plots1, bclasses_lgnd,
+                       loc='upper left',
+                       frameon=False,
+                       bbox_to_anchor=(0.86, 0.92),
+                       title='Building Type')
+            fig.legend(plots2, euses_lgnd,
+                       loc='upper left',
+                       frameon=False,
+                       bbox_to_anchor=(0.86, 0.66),
+                       title='End Use')
+            # Generate cost effectiveness figure; leave the right side of the
+            # figure free for the legend
             with _pyplot_lock:
-                fig.tight_layout()
+                fig.tight_layout(rect=(0, 0, 0.86, 1))
                 fig.savefig(plot_file_name_finmets, bbox_inches='tight')
                 plt.close(fig)
 
