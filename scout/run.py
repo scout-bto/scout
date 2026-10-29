@@ -2077,8 +2077,8 @@ class Engine(object):
 
                 # Loop through all years in time horizon
                 for yr in self.handyvars.aeo_years:
-                    # Ensure measure is on the market in given year (and cost-based choice applies)
-                    if yr in yrs_on_mkt[ind] and fc_fracs is None:
+                    # Ensure measure is on the market in given year
+                    if yr in yrs_on_mkt[ind]:
                         # Set measure capital and operating cost inputs. * Note:
                         # operating cost is set to just energy costs (for now), but
                         # could be expanded to include maintenance and carbon costs
@@ -2589,7 +2589,7 @@ class Engine(object):
                     # the measure either splits the market with other
                     # competing measures if none of those measures is on
                     # the market either, or else has a market share of zero
-                    if yr in yrs_on_mkt[ind] and fc_fracs is None:
+                    if yr in yrs_on_mkt[ind]:
                         # Set the fractions of commericial adopters who fall into
                         # each discount rate category for this particular
                         # microsegment
@@ -2638,9 +2638,6 @@ class Engine(object):
                                 mkt_fracs[ind][yr] = 0
                         else:
                             mkt_fracs[ind][yr] = 0
-                    # Lowest first cost rule: use the share assigned to the measure above
-                    elif yr in yrs_on_mkt[ind]:
-                        mkt_fracs[ind][yr] = fc_fracs[ind][yr]
                     elif yr not in years_on_mkt_all:
                         if len(measures_adj) > 1:
                             mkt_fracs[ind][yr] = 1 / len(measures_adj)
