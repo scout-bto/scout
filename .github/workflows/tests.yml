@@ -18,7 +18,7 @@ jobs:
       - name: Install Node dependencies
         run: npm install
       - name: Check for valid JSON
-        run: grunt jsonreview -v
+        run: npx grunt jsonreview -v
       
       - name: Set up Python
         uses: actions/setup-python@v5

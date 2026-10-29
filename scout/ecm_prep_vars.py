@@ -790,7 +790,33 @@ class UsefulVars(object):
                     }
                 else:
                     self.hp_rates_reg_map = None
-            regions_out = [(x, x) for x in valid_regions]
+            # For State-level output breakouts, scope the breakout regions to
+            # match ecm_field_updates' climate_zone override when present.
+            # Without this, out_break_czones (and every copy of it made by
+            # _obi()/_copy_dict_tree_shared_leaves) always enumerates all 50 states
+            # regardless of climate_zone, which is pure overhead when running
+            # a state-restricted config with no prepared data for the
+            # excluded states (e.g. a scoped-down test/dev run). Production
+            # configs don't set ecm_field_updates, so this is a no-op there.
+            out_break_regions = valid_regions
+            if opts.alt_regions == "State" and opts.ecm_field_updates and \
+                    opts.ecm_field_updates.get("climate_zone"):
+                cz_override = opts.ecm_field_updates["climate_zone"]
+                if isinstance(cz_override, str):
+                    cz_override = [cz_override]
+                # Normalize to uppercase so a lowercase override (e.g. from a
+                # config file or CLI arg, neither of which enforce case)
+                # still matches valid_regions' uppercase state abbreviations.
+                cz_override_set = {cz.upper() for cz in cz_override}
+                # Only scope when every override value is a state. Other valid
+                # climate_zone values ("all", AIA/IECC region names) or typos
+                # would otherwise be filtered out here, leaving no breakout
+                # region for the affected microsegments; keep the full list
+                # and let downstream validation handle them.
+                if cz_override_set.issubset(valid_regions):
+                    out_break_regions = [
+                        r for r in valid_regions if r in cz_override_set]
+            regions_out = [(x, x) for x in out_break_regions]
 
             # Read in mapping for alternate performance/cost unit breakouts
             # AIA -> EMM or State mapping
@@ -1446,7 +1472,11 @@ class UsefulVars(object):
                     x for x in sum_days if wknd_day_flags[(x - 1)] != 1]
                 sum_days_wknd = [
                     x for x in sum_days if wknd_day_flags[(x - 1)] == 1]
-                # Winter days of year
+                # Winter days of year (Dec 1 - Mar 31). Note: this is wider
+                # than the winter window used to find each region's peak day
+                # (Dec 1 - Feb 28, WINTER_DAYS in supporting_data/tsv_data/
+                # code/compute_peak_days.py), which was narrowed so warm/
+                # western regions' peaks don't land at the Mar edge.
                 wint_days = (list(
                             range(1, 91)) + list(range(335, 366)))
                 wint_days_wkdy = [
@@ -1510,6 +1540,36 @@ class UsefulVars(object):
                             sysld_wint[sys_yr_str][reg], \
                             sysld_int[sys_yr_str][reg] = self.set_peak_take(
                                 sysload_dat_yr, self.emm_name_num_map[reg])
+                # Import the winter/summer day of year on which the total
+                # (commercial + residential) buildings sector baseline load
+                # peaks in each EMM region, per the tsv_load shape data
+                # (derived from ComStock/ResStock; see
+                # supporting_data/tsv_data/code/compute_peak_days.py).
+                peak_days_dat = pd.read_csv(
+                    handyfiles.tsv_metrics_peak_days, index_col="Region")
+                peak_days_sum, peak_days_wint = ({
+                    reg: int(peak_days_dat.loc[
+                        reg, f"{season}PeakDay"])
+                    for reg in emm_region_names}
+                    for season in ("Summer", "Winter"))
+                # For state-resolved runs, prefer each state's own peak day
+                # (directly derived from ComStock/ResStock's by-state
+                # totals) over its representative EMM region's peak day.
+                # ComStock/ResStock don't publish by-state data for AK/HI,
+                # so those (and any other state missing from the by-state
+                # peak day file) keep falling back to the EMM-region proxy
+                # via self.state_emm_map -- see the lookup in ecm_prep.py.
+                if opts.alt_regions == "State":
+                    state_peak_days_dat = pd.read_csv(
+                        handyfiles.tsv_metrics_peak_days_state,
+                        index_col="Region")
+                    for peak_days, season in (
+                            (peak_days_sum, "Summer"),
+                            (peak_days_wint, "Winter")):
+                        peak_days.update({
+                            reg: int(state_peak_days_dat.loc[
+                                reg, f"{season}PeakDay"])
+                            for reg in state_peak_days_dat.index})
                 self.tsv_metrics_data = {
                     "season days": {
                         "all": {
@@ -1535,14 +1595,19 @@ class UsefulVars(object):
                         "winter": sysld_wint,
                         "intermediate": sysld_int
                     },
-                    # Note: these currently correspond to the days in which the
-                    # overall Scout buildings sector winter and summer
-                    # baseline load peaks, given the tsv_load shape data
-                    # (which are based on EULP)
+                    # Winter/summer day of year (by EMM region, or by state
+                    # for state-resolved runs) on which the total Scout
+                    # buildings sector baseline load peaks, given the
+                    # tsv_load shape data
                     "peak days": {
-                        "summer": 183,
-                        "winter": 1
+                        "summer": peak_days_sum,
+                        "winter": peak_days_wint
                     },
+                    # States without their own ComStock/ResStock by-state
+                    # peak day, which fall back to their representative EMM
+                    # region's peak day; any other state missing from the
+                    # by-state peak day file is an error
+                    "peak day fallback states": {"AK", "HI"},
                     "hourly index": list(enumerate(
                         itertools.product(range(365), range(24))))
                 }
@@ -1600,6 +1665,10 @@ class UsefulVars(object):
         else:
             for k in state_vars:
                 setattr(self, k, None)
+        # Mutable holder for the incentives index (see incentives_by_key). Created here, once,
+        # so that the per-measure shallow copies of this object share the same cache instead of
+        # each rebuilding the index
+        self._incentives_index_cache = {}
         self.save_shp_warn = []
         # When states are used and consideration for panel share data not suppressed, import shares
         if opts.alt_regions == "State" and opts.elec_upgrade_costs not in ["all", "ignore"]:
@@ -1630,6 +1699,28 @@ class UsefulVars(object):
             "240V circuit": 1384  # BTB "typical" dif., central ASHP w/ and w/o new circuit
         }
         self.alt_panel_names = ["-no panel", "-manage"]
+
+    @property
+    def incentives_by_key(self):
+        """Index of incentives rows keyed by (region, building type, vintage).
+
+        Built on first use and cached in a dict shared by all shallow copies of this object
+        (e.g., the per-measure copies made in Measure.__init__), so the index is built once per
+        run. The cache is rebuilt if self.incentives is replaced by a different list. Avoids a
+        full linear scan of self.incentives -- which can have thousands of rows from the
+        itertools.product expansion in import_state_data -- on every lookup.
+
+        Returns:
+            dict: Maps (region, building type, vintage) to a list of incentives rows.
+        """
+        cache = self._incentives_index_cache
+        if cache.get("source") is not self.incentives:
+            index = {}
+            for x in (self.incentives or []):
+                index.setdefault((x[0], x[1], x[2]), []).append(x)
+            cache["source"] = self.incentives
+            cache["index"] = index
+        return cache["index"]
 
     def import_state_data(self, handyfiles, state_vars, valid_regions, opts):
         """Import and further prepare sub-federal adoption driver data.
@@ -2160,6 +2251,9 @@ class UsefulInputFiles(object):
         self.tsv_metrics_data_net_ref = fp.TSV_DATA / "tsv_hrs_net_base.csv"
         self.tsv_metrics_data_tot_hr = fp.TSV_DATA / "tsv_hrs_tot_lowogs.csv"
         self.tsv_metrics_data_net_hr = fp.TSV_DATA / "tsv_hrs_net_lowogs.csv"
+        self.tsv_metrics_peak_days = fp.TSV_DATA / "tsv_peak_days_EMM.csv"
+        self.tsv_metrics_peak_days_state = (
+            fp.TSV_DATA / "tsv_peak_days_State.csv")
         self.health_data = fp.CONVERT_DATA / "epa_costs.csv"
         self.hp_convert_rates = fp.CONVERT_DATA / "hp_convert_rates.json"
         self.fug_emissions_dat = fp.CONVERT_DATA / "fugitive_emissions_convert.json"
