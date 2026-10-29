@@ -9,60 +9,25 @@ from scout.ecm_prep_vars import UsefulVars, UsefulInputFiles
 from tests.ecm_prep_test.common import dict_check
 
 
-def test_incentives(market_test_data):
-    """Test 'apply_incentives' in 'fill_mkts' function given user-defined incentive inputs."""
+def run_incentive_case(market_test_data, incentives, aeo_ashp=None):
+    """Run a measure through 'fill_mkts' with the given state incentive rows.
+
+    Args:
+        market_test_data (dict): Sample market test data.
+        incentives (list): Exploded state incentive rows (see UsefulVars.import_state_data).
+        aeo_ashp (dict): Optional existing (AEO-based) heating ASHP incentive by year, which
+            incentive modifications of type 'extend' build on, e.g., {"2009": 1000, "2010": 0}.
+
+    Returns:
+        Master microsegment stock costs (after incentives) for 'Max adoption potential'.
+    """
 
     # Initialize dummy measure with state-level inputs to draw from
     base_state_meas = market_test_data["ok_tpmeas_partchk_state_in"][0]
     # Pull handyvars from first sample measure and set year range
     hv = copy.deepcopy(base_state_meas.handyvars)
-    # Set user-defined incentives information; test stacked federal and non-federal incentives
-    hv.incentives = [
-        [
-            "CA",
-            "single family home",
-            "existing",
-            "heating",
-            "ASHP",
-            "electricity",
-            "natural gas",
-            "no",
-            "replace",
-            "federal",
-            False,
-            0,
-            "warm climates: 2.6; cold climates: 2.8",
-            "COP",
-            30,
-            2000,
-            "$/unit",
-            2010,
-            2050,
-            1,
-        ],
-        [
-            "CA",
-            "single family home",
-            "existing",
-            "heating",
-            "ASHP",
-            "electricity",
-            "natural gas",
-            "no",
-            "replace",
-            "non-federal",
-            False,
-            0,
-            2.6,
-            "COP",
-            50,
-            float("nan"),
-            "$/unit",
-            2010,
-            2050,
-            1,
-        ],
-    ]
+    # Set user-defined incentives information
+    hv.incentives = incentives
     years = [str(y) for y in hv.aeo_years]
 
     # Seed BY-YEAR carbon price
@@ -89,6 +54,357 @@ def test_incentives(market_test_data):
     # Options: split fuel reporting + pick Max adoption potential
     opts = copy.deepcopy(market_test_data["opts_state"])
     opts.adopt_scn_usr = ["Max adoption potential"]
+
+    # Baseline microsegments (STATE: CA, SFH)
+    mseg_in = {
+        "CA": {
+            "single family home": {
+                "total square footage": {y: 100 for y in years},
+                "total homes": {y: 1000 for y in years},
+                "new homes": {y: 50 for y in years},
+                "natural gas": {
+                    "heating": {
+                        "supply": {
+                            "furnace (NG)": {
+                                "stock": {y: 10 for y in years},
+                                "energy": {y: 100.0 for y in years},
+                            }
+                        }
+                    }
+                },
+                "electricity": {
+                    "cooling": {
+                        "supply": {
+                            "central AC": {
+                                "stock": {y: 1 for y in years},
+                                "energy": {y: 100 for y in years},
+                            },
+                            "ASHP": {
+                                "stock": {y: 1 for y in years},
+                                "energy": {y: 100 for y in years},
+                            }
+                        }
+                    },
+                    "heating": {
+                        "supply": {
+                            "ASHP": {
+                                "stock": {y: 1 for y in years},
+                                "energy": {y: 100 for y in years},
+                            }
+                        }
+                    }
+                },
+            }
+        }
+    }
+
+    # Function to produce year range
+    def yrs(val): return {y: val for y in years}
+
+    # C/P/L for baseline NG furnace, baseline central AC,
+    # and switched-to ASHP (heating + cooling provided by measure)
+    cpl_in = {
+        "pacific": {
+            "single family home": {
+                "natural gas": {
+                    "heating": {
+                        "supply": {
+                            "furnace (NG)": {
+                                "performance": {
+                                    "typical": yrs(0.8), "best": yrs(0.8),
+                                    "units": "AFUE", "source": "stub"},
+                                "installed cost": {
+                                    "typical": {
+                                        "new": yrs(2000),
+                                        "existing": yrs(2000)},
+                                    "best":    {
+                                        "new": yrs(2000),
+                                        "existing": yrs(2000)},
+                                    "units":
+                                        "2014$/unit", "source": "stub"},
+                                "lifetime": {
+                                    "average": yrs(15), "range": yrs(5),
+                                    "units": "years", "source": "stub"},
+                                "consumer choice": {
+                                    "competed market share": {
+                                        "source": "stub",
+                                        "model type": "logistic regression",
+                                        "parameters": {
+                                            "b1": yrs("NA"), "b2": yrs("NA")}},
+                                    "competed market": {
+                                        "source": "stub",
+                                        "model type": "bass diffusion",
+                                        "parameters": {
+                                            "p": "NA", "q": "NA"}},
+                                },
+                            }
+                        }
+                    }
+                },
+                "electricity": {
+                    "cooling": {
+                        "supply": {
+                            "central AC": {
+                                "performance": {
+                                    "typical": yrs(3.5), "best": yrs(3.5),
+                                    "units": "COP", "source": "stub"},
+                                "installed cost": {
+                                    "typical": {
+                                        "new": yrs(3000), "existing": yrs(3000)},
+                                    "best":    {
+                                        "new": yrs(3000), "existing": yrs(3000)},
+                                    "units": "2014$/unit", "source": "stub"},
+                                "lifetime": {
+                                    "average": yrs(12), "range": yrs(3),
+                                    "units": "years", "source": "stub"},
+                                "consumer choice": {
+                                    "competed market share": {
+                                        "source": "stub",
+                                        "model type": "logistic regression",
+                                        "parameters": {
+                                            "b1": yrs("NA"), "b2": yrs("NA")}},
+                                    "competed market": {
+                                        "source": "stub",
+                                        "model type": "bass diffusion",
+                                        "parameters": {
+                                            "p": "NA", "q": "NA"}},
+                                },
+                            },
+                            "ASHP": {
+                                "performance": {
+                                    "typical": yrs(4.69), "best": yrs(4.69),
+                                    "units": "COP", "source": "addedcooling.json"},
+                                "installed cost": {
+                                    "typical": {
+                                        "new": yrs(6000), "existing": yrs(6000)},
+                                    "best":    {
+                                        "new": yrs(6000), "existing": yrs(6000)},
+                                    "units": "2014$/unit", "source": "stub"},
+                                "lifetime": {
+                                    "average": yrs(15), "range": yrs(5),
+                                    "units": "years", "source": "stub"},
+                                "consumer choice": {
+                                    "competed market share": {
+                                        "source": "stub",
+                                        "model type": "logistic regression",
+                                        "parameters": {
+                                            "b1": yrs("NA"), "b2": yrs("NA")}},
+                                    "competed market": {
+                                        "source": "stub",
+                                        "model type": "bass diffusion",
+                                        "parameters": {"p": "NA", "q": "NA"}},
+                                },
+                            }
+                        }
+                    },
+                    "heating": {
+                        "supply": {
+                            "ASHP": {
+                                "performance": {
+                                    "typical": yrs(2.69), "best": yrs(2.69),
+                                    "units": "COP", "source": "addedcooling.json"},
+                                "installed cost": {
+                                    "typical": {
+                                        "new": yrs(6000), "existing": yrs(6000)},
+                                    "best":    {
+                                        "new": yrs(6000), "existing": yrs(6000)},
+                                    "units": "2014$/unit", "source": "stub"},
+                                "lifetime": {
+                                    "average": yrs(15), "range": yrs(5),
+                                    "units": "years", "source": "stub"},
+                                "consumer choice": {
+                                    "competed market share": {
+                                        "source": "stub",
+                                        "model type": "logistic regression",
+                                        "parameters": {
+                                            "b1": yrs("NA"), "b2": yrs("NA")}},
+                                    "competed market": {
+                                        "source": "stub",
+                                        "model type": "bass diffusion",
+                                        "parameters": {"p": "NA", "q": "NA"}},
+                                },
+                            }
+                        }
+                    }
+                },
+            }
+        }
+    }
+
+    # Measure definition for switching measure that is the target of user-defined incentives
+    meas_def = {
+        "name": "sample measure with user-defined incentives",
+        "measure_type": "full service",
+        "market_entry_year": None, "market_exit_year": None,
+        "climate_zone": ["CA"],
+        "bldg_type": "single family home",
+        "structure_type": ["new", "existing"],
+        "end_use": ["heating", "cooling"],
+        "fuel_type": ["natural gas", "electricity"],
+        "fuel_switch_to": "electricity",
+        "technology": ["furnace (NG)", "central AC"],
+        "tech_switch_to": "ASHP",
+        "energy_efficiency": {"heating": 2.69, "cooling": 4.69},
+        "energy_efficiency_units": "COP",
+        "installed_cost": 14000,
+        "cost_units": "2014$/unit",
+        "product_lifetime": 15,
+        # 100% of heating energy in the microsegment is associated with homes with zero cooling
+        # (for convenience, in reality this would be a small percentage)
+        "market_scaling_fractions": None,
+        "market_scaling_fractions_source": None
+    }
+
+    # Add existing incentives to the baseline furnace (none) and heating ASHP data, if requested;
+    # both must carry incentives data for the switched-to technology's incentives to be pulled
+    if aeo_ashp:
+        sfh = cpl_in["pacific"]["single family home"]
+        for tech, vals in [(sfh["natural gas"]["heating"]["supply"]["furnace (NG)"], {
+                y: 0 for y in years}), (
+                sfh["electricity"]["heating"]["supply"]["ASHP"], aeo_ashp)]:
+            tiers = {bldg: {y: [[0, vals[y]]] for y in years} for bldg in ("new", "existing")}
+            tech["installed cost"] = {
+                "before incentives": tech["installed cost"],
+                "incentives": {"by performance tier": tiers, "performance units": "COP"}}
+        # Existing incentives are only used when the restrictions option is not "all"
+        opts.incentive_restrictions = "no ira"
+
+    # Prepare sample measure data
+    measure = Measure(os.getcwd(), hv, None, base_state_meas.usr_opts, **meas_def)
+    measure.fill_mkts(
+        mseg_in, cpl_in, market_test_data["convert_data"], market_test_data["tsv_data"], opts,
+        ctrb_ms_pkg_prep=[], tsv_data_nonfs=None)
+    return measure.markets["Max adoption potential"]["master_mseg"]["cost"]["stock"]
+
+
+def test_incentives(market_test_data):
+    """Test 'apply_incentives' in 'fill_mkts' function given user-defined incentive inputs."""
+    # Stacked federal and non-federal incentives (different programs, so both count)
+    incentives = [
+        [
+            "CA",
+            "single family home",
+            "existing",
+            "heating",
+            "ASHP",
+            "electricity",
+            "natural gas",
+            "no",
+            "replace",
+            "federal",
+            "federal-prog",
+            False,
+            0,
+            "warm climates: 2.6; cold climates: 2.8",
+            "COP",
+            30,
+            2000,
+            "$/unit",
+            2010,
+            2050,
+            1,
+        ],
+        [
+            "CA",
+            "single family home",
+            "existing",
+            "heating",
+            "ASHP",
+            "electricity",
+            "natural gas",
+            "no",
+            "replace",
+            "non-federal",
+            "state-prog",
+            False,
+            0,
+            2.6,
+            "COP",
+            50,
+            float("nan"),
+            "$/unit",
+            2010,
+            2050,
+            1,
+        ],
+    ]
+
+    # Stock costs output (after applying incentives) that the test should produce
+    expected = {
+        "competed": {
+            "baseline": {
+              "2009": 2456.6666666666665,
+              "2010": 2380.0
+            },
+            "efficient": {
+              "2009": 17196.66667,
+              "2010": 10450}
+        },
+        "total": {
+            "baseline": {
+              "2009": 2456.6666666666665,
+              "2010": 4836.666666666666
+            },
+            "efficient": {
+              "2009": 17196.66667,
+              "2010": 21091.66667
+            }
+        }
+    }
+
+    dict_check(run_incentive_case(market_test_data, incentives), expected)
+
+
+def incentive_row(pid, scope, rebate, credit, mod="replace", increase=0, start=2010, frac=1):
+    """Exploded incentive row for CA SFH existing heating ASHP (21 fields, program id at [10])."""
+    return ["CA", "single family home", "existing", "heating", "ASHP", "electricity",
+            "natural gas", "no", mod, scope, pid, False, increase, 2.6, "COP", credit, rebate,
+            "$/unit", start, 2050, frac]
+
+
+def efficient_cost_2010(market_test_data, incentives, **kwargs):
+    """Competed stock cost of the efficient case in 2010 after applying incentives."""
+    res = run_incentive_case(market_test_data, incentives, **kwargs)
+    return res["competed"]["efficient"]["2010"]
+
+
+def test_incentive_program_ids(market_test_data):
+    """Test that incentive rows are grouped by program id and applicable fraction in 2010."""
+    nan = float("nan")
+
+    def fed(pid, frac=1):
+        # Federal incentive with a $2000 rebate and a 30% credit
+        return incentive_row(pid, "federal", 2000, 30, frac=frac)
+
+    def state(pid, frac=1):
+        # Non-federal incentive with a 50% credit and no rebate
+        return incentive_row(pid, "non-federal", nan, 50, frac=frac)
+
+    def cost(rows):
+        return efficient_cost_2010(market_test_data, rows)
+
+    # Cost without incentives and with each incentive alone (savings of 1380 and 4830)
+    assert cost([]) == 16660
+    assert cost([fed("a")]) == 15280
+    assert cost([state("b")]) == 11830
+    # Different programs stack
+    assert cost([fed("a"), state("b")]) == 16660 - 1380 - 4830
+    # Tiers of one program with the same fraction compete: only the larger incentive counts
+    assert cost([fed("a"), state("a")]) == 11830
+    # Rows of one program with different fractions are different customer groups, so both count
+    # (the half-share federal row saves half as much per unit as the full-share row)
+    assert cost([fed("a", 0.5), state("a")]) == 16660 - 690 - 4830
+    assert cost([fed("a", 0.5), state("b")]) == 16660 - 690 - 4830
+
+
+def test_incentive_extension_increase(market_test_data):
+    """Test that an extension builds on the latest existing incentive by its percent increase."""
+    # An existing heating ASHP incentive of $1000 in 2009 that lapses in 2010
+    existing = {"2009": 1000, "2010": 0}
+    # Extension from 2010 gives back 0% / 50% / 100% above that level (savings of 1380 per 100%)
+    for increase, expected in [(0, 15280), (50, 14590), (100, 13900)]:
+        row = incentive_row("a", "non-federal", False, False, mod="extend", increase=increase)
+        assert efficient_cost_2010(market_test_data, [row], aeo_ashp=existing) == expected
 
 
 def test_elec_upgrade_costs(market_test_data):

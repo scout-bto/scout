@@ -28,6 +28,30 @@ import traceback
 import logging
 logger = logging.getLogger(__name__)
 
+KWH_TO_MMBTU = 293.07107
+
+
+def rate_reduction(alt_rate, base_cost):
+    """Volumetric rate reduction ($/MMBtu) from an exploded rate row, given the unadjusted cost."""
+    vol_abs, vol_rel = alt_rate[6:8]
+    return vol_abs * KWH_TO_MMBTU if vol_abs else base_cost * (vol_rel / 100)
+
+
+def select_rate_tiers(alt_rates, base_cost):
+    """Keep only the largest reduction among rate rows that share an applicable fraction.
+
+    Rows with the same fraction are competing tiers for the same utility customers (e.g., a scenario
+    that improves on a reference rate), not additive slices of it. A row covering the full
+    customer population in a state (fraction = 1) supersedes all rows that cover less than 100%.
+    """
+    best = {}
+    for rt in alt_rates:
+        key = round(rt[-1], 4)
+        if key not in best or rate_reduction(rt, base_cost) > rate_reduction(best[key], base_cost):
+            best[key] = rt
+    selected = list(best.values())
+    return [rt for rt in selected if rt[-1] == 1] or selected
+
 
 def _fast_copy_measure(m):
     """Fast copy of a Measure (or MeasurePackage) object.
@@ -3194,14 +3218,17 @@ class Measure(object):
                                 # and incentive mod applies to original fuel and switched to tech.
                                 # 2) fuel switching without retaining original fuel backup (full
                                 # electrification), matching incentives where backup is optional
-                                # ('yes') or not retained ('no'), but NOT where backup is required ('required').
-                                # 3) fuel switching with retaining original fuel backup (dual-fuel),
-                                # matching incentives where backup is optional ('yes') or required ('required'),
-                                # but NOT where backup is prohibited ('no').
+                                # ('yes') or not retained ('no'), but NOT where backup is required
+                                # ('required'). 3) fuel switching with retaining original fuel
+                                # backup (dual-fuel), matching incentives where backup is optional
+                                # ('yes') or required ('required'), but NOT where backup is
+                                # prohibited ('no').
                                 incent_mod_swtch = [x for x in incent_mod if ((
                                     ((self.fuel_switch_to is None) or  # no fuel switch
-                                     ((self.backup_fuel_fraction is None and x[7] in ["no", "yes"]) or
-                                      (self.backup_fuel_fraction is not None and x[7] in ["yes", "required"]))) and
+                                     ((self.backup_fuel_fraction is None and x[7] in [
+                                        "no", "yes"]) or
+                                      (self.backup_fuel_fraction is not None and x[7] in [
+                                        "yes", "required"]))) and
                                     (x[5] == mskeys_swtch[3] and x[6] == mskeys[3])) and  # fuel
                                     (x[4] == "all" or x[4] == mskeys_swtch[-2]))]  # tech
                             # Non fuel or tech switching case
@@ -5516,7 +5543,8 @@ class Measure(object):
                             meas_val_yrs_max.append(val_adjs)
                         # Assess replacement incentives (if available) first
                         if len(rpl) != 0:
-                            # Initialize list of replacement incentives and grouped values for deduplication
+                            # Initialize list of replacement incentives and grouped values for
+                            # deduplication
                             rpl_vals = []
                             rpl_vals_by_group = {}
                             # Loop through all available replacements for current mseg, add to list
@@ -5650,9 +5678,13 @@ class Measure(object):
                                         and perf <= perf_thres_val)):
                                     # Set and account for applicability factor
                                     appl_frac = r[-1]
-                                    # Deduplication key to group competing tiers of the same program/source
-                                    # (distinguishes state, building type, vintage, end use, tech, fuel, base fuel, scope, ira, and applicable fraction)
-                                    dedup_key = (r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[9], r[10], appl_frac)
+                                    # Deduplication key to group competing tiers of the same
+                                    # program: the program id plus the applicable fraction, since
+                                    # rows of one program with different fractions serve different
+                                    # customer groups (e.g., income bands) and so add together.
+                                    # Every row here already matches the current segment (state,
+                                    # building type, vintage, end use, tech, and fuels)
+                                    dedup_key = (r[10], round(appl_frac, 4))
                                     if dedup_key not in rpl_vals_by_group:
                                         rpl_vals_by_group[dedup_key] = []
                                     rpl_vals_by_group[dedup_key].append(incent_lev * appl_frac)
@@ -5666,9 +5698,9 @@ class Measure(object):
                                         " and microsegment " + str(mskeys), "warning")
                                     rpl_vals.append(0)
                                     continue
-                            # For each group of competing tiers (e.g. cold-climate vs non-cold-climate
-                            # within the same program/fraction), select the highest qualifying incentive
-                            # to prevent artificial additive stacking, while allowing incentives across
+                            # For each group of competing tiers (e.g. CC vs non-CC within the same
+                            # program/fraction), select the highest qualifying incentive to prevent
+                            # artificial additive stacking, while allowing incentives across
                             # distinct programs (e.g. federal, state, utility) to stack.
                             if rpl_vals_by_group:
                                 rpl_vals.extend([max(vals) for vals in rpl_vals_by_group.values()])
@@ -5686,11 +5718,11 @@ class Measure(object):
                             # If there are multiple candidate extensions for the current year,
                             # choose the one with the greatest percentage increase on top of the
                             # extension; if there is a tie, choose first element
-                            max_inc = max([e[-8] for e in ext])
-                            ext_row = [e for e in ext if e[-8] == max_inc][0]
+                            max_inc = max([e[-9] for e in ext])
+                            ext_row = [e for e in ext if e[-9] == max_inc][0]
                             appl_frac = ext_row[-1]
                             # Convert extension increase input to a fraction
-                            ext_incr_pct = ext_row[-8] / 100
+                            ext_incr_pct = ext_row[-9] / 100
 
                             # Reflect the extension on the baseline or measure val.
                             if val_adjs_i == 0:
@@ -9175,27 +9207,20 @@ class Measure(object):
                     # Initialize cumulative applicability fraction that covers all applicable
                     # rates for current mseg, to be updated with each loop below
                     cum_rate_apply_frac = 0
-                    # If any of the retrieved rate impacts apply to 100% of the segment, assume
-                    # this row supercedes all others and remove them from further consideration
-                    if any([x[-1] == 1 for x in alt_rates]):
-                        alt_rates = [x for x in alt_rates if x[-1] == 1]
+                    # Rows sharing an applicable fraction are competing tiers (keep the largest
+                    # reduction); a row that applies to 100% of the segment supercedes all others
+                    alt_rates = select_rate_tiers(alt_rates, cost_energy_meas[yr])
                     # Loop through all rates retrieved for current mseg
                     for alt_rate in alt_rates:
-                        # Pull abs. or relative modification to volumetric rate and any additional
-                        # fixed charges
-                        vol_abs, vol_rel, fix_add = alt_rate[6:9]
-                        # Abs volumetric reductions of electricity are in $/kWh, convert to units of
-                        # fossil rates in Scout, $/MMBtu
-                        if vol_abs:
-                            kwh_mmbtu = 293.07107
-                            vol_reduce = vol_abs * kwh_mmbtu
-                        # Relative volumetric reductions are applied to unadj. measure energy cost
-                        else:
-                            vol_reduce = cost_energy_meas[yr] * (vol_rel / 100)
+                        # Abs. (converted from $/kWh to $/MMBtu) or relative reduction to the
+                        # unadjusted measure energy cost
+                        vol_reduce = rate_reduction(alt_rate, cost_energy_meas[yr])
                         apply_frac = alt_rate[-1]
                         # ***** NOTE Leave placeholder for possible future handling of added fixed
                         # costs (not readily assigned to single measure, apply across bill) *****
 
+                        # Additional fixed charges (placeholder for now, fixed charges not assessed)
+                        # fix_add = alt_rate[8]
                         # # Determine total added fixed costs to add across competed/captured and
                         # # total/captured households/customers. Convert number of captured units to
                         # # number of captured households/customers based on AEO data on number of
