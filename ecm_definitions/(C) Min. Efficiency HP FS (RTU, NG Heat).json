@@ -35,7 +35,7 @@
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
     "heating": 3.4,
-    "cooling": 3.4,
+    "cooling": 4.18,
     "ventilation": 0.0
   },
   "energy_efficiency_units": {
@@ -44,7 +44,10 @@
     "ventilation": "relative savings (constant)"
   },
   "energy_efficiency_source": {
-    "notes": "Minimum efficiency performance in 2023.",
+    "notes": [
+      "Minimum efficiency performance in 2023",
+      "cooling COP is the tier's IEER of 14.25 divided by 3.412 (see EIA source)"
+    ],
     "source_data": {
       "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
       "author": "U.S. Energy Information Administration",
@@ -109,6 +112,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 16:51:39"
+    "timestamp": "2026-10-30 16:02:14"
   }
 }

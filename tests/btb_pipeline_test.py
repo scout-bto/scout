@@ -560,6 +560,49 @@ def test_apply_measure_edits_accepts_functions_of_the_old_value():
         out["Performance Source Notes"]
 
 
+def test_rtu_cooling_edits_use_tier_ieer():
+    cases = {
+        "(C) Min. Efficiency HP FS (RTU, NG Heat)": (
+            "heating: 3.4; cooling: 3.4; ventilation: 0",
+            "heating: 3.4; cooling: 4.18; ventilation: 0"),
+        "(C) ESTAR HP FS (RTU, NG Heat)": (
+            "heating: 3.5; cooling: 3.5; ventilation: 0.4",
+            "heating: 3.5; cooling: 4.48; ventilation: 0.4"),
+        "(C) Best HP FS (NG Boiler)": (
+            "cooling:3.8; heating:3.7; ventilation:0",
+            "cooling:5.95; heating:3.7; ventilation:0")}
+    sheet, cols = sheet_for(["Name", "Energy Performance",
+                             "Performance Source Notes"])
+    for name, (old, new) in cases.items():
+        row = pd.Series({"Name": name, "Energy Performance": old,
+                         "Performance Source Notes": "EIA value."})
+        out = pop.apply_measure_edits(
+            row, pop.MEASURE_EDITS[name], sheet, 2, cols, [])
+        assert out["Energy Performance"] == new
+        assert out["Performance Source Notes"].startswith(
+            "EIA value; cooling COP is the tier's IEER")
+        diff = []
+        pop.apply_measure_edits(
+            out, pop.MEASURE_EDITS[name], sheet, 2, cols, diff)
+        assert diff == []
+
+
+def test_residential_best_ashp_edits_cite_eia_for_heating():
+    names = [n for n in pop.MEASURE_EDITS if n.startswith("(R) Best HP ")]
+    assert len(names) == 14
+    row = pd.Series({"Name": names[0], "Performance Source Notes":
+                     "EIA; BTB high performance value (ASHP)"})
+    sheet, cols = sheet_for(["Name", "Performance Source Notes"])
+    out = pop.apply_measure_edits(
+        row, pop.MEASURE_EDITS[names[0]], sheet, 2, cols, [])
+    assert out["Performance Source Notes"].endswith(
+        "heating COP is EIA's HSPF of 12.4 divided by 3.412 (see EIA source)")
+    diff = []
+    pop.apply_measure_edits(
+        out, pop.MEASURE_EDITS[names[0]], sheet, 2, cols, diff)
+    assert diff == []
+
+
 def test_append_note():
     assert pop.append_note("EIA", "BTB (ASHP)") == "EIA; BTB (ASHP)"
     assert pop.append_note("EIA; BTB (ASHP)", "BTB (ASHP)") == \

@@ -33,7 +33,7 @@
   "htcl_tech_link": "other fossil rtu+rtac or chiller",
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "cooling": 3.8,
+    "cooling": 5.95,
     "heating": 3.7,
     "ventilation": 0.4
   },
@@ -46,7 +46,8 @@
     "notes": [
       "High' performance in 2023",
       "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source). Ventilation savings are based on ComStock simulations of a variable speed HP RTU with energy recovery",
-      "savings are averaged across all states."
+      "savings are averaged across all states",
+      "cooling COP is the tier's IEER of 20.3 divided by 3.412 (see EIA source)"
     ],
     "source_data": [
       {
@@ -117,6 +118,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 16:51:39"
+    "timestamp": "2026-10-30 16:02:14"
   }
 }

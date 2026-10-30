@@ -34,7 +34,7 @@
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
     "heating": 3.5,
-    "cooling": 3.5,
+    "cooling": 4.48,
     "ventilation": 0.4
   },
   "energy_efficiency_units": {
@@ -45,7 +45,8 @@
   "energy_efficiency_source": {
     "notes": [
       "ENERGY STAR V. 4.0 went into effect in January 2023 as reflected under 2023 column. Ventilation savings are based on ComStock simulations of a variable speed HP RTU with energy recovery",
-      "savings are averaged across all states."
+      "savings are averaged across all states",
+      "cooling COP is the tier's IEER of 15.3 divided by 3.412 (see EIA source)"
     ],
     "source_data": {
       "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
@@ -110,6 +111,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 16:51:39"
+    "timestamp": "2026-10-30 16:02:14"
   }
 }

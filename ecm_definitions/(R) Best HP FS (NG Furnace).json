@@ -43,7 +43,9 @@
       "High efficiency ASHP performance in 2023",
       "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
       "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)",
-      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (ASHP)"
+      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (ASHP)",
+      "BTB is the source of the cooling COP only",
+      "heating COP is EIA's HSPF of 12.4 divided by 3.412 (see EIA source)"
     ],
     "source_data": [
       {
@@ -157,6 +159,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 16:51:39"
+    "timestamp": "2026-10-30 16:02:14"
   }
 }
