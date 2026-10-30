@@ -73,8 +73,9 @@ _RESIDENTIAL_SYSTEM_NOTE = re.compile(r"residential system", re.IGNORECASE)
 # evaluated at the IEER of each tier from the EIA "Updated Buildings Sector
 # Appliance and Equipment Costs and Efficiencies" report (p. 139, 2023):
 # Min. Efficiency at the typical IEER of 14.25, ESTAR at ENERGY STAR v4.0's
-# 15.3, Best at the high-efficiency 20.3. The rows keep their existing COPs
-# (3.4, 3.5, 3.7), which are the EIA values for the same tiers.
+# 15.3, Best at the high-efficiency 20.3. The rows keep their existing
+# heating COPs (3.4, 3.5, 3.7), which are the EIA values for the same tiers;
+# their cooling COPs are set from the same IEERs in MEASURE_EDITS.
 RTU_TIER_IEER = {"Min. Efficiency": 14.25, "ESTAR": 15.3, "Best": 20.3}
 
 # Technologies covered by build_tech_crosswalk.py that participate in a
@@ -329,6 +330,71 @@ MEASURE_EDITS = {
         "Electrical Upgrade Costs": "panel: false; 240V circuit: true"},
     "(R) Best 120V HP Dryer TS": {"Name": "(R) Best HP Dryer TS"},
 }
+
+# Commercial heat pump measures costed from BTB's RTU heat pump (see
+# RTU_TIER_IEER) take their cooling COP from the same EIA IEER, divided by
+# 3.412. The commercial baseline (EIA ktek) stores rooftop cooling
+# efficiencies as IEER / 3.412 (EIA Appendix B, p. 137), so this keeps the
+# measures consistent with it; the COPs they replace (3.4, 3.5, 3.8) were
+# below the baseline. Heating COPs stay at EIA's values. Per review.
+RTU_COOLING_MEASURES = {
+    "Min. Efficiency": [
+        "(C) Min. Efficiency HP FS (RTU, Other Fossil Heat)",
+        "(C) Min. Efficiency HP FS (RTU, NG Heat)"],
+    "ESTAR": [
+        "(C) ESTAR HP Pt. FS (RTU, Other Fossil Heat)",
+        "(C) ESTAR HP Pt. FS (RTU, NG Heat)",
+        "(C) ESTAR HP FS (RTU, Other Fossil Heat)",
+        "(C) ESTAR HP FS (RTU, NG Heat)",
+        "(C) ESTAR HP TS (Resist. Heat)"],
+    "Best": [
+        "(C) Best HP Pt. FS (RTU, Other Fossil Heat)",
+        "(C) Best HP Pt. FS (RTU, NG Heat)",
+        "(C) Best HP FS (RTU, Other Fossil Heat)",
+        "(C) Best HP FS (RTU, NG Heat)",
+        "(C) Best HP Pt. FS (Other Fossil Boiler)",
+        "(C) Best HP Pt. FS (NG Boiler)",
+        "(C) Best HP FS (Other Fossil Boiler)",
+        "(C) Best HP FS (NG Boiler)"],
+}
+
+
+def _rtu_cooling_edit(ieer):
+    cop = f"{ieer / 3.412:.3g}"
+    return {
+        "_note": f"cooling COP from EIA: IEER {ieer:g} / 3.412, per review",
+        "Energy Performance": lambda old: replace_value_for_key(
+            old, "cooling", cop),
+        "Performance Source Notes": lambda old: append_note(
+            old.rstrip(". "),
+            f"cooling COP is the tier's IEER of {ieer:g} divided by 3.412 "
+            "(see EIA source)")}
+
+
+for _tier, _names in RTU_COOLING_MEASURES.items():
+    MEASURE_EDITS.update(
+        {name: _rtu_cooling_edit(RTU_TIER_IEER[_tier]) for name in _names})
+
+# BTB has no HSPF for the residential ASHP, so the Best measures take only
+# their cooling COP from BTB (SEER 22.6); the heating COP is EIA's HSPF of
+# 12.4 divided by 3.412. Said in the notes so the BTB citation is not read as
+# covering heating too. Per review.
+_RES_BEST_ASHP_HEATING_NOTE = (
+    "BTB is the source of the cooling COP only; heating COP is EIA's HSPF of "
+    "12.4 divided by 3.412 (see EIA source)")
+MEASURE_EDITS.update({
+    f"(R) Best HP {kind} ({baseline})": {
+        "_note": "heating COP source (EIA) stated, per review",
+        "Performance Source Notes": lambda old: append_note(
+            old.rstrip(". "), _RES_BEST_ASHP_HEATING_NOTE)}
+    for kind, baseline in [
+        ("Pt. FS", "Other Fossil Furnace"), ("Pt. FS", "Other Fossil Boiler"),
+        ("Pt. FS", "Other Fossil Heat, No Cool"), ("Pt. FS", "NG Furnace"),
+        ("Pt. FS", "NG Boiler"), ("Pt. FS", "NG Heat, No Cool"),
+        ("FS", "Other Fossil Furnace"), ("FS", "Other Fossil Boiler"),
+        ("FS", "Other Fossil Heat, No Cool"), ("FS", "NG Furnace"),
+        ("FS", "NG Boiler"), ("FS", "NG Heat, No Cool"),
+        ("TS", "Resist."), ("TS", "Resist. Heat, No Cool")]})
 _VOLTAGE_IN_DESCRIPTION = re.compile(r"120V\s?HP")
 
 # Scout furnace token whose BTB cost is added for a dual-fuel backup.
