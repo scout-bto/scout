@@ -34,8 +34,17 @@
     "room AC": "COP"
   },
   "energy_efficiency_source": {
-    "notes": "Typical value for performance, converted to Scout units where necessary.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical value for performance, converted to Scout units where necessary.",
+      "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (room AC)"
+    ],
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "installed_cost": {
     "resistance heat": {
@@ -125,6 +134,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

@@ -53,16 +53,16 @@
     "panel": false,
     "240V circuit": true
   },
-  "product_lifetime": 17.0,
+  "product_lifetime": 11.0,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average lifetime for electric ranges in 2022",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 94,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": null,
@@ -74,6 +74,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

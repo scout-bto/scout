@@ -52,8 +52,8 @@
   },
   "installed_cost": {
     "boiler (distillate)": {
-      "new": 7422.0,
-      "existing": 8023.0
+      "new": 7217.0,
+      "existing": 7807.0
     },
     "furnace (distillate)": {
       "new": 5158.0,
@@ -78,33 +78,54 @@
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
-    "source_data": null
+    "notes": [
+      "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
+      "BTB installed cost (mid estimate, 2023$) at typical performance (boiler (distillate))"
+    ],
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
     "furnace (distillate)": 27.0,
     "furnace (kerosene)": 27.0,
     "furnace (LPG)": 27.0,
-    "boiler (distillate)": 23.0,
+    "boiler (distillate)": 22.0,
     "central AC": 18.0,
     "room AC": 10.0
   },
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average of the typical range",
-    "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
-      "author": "U.S. Energy Information Admnistration",
-      "year": 2023,
-      "pages": [
-        14,
-        20,
-        27,
-        31
-      ],
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-    }
+    "notes": [
+      "Average of the typical range",
+      "BTB expected average equipment lifetime (boiler (distillate))"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
+        "author": "U.S. Energy Information Admnistration",
+        "year": 2023,
+        "pages": [
+          14,
+          20,
+          27,
+          31
+        ],
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "market_scaling_fractions": {
     "BA_Hot-Humid": {
@@ -154,6 +175,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

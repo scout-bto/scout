@@ -38,18 +38,18 @@
     }
   },
   "installed_cost": {
-    "new": 4319.0,
-    "existing": 4388.0
+    "new": 2518.84,
+    "existing": 2518.84
   },
-  "cost_units": "2022$/kBtu/h cooking",
+  "cost_units": "2023$/kBtu/h cooking",
   "installed_cost_source": {
-    "notes": "2022 Typical retail (new) and installed (existing) cost value for electric range with griddle and oven, normalized by kBtu/h cooking capacity (EIA assumes ~2.6 kBtu/h capacity)",
+    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 4.777 kBtu/h",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 168,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "add_elec_infr_cost": null,
@@ -74,6 +74,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

@@ -35,31 +35,31 @@
     }
   },
   "installed_cost": {
-    "new": 500.0,
-    "existing": 690.0
+    "new": 1108.0,
+    "existing": 1286.0
   },
-  "cost_units": "2022$/unit",
+  "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Retail (new) and total installed cost (existing) for High in 2023.",
+    "notes": "BTB installed cost (mid estimate, 2023$) at high performance",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 105,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "add_elec_infr_cost": null,
-  "product_lifetime": 15.0,
+  "product_lifetime": 15.2,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average life of dishwashers",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
-      "author": "U.S. Energy Information Admnistration",
-      "year": 2023,
-      "pages": 105,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": null,
@@ -71,6 +71,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

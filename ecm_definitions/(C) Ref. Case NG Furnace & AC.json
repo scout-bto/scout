@@ -47,24 +47,35 @@
   },
   "installed_cost": {
     "gas_furnace": {
-      "new": 46.0,
-      "existing": 48.0
+      "new": 45.85,
+      "existing": 48.26
     },
     "res_type_central_AC": {
-      "new": 156.0,
-      "existing": 166.0
+      "new": 155.53,
+      "existing": 164.64
     },
     "wall-window_room_AC": {
-      "new": 54.0,
-      "existing": 67.0
+      "new": 54.17,
+      "existing": 66.92
     },
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "Typical efficiency costs for residential furnaces in 2023, normalized by capacity",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical efficiency costs for residential furnaces in 2023, normalized by capacity",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 80 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 36 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 12 kBtu/h (gas_furnace, res_type_central_AC, wall-window_room_AC)"
+    ],
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 23.0,
@@ -103,6 +114,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

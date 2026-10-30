@@ -31,7 +31,7 @@
   "htcl_tech_link": "other fossil heat+no cool",
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "cooling": 6.6,
+    "cooling": 6.62,
     "heating": 3.6
   },
   "energy_efficiency_units": "COP",
@@ -39,7 +39,10 @@
     "notes": [
       "High efficiency ASHP performance in 2023",
       "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
-      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)"
+      "split system conversion factors SEER2/SEER = 0.95, HSPF2/HSPF = 0.85 (see RESNET source)",
+      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (ASHP)",
+      "BTB is the source of the cooling COP only",
+      "heating COP is EIA's HSPF of 12.4 divided by 3.412 (see EIA source)"
     ],
     "source_data": [
       {
@@ -62,35 +65,49 @@
         "year": 2014,
         "pages": 17,
         "url": "https://www.eia.gov/outlooks/aeo/nems/documentation/archive/pdf/m067(2014).pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
       }
     ]
   },
   "installed_cost": {
     "new": 25101.0,
-    "existing": 21165.0
+    "existing": 20135.0
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
     "notes": [
-      "Retail (new) and total installed (existing) for 'High' ASHPs in 2023",
-      "For new buildings, also add retail cost of typical oil furnace. For existing buildings, additional tank removal costs of 800 2014$ (1030 2023$) are applied for distillate and propane based on the 2015 EIA report, updating the cost from April 2014 to April 2022. Assume no additional electrical infrastructure upgrade costs for dual fuel."
+      "BTB installed cost (mid estimate, 2023$) at high performance",
+      "new construction includes the BTB typical oil furnace ($5158)",
+      "existing keeps the existing backup"
     ],
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": false,
     "240V circuit": true
   },
-  "product_lifetime": 15.0,
+  "product_lifetime": 15.3,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average best lifetime",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 39,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": {
@@ -141,6 +158,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-30 16:02:14"
   }
 }
