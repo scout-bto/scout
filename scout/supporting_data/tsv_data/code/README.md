@@ -189,15 +189,15 @@ python compute_peak_days.py --stock_version 2025
 Reads the same cached `csv/{commercial,residential}_{emm,state}_{version}.csv`
 files from step 1 (no Athena calls) and, for each EMM region/state, finds the
 day of year with the single highest total (commercial + residential)
-electricity load within the winter window (day 1-90, 335-365) and the
-summer window (day 152-273) — the same windows `ecm_prep.py` already defines
-in `HandyVars.tsv_metrics_data["season days"]`. Writes
+electricity load within the winter window (day 1-59, 335-365) and the
+summer window (day 152-273). The summer window matches
+`HandyVars.tsv_metrics_data["season days"]`; the winter window is deliberately
+narrower than that season (see `WINTER_DAYS` in `compute_peak_days.py`). Writes
 `tsv_peak_days_EMM.csv` and `tsv_peak_days_State.csv` to
 `supporting_data/tsv_data/`, each with `WinterPeakDay`/`SummerPeakDay`
 (day of year) plus a human-readable date and the peak hourly load for
-reference. These replace the single hardcoded national peak days (day 1 /
-day 183) currently used in `HandyVars.tsv_metrics_data["peak days"]` with
-region-specific values.
+reference. `HandyVars.tsv_metrics_data["peak days"]` loads these values, which
+replaced the earlier single national peak days (day 1 / day 183).
 
 Regions whose official-window peak looks like a window-boundary artifact
 get a console warning and a `*PeakAtWindowBoundary` flag in the output CSV
