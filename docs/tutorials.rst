@@ -394,7 +394,7 @@ A residential heat pump water heater is :ref:`available to download <ecm-downloa
 Time sensitive valuation
 ************************
 
-In certain cases, ECMs might affect baseline energy loads differently depending on the time of day or season, necessitating time sensitive valuation of ECM impacts. :numref:`tsv-ecm-diagram` demonstrates three possible types of time sensitive ECM features.
+In certain cases, ECMs might affect baseline energy loads differently depending on the time of day or season, necessitating time sensitive valuation of ECM impacts. The baseline hourly load shapes that support these calculations are described in :ref:`data-load-shapes`. :numref:`tsv-ecm-diagram` demonstrates three possible types of time sensitive ECM features.
 
 .. _tsv-ecm-diagram:
 .. figure:: images/Shed_Shift_Shape_Diag.*
@@ -1523,6 +1523,8 @@ Alternative emissions intensities
 *********************************
 ``--alt_ref_carb`` sets the baseline electricity emissions intensities to be consistent with the `Standard Scenarios Mid Case`_ (rather than AEO).
 
+.. _tsv-metrics-opt:
+
 Time sensitive valuation metrics
 ********************************
 
@@ -1549,6 +1551,8 @@ The following time sensitive valuation metrics are used to assess and report out
 
 .. note::
    Data needed to support evaluation of TSV metrics are broken out by EMM region; when using the ``--tsv_metrics`` option, EMM should be selected as the regional breakout when running |html-filepath| ecm_prep.py\ |html-fp-end|. If regions are not set to EMM in this case, the code will do so automatically while warning the user.
+
+.. _sect-shapes-opt:
 
 Sector-level hourly energy loads
 ********************************
