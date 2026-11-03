@@ -98,3 +98,57 @@ The load shapes are regenerated using ``update_tsv.py``, which requires access t
    python update_tsv.py --insert_scouttsv --bstock residential
 
 Use ``--stock_version`` to select a different ComStock and ResStock release, and ``--diag`` to run diagnostic checks on the results. See the :repo_file:`load shape README <scout/supporting_data/tsv_data/code/README.md>` for details.
+
+.. _data-peak-periods:
+
+Peak period definitions
+-----------------------
+
+Scout uses two separate inputs to define peak periods: *peak days*, which are based on building electricity load, and *peak and low demand hours*, which are based on electric system load.
+
+Peak days
+~~~~~~~~~
+
+Scout previously used one fixed peak day for all regions: January 1 (day 1) in winter and July 2 (day 183) in summer. It now uses the actual winter and summer peak days for each region.
+
+A region's peak day is the day containing its highest hourly total of commercial and residential electricity load in that season. Peak days apply to :ref:`time sensitive valuation metrics <tsv-metrics-opt>` that report maximum power, where ``--tsv_type`` is "power" and ``--tsv_power_agg`` is "peak".
+
+Peak days are stored in two files in |html-filepath| ./scout/supporting_data/tsv_data\ |html-fp-end|:
+
+* When regions are set to EMM, Scout uses each EMM region's peak day from ``tsv_peak_days_EMM.csv``.
+* When regions are set to State, Scout uses each state's own peak day from ``tsv_peak_days_State.csv``. That file has no rows for Alaska or Hawaii, so those states use the peak day of their representative EMM region. A missing peak day for any other region raises an error.
+
+Season windows
+^^^^^^^^^^^^^^
+
+Peak days are found within the following windows. The winter window is narrower than the winter season used for time sensitive valuation metrics, which runs through March 31. With the wider window, the highest "winter" load in warm and western regions can fall at the end of March, as load rises toward the cooling season.
+
+.. table:: Windows used to find peak days, compared with the seasons used for time sensitive valuation metrics.
+
+   +--------+-------------------------------+-------------------------------+
+   | Season | Peak day window               | Metrics season                |
+   +========+===============================+===============================+
+   | Winter | Dec 1--Feb 28 (days 335--365, | Dec 1--Mar 31 (days 335--365, |
+   |        | 1--59)                        | 1--90)                        |
+   +--------+-------------------------------+-------------------------------+
+   | Summer | Jun 1--Sep 30 (days 152--273) | Jun 1--Sep 30 (days 152--273) |
+   +--------+-------------------------------+-------------------------------+
+
+Flagged regions
+^^^^^^^^^^^^^^^
+
+A peak near the edge of a window may reflect the window rather than a true seasonal peak. To check for this, the calculation extends each window by 30 days. If the extended window gives a different peak day with load more than 5% higher than the peak inside the official window, the region is flagged in the ``WinterPeakAtWindowBoundary`` or ``SummerPeakAtWindowBoundary`` column. The flag does not change the peak day that Scout uses.
+
+Regenerating the peak days
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After downloading the source data with the first ``update_tsv.py`` command in the previous section, run the following: ::
+
+   python compute_peak_days.py --stock_version 2025
+
+Peak and low demand hours
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Peak and low demand hours are daily hour ranges, set by season, EMM region, and year using system-level load profiles. They are separate from peak days, and they apply when ``--tsv_daily_hr_restrict`` is "peak" or "low". The ``tsv_hrs_tot_*.csv`` files are based on total system demand and the ``tsv_hrs_net_*.csv`` files are based on system demand net of renewable generation. The ``base`` files use the AEO Reference Case and the ``lowogs`` files use the AEO Low Oil and Gas Supply side case.
+
+State-level analyses use the hour ranges of each state's representative EMM region. See :numref:`tsv-nl-tab` for an example of these periods by climate zone.
