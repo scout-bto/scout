@@ -137,9 +137,14 @@ Per-kBtu/h costs are the whole-unit cost divided by a capacity in kBtu/h:
   water heater is described by volume, so it uses the 199 kBtu/h that the
   Key Costs sheet divides by (cell AG55; Scout assumes about 200 kBtu/h for
   a typical commercial gas water heater).
-- *Cooking*: BTB's ranges have no capacity, so the range's Combined Idle
-  Energy Rate is used (10.35 kBtu/h for the gas range; 1.4 kW = 4.78 kBtu/h
-  for the electric range).
+- *Cooking*: BTB's ranges have no capacity, only a Combined Idle Energy
+  Rate. That is a standby rate, about twice as high for gas (10.35 kBtu/h)
+  as for electric (1.4 kW = 4.78 kBtu/h), and Scout converts $/kBtu/h
+  cooking to $/ft^2 with one factor for every fuel, so dividing by it would
+  turn BTB's 1.3x electric-to-gas cost ratio into 2.8x. Every commercial
+  range (gas, electric, and the EIA-based induction measures) is therefore
+  divided by the same ~2.6 kBtu/h EIA cooking capacity, which keeps BTB's
+  per-unit cost ratios.
 - *Refrigeration* is not taken from BTB at all (see below).
 
 2022$ rows are only replaced when the cell holds a single cost, or when
@@ -158,7 +163,7 @@ and Source Details, logging each in `BTB Diff`:
   https://data.openei.org/submissions/8342"), in the form the measure
   generator reads.
 - Source Notes describes what was used (for example "BTB installed cost
-  (mid estimate, 2023$) at high performance, divided by 10.35 kBtu/h"),
+  (mid estimate, 2023$) at high performance, divided by 90 kBtu/h"),
   including adders such as a backup furnace.
 - If every entry in the cell came from BTB, the old source is replaced;
   otherwise BTB is added to the existing source (notes get the technologies
