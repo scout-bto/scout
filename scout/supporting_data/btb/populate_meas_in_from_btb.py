@@ -1217,13 +1217,16 @@ def main():
                 is_zero_cost_placeholder(old_cost)
 
             skip_reason = None
+            # A cost_at "Typical" entry wants BTB's Typical cost whatever the
+            # tier, so a regression that cannot move the cost is no obstacle.
+            cost_at_typical = entry_value(entry, "cost_at") == "Typical"
             if cost is not None and cost_applies and not zero_placeholder:
                 skip_reason = skip_cost_reason
                 adjustment = composite_adjustment(
                     cost_notes, entry["sector"], crosswalk_by_tech_tier,
                     btb_data, None if rtu_cost else row.get("Name"))
                 if skip_reason is None and cost_btb_row is btb_row and \
-                        not used_regression and \
+                        not used_regression and not cost_at_typical and \
                         entry["bound"] != "Typical" and \
                         cost_perf_value is not None:
                     # Without a usable regression the cost is only available
@@ -1233,7 +1236,7 @@ def main():
                         "cost cannot be evaluated at this tier's "
                         "performance; left as-is")
                 elif skip_reason is None and cost_btb_row is btb_row and \
-                        not used_regression and \
+                        not used_regression and not cost_at_typical and \
                         entry["bound"] == EXISTING_BOUND:
                     skip_reason = (
                         "kept performance could not be placed on BTB's "

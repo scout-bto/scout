@@ -188,8 +188,12 @@ Notes:
 
 **Overrides** (optional crosswalk columns):
 - `cost_at = Typical` evaluates the cost at BTB's Typical performance
-  whatever the tier (used for the heat pump dryer, whose BTB cost regression
-  falls as efficiency rises).
+  whatever the tier, and writes it even when the regression has no
+  performance metric to move it along (used for the heat pump dryer, whose
+  BTB cost regression falls as efficiency rises, and for residential
+  induction ranges, whose regression is on volume only; without it the
+  induction measures would be skipped and keep an older EIA cost below
+  BTB's reference electric range).
 - `keep_lifetime = yes` leaves the existing lifetime alone (used for the
   electric dryer, whose BTB lifetime of 22.3 years is judged implausible
   and flagged as a potential BTB issue).
