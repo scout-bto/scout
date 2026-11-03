@@ -105,7 +105,9 @@ LIFETIME_VALUE = {
 TECH_NOTES = {
     "induction": (
         "Potential BTB issue: BTB lifetimes are electric range 11, gas 15, "
-        "induction 17; induction set to 11 like the electric range"),
+        "induction 17; induction set to 11 like the electric range. BTB's "
+        "induction cost regression is on volume only (no performance "
+        "metric), so cost is BTB Typical for every tier"),
     "electric dryer": (
         "Potential BTB issue: BTB lifetime (22.3 y) is implausibly long; "
         "existing lifetime kept"),
@@ -120,6 +122,11 @@ COST_AT = {
     # BTB's HP dryer cost regression falls as efficiency rises, which is
     # not credible; use the Typical cost for every tier.
     "HP dryer": "Typical",
+    # BTB's induction range regression has volume as its only metric, so its
+    # cost cannot be moved to a tier's performance. The induction measures
+    # take the Typical installed cost, rather than being skipped and left at
+    # an older EIA cost below BTB's reference electric range.
+    "induction": "Typical",
 }
 
 # Rule table: scout_technology -> matching rule(s). Each rule is matched
