@@ -29,12 +29,12 @@
     "source_data": null
   },
   "installed_cost": {
-    "new": 892.66,
-    "existing": 892.66
+    "new": 3553.46,
+    "existing": 3553.46
   },
   "cost_units": "2023$/kBtu/h cooking",
   "installed_cost_source": {
-    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 10.35 kBtu/h",
+    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 2.6 kBtu/h",
     "source_data": {
       "title": "2024 Buildings Technology Baseline",
       "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
@@ -65,6 +65,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 16:51:39"
+    "timestamp": "2026-11-03 11:03:21"
   }
 }

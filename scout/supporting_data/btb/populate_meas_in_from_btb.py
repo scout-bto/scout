@@ -171,14 +171,27 @@ def relabel_cost_units(units):
     return units.replace(units[:4], "2023", 1)
 
 
-# Capacity in kBtu/h of the typical BTB commercial unit where BTB describes
-# it by volume rather than capacity. Keyed by (sector, BTB technology ID).
+# Capacity in kBtu/h of the typical BTB commercial unit where BTB gives no
+# capacity (e.g. describes it by volume). Keyed by (sector, BTB technology
+# ID).
+# The commercial ranges have no cooking capacity in BTB, only a Combined Idle
+# Energy Rate. That is a standby rate, about twice as high for gas (10,350
+# BTU/h) as for electric (1.4 kW), so dividing by it would make electric
+# ranges cost 2.8x gas per kBtu/h where BTB has them at 1.3x per unit. Scout
+# converts $/kBtu/h cooking to $/ft^2 with one factor for every fuel
+# (ecm_cost_convert.json), so every range must use the same divisor to keep
+# BTB's per-unit cost ratios. The ~2.6 kBtu/h EIA cooking capacity that the
+# (C) Induction Range measures are normalized by is used for all of them.
+COMMERCIAL_RANGE_CAPACITY_KBTUH = 2.6
 BTB_UNIT_CAPACITY_KBTUH = {
     # Commercial gas storage water heater (BTB: 100 gallons). The capacity
     # is the 199 kBtu/h that the BTB Key Costs sheet divides its cost by
     # (cell AG55), close to the 200 kBtu/h typical EIA commercial gas water
     # heater capacity Scout assumes (ecm_cost_convert.json).
     ("commercial", 65): 199.0,
+    # Commercial natural gas / electric range with griddle and oven.
+    ("commercial", 89): COMMERCIAL_RANGE_CAPACITY_KBTUH,
+    ("commercial", 90): COMMERCIAL_RANGE_CAPACITY_KBTUH,
 }
 
 # BTB capacity unit (lowercased) -> multiplier to kBtu/h.
@@ -403,17 +416,15 @@ BACKUP_FURNACE_TECH = {"gas": "furnace (NG)", "oil": "furnace (distillate)"}
 
 def capacity_kbtuh(btb_row):
     """The BTB row's Typical capacity (regression metric 1) in kBtu/h, or
-    None if metric 1 is not a capacity in a known unit. The commercial
-    ranges have no cooking capacity, so their Combined Idle Energy Rate
-    (BTU/h for gas, kW for electric) is used. Units BTB describes by volume
-    use the capacities in BTB_UNIT_CAPACITY_KBTUH."""
+    None if metric 1 is not a capacity in a known unit. Units BTB gives no
+    capacity for (e.g. by volume, or the commercial ranges' idle rate) use
+    the capacities in BTB_UNIT_CAPACITY_KBTUH."""
 
     key = (btb_row.get("btb_sector"), btb_row.get("tech_id"))
     if key in BTB_UNIT_CAPACITY_KBTUH:
         return BTB_UNIT_CAPACITY_KBTUH[key]
     metric = str(btb_row.get("Regression metric 1 - Metric")).lower()
-    if not any(name in metric for name in (
-            "capacity", "heat output", "combined idle energy rate")):
+    if not any(name in metric for name in ("capacity", "heat output")):
         return None
     factor = CAPACITY_TO_KBTUH.get(
         str(btb_row.get("Regression metric 1 - Unit")).strip().lower())
