@@ -253,6 +253,10 @@ MEASURE_RULES = {
         "residential", ["water heater gas storage"], [], None),
     "(R) Best Gas WH": (
         "residential", ["water heater gas storage"], [], None),
+    "(R) Ref. Case Resist. WH": (
+        "residential", ["water heater electric storage"], [], None),
+    "(R) Ref. Case Resist. WH TS": (
+        "residential", ["water heater electric storage"], [], None),
     # Reference-case electric range add-ons: their cost stays a zero
     # placeholder, but their lifetime follows the electric range's.
     "(R) Ref. Case Electric Range": (

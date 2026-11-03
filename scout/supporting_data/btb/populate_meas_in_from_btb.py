@@ -199,8 +199,19 @@ CAPACITY_TO_KBTUH = {
     "tons": 12.0, "kbtu/h": 1.0, "mbh": 1.0, "btu/h": 0.001,
     "btu/hr": 0.001, "kw": 3.412}
 
-# Breakthrough ("Brk.") measures are assumed costs, not taken from BTB.
+# Breakthrough ("Brk.") measures are assumptions, not BTB technologies, so
+# their performance and lifetime are not taken from BTB. Their cost is
+# defined as half that of the current best technology, so it is derived from
+# the matching Best measure's BTB cost (see derive_breakthrough_costs).
 _BREAKTHROUGH_NAME = re.compile(r"\bBrk\.?\b", re.IGNORECASE)
+
+# Breakthrough measure -> Best measure whose cost it halves, where that is
+# not the Name with "Brk." replaced by "Best". The like-for-like ASHP
+# replacement has no Best counterpart; it takes the Best residential heat
+# pump installed without oil-tank removal.
+BREAKTHROUGH_BASIS = {"(R) Brk. HP LFL": "(R) Best HP TS (Resist.)"}
+
+_COST_NUMBER = r"\s*:\s*(-?\d+(?:\.\d+)?)"
 
 # Cost Source Notes phrases describing a cost built from more than the
 # technology's own BTB cost. These are rebuilt from BTB pieces where
@@ -342,6 +353,12 @@ MEASURE_EDITS = {
         "Name": "(R) Best HP Dryer FS",
         "Electrical Upgrade Costs": "panel: false; 240V circuit: true"},
     "(R) Best 120V HP Dryer TS": {"Name": "(R) Best HP Dryer TS"},
+    # A zero-cost reference-case add-on whose cost is not from BTB, but whose
+    # Cost Source Details cited the pre-release BTB. Cleared like the other
+    # "Ref. case cost (no additional cost)" rows.
+    "(R) Ref. Case Bio or No Heat & AC": {
+        "_note": "$0 add-on cost is not from BTB; citation removed, per review",
+        "Cost Source Details": ""},
 }
 
 # Commercial heat pump measures costed from BTB's RTU heat pump (see
@@ -853,6 +870,26 @@ def append_note(old, note):
     return old if note in old else f"{old}; {note}"
 
 
+_BTB_NAMED = re.compile(
+    r"Buildings (Annual )?Technology Baseline", re.IGNORECASE)
+
+
+def cites_prerelease_btb(row, category):
+    """True if the row's "<category> Source ..." cells cite BTB as it was
+    before publication: the "forthcoming" citation, or BTB named in the notes
+    with no Source Details. Values hand-copied from that BTB often equal the
+    published ones, so the script, which otherwise only cites BTB where it
+    changes a value, would leave the old citation in place."""
+
+    details = row.get(f"{category} Source Details")
+    notes = row.get(f"{category} Source Notes")
+    details = details if isinstance(details, str) else ""
+    notes = notes if isinstance(notes, str) else ""
+    if _FORTHCOMING_BTB.search(details):
+        return True
+    return not details.strip() and bool(_BTB_NAMED.search(notes))
+
+
 def update_sources(row, category, updates, cell, ws, excel_row, col_index,
                    diff_rows):
     """Cite BTB in a row's "<category> Source Notes" and "... Details".
@@ -962,6 +999,93 @@ def apply_measure_edits(row, edits, ws, excel_row, col_index, diff_rows):
             "notes": note})
         row[column] = new_value
     return row
+
+
+def _round_half_up(value, digits):
+    scale = 10 ** digits
+    rounded = int(value * scale + 0.5) / scale
+    return int(rounded) if digits == 0 else rounded
+
+
+def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
+    """Set each breakthrough measure's installed cost to half that of its
+    Best counterpart (BREAKTHROUGH_BASIS, or the Name with "Brk." replaced
+    by "Best"), after the Best measures have taken their BTB costs. An
+    oil-tank removal in the Best cost is a fixed cost, so it is not halved.
+    Only bare "new: X; existing: Y" costs in the same Cost Units as a Best
+    cost that cites BTB are derived; anything else is logged as skipped.
+
+    Args:
+        name_rows: {measure Name: worksheet row}.
+    """
+
+    def get(excel_row, column):
+        value = ws.cell(row=excel_row, column=col_index[column]).value
+        return value if isinstance(value, str) else (
+            "" if value is None else str(value))
+
+    def put(name, excel_row, column, old, new, note):
+        if new == old:
+            return
+        ws.cell(row=excel_row, column=col_index[column]).value = new
+        diff_rows.append({
+            "Name": name, "technology": "", "column": column,
+            "old_value": old, "new_value": new, "notes": note})
+
+    for name, excel_row in name_rows.items():
+        if not _BREAKTHROUGH_NAME.search(str(name)):
+            continue
+        best = BREAKTHROUGH_BASIS.get(name, name.replace("Brk.", "Best", 1))
+        old_cost = get(excel_row, "Installed Cost")
+        reason = None
+        if best not in name_rows:
+            reason = f"no Best counterpart {best!r}"
+        else:
+            best_row = name_rows[best]
+            best_cost = get(best_row, "Installed Cost")
+            best_details = get(best_row, "Cost Source Details")
+            units = get(excel_row, "Cost Units")
+            if not (_BTB_CITED.search(best_details)
+                    and not _FORTHCOMING_BTB.search(best_details)):
+                reason = f"{best} cost is not from BTB"
+            elif get(best_row, "Cost Units") != units or \
+                    cost_units_info(units) is None:
+                reason = f"Cost Units differ from {best}'s"
+            elif not (_BARE_COST.fullmatch(old_cost)
+                      and _BARE_COST.fullmatch(best_cost)):
+                reason = "cost is not a single new/existing pair"
+        if reason:
+            diff_rows.append({
+                "Name": name, "technology": "", "column": "Installed Cost",
+                "old_value": old_cost, "new_value": "(skipped)",
+                "notes": f"breakthrough cost not derived: {reason}; "
+                         "left as-is"})
+            continue
+
+        values = {k: float(re.search(k + _COST_NUMBER, best_cost,
+                                     re.IGNORECASE).group(1))
+                  for k in ("new", "existing")}
+        tank = TANK_REMOVAL_COST if _TANK_REMOVAL.search(
+            get(best_row, "Cost Source Notes")) else 0
+        digits = 2 if cost_units_info(units)[1] else 0
+        half = {"new": _round_half_up(values["new"] / 2, digits),
+                "existing": _round_half_up(
+                    (values["existing"] - tank) / 2 + tank, digits)}
+        new_cost = f"new: {half['new']}; existing: {half['existing']}"
+        basis = f"half the BTB-based installed cost of {best}" + (
+            f" (its ${tank} oil-tank removal is not halved)" if tank else "")
+        old_numbers = [float(v) for v in re.findall(
+            r"-?\d+\.?\d*", old_cost)]
+        if old_numbers != [float(half["new"]), float(half["existing"])]:
+            put(name, excel_row, "Installed Cost", old_cost, new_cost,
+                f"breakthrough cost is {basis}")
+        notes = get(excel_row, "Cost Source Notes")
+        put(name, excel_row, "Cost Source Notes", notes,
+            append_note(notes.rstrip(". "), f"cost is {basis}"),
+            "breakthrough cost derived from BTB")
+        put(name, excel_row, "Cost Source Details",
+            get(excel_row, "Cost Source Details"), BTB_SOURCE_DETAILS,
+            "breakthrough cost derived from BTB")
 
 
 def main():
@@ -1141,7 +1265,14 @@ def main():
                     })
                 elif converted is not None and perf_key:
                     new_val_str = f"{converted:.3g}"
-                    if old_val != new_val_str:
+                    if old_val == new_val_str and \
+                            cites_prerelease_btb(row, "Performance"):
+                        # Already the published BTB value; cite it.
+                        src_updates["Performance"][tech] = (
+                            f"BTB {entry['bound'].lower()} performance "
+                            "value (2023 Reference scenario), converted to "
+                            "Scout units where necessary")
+                    elif old_val != new_val_str:
                         cell_state["Energy Performance"] = \
                             replace_value_for_key(
                                 perf_cell, perf_key, new_val_str)
@@ -1327,7 +1458,11 @@ def main():
                         float(v) for v in re.findall(
                             r"-?\d+\.?\d*", cost_cell)] == [
                         float(cost["new"]), float(cost["existing"])]
-                if new_full_cost_cell != cost_cell and not same_values:
+                if (new_full_cost_cell == cost_cell or same_values) and \
+                        cites_prerelease_btb(row, "Cost"):
+                    # Already the published BTB value; cite it.
+                    src_updates["Cost"][tech] = cost_src
+                elif new_full_cost_cell != cost_cell and not same_values:
                     src_updates["Cost"][tech] = cost_src
                     cell_state["Installed Cost"] = new_full_cost_cell
                     ws.cell(row=excel_row,
@@ -1392,7 +1527,13 @@ def main():
                 life_applies = (tech == owner) if life_unkeyed else bool(
                     re.search(re.escape(tech) + r"\s*:", lifetime_cell,
                               re.IGNORECASE))
-                if life_applies and old_lifetime != new_lifetime_str:
+                if life_applies and old_lifetime == new_lifetime_str and \
+                        entry_value(entry, "keep_lifetime") != "yes" and \
+                        cites_prerelease_btb(row, "Lifetime"):
+                    # Already the published BTB value; cite it.
+                    src_updates["Lifetime"][tech] = (
+                        "BTB expected average equipment lifetime")
+                elif life_applies and old_lifetime != new_lifetime_str:
                     keep_lifetime = entry_value(entry, "keep_lifetime") == "yes"
                     if not keep_lifetime:
                         src_updates["Lifetime"][tech] = (
@@ -1440,6 +1581,11 @@ def main():
                 "notes": "BTB costs are $2023" + (
                     f"; WARNING: {unwritten} not updated, so the row mixes "
                     "dollar years" if unwritten else "")})
+
+    derive_breakthrough_costs(
+        ws, col_index,
+        {name: i for i, name in enumerate(meas_in_df["Name"], start=2)},
+        diff_rows)
 
     if "BTB Diff" in wb.sheetnames:
         del wb["BTB Diff"]

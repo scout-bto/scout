@@ -69,13 +69,22 @@
     ]
   },
   "installed_cost": {
-    "new": 10544.0,
-    "existing": 10640.0
+    "new": 9972.0,
+    "existing": 10068.0
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Assume that a breakthrough HP achieves the highest possible level of performance at half the cost of current best HP technology.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Assume that a breakthrough HP achieves the highest possible level of performance at half the cost of current best HP technology",
+      "cost is half the BTB-based installed cost of (R) Best HP FS (NG Furnace)"
+    ],
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": false,
@@ -149,6 +158,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-10-26 16:51:39"
+    "timestamp": "2026-11-03 13:36:08"
   }
 }
