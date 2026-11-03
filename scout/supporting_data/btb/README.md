@@ -126,7 +126,8 @@ defined as half that of the current best technology, so once the Best
 measures have their BTB costs, each Brk. cost is set to half its Best
 counterpart's (the Name with "Brk." replaced by "Best", or
 `BREAKTHROUGH_BASIS`; `(R) Brk. HP LFL` uses `(R) Best HP TS (Resist.)`).
-An oil-tank removal in the Best cost is a fixed cost and is not halved. The
+An oil equipment removal in the Best cost is a fixed cost and is not
+halved. The
 cost is cited to BTB.
 
 **Source citations on unchanged values.** Values hand-copied from BTB
@@ -191,11 +192,19 @@ Notes:
   new construction = the heat pump plus BTB's typical gas (Furnace Gas-fired)
   or oil (Furnace Oil-Fired) furnace; existing construction = the heat pump
   alone, as the existing backup unit is kept.
-- *Oil-tank removal*: existing construction includes $1,030 (2023$) for tank
-  removal when the heat pump fully replaces an oil or propane system. This
-  comes from the existing notes (2015 EIA report), not BTB. It is not
-  counted in the dual-fuel rows above, where the backup furnace is kept and
-  so nothing is removed.
+- *Oil equipment removal*: existing construction of a residential "Other
+  Fossil" full fuel switch (and of residential rows whose notes mention tank
+  removal) includes $1,744 (2023$) for demolition of the oil furnace or
+  boiler with tank removal: EIA's national average of $1,675 (2022$) for
+  oil furnaces and boilers ("Residential Technology and Fuel Switching
+  Costs", tab "13 Space Heating Costs", Demolition Costs), converted to
+  2023$ with annual CPI as Scout does, and cited alongside BTB. Demolition
+  of gas and electric resistance heating is taken to be covered by BTB's heat
+  pump retrofit cost. Commercial rows whose notes mention tank removal keep
+  $1,030 (2023$) from the earlier 2015 EIA report. In a cell costing several
+  technologies, the removal is added to the heating equipment's entry only.
+  It is not counted in the dual-fuel rows above, where the backup furnace is
+  kept and so nothing is removed.
 - *Electric boiler rows* ("switched to elec boiler"): the baseline boiler's
   cost, performance and lifetime entries describe the electric boiler
   switched to, so the cost comes from BTB's electric boiler and the

@@ -225,10 +225,57 @@ _ELEC_BOILER_COST = re.compile(
 _UNHANDLED_COMPOSITE = re.compile(
     r"half the cost|halve|add retail|also add", re.IGNORECASE)
 
-# Oil-tank removal added to existing-construction costs when distillate or
-# propane equipment is replaced (800 2014$ = 1030 2023$ per the 2015 EIA
-# report cited in the existing cost notes). Not a BTB value.
+# Oil-tank removal added to existing-construction costs of commercial rows
+# when distillate or propane equipment is replaced (800 2014$ = 1030 2023$
+# per the 2015 EIA report cited in the existing cost notes). Not a BTB value.
 TANK_REMOVAL_COST = 1030
+
+# Demolition of the existing oil furnace or boiler, including its fuel tank,
+# added to existing-construction costs of residential "Other Fossil" fuel
+# switching measures: EIA's national average of $1675 (2022$) for both oil
+# furnaces and oil boilers ("13 Space Heating Costs", Demolition Costs,
+# OilFiredFurnaceDemo / OilFiredBoilerDemo), converted to 2023$ with annual
+# CPI as Scout does (x 1.0413). Demolition of gas and electric resistance
+# heating is taken to be covered by BTB's heat pump retrofit cost, which
+# includes demolition. Per review.
+RES_OIL_DEMOLITION_COST = 1744
+EIA_FUEL_SWITCHING_SOURCE = (
+    "Residential Technology and Fuel Switching Costs: Space Heating Costs; "
+    "U.S. Energy Information Administration; 2026; NA; "
+    "https://www.eia.gov/analysis/studies/buildings/"
+    "res_tech_fuel_switching_costs/xls/res_tech_fuel_switching_costs.xlsx")
+_RES_OIL_DEMOLITION_NOTE = (
+    f"existing includes ${RES_OIL_DEMOLITION_COST} for demolition of the oil "
+    "furnace or boiler with tank removal (EIA national average of $1675 in "
+    "2022$, converted to 2023$)")
+# A full (not dual-fuel) fuel switch, by measure Name.
+_FUEL_SWITCH_NAME = re.compile(r"\bFS\b")
+
+
+def removal_cost(name, row_sector, notes):
+    """(cost, note) of removing the existing oil equipment, added to the
+    existing-construction cost, or None if the row includes none.
+
+    Residential "Other Fossil" full fuel switches (and residential rows whose
+    notes mention tank removal) take EIA's oil furnace/boiler demolition
+    cost; commercial rows whose notes mention tank removal keep the earlier
+    tank removal cost. Dual-fuel ("Pt.") measures keep the existing furnace.
+    """
+
+    notes = notes if isinstance(notes, str) else ""
+    name = name if isinstance(name, str) else ""
+    if row_sector == "residential":
+        other_fossil_fs = "Other Fossil" in name and bool(
+            _FUEL_SWITCH_NAME.search(name)) and not _DUAL_FUEL_NAME.search(
+                name)
+        if other_fossil_fs or _TANK_REMOVAL.search(notes):
+            return RES_OIL_DEMOLITION_COST, _RES_OIL_DEMOLITION_NOTE
+        return None
+    if _TANK_REMOVAL.search(notes):
+        return TANK_REMOVAL_COST, (
+            f"existing includes ${TANK_REMOVAL_COST} oil-tank removal "
+            "(from the existing notes, not BTB)")
+    return None
 
 # Technologies whose cost entry, in the rows described by _ELEC_BOILER_COST,
 # holds the cost of the electric boiler switched to.
@@ -481,7 +528,8 @@ def dual_fuel_from_name(name):
     return "oil" if "Other Fossil" in name else None
 
 
-def composite_adjustment(notes, sector, crosswalk, btb_data, name=None):
+def composite_adjustment(notes, sector, crosswalk, btb_data, name=None,
+                         row_sector=None):
     """Amounts to add to a technology's BTB cost to rebuild a composite cost
     described by the row's Cost Source Notes.
 
@@ -489,7 +537,12 @@ def composite_adjustment(notes, sector, crosswalk, btb_data, name=None):
       pump): the new-construction cost also includes the backup furnace's BTB
       cost; existing construction keeps the existing backup unit, so is the
       heat pump alone.
-    - "tank removal": existing-construction cost includes oil-tank removal.
+    - removal of the existing oil equipment (see removal_cost): included in
+      the existing-construction cost.
+
+    Args:
+        sector: the sector of the BTB entry (for the backup furnace).
+        row_sector: the sector of the measure (for the removal cost).
 
     Returns:
         ({"new": x, "existing": y}, note) or None if the notes describe an
@@ -498,7 +551,9 @@ def composite_adjustment(notes, sector, crosswalk, btb_data, name=None):
 
     none = {"new": 0, "existing": 0}
     if not isinstance(notes, str):
-        return none, ""
+        removal = removal_cost(name, row_sector, notes)
+        return ({"new": 0, "existing": removal[0]}, removal[1]) \
+            if removal else (none, "")
     match = _ALSO_ADD_FURNACE.search(notes)
     fuel = match.group(1).lower() if match else dual_fuel_from_name(name)
     if fuel:
@@ -510,10 +565,9 @@ def composite_adjustment(notes, sector, crosswalk, btb_data, name=None):
         return ({"new": furnace["new"], "existing": 0},
                 f"new construction includes the BTB typical {fuel} furnace "
                 f"(${furnace['new']}); existing keeps the existing backup")
-    if _TANK_REMOVAL.search(notes):
-        return ({"new": 0, "existing": TANK_REMOVAL_COST},
-                f"existing includes ${TANK_REMOVAL_COST} oil-tank removal "
-                "(from the existing notes, not BTB)")
+    removal = removal_cost(name, row_sector, notes)
+    if removal:
+        return {"new": 0, "existing": removal[0]}, removal[1]
     if _UNHANDLED_COMPOSITE.search(notes):
         return None
     return none, ""
@@ -916,7 +970,10 @@ def update_sources(row, category, updates, cell, ws, excel_row, col_index,
             re.escape(t) + r"\s*:", cell, re.IGNORECASE)]
         all_keys = [t for t in techs_in_cell(row, cell)]
         full = bool(all_keys) and set(all_keys) <= set(keys)
-    description = "; ".join(dict.fromkeys(updates.values()))
+    # Technologies' descriptions often share phrases (e.g. a boiler's adds
+    # its removal cost to the paired AC's), so each phrase is kept once.
+    description = "; ".join(dict.fromkeys(
+        phrase for value in updates.values() for phrase in value.split("; ")))
     notes_col, details_col = f"{category} Source Notes", \
         f"{category} Source Details"
     old_notes, old_details = row.get(notes_col), row.get(details_col)
@@ -946,6 +1003,22 @@ def update_sources(row, category, updates, cell, ws, excel_row, col_index,
             "column": column, "old_value": old, "new_value": new,
             "notes": "source updated to cite BTB" + (
                 "" if full else " (added to the existing source)")})
+
+
+def add_source_details(ws, excel_row, col_index, name, citation, diff_rows):
+    """Add `citation` as a line of the row's Cost Source Details (as it now
+    stands in the worksheet) if it is not there yet, and log it."""
+
+    cell = ws.cell(row=excel_row, column=col_index["Cost Source Details"])
+    old = cell.value if isinstance(cell.value, str) else ""
+    if citation in old:
+        return
+    new = f"{old}\n{citation}" if old.strip() else citation
+    cell.value = new
+    diff_rows.append({
+        "Name": name, "technology": "", "column": "Cost Source Details",
+        "old_value": old, "new_value": new,
+        "notes": "existing cost includes EIA oil equipment demolition"})
 
 
 def techs_in_cell(row, cell):
@@ -1065,15 +1138,20 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
         values = {k: float(re.search(k + _COST_NUMBER, best_cost,
                                      re.IGNORECASE).group(1))
                   for k in ("new", "existing")}
-        tank = TANK_REMOVAL_COST if _TANK_REMOVAL.search(
-            get(best_row, "Cost Source Notes")) else 0
+        # The removal cost the Best measure's existing cost includes (only
+        # where its notes say so: a Best measure with no removal has none).
+        best_notes = get(best_row, "Cost Source Notes")
+        removal = removal_cost(best, sector_for_name(best), best_notes) \
+            if _TANK_REMOVAL.search(best_notes) else None
+        tank = removal[0] if removal else 0
         digits = 2 if cost_units_info(units)[1] else 0
         half = {"new": _round_half_up(values["new"] / 2, digits),
                 "existing": _round_half_up(
                     (values["existing"] - tank) / 2 + tank, digits)}
         new_cost = f"new: {half['new']}; existing: {half['existing']}"
         basis = f"half the BTB-based installed cost of {best}" + (
-            f" (its ${tank} oil-tank removal is not halved)" if tank else "")
+            f" (its ${tank} oil equipment removal is not halved)"
+            if tank else "")
         old_numbers = [float(v) for v in re.findall(
             r"-?\d+\.?\d*", old_cost)]
         if old_numbers != [float(half["new"]), float(half["existing"])]:
@@ -1084,7 +1162,10 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
             append_note(notes.rstrip(". "), f"cost is {basis}"),
             "breakthrough cost derived from BTB")
         put(name, excel_row, "Cost Source Details",
-            get(excel_row, "Cost Source Details"), BTB_SOURCE_DETAILS,
+            get(excel_row, "Cost Source Details"),
+            BTB_SOURCE_DETAILS + (
+                "\n" + EIA_FUEL_SWITCHING_SOURCE
+                if tank == RES_OIL_DEMOLITION_COST else ""),
             "breakthrough cost derived from BTB")
 
 
@@ -1155,6 +1236,7 @@ def main():
         all_keys_mapped = bool(cost_keys) and all(
             row_entries.get(t) is not None for t in cost_keys)
         cost_written = set()
+        demolition_cited = False
         row_relabeled = False
         src_updates = {"Performance": {}, "Cost": {}, "Lifetime": {}}
         src_cells = {"Performance": cell_state["Energy Performance"],
@@ -1375,7 +1457,17 @@ def main():
                 skip_reason = skip_cost_reason
                 adjustment = composite_adjustment(
                     cost_notes, entry["sector"], crosswalk_by_tech_tier,
-                    btb_data, None if rtu_cost else row.get("Name"))
+                    btb_data, None if rtu_cost else row.get("Name"),
+                    row_sector)
+                if adjustment is not None and not cost_unkeyed and \
+                        not holds_switched:
+                    # In a cell costing several technologies, the
+                    # adjustments belong to the heating equipment entry
+                    # only, not e.g. the paired air conditioner's.
+                    adjustment = ({"new": 0, "existing": 0}, "")
+                if adjustment is not None and \
+                        adjustment[1] == _RES_OIL_DEMOLITION_NOTE:
+                    demolition_cited = True
                 if skip_reason is None and cost_btb_row is btb_row and \
                         not used_regression and not cost_at_typical and \
                         entry["bound"] != "Typical" and \
@@ -1565,6 +1657,9 @@ def main():
         for category, updates in src_updates.items():
             update_sources(row, category, updates, src_cells[category], ws,
                            excel_row, col_index, diff_rows)
+        if demolition_cited and src_updates["Cost"]:
+            add_source_details(ws, excel_row, col_index, row.get("Name"),
+                               EIA_FUEL_SWITCHING_SOURCE, diff_rows)
 
         old_units = row.get("Cost Units")
         units_info = cost_units_info(old_units)
