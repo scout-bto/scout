@@ -693,6 +693,23 @@ def replace_cost_for_key(cell, key, new_cost):
     return result if any_found else cell
 
 
+def cost_for_key(cell, key):
+    """The "new: X; existing: Y" cost of `key` in a "key: new: X; key:
+    existing: Y" Installed Cost cell, in the same form a cost is written
+    (see replace_cost_for_key). find_value_for_key stops at the first ";",
+    so it returns only the "new: X" half. Falls back to it if the cell does
+    not nest the cost by new/existing."""
+
+    parts = []
+    for sub_key in ("new", "existing"):
+        match = re.search(
+            re.escape(key) + r"\s*:\s*" + sub_key + r"\s*:\s*([^;]+)",
+            cell, re.IGNORECASE)
+        if match:
+            parts.append(f"{sub_key}: {match.group(1).strip()}")
+    return "; ".join(parts) if parts else find_value_for_key(cell, key)
+
+
 def get_btb_row(btb_data, entry):
     """Look up the single BTB row matching a crosswalk entry's technology
     ID, projection year, and projection scenario."""
@@ -1205,10 +1222,13 @@ def main():
             cost_applies = (tech == owner) if cost_unkeyed else bool(
                 re.search(re.escape(tech) + r"\s*:", cost_cell,
                           re.IGNORECASE))
-            old_cost = None
+            old_cost = old_cost_shown = None
             if cost_applies:
                 old_cost = cost_cell if cost_unkeyed \
                     else find_value_for_key(cost_cell, tech)
+                # Both halves of the old cost, for the BTB Diff sheet.
+                old_cost_shown = old_cost if cost_unkeyed \
+                    else cost_for_key(cost_cell, tech)
             new_type = entry_value(entry, "measure_type")
             # A $0 cost is a deliberate placeholder (shared equipment, or a
             # reference-case add-on), unless the crosswalk turns the add-on
@@ -1285,7 +1305,7 @@ def main():
             if cost_applies and (zero_placeholder or skip_reason):
                 diff_rows.append({
                     "Name": row.get("Name"), "technology": tech,
-                    "column": "Installed Cost", "old_value": old_cost,
+                    "column": "Installed Cost", "old_value": old_cost_shown,
                     "new_value": "(skipped)",
                     "btb_technology_id": entry["btb_technology_id"],
                     "btb_display_name": entry["btb_display_name"],
@@ -1315,7 +1335,8 @@ def main():
                         new_full_cost_cell
                     diff_rows.append({
                         "Name": row.get("Name"), "technology": tech,
-                        "column": "Installed Cost", "old_value": old_cost,
+                        "column": "Installed Cost",
+                        "old_value": old_cost_shown,
                         "new_value": new_cost_repr,
                         "btb_technology_id": entry["btb_technology_id"],
                         "btb_display_name": entry["btb_display_name"],
