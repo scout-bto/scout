@@ -66,7 +66,8 @@ scenarios for nearly all technologies). Known limits:
   auto-detect and switch technology -- those cases surface as
   `needs_review` (ambiguous, multiple candidates) instead, or may need a
   manual crosswalk row pointing a specific tier at a different Technology ID.
-- Breakthrough ("Brk.") measures are not sourced from BTB and are skipped.
+- Breakthrough ("Brk.") measures are not BTB technologies, so they have no
+  crosswalk rows (see "Breakthrough measures" below for their cost).
 
 **Only 48 of the ~100 Scout technology tokens used in `meas_in` have an
 authored rule** (see `MATCH_RULES`); the rest print a warning and are left
@@ -119,9 +120,23 @@ not, so it is recovered from each row's Low/Mid/High retail and installed
 prices (this reproduces the sheet's commercial multipliers). Only regression
 metric 2 is treated as the performance metric.
 
-**Row guards.** Every row is considered, except breakthrough ("Brk.")
-measures, which are not sourced from BTB. An installed cost is proposed only
-when:
+**Breakthrough measures.** "Brk." measures are assumptions, not BTB
+technologies: their performance and lifetime are left alone. Their cost is
+defined as half that of the current best technology, so once the Best
+measures have their BTB costs, each Brk. cost is set to half its Best
+counterpart's (the Name with "Brk." replaced by "Best", or
+`BREAKTHROUGH_BASIS`; `(R) Brk. HP LFL` uses `(R) Best HP TS (Resist.)`).
+An oil-tank removal in the Best cost is a fixed cost and is not halved. The
+cost is cited to BTB.
+
+**Source citations on unchanged values.** Values hand-copied from BTB
+before it was published often equal the published values. Where a BTB value
+matches but the row still cites the pre-release BTB (the "NREL, forthcoming"
+citation, or BTB named in the notes with no Source Details), the source is
+updated to the published citation anyway.
+
+**Row guards.** Every row is considered except breakthrough measures (see
+above). An installed cost is proposed only when:
 - the row's `Cost Units` are `2023$/unit` or `2023$/kBtu/h` of heating,
   cooling, water heating or cooking capacity, or the same in 2022$ (see
   below);

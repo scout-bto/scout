@@ -7,6 +7,8 @@ scout_technology,sector,tier,btb_technology_id,btb_display_name,btb_mapping_name
 (R) Ref. Case Electric Range,residential,Ref. Case,27.0,Cooking Range Electric,Electric Ranges,Volume,Reference,2023,Typical,high,False,,,,,
 (R) Ref. Case Electric Range TS,residential,Ref. Case,27.0,Cooking Range Electric,Electric Ranges,Volume,Reference,2023,Typical,high,False,,,,,
 (R) Ref. Case Gas WH,residential,Ref. Case,165.0,Water Heater Gas Storage,Gas-Fired WH,UEF,Reference,2023,Typical,high,False,,,,,
+(R) Ref. Case Resist. WH,residential,Ref. Case,164.0,Water Heater Electric Storage,,UEF,Reference,2023,Typical,high,False,,,,,
+(R) Ref. Case Resist. WH TS,residential,Ref. Case,164.0,Water Heater Electric Storage,,UEF,Reference,2023,Typical,high,False,,,,,
 ASHP,residential,Best,3.0,Air Source Heat Pump,Residential Air Source Heat Pump,SEER1,Reference,2023,High,high,False,,,,,
 ASHP,residential,ESTAR,3.0,Air Source Heat Pump,Residential Air Source Heat Pump,SEER1,Reference,2023,Existing,high,False,,,,,
 ASHP,residential,Min. Efficiency,3.0,Air Source Heat Pump,Residential Air Source Heat Pump,SEER1,Reference,2023,Existing,high,False,,,,,
