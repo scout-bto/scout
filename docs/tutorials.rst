@@ -1366,13 +1366,15 @@ Specify ECM files and packages
 
 ``--ecm_packages`` selects a subset of ECM packages; values must correspond with package_ecms.json package names in the ECM directory. If no list is provided, all packages will be used so long as their ECM definitions are present; if an empty list is provided, no packages will be used. Packages that require ECM definitions not specified through ``--ecm_directory``, ``--ecm_files``, and/or ``--ecm_files_regex`` will be skipped and a warning will be issued.
 
+.. _alt-regions-opt:
+
 Alternate regions
 *****************
 
 ``--alt_regions`` allows the user to set the regional breakout of baseline data and ECM results (see :ref:`ecm-baseline_climate-zone`). Valid options include one of "EMM" (default), "State", or "AIA".
 
 .. note::
-   Currently, three regional breakouts are supported: the U.S. Electricity Information Administration (EIA) Electricity Market Module (EMM) regions, AIA climate regions,  and the contiguous U.S. states. See the :ref:`ecm-baseline_climate-zone` section for additional details.
+   Currently, three regional breakouts are supported: the U.S. Electricity Information Administration (EIA) Electricity Market Module (EMM) regions, AIA climate regions,  and the contiguous U.S. states. See the :ref:`ecm-baseline_climate-zone` section for additional details, and :ref:`data-disagg` for how EMM- and state-level baseline data are derived.
 
 Site energy
 ***********
