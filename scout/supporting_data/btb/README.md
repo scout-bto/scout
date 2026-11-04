@@ -157,10 +157,15 @@ Per-kBtu/h costs are the whole-unit cost divided by a capacity in kBtu/h:
   Rate. That is a standby rate, about twice as high for gas (10.35 kBtu/h)
   as for electric (1.4 kW = 4.78 kBtu/h), and Scout converts $/kBtu/h
   cooking to $/ft^2 with one factor for every fuel, so dividing by it would
-  turn BTB's 1.3x electric-to-gas cost ratio into 2.8x. Every commercial
-  range (gas, electric, and the EIA-based induction measures) is therefore
-  divided by the same ~2.6 kBtu/h EIA cooking capacity, which keeps BTB's
-  per-unit cost ratios.
+  turn BTB's 1.3x electric-to-gas cost ratio into 2.8x. The commercial gas
+  and electric ranges are therefore divided by the same ~2.6 kBtu/h EIA
+  cooking capacity, which keeps BTB's per-unit cost ratios.
+- *Commercial induction ranges*: BTB has no commercial induction range (its
+  induction cooktop and wells are not comparable to a range with griddle and
+  oven). `(C) Induction Range FS/TS` therefore take BTB's commercial electric
+  range cost times EIA's ratio of High to Typical cost for that range
+  (4353/4319 new, 4423/4388 existing), which keeps EIA's small premium on the
+  same cost basis as the reference ranges.
 - *Refrigeration* is not taken from BTB at all (see below).
 
 2022$ rows are only replaced when the cell holds a single cost, or when
@@ -194,14 +199,18 @@ Notes:
   alone, as the existing backup unit is kept.
 - *Oil equipment removal*: existing construction of a residential "Other
   Fossil" full fuel switch (and of residential rows whose notes mention tank
-  removal) includes $1,744 (2023$) for demolition of the oil furnace or
+  removal), and of a commercial one costed from residential systems (where it
+  is divided by 36 kBtu/h like the rest of the cost), includes $1,744 (2023$)
+  for demolition of the oil furnace or
   boiler with tank removal: EIA's national average of $1,675 (2022$) for
   oil furnaces and boilers ("Residential Technology and Fuel Switching
   Costs", tab "13 Space Heating Costs", Demolition Costs), converted to
   2023$ with annual CPI as Scout does, and cited alongside BTB. Demolition
   of gas and electric resistance heating is taken to be covered by BTB's heat
-  pump retrofit cost. Commercial rows whose notes mention tank removal keep
-  $1,030 (2023$) from the earlier 2015 EIA report. In a cell costing several
+  pump retrofit cost. Any other commercial row whose notes mention tank
+  removal would keep $1,030 (2023$) from the earlier 2015 EIA report; no
+  current row does. Breakthrough measures carry the removal cost unhalved. In
+  a cell costing several
   technologies, the removal is added to the heating equipment's entry only.
   It is not counted in the dual-fuel rows above, where the backup furnace is
   kept and so nothing is removed.
@@ -247,7 +256,12 @@ tiers and are left as they are; dual-fuel rows do not add a furnace.
 
 **Other rules.** Commercial rows that represent a residential-type furnace
 in a commercial setting (their cost notes say "residential furnaces") use the
-residential furnace's BTB entry for `oil_furnace` and `gas_furnace`.
+residential furnace's BTB entry for `oil_furnace` and `gas_furnace`, with the
+cost divided by the typical residential capacity (36 kBtu/h), not the furnace's
+own capacity (105 kBtu/h oil, 80 kBtu/h gas). Scout converts $/kBtu/h heating
+to $/ft^2 with one factor for every technology, so dividing these rows and the
+heat pumps they compete with by the same capacity keeps BTB's per-unit cost
+ratios.
 
 **Refrigeration uses EIA entirely.** The commercial refrigeration
 technologies (reach-in freezers and refrigerators, supermarket display cases,

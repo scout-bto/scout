@@ -56,8 +56,8 @@
   },
   "installed_cost": {
     "oil_furnace": {
-      "new": 49.12,
-      "existing": 50.95
+      "new": 143.28,
+      "existing": 148.61
     },
     "res_type_central_AC": {
       "new": 155.53,
@@ -74,7 +74,6 @@
   "installed_cost_source": {
     "notes": [
       "Typical efficiency costs for residential furnaces in 2023, normalized by capacity",
-      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 105 kBtu/h",
       "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 36 kBtu/h",
       "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 12 kBtu/h (oil_furnace, res_type_central_AC, wall-window_room_AC)"
     ],
@@ -123,6 +122,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-11-03 13:10:39"
+    "timestamp": "2026-11-04 14:06:58"
   }
 }

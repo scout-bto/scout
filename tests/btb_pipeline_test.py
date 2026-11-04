@@ -410,7 +410,12 @@ def test_composite_adjustment_tank_removal_and_unhandled_notes():
         crosswalk, data, "(R) ESTAR HP FS (Other Fossil Furnace)")
     # residential rows take EIA's oil furnace/boiler demolition, in 2023$
     assert extra == {"new": 0, "existing": 1744}
-    # commercial rows keep 800 2014$, updated to 2023$ in the existing notes
+    # commercial rows costed from residential systems take the same cost
+    extra, _ = pop.composite_adjustment(
+        "residential system cost", "residential",
+        crosswalk, data, "(C) Best HP FS (Other Fossil Furnace & AC)")
+    assert extra == {"new": 0, "existing": 1744}
+    # other commercial rows keep 800 2014$, updated to 2023$ in the notes
     extra, _ = pop.composite_adjustment(
         "additional tank removal costs of 800 2014$", "residential",
         crosswalk, data, "(C) ESTAR HP FS (Other Fossil Furnace)")
@@ -930,9 +935,20 @@ def test_pipeline_logs_every_change_in_the_diff_sheet(pipeline_output):
     ("(R) Best HP Pt. FS (Other Fossil Furnace)", "BTB cost", None),
     ("(R) Best HP FS (NG Furnace)", "BTB cost", None),
     ("(R) Ref. Case Other Fossil Furnace & AC", "BTB cost", None),
-    # the EIA report is residential: commercial rows keep the earlier cost
+    # commercial full fuel switches costed from residential systems, every
+    # tier, whatever the notes say about tanks
+    ("(C) Min. Efficiency HP FS (Other Fossil Furnace)",
+     "BTB installed cost of the residential system", 1744),
+    ("(C) Best HP FS (Other Fossil Furnace & AC)",
+     "BTB installed cost of the residential system", 1744),
+    # their dual-fuel and gas counterparts have no oil equipment to remove
+    ("(C) ESTAR HP Pt. FS (Other Fossil Furnace)",
+     "BTB installed cost of the residential system", None),
+    ("(C) Best HP FS (NG Furnace & AC)",
+     "BTB installed cost of the residential system", None),
+    # other commercial rows, not costed from residential systems
     ("(C) ESTAR HP FS (Other Fossil Furnace)", "plus tank removal", 1030),
-    ("(C) Best HP FS (Other Fossil Furnace & AC)", "BTB cost", None),
+    ("(C) Best HP FS (RTU, Other Fossil Heat)", "BTB cost", None),
     (None, "plus tank removal", 1030),
     (None, np.nan, None),
 ])
@@ -1002,6 +1018,54 @@ def test_derive_breakthrough_costs_does_not_halve_oil_removal():
         pop.BTB_SOURCE_DETAILS + "\n" + pop.EIA_FUEL_SWITCHING_SOURCE)
     assert {d["column"] for d in diff} == {
         "Installed Cost", "Cost Source Notes", "Cost Source Details"}
+
+
+def test_derive_breakthrough_costs_does_not_halve_per_capacity_oil_removal():
+    best, brk = "(C) Best HP FS (Other Fossil Furnace & AC)", \
+        "(C) Brk. HP FS (Other Fossil Furnace & AC)"
+    units = "2023$/kBtu/h heating"
+    sheet, col_index, rows = breakthrough_sheet([
+        (best, "new: 553.97; existing: 607.75", units,
+         "residential system; existing includes $1744 with tank removal",
+         pop.BTB_SOURCE_DETAILS),
+        (brk, "new: 1; existing: 2", units, "half the cost", "old")])
+    pop.derive_breakthrough_costs(sheet, col_index, rows, [])
+    # half of the 559.31 heat pump, plus all of the 1744 / 36 = 48.44 removal
+    assert sheet.cell(row=2, column=2).value == \
+        "new: 276.99; existing: 328.1"
+    assert sheet.cell(row=2, column=5).value == (
+        pop.BTB_SOURCE_DETAILS + "\n" + pop.EIA_FUEL_SWITCHING_SOURCE)
+
+
+def test_derive_commercial_induction_costs_scales_btb_by_eia_premium():
+    fs, ts, basis = "(C) Induction Range FS", "(C) Induction Range TS", \
+        pop.COMMERCIAL_INDUCTION_BASIS
+    eia = "EIA report; EIA; 2023; 168; https://www.eia.gov"
+    old = ("new:4353; existing:4423", "2022$/kBtu/h cooking", "EIA High", eia)
+    sheet, col_index, rows = breakthrough_sheet([
+        (basis, "new: 4627.69; existing: 4627.69", "2023$/kBtu/h cooking",
+         "BTB", pop.BTB_SOURCE_DETAILS),
+        (fs, *old), (ts, *old)])
+    diff = []
+    pop.derive_commercial_induction_costs(sheet, col_index, rows, diff)
+    for row in (rows[fs], rows[ts]):
+        assert sheet.cell(row=row, column=2).value == \
+            "new: 4664.12; existing: 4664.6"
+        assert sheet.cell(row=row, column=3).value == "2023$/kBtu/h cooking"
+        assert sheet.cell(row=row, column=5).value == (
+            pop.BTB_SOURCE_DETAILS + "\n" + eia)
+    assert {d["Name"] for d in diff} == {fs, ts}
+
+
+def test_derive_commercial_induction_costs_needs_a_single_basis_cost():
+    fs, basis = "(C) Induction Range FS", pop.COMMERCIAL_INDUCTION_BASIS
+    sheet, col_index, rows = breakthrough_sheet([
+        (basis, "0", "2023$/kBtu/h cooking", "BTB", pop.BTB_SOURCE_DETAILS),
+        (fs, "new:4353; existing:4423", "2022$/kBtu/h cooking", "EIA", "EIA")])
+    diff = []
+    pop.derive_commercial_induction_costs(sheet, col_index, rows, diff)
+    assert sheet.cell(row=rows[fs], column=2).value == "new:4353; existing:4423"
+    assert [d["new_value"] for d in diff] == ["(skipped)"]
 
 
 def test_derive_breakthrough_costs_per_capacity_keeps_cents():
