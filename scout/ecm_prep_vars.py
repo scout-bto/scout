@@ -1555,10 +1555,9 @@ class UsefulVars(object):
                 # For state-resolved runs, prefer each state's own peak day
                 # (directly derived from ComStock/ResStock's by-state
                 # totals) over its representative EMM region's peak day.
-                # ComStock/ResStock don't publish by-state data for AK/HI,
-                # so those (and any other state missing from the by-state
-                # peak day file) keep falling back to the EMM-region proxy
-                # via self.state_emm_map -- see the lookup in ecm_prep.py.
+                # The by-state peak day file covers all 50 states and DC;
+                # see the lookup in ecm_prep.py for how a missing state is
+                # handled.
                 if opts.alt_regions == "State":
                     state_peak_days_dat = pd.read_csv(
                         handyfiles.tsv_metrics_peak_days_state,
