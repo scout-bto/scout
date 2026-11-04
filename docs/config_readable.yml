@@ -108,7 +108,8 @@ ecm_prep:
       incentives (e.g., tax credits, rebates) for measure adoption.
       The aeo option reverts to incentive levels in the AEO reference
       case forecast. Allowed values are {aeo, aggressive, aggressive
-      state, optimistic, reference}. Default aeo
+      state, aggressive-electric, aggressive-fuel-neutral, reference}.
+      Default aeo
     incentive_restrictions: (string) Restrictions to apply to
       evaluation of incentives. Setting to all removes all incentives,
       including those in the reference case, while null imposes
@@ -179,7 +180,8 @@ ecm_prep:
       (BPS) including energy use index targets and/or onsite emissions
       reduction requirements, which apply to existing buildings.
       Null removes this driver entirely. Allowed values are {aggressive,
-      optimistic, reference, null}. Default null
+      aggressive-electric, aggressive-fuel-neutral, reference,
+      null}. Default null
     bps_comply_com: (number) Commercial compliance fraction to
       assume for BPS scenario implementation. Default 1
     bps_comply_res: (number) Residential compliance fraction to
@@ -191,17 +193,19 @@ ecm_prep:
     codes: (string) State or local new building codes w/ additional
       energy index improvements over model code and/or onsite
       emissions reduction requirements/incentives. Null removes
-      this driver entirely. Allowed values are {aggressive, optimistic,
-      reference, null}. Default null
+      this driver entirely. Allowed values are {aggressive, aggressive-electric,
+      aggressive-fuel-neutral, reference, null}. Default null
     low_volume_rate: (string) Reduce volumetric electric rates,
       possibly with concurrent increase in fixed charges. Reference
       case will represent currently-enacted rates of this type.
       Null removes this driver entirely. Allowed values are {aggressive,
-      optimistic, reference, null}. Default null
+      aggressive-electric, aggressive-fuel-neutral, reference,
+      null}. Default null
     state_appl_regs: (string) State or local emissions-related
       regulations that remove certain appliance choices from the
       market. Null removes this driver entirely. Allowed values
-      are {aggressive, optimistic, reference, null}. Default null
+      are {aggressive, aggressive-electric, aggressive-fuel-neutral,
+      reference, null}. Default null
   tsv_metrics:
     tsv_average_days: (string) The day type to average over. Required
       if tsv_type is `energy` or tsv_power_agg is `average`. Allowed
