@@ -70,7 +70,7 @@ The source data are reported at 15-minute intervals, but Scout's load shapes are
 
 #. Each 15-minute value is assigned to the hour in which its interval falls, and each hour is labeled by its start time.
 #. ComStock and ResStock report all timeseries in Eastern Standard Time, so each region's shape is shifted to that region's local standard time. Where a region spans multiple time zones, the time zone that covers most of its population is used.
-#. Each shape is normalized so that its 8760 values sum to approximately 1.
+#. Each shape is normalized so that its 8760 values sum to approximately 1. Shapes with no load in the source data remain all zero.
 
 Load shape files
 ~~~~~~~~~~~~~~~~
@@ -86,7 +86,12 @@ Scout reads |html-filepath| ./scout/supporting_data/tsv_data/tsv_load_EMM.gz |ht
 
 The top level of each file also records the assumptions behind the data, including the weather basis, the time zone treatment, and the starting day of the week.
 
-The EMM file covers all 25 EMM regions. The state file covers the 48 contiguous states and the District of Columbia, and has no data for Alaska or Hawaii.
+The EMM file covers all 25 EMM regions. The state file covers all 50 states and the District of Columbia. State-level analyses currently exclude Alaska and Hawaii, because Scout lacks the grid data needed to project their emissions and retail rates, so the data for those two states are not yet used.
+
+Some load shapes are all zero because the source data show no load for that combination of end use, building type, and region. For example, the source data show no portable electric spa load for mobile homes in some states. Scout uses these shapes as zero load and does not issue a warning.
+
+.. note::
+   The source data show no commercial water heating load for California, so this shape is all zero for CA in the state file and for CANO and CASO in the EMM file. All commercial building types use this one water heating shape, so commercial water heating in these regions contributes no load to hourly calculations.
 
 Regenerating the load shapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,7 +121,7 @@ A region's peak day is the day containing its highest hourly total of commercial
 Peak days are stored in two files in |html-filepath| ./scout/supporting_data/tsv_data\ |html-fp-end|:
 
 * When regions are set to EMM, Scout uses each EMM region's peak day from ``tsv_peak_days_EMM.csv``.
-* When regions are set to State, Scout uses each state's own peak day from ``tsv_peak_days_State.csv``. That file has no rows for Alaska or Hawaii, so those states use the peak day of their representative EMM region. A missing peak day for any other region raises an error.
+* When regions are set to State, Scout uses each state's own peak day from ``tsv_peak_days_State.csv``. If a peak day is missing for Alaska or Hawaii, Scout uses the peak day of the state's representative EMM region. A missing peak day for any other region raises an error.
 
 Season windows
 ^^^^^^^^^^^^^^
