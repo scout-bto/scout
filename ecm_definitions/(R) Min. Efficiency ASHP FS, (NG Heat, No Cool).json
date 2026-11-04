@@ -59,28 +59,34 @@
     ]
   },
   "installed_cost": {
-    "new": 13163.0,
-    "existing": 13355.0
+    "new": 13174.0,
+    "existing": 13366.0
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Retail (new) and total installed (existing) cost for min. efficiency ASHPs in 2023.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost (mid estimate, 2023$) at the performance already in the measure",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": true,
     "240V circuit": true
   },
-  "product_lifetime": 15.0,
+  "product_lifetime": 15.3,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average of the min. efficiency range",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 39,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": {
@@ -131,6 +137,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }
