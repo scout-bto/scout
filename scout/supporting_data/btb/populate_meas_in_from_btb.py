@@ -67,6 +67,12 @@ CROSS_SECTOR_TECHS = {
 # residential ASHP entry for their cost only; performance and lifetime stay
 # as they are.
 _RESIDENTIAL_SYSTEM_NOTE = re.compile(r"residential system", re.IGNORECASE)
+# Typical residential capacity that whole-unit costs of residential-type
+# equipment in commercial measures are divided by (BTB's 3-ton heat pump).
+# Scout converts $/kBtu/h heating to $/ft^2 with one factor for every
+# technology, so using one divisor for the heat pumps, furnaces and AC keeps
+# BTB's per-unit cost ratios between them.
+RESIDENTIAL_SYSTEM_CAPACITY_KBTUH = 36.0
 
 # The other commercial heat pump rows (their switched-to technology is ASHP)
 # are costed from commercial rooftop heat pumps, so take BTB's standard RTU
@@ -181,8 +187,8 @@ def relabel_cost_units(units):
 # ranges cost 2.8x gas per kBtu/h where BTB has them at 1.3x per unit. Scout
 # converts $/kBtu/h cooking to $/ft^2 with one factor for every fuel
 # (ecm_cost_convert.json), so every range must use the same divisor to keep
-# BTB's per-unit cost ratios. The ~2.6 kBtu/h EIA cooking capacity that the
-# (C) Induction Range measures are normalized by is used for all of them.
+# BTB's per-unit cost ratios. The ~2.6 kBtu/h EIA cooking capacity is used for
+# all of them.
 COMMERCIAL_RANGE_CAPACITY_KBTUH = 2.6
 BTB_UNIT_CAPACITY_KBTUH = {
     # Commercial gas storage water heater (BTB: 100 gallons). The capacity
@@ -227,14 +233,16 @@ _UNHANDLED_COMPOSITE = re.compile(
     r"half the cost|halve|add retail|also add", re.IGNORECASE)
 
 # Oil-tank removal added to existing-construction costs of commercial rows
-# when distillate or propane equipment is replaced (800 2014$ = 1030 2023$
-# per the 2015 EIA report cited in the existing cost notes). Not a BTB value.
+# not costed from residential systems when distillate or propane equipment is
+# replaced (800 2014$ = 1030 2023$ per the 2015 EIA report cited in the
+# existing cost notes). Not a BTB value.
 TANK_REMOVAL_COST = 1030
 
 # Demolition of the existing oil furnace or boiler, including its fuel tank,
-# added to existing-construction costs of residential "Other Fossil" fuel
-# switching measures: EIA's national average of $1675 (2022$) for both oil
-# furnaces and oil boilers ("13 Space Heating Costs", Demolition Costs,
+# added to existing-construction costs of "Other Fossil" fuel switching
+# measures that replace residential-type equipment: EIA's national average
+# of $1675 (2022$) for both oil furnaces and oil boilers ("13 Space Heating
+# Costs", Demolition Costs,
 # OilFiredFurnaceDemo / OilFiredBoilerDemo), converted to 2023$ with annual
 # CPI as Scout does (x 1.0413). Demolition of gas and electric resistance
 # heating is taken to be covered by BTB's heat pump retrofit cost, which
@@ -259,24 +267,40 @@ def removal_cost(name, notes):
 
     Residential "Other Fossil" full fuel switches (and residential rows whose
     notes mention tank removal) take EIA's oil furnace/boiler demolition
-    cost; commercial rows whose notes mention tank removal keep the earlier
-    tank removal cost. Dual-fuel ("Pt.") measures keep the existing furnace.
+    cost, as do commercial ones costed from residential systems; other
+    commercial rows whose notes mention tank removal keep the earlier tank
+    removal cost. Dual-fuel ("Pt.") measures keep the existing furnace.
     """
 
     notes = notes if isinstance(notes, str) else ""
     name = name if isinstance(name, str) else ""
+    other_fossil_fs = "Other Fossil" in name and bool(
+        _FUEL_SWITCH_NAME.search(name)) and not _DUAL_FUEL_NAME.search(name)
     if sector_for_name(name) == "residential":
-        other_fossil_fs = "Other Fossil" in name and bool(
-            _FUEL_SWITCH_NAME.search(name)) and not _DUAL_FUEL_NAME.search(
-                name)
         if other_fossil_fs or _TANK_REMOVAL.search(notes):
             return RES_OIL_DEMOLITION_COST, _RES_OIL_DEMOLITION_NOTE
         return None
+    if other_fossil_fs and _RESIDENTIAL_SYSTEM_NOTE.search(notes):
+        return RES_OIL_DEMOLITION_COST, _RES_OIL_DEMOLITION_NOTE
     if _TANK_REMOVAL.search(notes):
         return TANK_REMOVAL_COST, (
             f"existing includes ${TANK_REMOVAL_COST} oil-tank removal "
             "(from the existing notes, not BTB)")
     return None
+
+
+# BTB has no commercial induction range (only an induction cooktop and wells,
+# which are not comparable to a range with griddle and oven). The (C) Induction
+# Range measures take BTB's commercial electric range cost, scaled by EIA's
+# ratio of High to Typical costs for that range, which keeps EIA's small premium
+# on the same cost basis as the reference ranges. Values are the 2022$/kBtu/h
+# cooking costs from the EIA report in the measures' Cost Source Details.
+COMMERCIAL_INDUCTION_MEASURES = (
+    "(C) Induction Range FS", "(C) Induction Range TS")
+COMMERCIAL_INDUCTION_BASIS = "(C) Ref. Case Electric Range FS"
+EIA_COMMERCIAL_ELECTRIC_RANGE_COST = {
+    "typical": {"new": 4319, "existing": 4388},
+    "high": {"new": 4353, "existing": 4423}}
 
 
 # Technologies whose cost entry, in the rows described by _ELEC_BOILER_COST,
@@ -286,7 +310,9 @@ BOILER_COST_KEYS = {"gas_boiler", "oil_boiler", "boiler (NG)",
 
 # Commercial rows representing a residential-type furnace in a commercial
 # setting say so in their cost notes; the commercial furnace tokens then take
-# the residential furnace's BTB entry (cost, performance and lifetime).
+# the residential furnace's BTB entry (cost, performance and lifetime), with
+# its cost divided by RESIDENTIAL_SYSTEM_CAPACITY_KBTUH, not the furnace's own
+# capacity (BTB: 105 kBtu/h oil, 80 kBtu/h gas).
 _RESIDENTIAL_FURNACE_NOTE = re.compile(r"residential furnaces", re.IGNORECASE)
 RESIDENTIAL_FURNACE_ALIAS = {
     "oil_furnace": "furnace (distillate)", "gas_furnace": "furnace (NG)"}
@@ -1148,10 +1174,15 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
         removal = removal_cost(best, best_notes) \
             if _TANK_REMOVAL.search(best_notes) else None
         tank = removal[0] if removal else 0
-        digits = 2 if cost_units_info(units)[1] else 0
+        per_capacity = cost_units_info(units)[1]
+        digits = 2 if per_capacity else 0
+        # The Best measure's per-kBtu/h cost holds the whole-unit removal cost
+        # divided by the same capacity.
+        fixed = tank / RESIDENTIAL_SYSTEM_CAPACITY_KBTUH if per_capacity \
+            else tank
         half = {"new": _round_half_up(values["new"] / 2, digits),
                 "existing": _round_half_up(
-                    (values["existing"] - tank) / 2 + tank, digits)}
+                    (values["existing"] - fixed) / 2 + fixed, digits)}
         new_cost = f"new: {half['new']}; existing: {half['existing']}"
         basis = f"half the BTB-based installed cost of {best}" + (
             f" (its ${tank} oil equipment removal is not halved)"
@@ -1171,6 +1202,68 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
                 "\n" + EIA_FUEL_SWITCHING_SOURCE
                 if tank == RES_OIL_DEMOLITION_COST else ""),
             "breakthrough cost derived from BTB")
+
+
+def derive_commercial_induction_costs(ws, col_index, name_rows, diff_rows):
+    """Set the (C) Induction Range costs from BTB's commercial electric range
+    cost and EIA's premium for it, after the reference ranges have taken their
+    BTB costs (see COMMERCIAL_INDUCTION_MEASURES).
+
+    Args:
+        name_rows: {measure Name: worksheet row}.
+    """
+
+    def cell(excel_row, column):
+        return ws.cell(row=excel_row, column=col_index[column])
+
+    def put(name, excel_row, column, new):
+        old = cell(excel_row, column).value
+        if new == old:
+            return
+        cell(excel_row, column).value = new
+        diff_rows.append({
+            "Name": name, "technology": "", "column": column,
+            "old_value": old, "new_value": new,
+            "notes": "BTB electric range cost scaled by EIA's premium"})
+
+    for name in COMMERCIAL_INDUCTION_MEASURES:
+        if name not in name_rows:
+            continue
+        excel_row = name_rows[name]
+        basis_row = name_rows.get(COMMERCIAL_INDUCTION_BASIS)
+        basis_cost = str(cell(basis_row, "Installed Cost").value) \
+            if basis_row else ""
+        if not _BARE_COST.fullmatch(basis_cost):
+            diff_rows.append({
+                "Name": name, "technology": "", "column": "Installed Cost",
+                "old_value": cell(excel_row, "Installed Cost").value,
+                "new_value": "(skipped)",
+                "notes": f"{COMMERCIAL_INDUCTION_BASIS} has no single "
+                         "new/existing cost; left as-is"})
+            continue
+        typical = EIA_COMMERCIAL_ELECTRIC_RANGE_COST["typical"]
+        high = EIA_COMMERCIAL_ELECTRIC_RANGE_COST["high"]
+        cost = {
+            key: _round_half_up(
+                float(re.search(key + _COST_NUMBER, basis_cost).group(1))
+                * high[key] / typical[key], 2)
+            for key in ("new", "existing")}
+        put(name, excel_row, "Installed Cost",
+            f"new: {cost['new']}; existing: {cost['existing']}")
+        put(name, excel_row, "Cost Units",
+            cell(basis_row, "Cost Units").value)
+        put(name, excel_row, "Cost Source Notes", (
+            "BTB installed cost of the commercial electric range with griddle "
+            "and oven (mid estimate, 2023$) at typical performance, divided "
+            f"by {COMMERCIAL_RANGE_CAPACITY_KBTUH} kBtu/h, times EIA's ratio "
+            "of High to Typical retail (new) and installed (existing) cost "
+            f"for that range ({high['new']}/{typical['new']} and "
+            f"{high['existing']}/{typical['existing']}); BTB has no "
+            "commercial induction range"))
+        details = cell(excel_row, "Cost Source Details").value or ""
+        if not _BTB_CITED.search(details):
+            put(name, excel_row, "Cost Source Details",
+                f"{BTB_SOURCE_DETAILS}\n{details}".strip())
 
 
 def main():
@@ -1241,6 +1334,7 @@ def main():
             row_entries.get(t) is not None for t in cost_keys)
         cost_written = set()
         demolition_cited = False
+        stale_cost_phrase = None
         row_relabeled = False
         src_updates = {"Performance": {}, "Cost": {}, "Lifetime": {}}
         src_cells = {"Performance": cell_state["Energy Performance"],
@@ -1494,6 +1588,11 @@ def main():
                         "rebuilt from BTB; left as-is")
                 elif skip_reason is None and units_info and units_info[1]:
                     capacity = capacity_kbtuh(cost_btb_row)
+                    if tech in RESIDENTIAL_FURNACE_ALIAS and \
+                            _RESIDENTIAL_FURNACE_NOTE.search(str(cost_notes)):
+                        stale_cost_phrase = (
+                            f"{cost_src}, divided by {capacity:.4g} kBtu/h; ")
+                        capacity = RESIDENTIAL_SYSTEM_CAPACITY_KBTUH
                     if capacity is None:
                         skip_reason = (
                             "Cost Units are per kBtu/h but BTB capacity is "
@@ -1657,6 +1756,26 @@ def main():
                             if pd.notna(lifetime_override) else ""),
                     })
 
+        if stale_cost_phrase and isinstance(cost_notes, str) and \
+                stale_cost_phrase in cost_notes:
+            # The notes carry an earlier BTB phrase for the furnace's own
+            # capacity; drop it, and add nothing if what is left describes
+            # the new cost (the paired AC's phrase can say the same).
+            new_notes = cost_notes.replace(stale_cost_phrase, "")
+            ws.cell(row=excel_row,
+                    column=col_index["Cost Source Notes"]).value = new_notes
+            diff_rows.append({
+                "Name": row.get("Name"), "technology": "",
+                "column": "Cost Source Notes", "old_value": cost_notes,
+                "new_value": new_notes,
+                "notes": "furnace cost now divided by the residential system "
+                         "capacity"})
+            row = row.copy()
+            row["Cost Source Notes"] = new_notes
+            src_updates["Cost"] = {
+                tech: text for tech, text in src_updates["Cost"].items()
+                if text not in new_notes}
+
         for category, updates in src_updates.items():
             update_sources(row, category, updates, src_cells[category], ws,
                            excel_row, col_index, diff_rows)
@@ -1680,10 +1799,10 @@ def main():
                     f"; WARNING: {unwritten} not updated, so the row mixes "
                     "dollar years" if unwritten else "")})
 
-    derive_breakthrough_costs(
-        ws, col_index,
-        {name: i for i, name in enumerate(meas_in_df["Name"], start=2)},
-        diff_rows)
+    name_rows = {
+        name: i for i, name in enumerate(meas_in_df["Name"], start=2)}
+    derive_breakthrough_costs(ws, col_index, name_rows, diff_rows)
+    derive_commercial_induction_costs(ws, col_index, name_rows, diff_rows)
 
     if "BTB Diff" in wb.sheetnames:
         del wb["BTB Diff"]

@@ -71,21 +71,30 @@
   },
   "installed_cost": {
     "new": 276.99,
-    "existing": 279.66
+    "existing": 328.1
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
     "notes": [
       "Uses residential system costs and normalizes by typical capacity of residential systems (36 kBtu/h). Assume that a breakthrough HP achieves the highest possible level of performance at half the cost of current best HP technology",
-      "cost is half the BTB-based installed cost of (C) Best HP FS (Other Fossil Furnace & AC)"
+      "cost is half the BTB-based installed cost of (C) Best HP FS (Other Fossil Furnace & AC) (its $1744 oil equipment removal is not halved)"
     ],
-    "source_data": {
-      "title": "2024 Buildings Technology Baseline",
-      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
-      "year": 2024,
-      "pages": null,
-      "url": "https://data.openei.org/submissions/8342"
-    }
+    "source_data": [
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      },
+      {
+        "title": "Residential Technology and Fuel Switching Costs: Space Heating Costs",
+        "author": "U.S. Energy Information Administration",
+        "year": 2026,
+        "pages": null,
+        "url": "https://www.eia.gov/analysis/studies/buildings/res_tech_fuel_switching_costs/xls/res_tech_fuel_switching_costs.xlsx"
+      }
+    ]
   },
   "add_elec_infr_cost": {
     "panel": false,
@@ -127,6 +136,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-11-03 17:30:14"
+    "timestamp": "2026-11-04 14:06:58"
   }
 }
