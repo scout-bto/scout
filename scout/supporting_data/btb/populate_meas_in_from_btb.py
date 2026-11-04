@@ -19,6 +19,7 @@ Usage (from this directory):
 """
 
 import re
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import openpyxl
@@ -252,7 +253,7 @@ _RES_OIL_DEMOLITION_NOTE = (
 _FUEL_SWITCH_NAME = re.compile(r"\bFS\b")
 
 
-def removal_cost(name, row_sector, notes):
+def removal_cost(name, notes):
     """(cost, note) of removing the existing oil equipment, added to the
     existing-construction cost, or None if the row includes none.
 
@@ -264,7 +265,7 @@ def removal_cost(name, row_sector, notes):
 
     notes = notes if isinstance(notes, str) else ""
     name = name if isinstance(name, str) else ""
-    if row_sector == "residential":
+    if sector_for_name(name) == "residential":
         other_fossil_fs = "Other Fossil" in name and bool(
             _FUEL_SWITCH_NAME.search(name)) and not _DUAL_FUEL_NAME.search(
                 name)
@@ -276,6 +277,7 @@ def removal_cost(name, row_sector, notes):
             f"existing includes ${TANK_REMOVAL_COST} oil-tank removal "
             "(from the existing notes, not BTB)")
     return None
+
 
 # Technologies whose cost entry, in the rows described by _ELEC_BOILER_COST,
 # holds the cost of the electric boiler switched to.
@@ -528,8 +530,7 @@ def dual_fuel_from_name(name):
     return "oil" if "Other Fossil" in name else None
 
 
-def composite_adjustment(notes, sector, crosswalk, btb_data, name=None,
-                         row_sector=None):
+def composite_adjustment(notes, sector, crosswalk, btb_data, name=None):
     """Amounts to add to a technology's BTB cost to rebuild a composite cost
     described by the row's Cost Source Notes.
 
@@ -542,7 +543,7 @@ def composite_adjustment(notes, sector, crosswalk, btb_data, name=None,
 
     Args:
         sector: the sector of the BTB entry (for the backup furnace).
-        row_sector: the sector of the measure (for the removal cost).
+        name: the measure's Name (its sector sets the removal cost).
 
     Returns:
         ({"new": x, "existing": y}, note) or None if the notes describe an
@@ -551,7 +552,7 @@ def composite_adjustment(notes, sector, crosswalk, btb_data, name=None,
 
     none = {"new": 0, "existing": 0}
     if not isinstance(notes, str):
-        removal = removal_cost(name, row_sector, notes)
+        removal = removal_cost(name, notes)
         return ({"new": 0, "existing": removal[0]}, removal[1]) \
             if removal else (none, "")
     match = _ALSO_ADD_FURNACE.search(notes)
@@ -565,7 +566,7 @@ def composite_adjustment(notes, sector, crosswalk, btb_data, name=None,
         return ({"new": furnace["new"], "existing": 0},
                 f"new construction includes the BTB typical {fuel} furnace "
                 f"(${furnace['new']}); existing keeps the existing backup")
-    removal = removal_cost(name, row_sector, notes)
+    removal = removal_cost(name, notes)
     if removal:
         return {"new": 0, "existing": removal[0]}, removal[1]
     if _UNHANDLED_COMPOSITE.search(notes):
@@ -1075,9 +1076,12 @@ def apply_measure_edits(row, edits, ws, excel_row, col_index, diff_rows):
 
 
 def _round_half_up(value, digits):
-    scale = 10 ** digits
-    rounded = int(value * scale + 0.5) / scale
-    return int(rounded) if digits == 0 else rounded
+    """`value` rounded half up, on its decimal form (as a float, 279.655 is
+    slightly below itself and would round down)."""
+
+    rounded = Decimal(str(value)).quantize(
+        Decimal(1).scaleb(-digits), rounding=ROUND_HALF_UP)
+    return int(rounded) if digits == 0 else float(rounded)
 
 
 def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
@@ -1141,7 +1145,7 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
         # The removal cost the Best measure's existing cost includes (only
         # where its notes say so: a Best measure with no removal has none).
         best_notes = get(best_row, "Cost Source Notes")
-        removal = removal_cost(best, sector_for_name(best), best_notes) \
+        removal = removal_cost(best, best_notes) \
             if _TANK_REMOVAL.search(best_notes) else None
         tank = removal[0] if removal else 0
         digits = 2 if cost_units_info(units)[1] else 0
@@ -1457,8 +1461,7 @@ def main():
                 skip_reason = skip_cost_reason
                 adjustment = composite_adjustment(
                     cost_notes, entry["sector"], crosswalk_by_tech_tier,
-                    btb_data, None if rtu_cost else row.get("Name"),
-                    row_sector)
+                    btb_data, None if rtu_cost else row.get("Name"))
                 if adjustment is not None and not cost_unkeyed and \
                         not holds_switched:
                     # In a cell costing several technologies, the

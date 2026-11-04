@@ -250,8 +250,6 @@ def btb_row(**kwargs):
     ("Heating Capacity", "Btu/hr", 100000.0, 100.0),
     ("Heating Capacity", "kW", 7.5, 7.5 * 3.412),
     ("Heat Output", "kBtu/h", 157.0, 157.0),
-    ("Combined Idle Energy Rate", "BTU/h", 10350.0, 10.35),
-    ("Combined Idle Energy Rate", "kW", 1.4, 1.4 * 3.412),
 ])
 def test_capacity_kbtuh(metric, unit, typical, kbtuh):
     row = btb_row(**{"Regression metric 1 - Metric": metric,
@@ -271,6 +269,23 @@ def test_capacity_kbtuh_unknown_or_override():
     airflow = btb_row(**{"Regression metric 1 - Metric": "Airflow",
                          "Regression metric 1 - Unit": "CFM"})
     assert pop.capacity_kbtuh(airflow) is None
+
+
+def test_capacity_kbtuh_commercial_ranges_share_a_capacity():
+    # The idle rate is a standby rate, about twice as high for gas as for
+    # electric, so it is not a capacity...
+    gas = btb_row(**{"Regression metric 1 - Metric": "Combined Idle Energy Rate",
+                     "Regression metric 1 - Unit": "BTU/h",
+                     "Regression metric 1 - Typical": 10350.0})
+    electric = btb_row(**{"Regression metric 1 - Metric": "Combined Idle Energy Rate",
+                          "Regression metric 1 - Unit": "kW",
+                          "Regression metric 1 - Typical": 1.4})
+    assert pop.capacity_kbtuh(gas) is None
+    assert pop.capacity_kbtuh(electric) is None
+    # ...and both ranges use one capacity, which keeps BTB's per-unit ratio
+    gas["btb_sector"], gas["tech_id"] = "commercial", 89
+    electric["btb_sector"], electric["tech_id"] = "commercial", 90
+    assert pop.capacity_kbtuh(gas) == pop.capacity_kbtuh(electric) == 2.6
 
 
 def test_installation_multiplier_direct():
@@ -393,7 +408,12 @@ def test_composite_adjustment_tank_removal_and_unhandled_notes():
     extra, _ = pop.composite_adjustment(
         "additional tank removal costs of 800 2014$", "residential",
         crosswalk, data, "(R) ESTAR HP FS (Other Fossil Furnace)")
-    # 800 2014$ updated to 2023$ in the existing cost notes
+    # residential rows take EIA's oil furnace/boiler demolition, in 2023$
+    assert extra == {"new": 0, "existing": 1744}
+    # commercial rows keep 800 2014$, updated to 2023$ in the existing notes
+    extra, _ = pop.composite_adjustment(
+        "additional tank removal costs of 800 2014$", "residential",
+        crosswalk, data, "(C) ESTAR HP FS (Other Fossil Furnace)")
     assert extra == {"new": 0, "existing": 1030}
     assert pop.composite_adjustment(
         "assume a breakthrough HP costs half the cost of the best", "r",
@@ -807,7 +827,8 @@ def make_meas_in_file(path):
             "Cost Source Details": "EIA; U.S. EIA; 2023; 65; url",
             "Lifetime": "12", "Lifetime Source Notes": "EIA life",
             "Lifetime Source Details": "EIA; U.S. EIA; 2023; 65; url"}
-    breakthrough = {**best, "Name": "(R) Brk. HPWH FS"}
+    breakthrough = {**best, "Name": "(R) Brk. HPWH FS",
+                    "Cost Units": "2023$/unit"}
     no_tier = {**best, "Name": "(R) Some HPWH FS"}
     sheet = openpyxl.Workbook()
     ws = sheet.active
@@ -857,24 +878,191 @@ def test_pipeline_cites_btb_for_what_it_changed(pipeline_output):
     assert "high performance" in row["Cost Source Notes"]
 
 
-def test_pipeline_leaves_breakthrough_and_untiered_measures_alone(
-        pipeline_output):
-    ws = pipeline_output["meas_in"]
-    for name in ("(R) Brk. HPWH FS", "(R) Some HPWH FS"):
-        row = cells(ws, name)
-        assert row["Energy Performance"] == "3.0"
-        assert row["Installed Cost"] == "new: 2000; existing: 2500"
-        assert row["Lifetime"] == "12"
-        assert row["Cost Source Notes"] == "EIA cost"
+def test_pipeline_leaves_untiered_measures_alone(pipeline_output):
+    row = cells(pipeline_output["meas_in"], "(R) Some HPWH FS")
+    assert row["Energy Performance"] == "3.0"
+    assert row["Installed Cost"] == "new: 2000; existing: 2500"
+    assert row["Lifetime"] == "12"
+    assert row["Cost Source Notes"] == "EIA cost"
+
+
+def test_pipeline_takes_only_breakthrough_cost_from_best(pipeline_output):
+    row = cells(pipeline_output["meas_in"], "(R) Brk. HPWH FS")
+    # half of the Best measure's BTB cost of new: 2870; existing: 3370
+    assert row["Installed Cost"] == "new: 1435; existing: 1685"
+    assert "half the BTB-based installed cost of (R) Best HPWH FS" in \
+        row["Cost Source Notes"]
+    assert row["Cost Source Details"] == pop.BTB_SOURCE_DETAILS
+    # its performance and lifetime are assumptions, not from BTB
+    assert row["Energy Performance"] == "3.0"
+    assert row["Lifetime"] == "12"
+    assert row["Performance Source Notes"] == "EIA value"
 
 
 def test_pipeline_logs_every_change_in_the_diff_sheet(pipeline_output):
     diff = pd.DataFrame(pipeline_output["BTB Diff"].values)
     diff.columns = diff.iloc[0]
     diff = diff.iloc[1:]
-    assert set(diff["Name"]) == {"(R) Best HPWH FS"}
+    assert set(diff["Name"]) == {"(R) Best HPWH FS", "(R) Brk. HPWH FS"}
     assert {"Energy Performance", "Installed Cost", "Lifetime", "Cost Units",
             "Cost Source Notes", "Cost Source Details"} <= set(diff["column"])
-    cost = diff[diff["column"] == "Installed Cost"].iloc[0]
-    assert cost["old_value"] == "new: 2000; existing: 2500"
-    assert cost["new_value"] == "new: 2870; existing: 3370"
+    costs = diff[diff["column"] == "Installed Cost"].set_index("Name")
+    best = costs.loc["(R) Best HPWH FS"]
+    assert best["old_value"] == "new: 2000; existing: 2500"
+    assert best["new_value"] == "new: 2870; existing: 3370"
+    brk = costs.loc["(R) Brk. HPWH FS"]
+    assert brk["old_value"] == "new: 2000; existing: 2500"
+    assert brk["new_value"] == "new: 1435; existing: 1685"
+
+
+# ==========================================================================
+# populate_meas_in_from_btb: oil equipment removal, citations, breakthroughs
+# ==========================================================================
+
+
+@pytest.mark.parametrize("name, notes, cost", [
+    # residential Other Fossil full fuel switches, whatever the notes say
+    ("(R) Best HP FS (Other Fossil Boiler)", "BTB cost", 1744),
+    ("(R) Ref. Case Elec. Boiler FS (Other Fossil Boiler)", "BTB cost", 1744),
+    # residential rows whose notes mention it, named FS or not
+    ("(R) ESTAR GSHP (Other Fossil Furnace)", "plus tank removal", 1744),
+    # dual-fuel rows keep the furnace; other fuels are in BTB's retrofit cost
+    ("(R) Best HP Pt. FS (Other Fossil Furnace)", "BTB cost", None),
+    ("(R) Best HP FS (NG Furnace)", "BTB cost", None),
+    ("(R) Ref. Case Other Fossil Furnace & AC", "BTB cost", None),
+    # the EIA report is residential: commercial rows keep the earlier cost
+    ("(C) ESTAR HP FS (Other Fossil Furnace)", "plus tank removal", 1030),
+    ("(C) Best HP FS (Other Fossil Furnace & AC)", "BTB cost", None),
+    (None, "plus tank removal", 1030),
+    (None, np.nan, None),
+])
+def test_removal_cost(name, notes, cost):
+    removal = pop.removal_cost(name, notes)
+    assert (removal[0] if removal else None) == cost
+
+
+def test_res_oil_demolition_cost_is_eia_value_in_2023_dollars():
+    cpi = pd.read_csv(BTB_DIR.parent / "convert_data" / "cpi.csv")
+    means = cpi.groupby(cpi["DATE"].str[:4])["VALUE"].mean()
+    assert pop.RES_OIL_DEMOLITION_COST == round(
+        1675 * means["2023"] / means["2022"])
+
+
+def test_eia_fuel_switching_source_is_in_the_form_the_generator_reads():
+    parsed = parse_source_details(pop.EIA_FUEL_SWITCHING_SOURCE)
+    assert parsed["year"] == 2026
+    assert parsed["author"] == "U.S. Energy Information Administration"
+
+
+@pytest.mark.parametrize("details, notes, expected", [
+    ("Buildings Annual Technology Baseline. NREL, forthcoming", "any", True),
+    ("", "Buildings Technology Baseline using Typical performance", True),
+    (np.nan, "Buildings Annual Technology Baseline", True),
+    ("", "EIA cost", False),
+    (pop.BTB_SOURCE_DETAILS, "BTB cost", False),
+    ("EIA; U.S. EIA; 2023; 65; url", "Buildings Technology Baseline", False),
+])
+def test_cites_prerelease_btb(details, notes, expected):
+    row = {"Cost Source Details": details, "Cost Source Notes": notes}
+    assert pop.cites_prerelease_btb(row, "Cost") is expected
+
+
+def test_cost_for_key_returns_both_halves():
+    cell = "gas: new: 10; gas: existing: 20; AC: new: 30; AC: existing: 40"
+    assert pop.cost_for_key(cell, "AC") == "new: 30; existing: 40"
+    # a key whose cost is not nested by new/existing
+    assert pop.cost_for_key("gas: 10; AC: 30", "AC") == "30"
+
+
+def breakthrough_sheet(rows):
+    """A worksheet of (Name, cost, units, notes, details) rows, and its
+    column index and {Name: row}."""
+
+    sheet, col_index = sheet_for([
+        "Name", "Installed Cost", "Cost Units", "Cost Source Notes",
+        "Cost Source Details"])
+    for row in rows:
+        sheet.append(row)
+    return sheet, col_index, {row[0]: i for i, row in enumerate(rows, start=1)}
+
+
+def test_derive_breakthrough_costs_does_not_halve_oil_removal():
+    best, brk = "(R) Best HP FS (Other Fossil Boiler)", \
+        "(R) Brk. HP FS (Other Fossil Boiler)"
+    sheet, col_index, rows = breakthrough_sheet([
+        (best, "new: 19943; existing: 21879", "2023$/unit",
+         "BTB cost; existing includes $1744 with tank removal",
+         pop.BTB_SOURCE_DETAILS),
+        (brk, "new: 1; existing: 2", "2023$/unit", "half the cost", "old")])
+    diff = []
+    pop.derive_breakthrough_costs(sheet, col_index, rows, diff)
+    assert sheet.cell(row=2, column=2).value == \
+        "new: 9972; existing: 11812"
+    assert sheet.cell(row=2, column=5).value == (
+        pop.BTB_SOURCE_DETAILS + "\n" + pop.EIA_FUEL_SWITCHING_SOURCE)
+    assert {d["column"] for d in diff} == {
+        "Installed Cost", "Cost Source Notes", "Cost Source Details"}
+
+
+def test_derive_breakthrough_costs_per_capacity_keeps_cents():
+    best, brk = "(C) Best HP FS (NG Furnace & AC)", \
+        "(C) Brk. HP FS (NG Furnace & AC)"
+    units = "2023$/kBtu/h heating"
+    sheet, col_index, rows = breakthrough_sheet([
+        (best, "new: 553.97; existing: 559.31", units, "BTB cost",
+         pop.BTB_SOURCE_DETAILS),
+        (brk, "new: 1; existing: 2", units, "half the cost", "old")])
+    pop.derive_breakthrough_costs(sheet, col_index, rows, [])
+    assert sheet.cell(row=2, column=2).value == \
+        "new: 276.99; existing: 279.66"
+
+
+def test_derive_breakthrough_costs_uses_the_basis_for_lfl():
+    assert pop.BREAKTHROUGH_BASIS["(R) Brk. HP LFL"] == \
+        "(R) Best HP TS (Resist.)"
+    sheet, col_index, rows = breakthrough_sheet([
+        ("(R) Best HP TS (Resist.)", "new: 100; existing: 200", "2023$/unit",
+         "BTB cost", pop.BTB_SOURCE_DETAILS),
+        ("(R) Brk. HP LFL", "new: 1; existing: 2", "2023$/unit", "half", "")])
+    pop.derive_breakthrough_costs(sheet, col_index, rows, [])
+    assert sheet.cell(row=2, column=2).value == "new: 50; existing: 100"
+
+
+@pytest.mark.parametrize("best_row, reason", [
+    # no Best counterpart
+    (("(R) Best Other", "new: 100; existing: 200", "2023$/unit", "BTB",
+      pop.BTB_SOURCE_DETAILS), "no Best counterpart"),
+    # the Best cost does not come from BTB
+    (("(R) Best HPWH FS", "new: 100; existing: 200", "2023$/unit", "EIA",
+      "EIA; U.S. EIA; 2023; 65; url"), "not from BTB"),
+    (("(R) Best HPWH FS", "new: 100; existing: 200", "2023$/unit", "old",
+      "Buildings Annual Technology Baseline. NREL, forthcoming"),
+     "not from BTB"),
+    # a different dollar year
+    (("(R) Best HPWH FS", "new: 100; existing: 200", "2022$/unit", "BTB",
+      pop.BTB_SOURCE_DETAILS), "Cost Units differ"),
+    # a cost cell by technology
+    (("(R) Best HPWH FS", "a: new: 100; a: existing: 200", "2023$/unit",
+      "BTB", pop.BTB_SOURCE_DETAILS), "single new/existing pair"),
+])
+def test_derive_breakthrough_costs_skips_and_logs(best_row, reason):
+    old = "new: 1; existing: 2"
+    sheet, col_index, rows = breakthrough_sheet([
+        best_row, ("(R) Brk. HPWH FS", old, "2023$/unit", "half", "old")])
+    diff = []
+    pop.derive_breakthrough_costs(sheet, col_index, rows, diff)
+    assert sheet.cell(row=2, column=2).value == old
+    assert len(diff) == 1
+    assert diff[0]["new_value"] == "(skipped)"
+    assert reason in diff[0]["notes"]
+
+
+def test_add_source_details_adds_a_citation_once():
+    sheet, col_index = sheet_for(["Cost Source Details"])
+    sheet.cell(row=1, column=1).value = pop.BTB_SOURCE_DETAILS
+    diff = []
+    for _ in range(2):
+        pop.add_source_details(sheet, 1, col_index, "m", "new source", diff)
+    assert sheet.cell(row=1, column=1).value == (
+        pop.BTB_SOURCE_DETAILS + "\nnew source")
+    assert len(diff) == 1
