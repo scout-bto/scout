@@ -6590,11 +6590,11 @@ class Measure(object):
                     # Maximum calc type (pertains only to a peak day)
                     else:
                         # Peak days are keyed by their own region (state or
-                        # EMM, whichever alt_regions resolves to); only AK
-                        # and HI lack their own ComStock/ResStock by-state
-                        # data and fall back to their representative EMM
-                        # region's peak day (tsvmets_reg). Any other missing
-                        # region (e.g. a dropped row or typo) is an error.
+                        # EMM, whichever alt_regions resolves to). If AK or
+                        # HI is missing from the peak day data, fall back to
+                        # its representative EMM region's peak day
+                        # (tsvmets_reg). Any other missing region (e.g. a
+                        # dropped row or typo) is an error.
                         peak_days_by_season = self.handyvars.tsv_metrics_data[
                             "peak days"][season]
                         if mskeys[1] in peak_days_by_season:
