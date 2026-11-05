@@ -3,7 +3,7 @@
 Heating and Cooling Load Components
 ===================================
 
-This section describes the purpose and derivation of the thermal load components files for :repo_file:`residential <Res_TLoads_Final.txt>` and :repo_file:`commercial <Com_TLoads_Final.txt>` buildings.
+This section describes the purpose and derivation of the thermal load components files for :repo_file:`residential <scout/supporting_data/thermal_loads_data/Res_TLoads_Final.txt>` and :repo_file:`commercial <scout/supporting_data/thermal_loads_data/Com_TLoads_Final.txt>` buildings.
 
 .. _tlcomponents_overview:
 
@@ -16,11 +16,11 @@ Conversely, a demand side ECM reduces the absolute load that must be met for a g
 
 This section focuses on the evaluation of demand side ECMs for the heating and cooling end uses. Here, we might be interested how much national heating and/or cooling energy could be saved through the highly insulating window replacements previously mentioned, or by other ECMs relating to the building envelope such as adding insulation or shading devices, amongst many others. In these cases, estimations of energy savings require an understanding of how a building’s heating/cooling energy use is partitioned. For example, were we to evaluate the heating energy savings potential of highly insulating windows, we would first need to know the amount of heating energy that is lost through a building's windows to the outdoors (which the insulating window would reduce). This figure is obtained by multiplying a building’s total heating energy use by the percentage of heating load attributable to conduction losses through windows, referred to subsequently as the heating load "component” for window conduction.
 
-While the energy use part of this calculation is easily drawn from the U.S. Energy Information Administration (EIA) `Annual Energy Outlook (AEO)`_, establishing heating and cooling load component values for a range of building types and geographical regions is less straightforward. To improve the transparency of this process, the section below outlines the steps that were used to derive a new set of thermal load components for each of the AEO residential and commercial building types, across all nine U.S. census regions. This approach yields two files, :repo_file:`Res_TLoads_Final.txt` and :repo_file:`Com_TLoads_Final.txt`.
+While the energy use part of this calculation is easily drawn from the U.S. Energy Information Administration (EIA) `Annual Energy Outlook (AEO)`_, establishing heating and cooling load component values for a range of building types and geographical regions is less straightforward. To improve the transparency of this process, the section below outlines the steps that were used to derive a new set of thermal load components for each of the AEO residential and commercial building types, across all nine U.S. census regions. This approach yields two files, :repo_file:`Res_TLoads_Final.txt <scout/supporting_data/thermal_loads_data/Res_TLoads_Final.txt>` and :repo_file:`Com_TLoads_Final.txt <scout/supporting_data/thermal_loads_data/Com_TLoads_Final.txt>`.
 
 .. _Annual Energy Outlook (AEO): http://www.eia.gov/forecasts/aeo/index.cfm
 
-Thermal load components data are drawn in large part from two simulation studies of residential and commercial buildings by :repo_file:`Huang, Hanford, and Yang (1999) <1999 Residential heating and cooling loads component analysis.pdf>` and :repo_file:`Huang and Franconi (1999) <1999 Commercial heating and cooling loads component analysis.pdf>`, respectively. The residential study uses parametric computer simulations of 112 single-family and 63 multi-family residential building prototypes to quantify the contributions of building components such as roofs, walls, windows, infiltration, outside air, lighting, equipment, and people to the aggregate heating and cooling loads in U.S. residential buildings; the commercial study does the same for aggregate commercial heating and cooling loads using computer simulations of 120 commercial building prototypes.
+Thermal load components data are drawn in large part from two simulation studies of residential and commercial buildings by :repo_file:`Huang, Hanford, and Yang (1999) <scout/supporting_data/thermal_loads_data/1999 Residential heating and cooling loads component analysis.pdf>` and :repo_file:`Huang and Franconi (1999) <scout/supporting_data/thermal_loads_data/1999 Commercial heating and cooling loads component analysis.pdf>`, respectively. The residential study uses parametric computer simulations of 112 single-family and 63 multi-family residential building prototypes to quantify the contributions of building components such as roofs, walls, windows, infiltration, outside air, lighting, equipment, and people to the aggregate heating and cooling loads in U.S. residential buildings; the commercial study does the same for aggregate commercial heating and cooling loads using computer simulations of 120 commercial building prototypes.
 
 .. _tlcomponents_derivation:
 
@@ -89,7 +89,7 @@ The residential and commercial building thermal load component values are derive
 
     #. Write the final thermal load components table to a text file.
 
-3. :repo_file:`Res_TLoads_Final.txt` and :repo_file:`Com_TLoads_Final.txt` files contain final thermal loads components broken down by census division, AEO building type, and heating/cooling end use for further analysis.
+3. :repo_file:`Res_TLoads_Final.txt <scout/supporting_data/thermal_loads_data/Res_TLoads_Final.txt>` and :repo_file:`Com_TLoads_Final.txt <scout/supporting_data/thermal_loads_data/Com_TLoads_Final.txt>` files contain final thermal loads components broken down by census division, AEO building type, and heating/cooling end use for further analysis.
 
 .. Anonymous links for content under Python/R pseudocode bullet
 .. __: https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=nrel-pds-building-stock%2Fend-use-load-profiles-for-us-building-stock%2F2025%2Fcomstock_amy2018_release_3%2F&limit=50
