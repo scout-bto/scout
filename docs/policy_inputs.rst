@@ -17,28 +17,33 @@ Selecting incentives
 
 ``--incentive_levels`` selects which rows of the file to use, based on the ``scenario`` column.
 
-.. table:: Valid options for ``--incentive_levels``.
+.. list-table:: Valid options for ``--incentive_levels``.
+   :header-rows: 1
+   :widths: 30 70
 
-   +----------------------+----------------------------------------------------------------+
-   | Option               | Incentives used                                                |
-   +======================+================================================================+
-   | aeo (default)        | AEO incentives only, with no modifications.                    |
-   +----------------------+----------------------------------------------------------------+
-   | reference            | Rows with the ``reference`` scenario.                          |
-   +----------------------+----------------------------------------------------------------+
-   | aggressive           | ``reference`` rows, plus ``aggressive`` rows layered on them.  |
-   +----------------------+----------------------------------------------------------------+
-   | optimistic,          | ``reference`` rows, plus any rows for the given scenario. The  |
-   | aggressive state     | file currently has no rows for these two scenarios, so they    |
-   |                      | currently give the same result as ``reference``.               |
-   +----------------------+----------------------------------------------------------------+
+   * - Option
+     - Incentives used
+   * - aeo (default)
+     - AEO incentives only, with no modifications.
+   * - reference
+     - Rows with the ``reference`` scenario: state, local, and utility programs, including IRA-funded home electrification rebates. These rows include no federal tax credits.
+   * - aggressive-fuel-neutral
+     - ``reference`` rows, plus ``aggressive-fuel-neutral`` rows layered on them.
+   * - aggressive-electric
+     - ``reference`` rows, plus ``aggressive-electric`` rows layered on them.
+   * - aggressive
+     - ``reference`` rows, plus ``aggressive`` rows layered on them.
+   * - aggressive state
+     - ``reference`` rows, plus any rows for this scenario. The file currently has no such rows, so this option gives the same result as ``reference``.
+
+:ref:`policy-incentive-scenarios` describes what the non-reference scenarios add.
 
 When scenario rows are layered on ``reference`` rows, a scenario row is dropped for any years in which a ``reference`` row from the same program already provides at least the same incentive, for the same applicable fraction and performance requirements. Rows from different programs, or for different fractions of one program, are kept.
 
 ``--incentive_restrictions`` removes selected incentives from the analysis, including those in the AEO baseline. Valid options are:
 
 * "all" removes all incentives.
-* "no ira" removes rows tagged as funded by the Inflation Reduction Act (IRA).
+* "no ira" removes rows tagged as funded by the Inflation Reduction Act (IRA). These are the Home Electrification and Appliance Rebates (HEAR) rows and the federal tax credit rows in the non-reference scenarios.
 * "no federal" and "no sub-federal" remove federal and non-federal incentives.
 * "no electric" and "no fossil" remove incentives for electric and non-electric segments.
 * "no federal electric", "no federal fossil", "no sub-federal electric", and "no sub-fed fossil" combine these two restrictions.
@@ -113,7 +118,7 @@ Each row of the file represents one program for one set of states, building type
    * - ``fuel type(s)``
      - Fuel of the technology receiving the incentive.
    * - ``base fuel``
-     - Fuel being replaced: a specific fuel, ``electricity``, ``all``, or ``all fossil``, which limits the row to fuel switching.
+     - Fuel being replaced: one or more specific fuels separated by commas (for example, ``distillate, other fuel``), ``electricity``, ``all``, or ``all fossil``, which limits the row to fuel switching.
    * - ``base fuel backup``
      - Whether the existing system may or must stay as backup: ``no``, ``yes``, or ``required``.
    * - ``modification``
@@ -135,7 +140,7 @@ Each row of the file represents one program for one set of states, building type
    * - ``applicable fraction``, ``fraction notes``
      - Share of the state's stock or energy use that the program reaches, and the source of that share.
    * - ``program id``
-     - Required identifier for the program, typically in the form ``<state>-<program website domain>-<res|com>``, with ``-HEAR`` added for rows funded by the IRA. Alternatives within one program must share an id, and different programs must not. A missing column or blank value raises an error.
+     - Required identifier for the program, typically in the form ``<state>-<program website domain>-<res|com>``, with ``-HEAR`` added for HEAR rows. Rows created for the non-reference scenarios use ``all-bss-25c-res`` for the federal tax credit and ``<state>-bss-ny-<hear|util>-anchor-<res|com>`` for rows based on New York programs. Alternatives within one program must share an id, and different programs must not. A missing column or blank value raises an error.
 
 Representation conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,8 +149,47 @@ The current file follows these conventions:
 
 * **Base fuel:** rebates only for replacing electric equipment use ``electricity``, rebates available whatever is replaced use ``all``, and fuel switching rebates use ``all fossil``.
 * **Tiers:** a higher tier has its own row only if its performance threshold differs in Scout's units. If tiers differ only in a metric that Scout does not check, only the lowest tier is included. Otherwise, every unit would receive the top tier.
-* **IRA heat pump rebates:** these rows use a ``base fuel backup`` of ``required``, following DOE HEEHRA Program Notice 26-2.
+* **HEAR rebates:** ``reference`` rows follow DOE Program Notices 26-1 and 26-2. Cooking, drying, and water heating rows use a ``base fuel`` of ``electricity``. Heat pump heating rows use a ``base fuel`` of ``all`` and a ``base fuel backup`` of ``required``, so a measure that switches from a fossil fuel receives the rebate only if it keeps the existing system as backup.
 * **Fully reserved programs:** programs that are fully reserved or waitlisted but are expected to continue remain in the file.
+
+.. _policy-incentive-scenarios:
+
+Non-reference scenarios
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``aggressive-fuel-neutral``, ``aggressive-electric``, and ``aggressive`` rows are built from the BSS Reference+ Scenario Input Rules, which each of these rows links to in its ``description``. Each scenario adds three kinds of rows to the ``reference`` rows.
+
+**Extended programs.** State-level programs continue to 2050, starting the year after the ``reference`` row ends and using the same ``program id``. State-level programs are all HEAR programs and a set of statewide programs, such as Mass Save, Efficiency Maine, and Energy Trust of Oregon. Utility programs are not extended, so they end when their ``reference`` rows end.
+
+**New York-based programs.** Other U.S. Climate Alliance states receive rows for 2035-2050, based on New York's programs, for building types where they have no continuing program of the same kind:
+
+* An income-limited tier uses New York's HEAR levels, with a fraction equal to the state's share in the same income band. These rows use a ``-bss-ny-hear-anchor-`` program id and are not tagged as IRA-funded, so "no ira" does not remove them.
+* A market-rate tier uses New York's utility program levels, weighted by each utility's share of New York's service territory, with a fraction of 1.
+
+**Federal tax credit.** Rows modeled on the 25C credit start in 2030. They are tagged as federal and IRA-funded, and provide 30% of installed cost up to the ``rebate amount``.
+
+The scenarios differ as follows:
+
+.. list-table:: Differences between the non-reference incentive scenarios.
+   :header-rows: 1
+   :widths: 25 25 25 25
+
+   * -
+     - ``aggressive-fuel-neutral``
+     - ``aggressive-electric``
+     - ``aggressive``
+   * - HEAR rows
+     - Keep their ``reference`` conditions
+     - Require fossil fuel switching with no backup; envelope rows are dropped
+     - Backup changed to ``yes`` (allowed, not required), except on envelope rows
+   * - Other extended rows
+     - Keep their conditions, but rows that require fuel switching with no backup are not extended
+     - Require fossil fuel switching with no backup; envelope and air conditioning rows are dropped
+     - Keep their conditions
+   * - Federal tax credit
+     - 2030-2040: heat pumps, heat pump water heaters, fossil furnaces, boilers and water heaters, central air conditioning, walls, and windows
+     - 2030-2050: heat pumps and heat pump water heaters only
+     - 2030-2040: same as ``aggressive-fuel-neutral``
 
 Limitations
 ~~~~~~~~~~~
@@ -153,9 +197,9 @@ Limitations
 The following programs are not represented in the file:
 
 * programs paid per kWh, kW, or MMBtu, custom programs, direct install programs, financing, and tax exemptions, because Scout has no equivalent per-measure value, and
-* commercial programs whose amounts could not be confirmed: DTE, Evergy, Entergy Mississippi, OG&E, PSO, and Efficiency Maine.
+* commercial programs whose amounts could not be confirmed: DTE, Evergy, Entergy Mississippi, OG&E, PSO, and Efficiency Maine. This applies to the ``reference`` rows. In the non-reference scenarios, the New York-based rows provide commercial incentives in some of these programs' states from 2035.
 
 Updating the file
 ~~~~~~~~~~~~~~~~~
 
-The file is updated annually using an LLM agent workflow, not an automated pipeline. An agent drafts rows from a full download of the DSIRE program database and from program websites, a second LLM independently reviews the result, and a human reviewer makes the final decisions. Applicable fractions are calculated from EIA-861, EIA-176, and DOE LEAD data. See the :repo_file:`incentives update README <scout/supporting_data/sub_fed/dsire/README_incentives_update.md>` for the full process and a checklist.
+The ``reference`` rows are updated annually using an LLM agent workflow, not an automated pipeline. An agent drafts rows from a full download of the DSIRE program database and from program websites, a second LLM independently reviews the result, and a human reviewer makes the final decisions. Utility and gas service territory fractions are calculated from EIA-861 and EIA-176 data. Income-based and county-based fractions are calculated from ResStock 2025 release 1, as the share of residential site energy in the eligible households. See the :repo_file:`incentives update README <scout/supporting_data/sub_fed/dsire/README_incentives_update.md>` for the full process and a checklist.
