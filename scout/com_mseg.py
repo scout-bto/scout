@@ -7,6 +7,7 @@ import re
 import csv
 import json
 import io
+from pathlib import Path
 from functools import reduce
 from scout.config import FilePaths as fp
 from scout.config import AEOInputRegistry as air
@@ -16,9 +17,26 @@ from scout.config import SUPPORTED_AEO_YEARS
 # Set by main() via the -y/--year CLI argument; falls back to metadata when None.
 aeo_import_year = None
 
+# Suffixes identifying the two versions of the commercial AEO data files
+# (and of the outputs derived from them): the standard files ('') and the
+# EIA High Electricity Demand side case (high data center demand) files with '_hdc'
+# appended to their names.
+FILE_SUFFIXES = ('', '_hdc')
+
+
+def add_suffix(path, suffix):
+    """Insert a suffix before the extension, e.g., a.json -> a_hdc.json."""
+    p = Path(path)
+    return p.with_name(p.stem + suffix + p.suffix)
+
 
 class EIAData(object):
     """Class of variables naming the EIA data files to be imported.
+
+    Args:
+        data_dir (Path): Directory with the processed AEO files.
+        suffix (str): '' for the AEO Reference Case commercial files or '_hdc' for
+            the High Electricity Demand side case files with '_hdc' appended to their names.
 
     Attributes:
         serv_dmd (str): Filename for the commercial service demand data.
@@ -27,25 +45,18 @@ class EIAData(object):
             microsegment generation data.
     """
 
-    def __init__(self, data_dir=fp.INPUTS_PROCESSED):
+    def __init__(self, data_dir=fp.INPUTS_PROCESSED, suffix=''):
         proc = air.path_map("processed", data_dir)
         raw = air.path_map("raw", fp.INPUTS_RAW)
 
-        self.serv_dmd = proc["cdm_sd"]
-        self.catg_dmd = proc["cdm_db"]
-        self.com_generation = proc["cdm_dgen"]
-
-        for key, raw_path in {
-            "cdm_sd": raw["cdm_sd"],
-            "cdm_db": raw["cdm_db"],
-            "cdm_dgen": raw["cdm_dgen"],
-        }.items():
-            if key == "cdm_sd" and raw_path.exists() and not proc["cdm_sd"].exists():
-                self.serv_dmd = raw_path
-            if key == "cdm_db" and raw_path.exists() and not proc["cdm_db"].exists():
-                self.catg_dmd = raw_path
-            if key == "cdm_dgen" and raw_path.exists() and not proc["cdm_dgen"].exists():
-                self.com_generation = raw_path
+        for attr, key in (("serv_dmd", "cdm_sd"),
+                          ("catg_dmd", "cdm_db"),
+                          ("com_generation", "cdm_dgen")):
+            key = key + suffix
+            path = proc[key]
+            if raw[key].exists() and not proc[key].exists():
+                path = raw[key]
+            setattr(self, attr, path)
 
 
 class UsefulVars(object):
@@ -1338,31 +1349,20 @@ def onsite_calc(generation_file, json_results):
     return json_results
 
 
-def main():
-    """ Import input data files and do other things """
+def build_commercial_mseg(suffix=''):
+    """Build the residential + commercial microsegments JSON for a given
+    version of the commercial AEO input files.
 
-    global aeo_import_year
-
-    parser = argparse.ArgumentParser(
-        description='Build commercial microsegments from EIA AEO data.')
-    parser.add_argument(
-        '-y', '--year', type=int, default=None,
-        help='Specify year of AEO data to be imported',
-        choices=SUPPORTED_AEO_YEARS)
-    args = parser.parse_args()
-
-    aeo_import_year = args.year
-
-    # Validate required processed AEO inputs up front.
-    air.assert_present(
-        "processed",
-        required_keys=["cdm_sd", "cdm_db", "cdm_dgen"],
-        hint=("Stage required AEO files in inputs/processed/. If you started from "
-              "raw workbook sources, run 'python -m scout.eia_file' first."))
+    Args:
+        suffix (str): '' to use the Reference Case commercial AEO files, or
+            '_hdc' to use the High Electricity Demand side case files with '_hdc' appended
+            to their names. The same suffix is appended to the output JSON file name.
+    """
 
     # Instantiate objects that contain useful variables
     handyvars = UsefulVars()
-    eiadata = EIAData()
+    eiadata = EIAData(suffix=suffix)
+    json_out = add_suffix(handyvars.json_out, suffix)
 
     # Import EIA AEO 'SDOUT' service demand file
     serv_dtypes = dtype_array(eiadata.serv_dmd)
@@ -1396,9 +1396,8 @@ def main():
 
     # Import empty microsegments JSON file and traverse database structure
     try:
-        handyvars.json_out.parent.mkdir(parents=True, exist_ok=True)
-        with open(handyvars.json_in, 'r') as jsi, open(handyvars.json_out,
-                                                       'w') as jso:
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        with open(handyvars.json_in, 'r') as jsi, open(json_out, 'w') as jso:
             msjson = json.load(jsi)
 
             # Proceed recursively through database structure
@@ -1413,11 +1412,42 @@ def main():
 
             # Write the updated dict of data to a new JSON file
             json.dump(result, jso, indent=2)
+        print("File " + str(json_out) + " has been created.")
 
     except FileNotFoundError:
         errtext = ('Confirm that the expected residential data file ' +
                    str(handyvars.json_in) + ' has already been created.\n')
         print(errtext)
+
+
+def main():
+    """ Parse year of AEO update, validate inputs, generate outputs."""
+
+    global aeo_import_year
+
+    parser = argparse.ArgumentParser(
+        description='Build commercial microsegments from EIA AEO data.')
+    parser.add_argument(
+        '-y', '--year', type=int, default=None,
+        help='Specify year of AEO data to be imported',
+        choices=SUPPORTED_AEO_YEARS)
+    args = parser.parse_args()
+
+    aeo_import_year = args.year
+
+    # Validate required processed AEO inputs (standard and '_hdc'
+    # versions) up front, before any output is generated.
+    air.assert_present(
+        "processed",
+        required_keys=[key + suffix for suffix in FILE_SUFFIXES
+                       for key in ("cdm_sd", "cdm_db", "cdm_dgen")],
+        hint=("Stage required AEO files in inputs/processed/. If you started from "
+              "raw workbook sources, run 'python -m scout.eia_file' first."))
+
+    # Generate one output for the Reference Case commercial files and one for
+    # the '_hdc' High Electricity Demand side case commercial files
+    for suffix in FILE_SUFFIXES:
+        build_commercial_mseg(suffix)
 
 
 if __name__ == '__main__':

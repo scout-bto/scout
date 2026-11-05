@@ -99,6 +99,10 @@ ecm_prep:
       Default null
   health_costs: (boolean) If true, enable health costs. Requires
     alt_regions to be set to `EMM`. Default False
+  high_data_ctr: (boolean) If true, choose the High Electricity
+    Demand EIA side case forecast as a baseline instead of the
+    Reference Case. This side case assumes high data center load
+    growth. Default False
   incentives:
     incentive_levels: (['string']) Level of federal and state
       incentives (e.g., tax credits, rebates) for measure adoption.
