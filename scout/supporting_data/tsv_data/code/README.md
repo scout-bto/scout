@@ -1,0 +1,207 @@
+# TSV load-shape update workflow
+
+`update_tsv.py` regenerates Scout's ComStock/ResStock-derived load-shape
+files (`tsv_load_EMM.gz`, `tsv_load_State.gz` in `supporting_data/tsv_data/`)
+by querying AWS Athena and reshaping the results into the JSON format
+`ecm_prep.py` expects.
+
+## Prerequisites
+
+- AWS credentials configured (e.g. via `aws configure` / `AWS_PROFILE`)
+  with access to the `scout_tsv` Athena database and the `yujie-bucket` S3
+  bucket (both hardcoded in `update_tsv.py` as `DATABASE_NAME` /
+  `BUCKET_NAME`) — this is where the ComStock/ResStock Athena tables and
+  query results live.
+- Python packages: `boto3`, `pandas`, `numpy`; `matplotlib` too if you'll
+  run the `--diag` plot types (`peakday_plot`, `annual_plot`,
+  `seasonal_plot`, `boundary_trend`).
+- Run all commands from this directory (`scout/supporting_data/tsv_data/code/`)
+  — the script's `sql/`, `csv/`, `json/`, `map/`, `diagnostics/` paths are
+  relative to cwd.
+
+## Steps
+
+The full rebuild is three stages, run in order. `--stock_version` applies
+to all three stages; `--bstock` applies to stage 2 and (for most
+`--diag_type` values) stage 3, but not stage 1 — `--get_stockdata` always
+pulls both commercial and residential data regardless of `--bstock`.
+
+### 1. Pull raw data from Athena (`--get_stockdata`)
+
+```bash
+python update_tsv.py --get_stockdata
+```
+
+Uploads `map/geo_map.csv` as an Athena table (county → EMM region mapping),
+then runs the four SQL queries in `sql/` (ComStock/ResStock × EMM/state)
+concurrently against Athena and downloads the results to
+`csv/{commercial,residential}_{emm,state}_{stock_version}.csv`.
+
+- **`--stock_version {2025,2024,2023}`** (default `2025`) selects which
+  ComStock/ResStock release to query:
+  - `2025` → ComStock 2025.3 / ResStock 2025.1
+  - `2024` → ComStock 2024.2 / ResStock 2024.2
+  - `2023` → ComStock 2023.1 / ResStock 2024.2 -- pins ComStock back to its
+    2023.1 vintage (data-quality discrepancies were observed in the
+    2024.2/2025.3 ComStock releases) while keeping ResStock on its
+    already-validated 2024.2 vintage; there's no 2023 ResStock release to
+    pair it with anyway. Requires the `comstock_amy2018_release_2023.1_*`
+    Athena tables to exist in `scout_tsv` (a one-time Glue crawler run over
+    the 2023 ComStock S3 data -- see git history around this option's
+    introduction for the crawler config used).
+
+  The version is baked into the cached CSV filename, so switching
+  `--stock_version` between runs can't silently reuse a CSV cached from the
+  other release.
+- If a target CSV already exists, that query is skipped (Athena queries
+  scan a lot of data and take a while). Delete the file under `csv/` to
+  force a re-run.
+
+Example — pull 2024 data instead of the default 2025:
+
+```bash
+python update_tsv.py --get_stockdata --stock_version 2024
+```
+
+### 2. Insert into the load-shape JSON (`--insert_scouttsv`)
+
+```bash
+python update_tsv.py --insert_scouttsv --bstock commercial
+python update_tsv.py --insert_scouttsv --bstock residential
+```
+
+**Commercial must run before residential** — residential's output builds
+on top of commercial's (`json/tsv_load_{emm,state}_{stock_version}_com.json`
+is read as the base when processing residential). Running residential
+first will fail with a missing-file error.
+
+Each invocation reads the matching `csv/..._{stock_version}.csv` file (so
+pass the same `--stock_version` used in step 1) and computes normalized
+(sum-to-one) hourly load shapes per building type / end use / region.
+After the residential pass, the final gzipped outputs are written to
+`../tsv_load_EMM.gz` and `../tsv_load_State.gz` — these are the files
+`ecm_prep.py` consumes directly.
+
+Naming in `json/`: `tsv_load_{emm,state}_{stock_version}_com.json` holds
+**commercial-only** data (the intermediate the residential pass reads back
+in as its starting point). `tsv_load_{emm,state}_{stock_version}.json`
+(no `_com`) is written by the residential pass and already has residential
+merged into that commercial base, so despite the plain name it's the
+**final combined** commercial+residential JSON — the uncompressed
+equivalent of `../tsv_load_{EMM,State}.gz`, not a residential-only file.
+
+### AK/HI coverage
+
+AK and HI are included in the state- and EMM-level queries (no longer
+filtered out). Two things worth knowing:
+
+- ResStock's 2024.2 release has **no** AK/HI data at all (no partitions),
+  so those states come back empty regardless of version there. ResStock
+  2025.1 and both ComStock releases (2024.2, 2025.3) do have real AK/HI
+  building data.
+- `map/geo_map.csv` (the county → EMM region crosswalk used by the
+  `*_emm.sql` queries) didn't originally cover AK/HI, since NEMS's EMM
+  regions are only defined for the Lower 48 + DC (AK/HI have isolated
+  grids outside that system). It now carries manually-added AK/HI rows
+  built from `map/scout_geography.csv`, each assigned the EMM region with
+  the best fit per county (`emm2020_ba` column) rather than lumping every
+  AK/HI county into a single placeholder region.
+- The AK/HI rows in `map/geo_map.csv` were generated by
+  `map/add_akhi_to_geo_map.py` from `map/scout_geography.csv`. That script
+  documents the data sources and the exact Athena queries used to confirm
+  which county identifiers ComStock/ResStock actually use — read it before
+  touching AK/HI rows in `geo_map.csv` by hand.
+- One join-key quirk: ResStock 2025.1's `in.county` field for AK/HI is a
+  human-readable `"ST, County Name"` string (e.g. `"AK, Yukon-Koyukuk
+  Census Area"`) instead of the NHGIS GISJOIN code (`"G0800010"`-style)
+  used everywhere else, including ComStock. Since the `geo_map` Athena
+  table is created with the naive Hive CSV SerDe (`FIELDS TERMINATED BY
+  ','`, no quote-escaping), that embedded comma can't be stored in
+  `geo_map.csv` as-is — AK/HI rows there are keyed by the comma-stripped
+  string instead, and `resstock_data_emm.sql`'s join strips commas from
+  `in.county` to match (`REPLACE(mc."in.county", ',', '')`), which is a
+  no-op for the comma-free GISJOIN keys used by every other state.
+
+### 3. (Optional) Diagnostics (`--diag`)
+
+```bash
+python update_tsv.py --diag --bstock commercial
+python update_tsv.py --diag --bstock residential
+```
+
+Runs every diagnostic below by default; narrow to specific ones with
+`--diag_type` (space-separated):
+
+```bash
+python update_tsv.py --diag --bstock residential --diag_type nan sumcheck
+```
+
+| `--diag_type` value | What it checks | Reads | Output |
+|---|---|---|---|
+| `rowcount` | Row count per (region, building type) + missing hourly timestamps within each; only combinations that fail (row count != 8760, or gaps) are printed, plus a per-file flagged/checked summary | `csv/..._{stock_version}.csv` (step 1) | printed |
+| `nan` | NaN columns in the raw CSV; NaN values anywhere in the final JSON | `csv/..._{stock_version}.csv` and `../tsv_load_{EMM,State}.gz` | printed |
+| `sumcheck` | Every load shape is length 8760 and sums to ~1 (only failures are printed) | `../tsv_load_{EMM,State}.gz` | printed |
+| `peakday_plot` | Hourly load by end use on each region's winter/summer peak day | `csv/..._{stock_version}.csv` (step 1) | `diagnostics/peakday_*.png` |
+| `annual_plot` | Cumulative fraction of annual load consumed, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/annual_fraction_*.png` |
+| `seasonal_plot` | Weekday-average hourly shape for Jan/Apr/Jul/Oct, per end use/building type, one line per region | `../tsv_load_{EMM,State}.gz` | `diagnostics/seasonal_*.png` |
+| `boundary_trend` | Day-by-day trend of daily-max-hourly total load (commercial + residential combined) across a widened season window, one line per region, to visually check `compute_peak_days.py`'s `PeakAtWindowBoundary` flag — is the official peak day an interior local max, or is the curve still rising when the window cuts it off? | `csv/..._{stock_version}.csv` (step 1), **both** `--bstock` values | `diagnostics/boundary_trend_*.png` |
+
+`nan`, `sumcheck`, `annual_plot`, and `seasonal_plot` read the final gz
+outputs, so they only reflect the current state of `../tsv_load_EMM.gz` /
+`../tsv_load_State.gz` (run step 2 for both `--bstock` values first).
+`rowcount` and `peakday_plot` read the raw per-`--bstock` CSV from step 1
+directly and don't need step 2. `boundary_trend` also reads step 1's raw
+CSVs directly, but — unlike every other `--diag_type`, which is scoped to
+whichever single `--bstock` you pass — it always loads and sums **both**
+`commercial_*` and `residential_*` CSVs itself (to match
+`compute_peak_days.py`'s own combined-sector methodology), so it ignores
+`--bstock` and needs both raw CSVs already cached from step 1.
+To run a subset of the diagnostics:
+`python update_tsv.py --diag --bstock residential --diag_type nan sumcheck`
+To run the full set (note `--bstock` parameter is required):
+`python update_tsv.py --diag --bstock residential`
+
+Pass `--diag_compare_file <path to an older tsv_load_*.gz or .json>` to
+additionally overlay that file's mean ± 1 std dev (across regions) on the
+`seasonal_plot` output, for a before/after comparison against a prior
+release.
+
+These diagnostics were previously spread across four Jupyter notebooks in
+this directory (`_diag_hourly.ipynb`, `_diag_annual_fraction.ipynb`,
+`_diag_length_and_sumtoone.ipynb`, `_diag_factorsplot.ipynb`); their logic
+now lives in `update_tsv.py` under `--diag`.
+
+## Full example (default 2025 release)
+
+```bash
+cd scout/supporting_data/tsv_data/code
+python update_tsv.py --get_stockdata
+python update_tsv.py --insert_scouttsv --bstock commercial
+python update_tsv.py --insert_scouttsv --bstock residential
+```
+
+## Per-region winter/summer peak days (`compute_peak_days.py`)
+
+```bash
+python compute_peak_days.py --stock_version 2025
+```
+
+Reads the same cached `csv/{commercial,residential}_{emm,state}_{version}.csv`
+files from step 1 (no Athena calls) and, for each EMM region/state, finds the
+day of year with the single highest total (commercial + residential)
+electricity load within the winter window (day 1-90, 335-365) and the
+summer window (day 152-273) — the same windows `ecm_prep.py` already defines
+in `HandyVars.tsv_metrics_data["season days"]`. Writes
+`tsv_peak_days_EMM.csv` and `tsv_peak_days_State.csv` to
+`supporting_data/tsv_data/`, each with `WinterPeakDay`/`SummerPeakDay`
+(day of year) plus a human-readable date and the peak hourly load for
+reference. These replace the single hardcoded national peak days (day 1 /
+day 183) currently used in `HandyVars.tsv_metrics_data["peak days"]` with
+region-specific values.
+
+Regions whose official-window peak looks like a window-boundary artifact
+get a console warning and a `*PeakAtWindowBoundary` flag in the output CSV
+(see the widened-window check in `compute_peak_days.py`). To see *why* a
+region got flagged rather than just trusting the flag, run
+`update_tsv.py --diag --diag_type boundary_trend` (above) — it plots the
+same underlying trend these warnings are based on.

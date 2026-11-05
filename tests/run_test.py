@@ -28092,8 +28092,14 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
             "Electric": ["electricity"],
             "Non-Electric": ["natural gas", "distillate", "other fuel"]}
         # Sample code/BPS policies to represent via handyvars
-        cls.hv_code_bps.codes = [["CA", "Commercial (New)", 50, 0, 75, 2009, 1, "state"]]
-        cls.hv_code_bps.bps = [["CA", "Commercial (Existing)", 20, 75, 2009, 2010, 1, "state"]]
+        cls.hv_code_bps.codes = [{
+            "reg": "CA", "bldg": "Commercial (New)", "onsite_reduce": 50, "lag_reduce": 0,
+            "stretch_reduce": 75, "start_yr": 2009, "apply_frac": 1, "regu_type": "state",
+            "jurisdiction": None}]
+        cls.hv_code_bps.bps = [{
+            "reg": "CA", "bldg": "Commercial (Existing)", "onsite_reduce": 20,
+            "eui_pct_reduce": 75, "eui_bench_yr": 2009, "start_yr": 2010, "apply_frac": 1,
+            "regu_type": "state", "jurisdiction": None}]
         # Test max adoption potential case
         cls.test_adopt_scheme_code_bps = "Max adoption potential"
         # HP measure breakout information to use across measure data
@@ -28938,6 +28944,10 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
                     "cost savings": {"2009": 20, "2010": 20}}
                 }
 
+        # Keep an unmodified copy of the measures; the postprocessing function adjusts measure
+        # data in place, so tests that need pristine inputs should copy from this
+        cls.start_meas_pristine = copy.deepcopy(cls.start_meas)
+
         # Set sample square footage data; this is used to normalize summed energy data to EUIs
         # for the purposes of comparing the collective EUI of the measure set against some
         # benchmark year EUI, as is done to assess most BPS targets
@@ -28991,6 +29001,92 @@ class CodesBPSTest(unittest.TestCase, CommonMethods, Constants):
             self.dict_check(self.code_bps_meas_out[ind_code_bps], code_bps_meas_out[
                 ind_code_bps].markets[self.test_adopt_scheme_code_bps]["master_mseg"][
                 "energy"]["total"])
+
+    def test_code_bps_postprocess_cap_cost(self):
+        """Test code/BPS capital cost outputs (master and breakout) when cap_invest is on.
+
+        Capital cost inputs are set to 2x (baseline) and 7x (efficient) the sample energy values
+        so that the implied incremental cost per unit energy saved is 3.0 (not 1.0, which would
+        mask errors in how that ratio is applied). Expected values were derived by hand:
+
+        Codes (new bldgs, 50% onsite reduction, 75% target, same in 2009/2010):
+          Onsite: furnace non-elec. cap. cost converts 0.5 * 35 = 17.5 to the codes measure
+            (baseline non-elec., efficient elec.).
+          Cost of additional energy reductions: the code requires a further reduction of 25% of
+            the remaining baseline energy, which is 2.5 for the FS measure (elec.) and 1.875 for
+            the furnace (non-elec.). Cost to achieve these reductions is 3.0 * those values: 7.5
+            and 5.625 (13.125 total).
+        BPS (existing bldgs, 20% onsite reduction, 75% target, 2010 only):
+          Onsite: furnace non-elec. cap. cost converts 0.2 * 70 = 14.
+          Cost of additional energy reductions: the standard requires further reductions of 5.0
+            (elec.) and 4.5 (non-elec.) of baseline energy, such that the added cost is 15.0 and
+            13.5.
+        """
+
+        sch = self.test_adopt_scheme_code_bps
+        hv_cap = copy.copy(self.hv_code_bps)
+        hv_cap.brk_vars = ["stock", "energy", "carbon", "energy cost", "capital cost"]
+        meas = copy.deepcopy(self.start_meas_pristine)
+
+        def scale(d, factor):
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    scale(v, factor)
+                else:
+                    d[k] = v * factor
+
+        # Capital cost breakouts for the input measures, built from the energy cost breakouts
+        # (baseline x2, efficient x7, savings = baseline - efficient = x-3 given sample values)
+        for m in meas:
+            for cmp_key in ["competed", "uncompeted"]:
+                brk = m.markets[sch][cmp_key]["mseg_out_break"]
+                brk["capital cost"] = copy.deepcopy(brk["energy cost"])
+                scale(brk["capital cost"]["baseline"], 2)
+                scale(brk["capital cost"]["efficient"], 7)
+                scale(brk["capital cost"]["savings"], -3)
+        a_run = run.Engine(hv_cap, self.opts, meas,
+                           energy_out=["fossil_equivalent", "NA", "NA", "NA", "NA"],
+                           brkout="basic")
+        cdbps_meas = a_run.process_codes_bps(
+            self.opts, sch, self.sample_msegs_sf_data, hv_cap, trim_yrs=False, code_comply_res=1,
+            code_comply_com=1, bps_comply_res=1, bps_comply_com=1, report_stk_units=False,
+            report_stk_costs=True)
+
+        def brk_out(new_elec, new_nelec, ex_elec, ex_nelec):
+            """Build expected breakout data from (2009, 2010) values for each leaf."""
+            def yrs(vals):
+                return {"2009": vals[0], "2010": vals[1]} if vals else {}
+            return {"CA": {
+                "Commercial (Existing)": {"Heating (Equip.)": {
+                    "Electric": yrs(ex_elec), "Non-Electric": yrs(ex_nelec)}},
+                "Commercial (New)": {"Heating (Equip.)": {
+                    "Electric": yrs(new_elec), "Non-Electric": yrs(new_nelec)}}}}
+
+        # Expected master capital cost data and savings (baseline - efficient), then breakouts
+        exp_codes = {
+            "master": {"baseline": {"2009": 17.5, "2010": 17.5},
+                       "efficient": {"2009": 30.625, "2010": 30.625}},
+            "save": {"2009": -13.125, "2010": -13.125},
+            "brk": {
+                "baseline": brk_out((0, 0), (17.5, 17.5), None, None),
+                "efficient": brk_out((25.0, 25.0), (5.625, 5.625), None, None),
+                "savings": brk_out((-25.0, -25.0), (11.875, 11.875), None, None)}}
+        exp_bps = {
+            "master": {"baseline": {"2009": 0, "2010": 14.0},
+                       "efficient": {"2009": 0, "2010": 42.5}},
+            "save": {"2009": 0, "2010": -28.5},
+            "brk": {
+                "baseline": brk_out(None, None, (0, 0), (0, 14.0)),
+                "efficient": brk_out(None, None, (0, 29.0), (0, 13.5)),
+                "savings": brk_out(None, None, (0, -29.0), (0, 0.5))}}
+
+        self.assertEqual(len(cdbps_meas), 2)
+        for m, exp in zip(cdbps_meas, [exp_codes, exp_bps]):
+            mkts = m.markets[sch]
+            self.dict_check(exp["master"], mkts["master_mseg"]["cost"]["stock"]["total"])
+            self.dict_check(exp["save"], m.savings[sch]["stock"]["cost savings"])
+            for case in ["baseline", "efficient", "savings"]:
+                self.dict_check(exp["brk"][case], mkts["mseg_out_break"]["capital cost"][case])
 
 
 class StateImportTest(unittest.TestCase, CommonMethods):
@@ -29102,6 +29198,12 @@ class StateImportTest(unittest.TestCase, CommonMethods):
             ['CO', 'multi family home', 'new', 'natural gas', 'cooking', 'all', 2030, 0.22]
             ]
             ]
+        cls.codes_fields = [
+            "reg", "bldg", "onsite_reduce", "lag_reduce", "stretch_reduce", "start_yr",
+            "apply_frac", "regu_type"]
+        cls.bps_fields = [
+            "reg", "bldg", "onsite_reduce", "eui_pct_reduce", "eui_bench_yr", "start_yr",
+            "apply_frac", "regu_type"]
         cls.codes_out = [
             [['CA', 'Multi Family Homes (New)', 100.0, 0, 0, 2025, 0.8, 'state'],
              ['CA', 'Single Family/Manufactured Homes (New)', 100.0, 0, 0, 2025, 0.8, 'state'],
@@ -29191,7 +29293,11 @@ class StateImportTest(unittest.TestCase, CommonMethods):
                                           self.test_opts[case_ind]["bps"]])
             # Check to ensure that both outputs match test values
             for output, expected in zip(
-                    [self.hvobj.state_appl_regs, self.hvobj.codes, self.hvobj.bps],
+                    [self.hvobj.state_appl_regs,
+                     [[x[f] for f in self.codes_fields] for x in self.hvobj.codes]
+                     if self.hvobj.codes is not None else None,
+                     [[x[f] for f in self.bps_fields] for x in self.hvobj.bps]
+                     if self.hvobj.bps is not None else None],
                     [self.state_appl_regs_out[case_ind], self.codes_out[case_ind],
                      self.bps_out[case_ind]]):
                 self.assertEqual(output, expected)

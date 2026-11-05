@@ -18,7 +18,7 @@ jobs:
       - name: Install Node dependencies
         run: npm install
       - name: Check for valid JSON
-        run: grunt jsonreview -v
+        run: npx grunt jsonreview -v
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -66,7 +66,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.12'
       - name: Install scout package
         run: |
           python -m pip install --upgrade pip
