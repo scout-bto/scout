@@ -1374,7 +1374,7 @@ Alternate regions
 ``--alt_regions`` allows the user to set the regional breakout of baseline data and ECM results (see :ref:`ecm-baseline_climate-zone`). Valid options include one of "EMM" (default), "State", or "AIA".
 
 .. note::
-   Currently, three regional breakouts are supported: the U.S. Electricity Information Administration (EIA) Electricity Market Module (EMM) regions, AIA climate regions,  and the contiguous U.S. states. See the :ref:`ecm-baseline_climate-zone` section for additional details, and :ref:`data-disagg` for how EMM- and state-level baseline data are derived.
+   Currently, three regional breakouts are supported: the U.S. Energy Information Administration (EIA) Electricity Market Module (EMM) regions, AIA climate regions, and the contiguous U.S. states. See the :ref:`ecm-baseline_climate-zone` section for additional details, and :ref:`data-disagg` for how EMM- and state-level baseline data are derived.
 
 Site energy
 ***********
