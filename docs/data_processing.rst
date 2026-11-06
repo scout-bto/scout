@@ -3,7 +3,7 @@
 Data Processing
 ===============
 
-This section describes how three of Scout's data inputs are derived from NREL ComStock and ResStock data: the factors that disaggregate baseline data from census divisions to EMM regions and states, the hourly load shapes, and the peak days. Each section summarizes the method and points to a README with the full steps for regenerating the data.
+This section describes how several of Scout's data inputs are derived. The factors that disaggregate baseline data from census divisions to EMM regions and states, the hourly load shapes, and the peak days are derived from NREL ComStock and ResStock data, and the sections on these inputs summarize the method and point to a README with the full steps for regenerating the data. The section on peak periods also describes peak and low demand hours, which are based on electric system load.
 
 .. _data-disagg:
 
@@ -93,6 +93,8 @@ Some load shapes are all zero because the source data show no load for that comb
 .. note::
    The source data show no commercial water heating load for California, so this shape is all zero for CA in the state file and for CANO and CASO in the EMM file. All commercial building types use this one water heating shape, so commercial water heating in these regions contributes no load to hourly calculations.
 
+.. _data-load-shapes-regen:
+
 Regenerating the load shapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -114,9 +116,7 @@ Scout uses two separate inputs to define peak periods: *peak days*, which are ba
 Peak days
 ~~~~~~~~~
 
-Scout previously used one fixed peak day for all regions: January 1 (day 1) in winter and July 2 (day 183) in summer. It now uses the actual winter and summer peak days for each region.
-
-A region's peak day is the day containing its highest hourly total of commercial and residential electricity load in that season. Peak days apply to :ref:`time sensitive valuation metrics <tsv-metrics-opt>` that report maximum power, where ``--tsv_type`` is "power" and ``--tsv_power_agg`` is "peak".
+Scout uses a separate winter and summer peak day for each region. A region's peak day is the day containing its highest hourly total of commercial and residential electricity load in that season. Peak days apply to :ref:`time sensitive valuation metrics <tsv-metrics-opt>` that report maximum power, where ``--tsv_type`` is "power" and ``--tsv_power_agg`` is "peak".
 
 Peak days are stored in two files in |html-filepath| ./scout/supporting_data/tsv_data\ |html-fp-end|:
 
@@ -147,9 +147,11 @@ A peak near the edge of a window may reflect the window rather than a true seaso
 Regenerating the peak days
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-After downloading the source data with the first ``update_tsv.py`` command in the previous section, run the following: ::
+After downloading the source data with the first ``update_tsv.py`` command in :ref:`data-load-shapes-regen`, run the following from the same directory: ::
 
    python compute_peak_days.py --stock_version 2025
+
+See the :repo_file:`load shape README <scout/supporting_data/tsv_data/code/README.md>` for details.
 
 Peak and low demand hours
 ~~~~~~~~~~~~~~~~~~~~~~~~~
