@@ -394,7 +394,7 @@ A residential heat pump water heater is :ref:`available to download <ecm-downloa
 Time sensitive valuation
 ************************
 
-In certain cases, ECMs might affect baseline energy loads differently depending on the time of day or season, necessitating time sensitive valuation of ECM impacts. :numref:`tsv-ecm-diagram` demonstrates three possible types of time sensitive ECM features.
+In certain cases, ECMs might affect baseline energy loads differently depending on the time of day or season, necessitating time sensitive valuation of ECM impacts. The baseline hourly load shapes that support these calculations are described in :ref:`data-load-shapes`. :numref:`tsv-ecm-diagram` demonstrates three possible types of time sensitive ECM features.
 
 .. _tsv-ecm-diagram:
 .. figure:: images/Shed_Shift_Shape_Diag.*
@@ -1366,13 +1366,15 @@ Specify ECM files and packages
 
 ``--ecm_packages`` selects a subset of ECM packages; values must correspond with package_ecms.json package names in the ECM directory. If no list is provided, all packages will be used so long as their ECM definitions are present; if an empty list is provided, no packages will be used. Packages that require ECM definitions not specified through ``--ecm_directory``, ``--ecm_files``, and/or ``--ecm_files_regex`` will be skipped and a warning will be issued.
 
+.. _alt-regions-opt:
+
 Alternate regions
 *****************
 
 ``--alt_regions`` allows the user to set the regional breakout of baseline data and ECM results (see :ref:`ecm-baseline_climate-zone`). Valid options include one of "EMM" (default), "State", or "AIA".
 
 .. note::
-   Currently, three regional breakouts are supported: the U.S. Electricity Information Administration (EIA) Electricity Market Module (EMM) regions, AIA climate regions,  and the contiguous U.S. states. See the :ref:`ecm-baseline_climate-zone` section for additional details.
+   Currently, three regional breakouts are supported: the U.S. Energy Information Administration (EIA) Electricity Market Module (EMM) regions, AIA climate regions, and the contiguous U.S. states. See the :ref:`ecm-baseline_climate-zone` section for additional details, and :ref:`data-disagg` for how EMM- and state-level baseline data are derived.
 
 Site energy
 ***********
@@ -1521,10 +1523,14 @@ Alternative emissions intensities
 *********************************
 ``--alt_ref_carb`` sets the baseline electricity emissions intensities to be consistent with the `Standard Scenarios Mid Case`_ (rather than AEO).
 
+.. _tsv-metrics-opt:
+
 Time sensitive valuation metrics
 ********************************
 
 The following time sensitive valuation metrics are used to assess and report out ECM impacts on electric load during pre-defined sub-annual time slices, rather than impacts on annual energy use as in the default ECM preparation. Time slice settings are based on 2006 as the `reference year`_ for the purpose of defining the days of the week and number of days in the year. 
+
+See :ref:`data-peak-periods` for how peak days and peak and low demand hours are defined.
 
 ``--tsv_type`` selects the reported metric to represent either change in energy use across multiple hours (e.g., kWh, GWh, TWh) or change in power per hour (e.g., kW, GW, TW). Valid options include "energy" or "power".
 
@@ -1546,7 +1552,9 @@ The following time sensitive valuation metrics are used to assess and report out
    When the ``--tsv_metrics`` option is used, all data prepared for the ECM and written out to |html-filepath| ./generated/ecm_competition_data |html-fp-end| and |html-filepath| ./generated/ecm_prep.json |html-fp-end| will reflect the specific time slice of interest, rather than the default annual outcomes.
 
 .. note::
-   Data needed to support evaluation of TSV metrics are broken out by EMM region; when using the ``--tsv_metrics`` option, EMM should be selected as the regional breakout when running |html-filepath| ecm_prep.py\ |html-fp-end|. If regions are not set to EMM in this case, the code will do so automatically while warning the user.
+   TSV metrics are supported for EMM and state regions. When using the ``--tsv_metrics`` option, select one of these as the regional breakout when running |html-filepath| ecm_prep.py\ |html-fp-end|. If regions are set to anything else, the code will set them to EMM automatically while warning the user.
+
+.. _sect-shapes-opt:
 
 Sector-level hourly energy loads
 ********************************
@@ -1905,7 +1913,7 @@ In each results tab, rows 2-22 include results summed across the entire ECM port
 .. [#] The retrofit rate assumption only affects the :ref:`Maximum Adoption Potential <overview-adoption>` scenario results, in which realistic equipment turnover dynamics are considered.
 .. [#] The size parameter specifies the number of samples to draw from the specified distribution. The number of samples is preset to be the same for all ECMs to ensure consistency.
 .. [#] To produce the rate estimates in the table, we focus on the proportion of buildings in the data that report retrofitting a given technology before the end of its expected useful lifetime. For example, for commercial HVAC equipment, we find the total number of buildings constructed between 1990 and 2008 that report an HVAC renovation during that period, under the assumption that HVAC equipment typically functions for 20 years and thus would not be regularly replaced until 2010 at the earliest (1990 --- the earliest construction year in the building sample --- plus 20 years). We divide that number by the total number of buildings constructed in that time period, and annualize by dividing the result by 18 years (2008-1990).
-.. [#] Total and net peak and low demand hour ranges by season, EMM region, and projection year are summarized in the files |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_net_ref.csv |html-fp-end|, |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_net_hr.csv |html-fp-end|, |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_tot_ref.csv |html-fp-end|, and |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_tot_hr.csv |html-fp-end|. The default periods assumed when a user adds the ``--tsv_metrics`` option reflect the projection year 2050 and a representative subset of system load shapes from 16 EMM regions: BASN, CANO, CASO, FRCC, ISNE, MISS, MISE, MISW, NWPP, PJME, PJMW, RMRG, SRCE, SRSE, SRSG, TRE. For a graphical example of the *net* system load shapes and peak/low demand period definitions used to support the ``--tsv_metrics`` option, refer to `this plot`_.
+.. [#] Total and net peak and low demand hour ranges by season, EMM region, and projection year are summarized in the files |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_net_base.csv |html-fp-end|, |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_net_lowogs.csv |html-fp-end|, |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_tot_base.csv |html-fp-end|, and |html-filepath| ./scout/supporting_data/tsv_data/tsv_hrs_tot_lowogs.csv |html-fp-end|. The default periods assumed when a user adds the ``--tsv_metrics`` option reflect the projection year 2050 and a representative subset of system load shapes from 16 EMM regions: BASN, CANO, CASO, FRCC, ISNE, MISS, MISE, MISW, NWPP, PJME, PJMW, RMRG, SRCE, SRSE, SRSG, TRE. For a graphical example of the *net* system load shapes and peak/low demand period definitions used to support the ``--tsv_metrics`` option, refer to `this plot`_.
 .. [#] With this option, low/high estimates of public health benefits are added directly to electricity costs, yielding greater savings for ECMs that are able to reduce electricity use.
 .. [#] The EPA report also includes low and high estimates of the public health benefits of avoided electricity generation from energy efficiency during the peak hours of 12-6 PM. While these estimates are ultimately very similar to the "Uniform EE" estimates and not included in Scout's health cost adders, they are summarized by region alongside the "Uniform EE" estimates in the file |html-filepath| ./scout/supporting_data/convert_data/epa_costs.csv |html-fp-end|.
 .. [#] Building class corresponds to the four combinations of :ref:`building type <json-bldg_type>` and :ref:`structure type <json-structure_type>`.

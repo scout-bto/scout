@@ -46,7 +46,7 @@ Scout's baseline matches the chosen AEO reference.
 AEO Update Checklist
 --------------------
 
-Use this quick checklist when updating Scout to a new AEO release.
+Use this quick checklist when updating Scout to a new AEO release. For how the census division data are disaggregated to EMM regions and states, see :ref:`data-disagg`.
 
 1. **Stage raw AEO files in** ``inputs/raw``
 
