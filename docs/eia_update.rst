@@ -32,9 +32,15 @@ Running the EIA update check
 2. **Install Scout and its dependencies** into a virtual environment
    (see :ref:`install-guide`).
 
-3. **From the project root, run the helper script**, for example::
+3. **From the project root, run the helper script**, for example:
+
+   **Windows** ::
 
       python -m scout.AEO_update_helpers.baseline_comparison --year 2025
+
+   **Mac** ::
+
+      python3 -m scout.AEO_update_helpers.baseline_comparison --year 2025
 
    Use ``--verbose`` to see the underlying API calls and any combinations where
    data are missing.
@@ -50,7 +56,7 @@ Use this quick checklist when updating Scout to a new AEO release.
 
 1. **Stage raw AEO files in** ``inputs/raw``
 
-   Required files:
+   Required files, covering both the Reference Case and High Electricity Demand (high data center load growth, or `_hdc`) cases:
 
    * ``RDM_DBOUT.txt``
    * ``RDM_DGENOUT.txt``
@@ -65,41 +71,73 @@ Use this quick checklist when updating Scout to a new AEO release.
    * ``kprem.txt``
    * ``ktekx.xlsx``
 
-2. **Process raw AEO files**::
+   .. note::
 
-   python scout/eia_file.py
+      The ``_hdc.txt`` files included in the list above are available alongside the Reference Case EIA input files in the Scout MS Teams Project.
+
+2. **Process raw AEO files**:
+
+   **Windows** ::
+
+      python -m scout.eia_file
+
+   **Mac** ::
+
+      python3 -m scout.eia_file
 
    This step reads from ``inputs/raw`` and writes processed tabular files to
    ``inputs/processed``.
 
-3. **Generate Metadata**::
+3. **Generate Metadata**:
 
-   python -m scout/mseg_meta.py -y 2026
+   **Windows** ::
+
+      python -m scout.mseg_meta -y 2026
+
+   **Mac** ::
+
+      python3 -m scout.mseg_meta -y 2026
 
    Outputs ``inputs/metadata.json``. Confirm it has ``min year``,
    ``max year``, and ``aeo_base_year`` set correctly.
 
-4. **Rebuild microsegment and CPL data products**::
-   
-   python -m scout/mseg.py -y 2026
+4. **Rebuild microsegment and CPL data products**:
 
-   python -m scout/mseg_techdata.py -y 2026
+   Generate intermediate microsegment and CPL data:
 
-   python -m scout/com_mseg.py -y 2026
+   **Windows** ::
 
-   python -m scout/com_mseg_tech.py -y 2026
+      python -m scout.mseg -y 2026
+      python -m scout.mseg_techdata -y 2026
+      python -m scout.com_mseg -y 2026
+      python -m scout.com_mseg_tech -y 2026
+
+   **Mac** ::
+
+      python3 -m scout.mseg -y 2026
+      python3 -m scout.mseg_techdata -y 2026
+      python3 -m scout.com_mseg -y 2026
+      python3 -m scout.com_mseg_tech -y 2026
 
    Intermediate JSON artifacts are written to ``inputs/derived``
    (for example ``mseg_res_cdiv.json``, ``mseg_res_com_cdiv.json``,
    ``cpl_res_cdiv.json``, and ``cpl_res_com_cdiv.json``).
 
-   python -m scout/final_mseg_converter.py
+   Run the final microsegment converter:
+
+   **Windows** ::
+
+      python -m scout.final_mseg_converter
+
+   **Mac** ::
+
+      python3 -m scout.final_mseg_converter
 
    First, update the microsegment products: 
 
    Select options ``1,1`` when prompted. This develops climate zone-specific data.
 
-   After this first run, run again with the following options, which develop EMM-resolve and state-resolved data:
+   After this first run, run again with the following options, which develop EMM-resolved and state-resolved data:
 
    * ``1,2,2,1``
    * ``1,3,2,1``
@@ -131,32 +169,88 @@ Use this quick checklist when updating Scout to a new AEO release.
    * ``cpl_res_com_cdiv.gz``
 
    Move these final output files to
-   ``scout/supporting_data/stock_energy_tech_data`` then commit and push to the repository.
+   ``scout/supporting_data/stock_energy_tech_data``.
 
-5. **Update emissions/price conversion datasets**:
+5. **Rebuild heating and cooling total data products**:
+
+   Recalculate heating and cooling energy totals across climate zones, EMM
+   regions, and states under various site-source accounting conventions:
+
+   **Windows** ::
+
+      python -m scout.htcl_totals
+
+   **Mac** ::
+
+      python3 -m scout.htcl_totals
+
+   This routine reads the baseline microsegment files from
+   ``scout/supporting_data/stock_energy_tech_data`` and writes heating and cooling
+   energy total files directly to that folder:
+
+   * ``htcl_totals.json``, ``htcl_totals_hdc.json``
+   * ``htcl_totals_decarb.json``, ``htcl_totals_decarb_hdc.json``
+   * ``htcl_totals-ce.json``, ``htcl_totals-ce_hdc.json``
+   * ``htcl_totals-site.json``, ``htcl_totals-site_hdc.json``
+   * ``htcl_totals_emm.json``, ``htcl_totals_emm_hdc.json``
+   * ``htcl_totals_emm_decarb.json``, ``htcl_totals_emm_decarb_hdc.json``
+   * ``htcl_totals-ce_emm.json``, ``htcl_totals-ce_emm_hdc.json``
+   * ``htcl_totals-site_emm.json``, ``htcl_totals-site_emm_hdc.json``
+   * ``htcl_totals_state.json``, ``htcl_totals_state_hdc.json``
+   * ``htcl_totals-ce_state.json``, ``htcl_totals-ce_state_hdc.json``
+   * ``htcl_totals-site_state.json``, ``htcl_totals-site_state_hdc.json``
+
+   Once generated, commit and push these files alongside the microsegment and CPL
+   data products to the repository.
+
+6. **Update emissions/price conversion datasets**:
 
    Ensure ``EIA_API_KEY`` is set in the project-root ``.env`` file
    (as described earlier in this document).
 
-   Run the updater validation tests::
+   Run the updater validation tests:
 
-      python tests/updater_validation_test.py
+   **Windows** ::
 
-   Update state baseline snapshots::
+      python tests\updater_validation_test.py
+
+   **Mac** ::
+
+      python3 tests/updater_validation_test.py
+
+   Update state baseline snapshots:
+
+   **Windows** ::
 
       python -m scout.state_baseline_data_updater
 
-   Update EIA conversion files (run separately per file)::
+   **Mac** ::
+
+      python3 -m scout.state_baseline_data_updater
+
+   Update EIA conversion files (run separately per file):
+
+   **Windows** ::
 
       python -m scout.converter -f FILE_NAME
+
+   **Mac** ::
+
+      python3 -m scout.converter -f FILE_NAME
 
    Use this for files beginning with ``emm_region_`` or ``site_source_`` in
    ``scout/supporting_data/convert_data``.
 
    Download hourly Balancing Authority emissions data from
-   https://scenarioviewer.nrel.gov/, then run Cambium updates::
+   https://scenarioviewer.nlr.gov/, then run Cambium updates:
+
+   **Windows** ::
 
       python -m scout.cambium_updater
+
+   **Mac** ::
+
+      python3 -m scout.cambium_updater
 
    Follow the prompts to select the Cambium year/scenario and to update
    files beginning with ``emm_region_`` or ``state_``.

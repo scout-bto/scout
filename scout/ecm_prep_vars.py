@@ -568,7 +568,7 @@ class UsefulVars(object):
                 "heating": [
                     "resistance heat", "furnace (NG)", "boiler (NG)",
                     "furnace (distillate)", "boiler (distillate)",
-                    "furnace (LPG)", "furnace (kerosene)", "stove (wood)",
+                    "furnace (LPG)", "stove (wood)",
                     "ASHP", "GSHP", "NGHP"],
                 "cooling": ["central AC", "ASHP", "GSHP", "NGHP", "room AC"]
             },
@@ -599,7 +599,6 @@ class UsefulVars(object):
                 "furnace (distillate)": ["central AC", "room AC"],
                 "boiler (distillate)": ["central AC", "room AC"],
                 "furnace (LPG)": ["central AC", "room AC"],
-                "furnace (kerosene)": ["central AC", "room AC"],
                 "stove (wood)": ["central AC", "room AC"],
                 "ASHP": ["ASHP"],
                 "GSHP": ["GSHP"],
@@ -967,7 +966,6 @@ class UsefulVars(object):
                             'other': ["other appliances"]},
                         "other fuel": {
                             'heating': [
-                                'furnace (kerosene)',
                                 'stove (wood)', 'furnace (LPG)'],
                             'secondary heating': [
                                 'secondary heater (wood)',
@@ -2172,16 +2170,16 @@ class UsefulInputFiles(object):
             # energy data (fossil equivalent site-source conversion), or source
             # energy data (captured energy site-source conversion) are needed
             if opts.site_energy is not False:
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-site{hdc}.json"
             elif opts.captured_energy is not False:
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-ce.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-ce{hdc}.json"
             else:
                 # Further condition the file based on whether a high grid
                 # decarb case has been selected by the user
                 if opts.grid_decarb_level:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_decarb.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_decarb{hdc}.json"
                 else:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals{hdc}.json"
         elif opts.alt_regions == 'EMM':
             self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_emm{hdc}.gz"
             self.msegs_cpl_in = fp.STOCK_ENERGY / "cpl_res_com_emm.gz"
@@ -2196,16 +2194,16 @@ class UsefulInputFiles(object):
             # energy data (fossil equivalent site-source conversion), or source
             # energy data (captured energy site-source conversion) are needed
             if opts.site_energy is not False:
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site_emm.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-site_emm{hdc}.json"
             elif opts.captured_energy is not False:
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-ce_emm.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-ce_emm{hdc}.json"
             else:
                 # Further condition the file based on whether a high grid
                 # decarb case has been selected by the user
                 if opts.grid_decarb_level:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_emm_decarb.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_emm_decarb{hdc}.json"
                 else:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_emm.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_emm{hdc}.json"
         elif opts.alt_regions == 'State':
             self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_state{hdc}.gz"
             self.msegs_cpl_in = fp.STOCK_ENERGY / "cpl_res_com_cdiv.gz"
@@ -2218,16 +2216,16 @@ class UsefulInputFiles(object):
             # energy data (fossil equivalent site-source conversion), or source
             # energy data (captured energy site-source conversion) are needed
             if opts.site_energy is not False:
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site_state.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-site_state{hdc}.json"
             elif opts.captured_energy is not False:
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-ce_state.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-ce_state{hdc}.json"
             else:
                 # Further condition the file based on whether a high grid
                 # decarb case has been selected by the user
                 if opts.grid_decarb_level:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_state.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_state{hdc}.json"
                 else:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_state.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_state{hdc}.json"
         else:
             raise ValueError(
                 "Unsupported regional breakout (" + opts.alt_regions + ")")
@@ -2288,6 +2286,7 @@ class UsefulInputFiles(object):
         price_sensitivity_suffix = get_suffix(opts.price_sensitivity)
         # Toggle EMM emissions and price data based on whether or not a grid decarbonization
         # scenario or price sensitivity scenario is used
+        hdc_suffix = "_hdc" if getattr(opts, "high_data_ctr", False) else ""
         if opts.alt_regions in ['EMM', "State"]:
             emission_var_map = {}  # Map UsefulInputFiles instance vars to filenames suffixes
             if opts.grid_decarb_level:
@@ -2298,7 +2297,8 @@ class UsefulInputFiles(object):
                 emission_var_map["ss_data_altreg"] = price_sensitivity_suffix
             else:
                 # Set baseline emissions factors
-                emission_var_map["ss_data_altreg"] = alt_ref_carb_suffix
+                default_suffix = hdc_suffix if not opts.alt_ref_carb else alt_ref_carb_suffix
+                emission_var_map["ss_data_altreg"] = default_suffix
                 self.ss_data_altreg_nonfs = None
             if opts.grid_assessment_timing and opts.grid_assessment_timing == "before":
                 # Set emissions/cost reductions for non-fuel switching measures before grid
@@ -2341,8 +2341,9 @@ class UsefulInputFiles(object):
                 self.ss_data = (fp.CONVERT_DATA /
                                 f"site_source_co2_conversions{price_sensitivity_suffix}.json")
             else:
+                default_suffix = hdc_suffix if not opts.alt_ref_carb else alt_ref_carb_suffix
                 self.ss_data = (fp.CONVERT_DATA /
-                                f"site_source_co2_conversions{alt_ref_carb_suffix}.json")
+                                f"site_source_co2_conversions{default_suffix}.json")
             self.tsv_cost_data = fp.TSV_DATA / f"tsv_cost-{opts.alt_regions.lower()}-MidCase.json"
             self.tsv_carbon_data = (fp.TSV_DATA /
                                     f"tsv_carbon-{opts.alt_regions.lower()}-MidCase.json")

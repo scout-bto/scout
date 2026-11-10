@@ -72,16 +72,16 @@ class UsefulInputFiles(object):
         if regions == "AIA":
             self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_cz{hdc}.json"
             if energy_out[0] == "site":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-site{hdc}.json"
             elif energy_out[0] == "fossil_equivalent":
                 # Further condition the file based on whether a high grid
                 # decarb case has been selected by the user
                 if grid_decarb is True:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_decarb.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_decarb{hdc}.json"
                 else:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals{hdc}.json"
             elif energy_out[0] == "captured":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-ce.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-ce{hdc}.json"
             else:
                 raise ValueError(
                     "Unsupported user option type (site, source "
@@ -90,16 +90,16 @@ class UsefulInputFiles(object):
         elif regions == "EMM":
             self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_emm{hdc}.gz"
             if energy_out[0] == "site":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site_emm.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-site_emm{hdc}.json"
             elif energy_out[0] == "fossil_equivalent":
                 # Further condition the file based on whether a high grid
                 # decarb case has been selected by the user
                 if grid_decarb is True:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_emm_decarb.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_emm_decarb{hdc}.json"
                 else:
-                    self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_emm.json"
+                    self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_emm{hdc}.json"
             elif energy_out[0] == "captured":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-ce_emm.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-ce_emm{hdc}.json"
             else:
                 raise ValueError(
                     "Unsupported user option type (site, source "
@@ -108,11 +108,11 @@ class UsefulInputFiles(object):
         elif regions == "State":
             self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_state{hdc}.gz"
             if energy_out[0] == "site":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-site_state.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-site_state{hdc}.json"
             elif energy_out[0] == "fossil_equivalent":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals_state.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals_state{hdc}.json"
             elif energy_out[0] == "captured":
-                self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals-ce_state.json"
+                self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals-ce_state{hdc}.json"
             else:
                 raise ValueError(
                     "Unsupported user option type (site, source "
@@ -128,16 +128,16 @@ class UsefulInputFiles(object):
         elif energy_out[0] == "captured":
             self.ss_data = fp.CONVERT_DATA / "site_source_co2_conversions-ce.json"
         else:
-            self.ss_data = fp.CONVERT_DATA / "site_source_co2_conversions.json"
+            self.ss_data = fp.CONVERT_DATA / f"site_source_co2_conversions{hdc}.json"
         # Use the user-specified grid_decarb flag and region selection
         # to select the correct electricity price and CO2 intensity data
         if regions == 'EMM':
             if grid_decarb is not False:
                 self.elec_price_co2 = fp.CONVERT_DATA / "emm_region_emissions_prices-100by2035.json"
             else:
-                self.elec_price_co2 = fp.CONVERT_DATA / "emm_region_emissions_prices.json"
+                self.elec_price_co2 = fp.CONVERT_DATA / f"emm_region_emissions_prices{hdc}.json"
         elif regions == 'State':
-            self.elec_price_co2 = fp.CONVERT_DATA / "state_emissions_prices.json"
+            self.elec_price_co2 = fp.CONVERT_DATA / f"state_emissions_prices{hdc}.json"
         else:
             if grid_decarb is not False:
                 self.elec_price_co2 = fp.CONVERT_DATA / "site_source_co2_conversions-100by2035.json"
@@ -145,7 +145,7 @@ class UsefulInputFiles(object):
                 if energy_out[0] == 'captured':
                     self.elec_price_co2 = fp.CONVERT_DATA / "site_source_co2_conversions-ce.json"
                 else:
-                    self.elec_price_co2 = fp.CONVERT_DATA / "site_source_co2_conversions.json"
+                    self.elec_price_co2 = fp.CONVERT_DATA / f"site_source_co2_conversions{hdc}.json"
         self.elec_conv_fracs = fp.CONVERT_DATA / "hp_convert_rates.json"
 
 
@@ -3800,7 +3800,7 @@ class Engine(object):
                             tech_search = [x for x in [
                                 "furnace (NG)", "boiler (NG)",
                                 "furnace (distillate)", "boiler (distillate)",
-                                "furnace (LPG)", "furnace (kerosene)",
+                                "furnace (LPG)",
                                 "stove (wood)"] if x
                                 in m.technology["primary"]]
                             # If the microsegment is non-cooling (e.g.,
