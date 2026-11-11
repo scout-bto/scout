@@ -4,12 +4,13 @@
 
 import os
 import copy
-from scout.ecm_prep import Measure
+import types
+from scout.ecm_prep import Measure, incentive_restricted
 from scout.ecm_prep_vars import UsefulVars, UsefulInputFiles
 from tests.ecm_prep_test.common import dict_check
 
 
-def run_incentive_case(market_test_data, incentives, aeo_ashp=None):
+def run_incentive_case(market_test_data, incentives, aeo_ashp=None, restriction=None):
     """Run a measure through 'fill_mkts' with the given state incentive rows.
 
     Args:
@@ -17,6 +18,7 @@ def run_incentive_case(market_test_data, incentives, aeo_ashp=None):
         incentives (list): Exploded state incentive rows (see UsefulVars.import_state_data).
         aeo_ashp (dict): Optional existing (AEO-based) heating ASHP incentive by year, which
             incentive modifications of type 'extend' build on, e.g., {"2009": 1000, "2010": 0}.
+        restriction (str): Optional setting for the 'incentive_restrictions' option.
 
     Returns:
         Master microsegment stock costs (after incentives) for 'Max adoption potential'.
@@ -268,6 +270,8 @@ def run_incentive_case(market_test_data, incentives, aeo_ashp=None):
                 "incentives": {"by performance tier": tiers, "performance units": "COP"}}
         # Existing incentives are only used when the restrictions option is not "all"
         opts.incentive_restrictions = "no ira"
+    if restriction is not None:
+        opts.incentive_restrictions = restriction
 
     # Prepare sample measure data
     measure = Measure(os.getcwd(), hv, None, base_state_meas.usr_opts, **meas_def)
@@ -405,6 +409,97 @@ def test_incentive_extension_increase(market_test_data):
     for increase, expected in [(0, 15280), (50, 14590), (100, 13900)]:
         row = incentive_row("a", "non-federal", False, False, mod="extend", increase=increase)
         assert efficient_cost_2010(market_test_data, [row], aeo_ashp=existing) == expected
+
+
+def test_incentive_restrictions_on_user_rows(market_test_data):
+    """Test that the 'incentive_restrictions' option removes the matching user incentive rows."""
+    # Federal and state rows for an electric heat pump (savings of 1380 and 4830 on 16660)
+    rows = [incentive_row("a", "federal", 2000, 30),
+            incentive_row("b", "non-federal", float("nan"), 50)]
+    for restriction, expected in [
+            (None, 16660 - 1380 - 4830),
+            ("all", 16660),
+            ("no federal", 16660 - 4830),
+            ("no sub-federal", 16660 - 1380),
+            ("no electric", 16660),
+            ("no fossil", 16660 - 1380 - 4830),
+            ("no federal electric", 16660 - 4830),
+            ("no sub-federal electric", 16660 - 1380),
+            ("no sub-federal fossil", 16660 - 1380 - 4830),
+            ("no ira", 16660 - 1380 - 4830)]:
+        assert efficient_cost_2010(
+            market_test_data, rows, restriction=restriction) == expected, restriction
+
+
+def _apply(restriction, aeo, rows, fuel="electricity", tech="ASHP", units="COP", perf=3.0):
+    """Baseline cost after 'apply_incentives' for a $5000 technology in one year (2025).
+
+    Args:
+        restriction (str): Setting for the 'incentive_restrictions' option.
+        aeo (float): AEO incentive for the segment (no federal/non-federal breakout), or None.
+        rows (list): (scope, rebate, modification) of each user incentive row.
+        fuel, tech, units, perf: Fuel, technology, performance units, and performance level.
+    """
+    hv = types.SimpleNamespace(aeo_years=["2025"], inverted_relperf_list=[])
+    meas = types.SimpleNamespace(handyvars=hv, name="test")
+    opts = types.SimpleNamespace(incentive_restrictions=restriction, verbose=False)
+    mod_rows = [["CA", "single family home", "existing", "heating", tech, fuel, fuel, "no", mod,
+                 scope, "p" + str(i), False, 0, 0.9, units, False, rebate, "$/unit", False,
+                 False, 1] for i, (scope, rebate, mod) in enumerate(rows)]
+    mskeys = ("primary", "CA", "single family home", fuel, "heating", "supply", tech, "existing")
+    _, cost_base, _ = Measure.apply_incentives(
+        meas, {"2025": [[0, aeo]]} if aeo else "", "", 1, 1, 1, 1, {"2025": perf},
+        {"2025": perf}, units, units, {"2025": 5000}, {"2025": 5000}, "$/unit", mod_rows, [],
+        mskeys, None, False, opts)
+    return cost_base["2025"]
+
+
+def test_incentive_restrictions_on_aeo_incentives():
+    """Test restrictions on AEO incentives, which have no federal/non-federal breakout."""
+    # Combined AEO incentives are treated as federal: removed by 'no federal' but kept by
+    # 'no sub-federal'; fuel restrictions apply by the segment fuel
+    for restriction, expected in [
+            (None, 4800), ("no federal", 5000), ("no sub-federal", 4800),
+            ("no electric", 5000), ("no fossil", 4800), ("no federal electric", 5000),
+            ("no sub-federal electric", 4800)]:
+        assert _apply(restriction, 200, []) == expected, restriction
+    # Fossil segment
+    for restriction, expected in [
+            ("no fossil", 5000), ("no electric", 4800), ("no federal fossil", 5000),
+            ("no sub-federal fossil", 4800), ("no sub-fed fossil", 4800)]:
+        assert _apply(restriction, 200, [], fuel="natural gas", tech="furnace (NG)",
+                      units="AFUE", perf=0.95) == expected, restriction
+
+
+def test_incentive_restrictions_by_row_scope_and_fuel():
+    """Test that user rows are removed by their own scope and fuel, and removals are kept."""
+    nan = float("nan")
+    fed, state = ("federal", 1000, "replace"), ("non-federal", 500, "replace")
+    # Rows replace the AEO incentive, so only the rows count when none are removed
+    assert _apply(None, 200, [fed, state]) == 3500
+    assert _apply("no federal", 200, [fed, state]) == 4500
+    assert _apply("no sub-federal", 200, [fed, state]) == 4000
+    # Fossil rows are removed by fossil restrictions only
+    gas = dict(fuel="natural gas", tech="furnace (NG)", units="AFUE", perf=0.95)
+    assert _apply("no electric", None, [fed, state], **gas) == 3500
+    assert _apply("no sub-fed fossil", None, [fed, state], **gas) == 4000
+    assert _apply("no federal fossil", None, [fed, state], **gas) == 4500
+    # A row with scope 'all' counts as both federal and non-federal
+    both = ("all", 1000, "replace")
+    assert _apply(None, None, [both]) == 4000
+    assert _apply("no federal", None, [both]) == 5000
+    assert _apply("no sub-federal", None, [both]) == 5000
+    # Removal rows add no incentive, so restrictions never drop them (AEO incentive stays removed)
+    assert _apply("no sub-federal", 200, [("non-federal", nan, "remove")]) == 5000
+
+
+def test_incentive_restricted():
+    """Test which incentives each 'incentive_restrictions' setting removes."""
+    for restriction in [None, "all", "no ira"]:
+        assert not any(incentive_restricted(restriction, s, e) for s in [
+            "federal", "non-federal", "all"] for e in [True, False])
+    assert incentive_restricted("no sub-fed fossil", "non-federal", False)
+    assert not incentive_restricted("no sub-fed fossil", "federal", False)
 
 
 def test_elec_upgrade_costs(market_test_data):

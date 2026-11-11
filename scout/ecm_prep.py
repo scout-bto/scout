@@ -53,6 +53,34 @@ def select_rate_tiers(alt_rates, base_cost):
     return [rt for rt in selected if rt[-1] == 1] or selected
 
 
+def incentive_restricted(restriction, scope, electric):
+    """Check whether a user incentive restriction removes an incentive.
+
+    Covers the restrictions that depend on incentive scope and fuel; 'all' and 'no ira' are
+    handled where incentives are pulled and where IRA-tagged rows are valued, respectively.
+
+    Args:
+        restriction (str or None): User setting for incentive_restrictions.
+        scope (str): Incentive scope, 'federal', 'non-federal', or 'all' (counts as both).
+        electric (bool): True if the incentive applies to an electric technology.
+
+    Returns:
+        True if the restriction removes the incentive.
+    """
+    fed, nonfed = scope in ("federal", "all"), scope in ("non-federal", "all")
+    return {
+        "no federal": fed,
+        "no sub-federal": nonfed,
+        "no electric": electric,
+        "no fossil": not electric,
+        "no federal electric": fed and electric,
+        "no federal fossil": fed and not electric,
+        "no sub-federal electric": nonfed and electric,
+        "no sub-federal fossil": nonfed and not electric,
+        # Shorter name allowed by the config schema
+        "no sub-fed fossil": nonfed and not electric}.get(restriction, False)
+
+
 def _fast_copy_measure(m):
     """Fast copy of a Measure (or MeasurePackage) object.
 
@@ -3191,9 +3219,10 @@ class Measure(object):
                                     "" for n in range(4))
 
                         # If user has input incentive modifications, pull the relevant ones,
-                        # else set to empty list
+                        # else set to empty list (also when the user has removed all incentives)
                         if self.handyvars.incentives is not None and \
-                                len(self.handyvars.incentives) != 0:
+                                len(self.handyvars.incentives) != 0 and \
+                                opts.incentive_restrictions != "all":
                             # Index of incentives rows keyed by (region, building type,
                             # vintage), built once per run and cached on UsefulVars (see
                             # UsefulVars.incentives_by_key); avoids a linear scan of all
@@ -5382,43 +5411,26 @@ class Measure(object):
             seg_loop = cost_incentives.keys()
         else:
             seg_loop = ["all"]
-        # Check for user suppression of federal or sub-federal incentives across all segment types;
-        # if suppressed, do not loop through that type of incentive for segment. Assume that
-        # incentives are suppressed when there is no distinction between federal/non-federal ('all')
-        if opts.incentive_restrictions == "no federal":
-            seg_loop = [x for x in seg_loop if x not in ["federal", "all"]]
-        elif opts.incentive_restrictions == "no sub-federal":
-            seg_loop = [x for x in seg_loop if x not in ["non-federal", "all"]]
+        # Federal or sub-federal restrictions are applied below, to AEO incentives by the scope
+        # of the current branch and to user incentive rows by their 'scope' column, so that, for
+        # example, removing federal incentives keeps sub-federal incentive rows
 
         # Loop through applicable fed/sub-fed branching of incentives and adjust costs accordingly
         for seg in seg_loop:
-            # Check for suppression of base or measure incentives for certain segment fuel types;
-            # these can occur at the federal level, state level, or both levels. Check for both
-            # baseline and like-for-like measure segments and (if applicable) segments that the
-            # measure is switching to
+            # Check for suppression of base or measure AEO incentives by scope and segment fuel.
+            # AEO incentives without a federal/non-federal breakout ('all') combine both, and are
+            # treated as federal, since AEO incentives are mostly federal tax credits. Check for
+            # both baseline and like-for-like measure segments and (if applicable) segments that
+            # the measure is switching to
             if cost_incentives_meas:
                 keys_to_check = [mskeys, mskeys_swtch]  # Measure switches from baseline segment
             else:
                 keys_to_check = [mskeys, mskeys]  # Measure does not switch from base segment
+            aeo_scope = "non-federal" if seg == "non-federal" else "federal"
             suppress_base_incentive, suppress_measure_incentive = [
-                (("electricity" in keys and ((
-                    # Case 1: electric segment, fed. $, user has suppressed elec. fed. $
-                    seg in ["federal", "all"] and
-                    opts.incentive_restrictions == "no federal electric") or
-                    # Case 2: electric segment, non-fed. $, user suppressed non-fed elec. $
-                    (seg in ["non-federal", "all"] and
-                     opts.incentive_restrictions == "no sub-federal electric") or
-                    # Case 3: electric segment, all electric $ suppressed
-                    opts.incentive_restrictions == "no electric")) or
-                 ("electricity" not in keys and (
-                    # Case 4: non-elec. segment, fed. $, user suppressed fed. non-elec. $
-                    (seg in ["federal", "all"] and
-                     opts.incentive_restrictions == "no federal fossil") or (
-                     # Case 5: non-elec. segment, non-fed. $, user suppressed non-fed. non-elec. $
-                     seg in ["non-federal", "all"] and
-                     opts.incentive_restrictions == "no sub-federal fossil")
-                    # Case 6: non-elec. segment, all non-elec. $ suppressed
-                    or opts.incentive_restrictions == "no fossil"))) for keys in keys_to_check]
+                incentive_restricted(
+                    opts.incentive_restrictions, aeo_scope, "electricity" in keys)
+                for keys in keys_to_check]
             # Initialize tracking of annual incentive amounts
             base_val_yrs_max, meas_val_yrs_max = ([] for n in range(2))
             # Loop through all years and find/apply incentives
@@ -5488,16 +5500,23 @@ class Measure(object):
                 base_val_yr_max, meas_val_yr_max = [base_val_yr_max_init, meas_val_yr_max_init]
 
                 # Set shorthands for incentives modifications that remove, extend, or replace
-                # AEO-based incentive levels for the current applicable base and switched to msegs
+                # AEO-based incentive levels for the current applicable base and switched to msegs.
+                # Extensions and replacements are incentives in their own right, so drop those
+                # that the user's restrictions remove, based on the row's scope and the fuel of the
+                # technology receiving the incentive (removals are kept, as they add no incentive)
                 rmv_base, ext_base, rpl_base = [[
                     x for x in incent_mod_base if (
                         y in x[8] and (seg == "all" or x[9] == seg) and
+                        (y == "remove" or not incentive_restricted(
+                            opts.incentive_restrictions, x[9], x[5] == "electricity")) and
                         ((not x[-3] or x[-3] <= yr_int) and
                          (not x[-2] or x[-2] >= yr_int)))] for y in [
                     "remove", "extend", "replace"]]
                 rmv_swtch, ext_swtch, rpl_swtch = [[
                     x for x in incent_mod_swtch if (
                         y in x[8] and (seg == "all" or x[9] == seg) and
+                        (y == "remove" or not incentive_restricted(
+                            opts.incentive_restrictions, x[9], x[5] == "electricity")) and
                         ((not x[-3] or x[-3] <= yr_int) and
                          (not x[-2] or x[-2] >= yr_int)))] for y in [
                     "remove", "extend", "replace"]]
