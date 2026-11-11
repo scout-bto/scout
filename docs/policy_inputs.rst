@@ -17,6 +17,9 @@ Selecting incentives
 
 ``--incentive_levels`` selects which rows of the file to use, based on the ``scenario`` column.
 
+.. note::
+   Scout reads the file only when ``--alt_regions`` is ``State``. For other regions, ``--incentive_levels`` has no effect and only the AEO incentives are used.
+
 .. list-table:: Valid options for ``--incentive_levels``.
    :header-rows: 1
    :widths: 30 70
@@ -51,6 +54,14 @@ When scenario rows are layered on ``reference`` rows, a scenario row is dropped 
 .. note::
    The "no sub-fed fossil" option currently has no effect, because ``ecm_prep.py`` checks for the name "no sub-federal fossil" instead.
 
+.. note::
+   Some restrictions currently work differently than described above. The baseline cost data do not split AEO incentives into federal and non-federal parts, so ``ecm_prep.py`` handles every segment as a single combined incentive. As a result:
+
+   * "all" removes AEO incentives, but rows in ``incentives.csv`` still apply.
+   * "no federal" and "no sub-federal" each remove all incentives, both AEO incentives and every row in ``incentives.csv``, whatever the row's ``scope``.
+   * "no electric", "no fossil", and the four combined options remove AEO incentives for the selected segments, but ``replace`` rows in ``incentives.csv`` still apply. They also stop ``extend`` rows from applying, since there is no AEO incentive left to extend. The federal and sub-federal versions of each option have the same effect, for example "no federal electric" and "no sub-federal electric" both act like "no electric".
+   * "no ira" works as described.
+
 Which rows apply
 ~~~~~~~~~~~~~~~~
 
@@ -61,6 +72,11 @@ A row applies to a segment in a given year when all of the following are true:
 * **Fuel:** ``base fuel`` matches the fuel being replaced, and ``fuel type(s)`` matches the fuel of the technology receiving the incentive.
 * **Backup:** for measures that switch fuels, ``base fuel backup`` is compatible with the measure, as shown below.
 * **Performance:** the technology meets ``performance level``, in ``performance units`` that match the technology's units.
+
+Unit mismatches are handled as follows:
+
+* If ``performance units`` do not match the technology's units, the row gives no incentive. Scout reports this only as a warning when ``--verbose`` is set, so check the units of new rows carefully.
+* If ``rebate units`` do not match the units of the segment's cost data, Scout stops with an error.
 
 .. table:: Measures that can receive an incentive, by ``base fuel backup`` value.
 
@@ -113,22 +129,30 @@ Each row of the file represents one program for one set of states, building type
      - Scenario that the row belongs to.
    * - ``description``
      - Program description and source.
-   * - ``state(s)``, ``building type(s)``, ``building vintage(s)``, ``end use(s)``, ``tech(s)``
-     - Segments that the row applies to.
+   * - ``state(s)``
+     - States that the row applies to, separated by commas. ``all`` means every state in the run, and ``USCA`` means the 21 U.S. Climate Alliance states that Scout models (all but HI).
+   * - ``building type(s)``
+     - Building types, separated by commas. ``all``, ``all residential``, and ``all commercial`` are expanded to the matching Scout building types. ``unspecified`` is ignored.
+   * - ``building vintage(s)``
+     - ``new``, ``existing``, or ``all``.
+   * - ``end use(s)``
+     - End uses, separated by commas. ``all`` matches any end use, and ``all fossil`` means heating, water heating, cooking, drying, and other.
+   * - ``tech(s)``
+     - Technologies, separated by commas. ``all`` matches any technology.
    * - ``fuel type(s)``
-     - Fuel of the technology receiving the incentive.
+     - Fuel of the technology receiving the incentive. ``all`` means all four Scout fuels, and ``all fossil`` means natural gas, distillate, and other fuel.
    * - ``base fuel``
-     - Fuel being replaced: one or more specific fuels separated by commas (for example, ``distillate, other fuel``), ``electricity``, ``all``, or ``all fossil``, which limits the row to fuel switching.
+     - Fuel being replaced: one or more specific fuels separated by commas (for example, ``distillate, other fuel``), ``electricity``, ``all``, or ``all fossil``, which limits the row to fuel switching. If blank, the value of ``fuel type(s)`` is used.
    * - ``base fuel backup``
      - Whether the existing system may or must stay as backup: ``no``, ``yes``, or ``required``.
    * - ``modification``
      - ``replace``, ``extend``, or ``remove``.
    * - ``scope``
-     - ``federal``, ``non-federal``, or ``all``.
+     - ``federal``, ``non-federal``, or ``all``. A blank or other value is read as ``all``. The column currently has no effect; see the notes on ``--incentive_restrictions`` above.
    * - ``ira``
      - ``yes`` if funded by the IRA, otherwise blank.
    * - ``increase pct``
-     - Percentage increase to apply to an ``extend`` row.
+     - Percentage increase to apply to an ``extend`` row. If blank, 0.
    * - ``performance level``, ``performance units``
      - Minimum performance needed to qualify, or the maximum for units where a lower value is better.
    * - ``credit pct``
@@ -136,9 +160,9 @@ Each row of the file represents one program for one set of states, building type
    * - ``rebate amount``, ``rebate units``
      - Rebate value and units, which must match the units of the segment's cost data. ``$/home`` is treated as ``$/unit``.
    * - ``start year``, ``end year``
-     - First and last years that the row applies.
+     - First and last years that the row applies. If blank, the row has no start or end limit.
    * - ``applicable fraction``, ``fraction notes``
-     - Share of the state's stock or energy use that the program reaches, and the source of that share.
+     - Share of the state's stock or energy use that the program reaches, and the source of that share. A blank fraction is read as 1.
    * - ``program id``
      - Required identifier for the program, typically in the form ``<state>-<program website domain>-<res|com>``, with ``-HEAR`` added for HEAR rows. Rows created for the non-reference scenarios use ``all-bss-25c-res`` for the federal tax credit and ``<state>-bss-ny-<hear|util>-anchor-<res|com>`` for rows based on New York programs. Alternatives within one program must share an id, and different programs must not. A missing column or blank value raises an error.
 
