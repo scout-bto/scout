@@ -47,20 +47,14 @@ When scenario rows are layered on ``reference`` rows, a scenario row is dropped 
 
 * "all" removes all incentives.
 * "no ira" removes rows tagged as funded by the Inflation Reduction Act (IRA). These are the Home Electrification and Appliance Rebates (HEAR) rows and the federal tax credit rows in the non-reference scenarios.
-* "no federal" and "no sub-federal" remove federal and non-federal incentives.
-* "no electric" and "no fossil" remove incentives for electric and non-electric segments.
-* "no federal electric", "no federal fossil", "no sub-federal electric", and "no sub-fed fossil" combine these two restrictions.
+* "no federal" and "no sub-federal" remove federal and non-federal incentives. Rows in the file are removed based on their ``scope``, and rows with a ``scope`` of ``all`` count as both.
+* "no electric" and "no fossil" remove incentives for electric and non-electric technologies. Rows in the file are removed based on ``fuel type(s)``, the fuel of the technology receiving the incentive.
+* "no federal electric", "no federal fossil", "no sub-federal electric", and "no sub-federal fossil" (or "no sub-fed fossil") combine these two restrictions.
+
+Restrictions never remove rows with a ``modification`` of ``remove``, since these rows add no incentive.
 
 .. note::
-   The "no sub-fed fossil" option currently has no effect, because ``ecm_prep.py`` checks for the name "no sub-federal fossil" instead.
-
-.. note::
-   Some restrictions currently work differently than described above. The baseline cost data do not split AEO incentives into federal and non-federal parts, so ``ecm_prep.py`` handles every segment as a single combined incentive. As a result:
-
-   * "all" removes AEO incentives, but rows in ``incentives.csv`` still apply.
-   * "no federal" and "no sub-federal" each remove all incentives, both AEO incentives and every row in ``incentives.csv``, whatever the row's ``scope``.
-   * "no electric", "no fossil", and the four combined options remove AEO incentives for the selected segments, but ``replace`` rows in ``incentives.csv`` still apply. They also stop ``extend`` rows from applying, since there is no AEO incentive left to extend. The federal and sub-federal versions of each option have the same effect, for example "no federal electric" and "no sub-federal electric" both act like "no electric".
-   * "no ira" works as described.
+   The baseline cost data combine federal and non-federal AEO incentives into a single value, which Scout treats as federal. "no federal" removes it, and "no sub-federal" keeps it.
 
 Which rows apply
 ~~~~~~~~~~~~~~~~
@@ -148,7 +142,7 @@ Each row of the file represents one program for one set of states, building type
    * - ``modification``
      - ``replace``, ``extend``, or ``remove``.
    * - ``scope``
-     - ``federal``, ``non-federal``, or ``all``. A blank or other value is read as ``all``. The column currently has no effect; see the notes on ``--incentive_restrictions`` above.
+     - ``federal``, ``non-federal``, or ``all``. A blank or other value is read as ``all``. Used by the federal and sub-federal options of ``--incentive_restrictions``, where ``all`` counts as both.
    * - ``ira``
      - ``yes`` if funded by the IRA, otherwise blank.
    * - ``increase pct``
