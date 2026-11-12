@@ -89,6 +89,10 @@ Selections for the applicable baseline market parameters are used in :ref:`step 
 
       * Optionally, a user may specify one or more ECM features that apply efficiency impacts differently according to time of day and season, using hourly baseline energy load shapes, electricity costs, and average |CO2| emissions factors.
 
+   * Will the ECM be combined with other ECMs in a package?
+
+      * Individual ECMs may be combined into :ref:`package ECMs <analysis-packages>` that capture interactions between HVAC equipment and envelope and/or controls improvements, or between lighting equipment and controls improvements.
+
 .. _analysis-step-2:
 
 Step 2: Finalize ECM definition
@@ -177,6 +181,22 @@ Calculating total efficient energy, |CO2|, and cost (uncompeted)
 
    * While the total baseline and efficient ECM energy, |CO2|, and operating costs calculated in this step account for stocks-and-flows, they do not account for competition across multiple ECMs for the same baseline market. ECM competition is handled in :ref:`step 3 <analysis-step-3>`.
 
+.. _analysis-packages:
+
+Combining ECMs into packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   * Package ECMs combine individual ECMs to represent the interactions among them; see :ref:`package-ecms` for how packages are defined and which types of ECMs can be packaged.
+   * The uncompeted baseline and efficient energy, |CO2|, and operating costs of each contributing ECM are first calculated as described above and then merged into a single package, as follows:
+
+      * where contributing ECMs apply to the same baseline market segment (i.e., the same region, building type and vintage, fuel type, end use, and technology), the overlap is removed so that the baseline market is counted once and savings are not double counted [#]_;
+      * where HVAC equipment and envelope ECMs both affect heating or cooling energy use in the same region, building type and vintage, fuel type, and end use, the equipment ECM's energy, |CO2|, and operating costs are further adjusted to reflect the combined performance of the equipment and envelope improvements, rather than the sum of their separate savings [#]_; and
+      * any user-specified benefits from packaging are applied: an ``energy savings increase`` reduces the package's efficient-case energy use, |CO2| emissions, and associated costs by the given fraction, and a ``cost reduction`` reduces the package's installed cost by the given fraction.
+
+   * The package's market entry year is the earliest, and its market exit year the latest, across its contributing equipment ECMs; its lifetime is the average lifetime of those ECMs.
+   * By default, the installed cost of an HVAC equipment and envelope package includes only the HVAC equipment costs. With the ``--pkg_env_costs`` :ref:`option <tuts-3-cmd-opts>`, envelope costs are added (for commercial buildings, after converting them from units of floor area to the heating or cooling service demand units of the equipment costs). Its "include HVAC" setting also keeps the contributing equipment-only ECMs in the analysis to compete with the packages; its "exclude HVAC" setting does not.
+   * With the ``--pkg_env_sep`` :ref:`option <tuts-3-cmd-opts>`, each HVAC equipment and envelope package is also prepared as a "(CF)" counterfactual in which the contributing HVAC equipment ECMs are held at baseline performance and cost, so that the impacts of the envelope portion of the package can be isolated.
+
 .. Time sensitive adjustment of total energy, |CO2|, and cost
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -238,6 +258,7 @@ Competing ECMs and updating savings
 * For example, R-5, R-7, or R-10 window ECMs could each replace the same "business-as-usual" window technology. The initial savings impacts calculated for each of these ECMs will be based on the entire applicable baseline market. Those savings impacts must be scaled by the share of the baseline window market each ECM is modeled as capturing to avoid double counting of savings. Assuming the R-7 window is most cost effective and R-10 is least cost effective, the market shares might be R-5, 35%; R-7, 45%; and R-10, 20%.
 * This use of market shares to reflect ECM competition ensures that competing ECMs with similar levels of cost effectiveness will have similar savings impacts after adjusting for competition.
 * In general, ECM competition calculations in Scout weigh an ECM's annualized capital and operating costs against the capital and operating costs for competing ECMs to determine each ECM's competed market share. However, the specific calculation steps differ somewhat between the residential and commercial building sectors.
+* :ref:`Package ECMs <analysis-packages>` compete in the same way as individual ECMs. The individual ECMs that contribute to a package do not compete separately, with the exception of equipment-only ECMs retained using the "include HVAC" setting of the ``--pkg_env_costs`` option.
 * Once ECM market shares are determined, uncompeted ECM savings impact estimates are multiplied by these market shares to arrive at competed ECM energy savings, avoided |CO2| emissions, and operating cost savings impacts. 
 * For heating and cooling ECMs, a post-competition calculation is needed to ensure that total supply-side heating/cooling energy use (e.g., as consumed by a heat pump, or furnace) equals total demand-side heating/cooling energy use (e.g., that attributable to heat transfer through the envelope and other thermal load components). 
 
@@ -266,6 +287,8 @@ ECM-specific results from the analysis of the portfolio of ECMs
 .. [#] EIA provides detailed documentation on the assumptions of the National Energy Modeling System (NEMS) it uses to project residential__ and commercial__ sector energy use out to 2050 for the AEO.
 .. [#] Data derived from Table A.5 (annual, unrounded social cost of |CO2|) of the EPA 2023 report, assuming a 2% near-term discount rate.
 .. [#] This is the default behavior. Users may optionally retain some of the available market portion with "business-as-usual" technology by automatically adding ECMs with typical efficiency to compete with user-defined ECMs (``--add_typ_eff``) or by applying exogenous rates of conversion to heat pumps and other electric equipment (``--exog_hp_rate_scenario``); see the :ref:`ecm_prep.py options <tuts-3-cmd-opts>`.
+.. [#] The segment's baseline is split among the ECMs in proportion to their savings, and each ECM's efficient-case results are reduced by the other ECMs' savings, scaled by its baseline share and its own relative performance on the stock it captures. E.g., for a 100-unit baseline, a heat pump ECM (A) that saves 30% on the 50% of the stock it captures saves 15 units, and a controls ECM (B) for the same heat pumps that saves 10% on the 80% of the stock it captures saves 8 units. A receives 15/23 = 65% of the baseline and B receives 35%. A's efficient energy use is 85 × 0.65 − 8 × 0.65 × (1 − 0.3) = 51.8 units and B's is 92 × 0.35 − 15 × 0.35 × (1 − 0.1) = 27.3 units, where 85 and 92 are each ECM's efficient energy use on its own. The package's efficient energy use is thus 79.1 units and its savings are 20.9 units, rather than the 23 units from adding the two ECMs' separate savings.
+.. [#] The equipment ECM's efficient-case results are multiplied by one minus the envelope ECMs' fractional savings of heating or cooling energy, so the savings combine multiplicatively: e.g., 40% equipment savings and a 20% envelope load reduction yield 1 − (0.6 × 0.8) = 52% package savings, not 60%.
 .. [#] We use a default `real discount rate`_ of 7%, based on the Office of Management and Budget's `Guidelines and Discount Rates for Benefit-Cost Analysis of Federal Programs`_, p. 9 ("Base-Case Analysis"). 
 .. [#] End use categories for the markets and savings are not the same as the AEO end uses. The reported categories are: Heating (Equip.), Cooling (Equip.), Heating (Env.), Cooling (Env.), Ventilation, Lighting, Water Heating, Refrigeration, Cooking, Computers and Electronics, and Other. Heating and cooling are split between equipment (e.g., heat pumps, furnaces) and envelope (e.g., windows, insulation) impacts; "Other" includes drying, fans and pumps, ceiling fans, and miscellaneous electric loads.
 .. .. [#] The vintages are: pre-1980, 1980-2004, `ASHRAE 90.1-2004`_, `ASHRAE 90.1-2010`_, and `ASHRAE 90.1-2013`_.
