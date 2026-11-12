@@ -42,7 +42,7 @@ How scenarios work
 
 Every row of each file has a ``scenario`` value, and the option for that file selects which scenario's rows to use.
 
-* ``reference`` rows represent currently enacted policies.
+* ``reference`` rows represent currently enacted policies. For incentives, they also include paused or fully reserved programs that are expected to resume, such as some HEAR programs.
 * Every other scenario is built on top of the reference case. Selecting it uses the ``reference`` rows plus that scenario's own rows.
 * ``null`` turns the input off. For incentives, ``aeo`` (the default) plays this role and keeps the AEO incentives with no modifications.
 
@@ -86,7 +86,7 @@ The input files include three scenarios built for the Building Sector Scenarios 
 * ``aggressive-electric`` (BSS Core-3): strong electrification policies, with no efficiency policies beyond the reference case.
 * ``aggressive`` (BSS Core-4): strong additional policies for both efficiency and electrification.
 
-New policies start in two waves. First-mover states that the reference case does not already cover adopt them in 2030, and the remaining U.S. Climate Alliance states follow in 2035. BPS fossil fuel reduction targets are the exception, as noted below.
+New policies start in two waves. First-mover states adopt them in 2030, and the remaining U.S. Climate Alliance states follow in 2035. Where a state's reference policy covers only part of the state or only one of the targets, the scenario raises it to the full statewide target. Incentives have their own timing, described in :ref:`policy-incentive-scenarios`.
 
 .. list-table:: What each BSS scenario adds to the reference case, by input.
    :header-rows: 1
@@ -98,7 +98,7 @@ New policies start in two waves. First-mover states that the reference case does
      - ``aggressive``
    * - Appliance regulations
      - Nothing (no rows)
-     - Emissions limits based on California Air Resources Board (CARB) rules
+     - Emissions limits for residential heating and water heating, based on California Air Resources Board (CARB) rules
      - Same as ``aggressive-electric``
    * - Codes
      - Stretch code with 20% energy savings over the latest base code, with no fossil fuel requirement
@@ -106,15 +106,15 @@ New policies start in two waves. First-mover states that the reference case does
      - Both the efficiency and the fossil fuel targets
    * - BPS
      - 20% EUI reduction target, with no fossil fuel requirement
-     - Onsite fossil fuel reduction target of 20%, rising to 100%: 2035 to 2045 in first-mover states, 2040 to 2050 in the others. No efficiency requirement.
+     - Onsite fossil fuel reduction target of 20%, rising to 100% ten years later: 2030 to 2040 in first-mover states, 2035 to 2045 in the others. No efficiency requirement.
      - Both the EUI and the fossil fuel targets
    * - Incentives
-     - State-wide programs extended to 2050, except those that require fuel switching with no backup. New programs fill gaps from 2035. Federal 25C-type tax credit from 2030.
-     - Extended and new programs require switching from fossil fuels, with no backup, and exclude switching from resistance equipment. 25C-type credit for electric equipment only.
-     - State-wide programs extended to 2050, with HEAR backup requirements made optional. New programs fill gaps from 2035. 25C-type credit from 2030.
+     - State-wide heating and cooling programs extended to 2050, except those that require fuel switching with no backup. Programs based on Mass Save fill gaps from 2035. Federal 25C-type tax credit for 2030-2040.
+     - Extended and Mass Save-based programs require switching from fossil fuels, with no backup. No incentives for replacing electric equipment, envelope, or air conditioning. 25C-type credit for 2030-2040, for heat pumps and heat pump water heaters only.
+     - State-wide programs extended to 2050, with most backup requirements made optional. Programs based on Mass Save fill gaps from 2035. 25C-type credit for 2030-2040.
    * - Rates
      - Nothing (no rows)
-     - 20% winter rate reduction for heat pumps, in the states with appliance regulations
+     - 20% winter rate reduction for residential heat pumps, in the states with appliance regulations, for customers not already covered in the reference case
      - Same as ``aggressive-electric``
 
 :ref:`policy-incentive-scenarios` describes the incentive rows in detail.
@@ -283,7 +283,7 @@ Each row of the file represents one program for one set of states, building type
    * - ``applicable fraction``, ``fraction notes``
      - Share of the state's stock or energy use that the program reaches, and the source of that share. A blank fraction is read as 1.
    * - ``program id``
-     - Required identifier for the program, typically in the form ``<state>-<program website domain>-<res|com>``, with ``-HEAR`` added for HEAR rows. Rows created for the non-reference scenarios use ``all-bss-25c-res`` for the federal tax credit and ``<state>-bss-ny-<hear|util>-anchor-<res|com>`` for rows based on New York programs. Alternatives within one program must share an id, and different programs must not. A missing column or blank value raises an error.
+     - Required identifier for the program, typically in the form ``<state>-<program website domain>-<res|com>``, with ``-HEAR`` added for HEAR rows and ``-income`` for a program's income-qualified tier. HEAR programs that have not launched use ``<state>-planned-res-HEAR``. Rows created for the BSS scenarios use ``all-bss-25c-res`` for the federal tax credit and ``<state>-bss-ma-anchor-<res|com>`` for rows based on Mass Save. Alternatives within one program must share an id, and different programs must not. A missing column or blank value raises an error.
 
 Representation conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -291,9 +291,11 @@ Representation conventions
 The current file follows these conventions:
 
 * **Base fuel:** rebates only for replacing electric equipment use ``electricity``, rebates available whatever is replaced use ``all``, and fuel switching rebates use ``all fossil``.
+* **Backup:** heat pump heating rows use ``yes`` unless the program rules out keeping the existing system. Whole-home offers that require removing it use ``no``.
 * **Tiers:** a higher tier has its own row only if its performance threshold differs in Scout's units. If tiers differ only in a metric that Scout does not check, only the lowest tier is included. Otherwise, every unit would receive the top tier.
-* **HEAR rebates:** ``reference`` rows follow DOE Program Notices 26-1 and 26-2. Cooking, drying, and water heating rows use a ``base fuel`` of ``electricity``. Heat pump heating rows use a ``base fuel`` of ``all`` and a ``base fuel backup`` of ``required``, so a measure that switches from a fossil fuel receives the rebate only if it keeps the existing system as backup.
-* **Fully reserved programs:** programs that are fully reserved or waitlisted but are expected to continue remain in the file.
+* **Income-qualified tiers:** a program's income-qualified tier has its own rows, with the full incentive for that group rather than the increase over the market-rate tier. The fraction of the program's market-rate rows is reduced to cover only the remaining households.
+* **HEAR rebates:** ``reference`` rows follow DOE Program Notices 26-1 and 26-2. Each measure has two income-band rows: 100% of installed cost for households below 80% of area median income, and 50% for those from 80% to 150%, each capped at the per-measure limit. Cooking, drying, and water heating rows use a ``base fuel`` of ``electricity``. Heat pump heating rows use a ``base fuel`` of ``all`` and a ``base fuel backup`` of ``required``, so a measure that switches from a fossil fuel receives the rebate only if it keeps the existing system as backup.
+* **Paused and planned programs:** programs that are fully reserved, waitlisted, or paused but are expected to resume remain in the file. States that have not launched HEAR have planned rows for 2027-2031 at the per-measure caps.
 
 .. _policy-incentive-scenarios:
 
@@ -302,14 +304,11 @@ BSS incentive scenarios
 
 The incentive rows of the BSS scenarios (see :ref:`policy-scenarios`) are an example of how a scenario can build on the reference case. The ``aggressive-fuel-neutral``, ``aggressive-electric``, and ``aggressive`` rows are built from the BSS Reference+ Scenario Input Rules, which each of these rows links to in its ``description``. Each scenario adds three kinds of rows to the ``reference`` rows.
 
-**Extended programs.** State-level programs continue to 2050, starting the year after the ``reference`` row ends and using the same ``program id``. State-level programs are all HEAR programs and a set of statewide programs, such as Mass Save, Efficiency Maine, and Energy Trust of Oregon. Utility programs are not extended, so they end when their ``reference`` rows end.
+**Extended programs.** State-wide programs continue to 2050, starting the year after the ``reference`` row ends and using the same ``program id``. A program counts as state-wide if its applicable fraction is 1, if it is a statewide income-qualified program such as HEAR, or if it is one of several sub-state programs that together cover more than 80% of the state. Other utility programs end when their ``reference`` rows end.
 
-**New York-based programs.** Other U.S. Climate Alliance states receive rows for 2035-2050, based on New York's programs, for building types where they have no continuing program of the same kind:
+**Mass Save-based programs.** From 2035 to 2050, segments of U.S. Climate Alliance states with no continuing state-wide program receive rows based on Mass Save's market-rate rebates, with a fraction of 1. For residential heat pumps, these are $7,050 for whole-home installations with no backup, $3,000 for partial-home installations that keep the existing system, and $750 for replacing electric equipment. Income-qualified households receive these rebates in addition to the state's extended HEAR or income-qualified rows. Only Mass Save's market-rate offers are used in other states: Massachusetts keeps its own extended program, including its income-eligible tier, and no HEAR programs are added beyond those in the reference case. These rows use a ``-bss-ma-anchor-`` program id and are not tagged as IRA-funded, so "no ira" does not remove them.
 
-* An income-limited tier uses New York's HEAR levels, with a fraction equal to the state's share in the same income band. These rows use a ``-bss-ny-hear-anchor-`` program id and are not tagged as IRA-funded, so "no ira" does not remove them.
-* A market-rate tier uses New York's utility program levels, weighted by each utility's share of New York's service territory, with a fraction of 1.
-
-**Federal tax credit.** Rows modeled on the 25C credit start in 2030. They are tagged as federal and IRA-funded, and provide 30% of installed cost up to the ``rebate amount``.
+**Federal tax credit.** Rows modeled on the 25C credit apply from 2030 to 2040. They are tagged as federal and IRA-funded, and provide 30% of installed cost up to the ``rebate amount``.
 
 The scenarios differ as follows:
 
@@ -324,15 +323,19 @@ The scenarios differ as follows:
    * - HEAR rows
      - Keep their ``reference`` conditions
      - Require fossil fuel switching with no backup; envelope rows are dropped
-     - Backup changed to ``yes`` (allowed, not required), except on envelope rows
+     - Backup changed from ``required`` to ``yes`` (allowed, not required)
    * - Other extended rows
-     - Keep their conditions, but rows that require fuel switching with no backup are not extended
-     - Require fossil fuel switching with no backup; envelope and air conditioning rows are dropped
-     - Keep their conditions
+     - Heating and cooling only. Keep their conditions, but rows that require fuel switching with no backup are not extended
+     - Require fossil fuel switching with no backup; rows for replacing electric equipment, envelope, and air conditioning are dropped
+     - Keep their conditions, except that programs that require backup on their own, such as Efficiency Vermont and CenterPoint Energy (MN), change to ``yes``. Mass Save's partial-home tier still requires backup
+   * - Mass Save-based rows
+     - Heating only: partial-home heat pumps that keep a fossil backup, heat pumps replacing electric heating, commercial rooftop heat pumps, insulation, and windows. No whole-home tier
+     - Whole-home and partial-home heat pumps, commercial rooftop heat pumps, water heating, cooking, and drying, all requiring fossil fuel switching with no backup. No envelope or electric-replacement rows
+     - All tiers with Mass Save's conditions, including envelope, water heating, cooking, and drying
    * - Federal tax credit
-     - 2030-2040: heat pumps, heat pump water heaters, fossil furnaces, boilers and water heaters, central air conditioning, walls, and windows
-     - 2030-2050: heat pumps and heat pump water heaters only
-     - 2030-2040: same as ``aggressive-fuel-neutral``
+     - Heat pumps, heat pump water heaters, fossil furnaces, boilers and water heaters, central air conditioning, walls, and windows
+     - Heat pumps and heat pump water heaters only, for fossil fuel switching with no backup
+     - Same as ``aggressive-fuel-neutral``
 
 Limitations
 ~~~~~~~~~~~
@@ -340,7 +343,7 @@ Limitations
 The following programs are not represented in the file:
 
 * programs paid per kWh, kW, or MMBtu, custom programs, direct install programs, financing, and tax exemptions, because Scout has no equivalent per-measure value, and
-* commercial programs whose amounts could not be confirmed: DTE, Evergy, Entergy Mississippi, OG&E, PSO, and Efficiency Maine. This applies to the ``reference`` rows. In the non-reference scenarios, the New York-based rows provide commercial incentives in some of these programs' states from 2035.
+* commercial programs whose amounts could not be confirmed: DTE, Evergy, Entergy Mississippi, OG&E, PSO, and Efficiency Maine. This applies to the ``reference`` rows. In the BSS scenarios, the Mass Save-based rows provide commercial incentives in some of these programs' states from 2035.
 
 Updating the file
 ~~~~~~~~~~~~~~~~~
