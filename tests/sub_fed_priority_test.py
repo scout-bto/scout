@@ -461,24 +461,40 @@ def test_real_incentives_aggressive_rows_do_not_stack_on_identical_reference_row
 def test_real_hear_rows_follow_doe_base_fuel_and_backup_rules():
     # HEAR/HEEHR rebates replace existing electric equipment, except heating, where any base fuel
     # qualifies as long as a fossil system that remains is kept only as backup ('required'). The
-    # reference and aggressive-fuel-neutral cases follow these rules; the aggressive case extends
-    # HEAR with backup softened to 'yes' (allowed, not required), and the aggressive-electric case
-    # requires switching from fossil fuel with no backup
-    backup = {"reference": "required", "aggressive-fuel-neutral": "required", "aggressive": "yes"}
+    # reference and the fuel-neutral case carry these rows as they are; the aggressive case softens
+    # the backup of HEAR heat pump extensions to 'yes' (full electrification also qualifies); the
+    # electric case changes them to require switching from fossil fuel with no backup, and does not
+    # extend the electric-base appliance rows
+    fossil = ("natural gas", "distillate", "other fuel")
     for scn in ("reference", "aggressive-fuel-neutral", "aggressive", "aggressive-electric"):
         rows = [r for r in _import(scn)["incentives"] if str(r[10]).endswith("-HEAR")]
         assert rows, scn
         for r in rows:
             assert r[11] is True, (scn, r[10])
-            # Extended rows start after the reference rows they extend (which start by 2025)
-            ext = r[-3] > 2025
-            if scn == "aggressive-electric" and ext:
-                assert r[6] in ("natural gas", "distillate", "other fuel"), (scn, r[10], r[6])
-                assert r[7] == "no", (scn, r[10], r[7])
-            elif r[3] in ("cooking", "drying", "water heating"):
+            if r[3] in ("cooking", "drying", "water heating"):
                 assert r[6] == "electricity", (scn, r[10], r[3], r[6])
             elif r[4] == "ASHP":
-                assert r[7] == backup.get(scn if ext else "reference"), (scn, r[10], r[3], r[7])
+                if scn == "aggressive-electric" and r[7] == "no":
+                    assert r[6] in fossil, (scn, r[10], r[6])
+                elif scn == "aggressive":
+                    assert r[7] in ("required", "yes"), (scn, r[10], r[3], r[7])
+                else:
+                    assert r[7] == "required", (scn, r[10], r[3], r[7])
+        # Only the electric case has no-backup (fuel-switching) HEAR heat pump rows, and only the
+        # aggressive case has backup-optional ('yes') extensions
+        assert any(r[4] == "ASHP" and r[7] == "no" for r in rows) == (scn == "aggressive-electric")
+        assert any(r[4] == "ASHP" and r[7] == "yes" for r in rows) == (scn == "aggressive")
+
+
+def test_real_fuel_neutral_has_no_non_heating_equipment_incentives():
+    # Water heating, cooking and drying equipment cannot retain a fossil backup, so the
+    # fuel-neutral case adds no rows for them (only the reference rows apply to them)
+    import csv
+    with open(fp.SUB_FED / "incentives.csv", encoding="utf-8-sig", newline="") as f:
+        rows = [r for r in csv.DictReader(f) if r["scenario"] == "aggressive-fuel-neutral"]
+    assert rows
+    assert not [r for r in rows if r["scope"] != "federal" and
+                r["end use(s)"].strip() in ("water heating", "cooking", "drying")]
 
 
 def test_rates_better_level_on_fully_covered_population_kept():
