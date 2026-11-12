@@ -3,7 +3,158 @@
 Policy Inputs
 =============
 
-This section describes the policy data that Scout uses to adjust its baseline.
+This section describes the state and local policy data that Scout uses to adjust its baseline, and how to build policy scenarios from them.
+
+Scout represents these policies with five input files in |html-filepath| ./scout/supporting_data/sub_fed/ |html-fp-end|. Each file is turned on by its own option, and Scout reads the files only when ``--alt_regions`` is ``State``.
+
+.. list-table:: Sub-federal policy inputs.
+   :header-rows: 1
+   :widths: 20 30 50
+
+   * - File
+     - Option
+     - Contents
+   * - ``incentives.csv``
+     - ``--incentive_levels``
+     - Rebates and tax credits that reduce installed costs. See :ref:`policy-incentives`.
+   * - ``rates.csv``
+     - ``--low_volume_rate``
+     - Lower volumetric electricity rates, possibly with higher fixed charges.
+   * - ``appl_regs.csv``
+     - ``--state_appl_regs``
+     - Regulations that remove certain appliance choices from the market.
+   * - ``codes.csv``
+     - ``--codes``
+     - Building codes for new construction, beyond the model code.
+   * - ``bps.csv``
+     - ``--bps``
+     - Building performance standards for existing buildings.
+
+In a run configuration file, ``incentive_levels`` sits under ``ecm_prep: incentives:`` and the other four options under ``ecm_prep: sub_fed_policy:``.
+
+.. _policy-scenarios:
+
+Policy scenarios
+----------------
+
+How scenarios work
+~~~~~~~~~~~~~~~~~~
+
+Every row of each file has a ``scenario`` value, and the option for that file selects which scenario's rows to use.
+
+* ``reference`` rows represent currently enacted policies.
+* Every other scenario is built on top of the reference case. Selecting it uses the ``reference`` rows plus that scenario's own rows.
+* ``null`` turns the input off. For incentives, ``aeo`` (the default) plays this role and keeps the AEO incentives with no modifications.
+
+Because the reference case is always included, a scenario's rows only need to describe how the scenario differs from it, such as programs that run for longer, policies in more states, or higher incentive levels. A file with no rows for a scenario gives the same result as ``reference``.
+
+Scenario rows are combined with ``reference`` rows as follows:
+
+* **Incentives and rates:** each scenario row is trimmed to the years and applicable fraction that the ``reference`` rows for the same segment do not already cover. For incentives, a scenario row is dropped for any years in which a ``reference`` row from the same program already provides at least the same incentive, for the same applicable fraction and performance requirements. Rows from different programs, or for different fractions of one program, are kept, since these add to each other.
+* **Appliance regulations, codes, and BPS:** ``reference`` and scenario rows are used together. A scenario row that is identical to a ``reference`` row is dropped.
+
+For every file except ``incentives.csv``, Scout then checks applicable fractions, first for the ``reference`` rows alone and then with the scenario rows added. It stops with an error if fractions below 1 overlap in a segment and year and add up to more than 1.
+
+Creating a scenario
+~~~~~~~~~~~~~~~~~~~
+
+#. **Add rows.** Choose a scenario name and add rows with that name to each file that the scenario changes. Do not copy the ``reference`` rows, since they are already included. The same name can be used in several files, so that one setting describes a consistent policy scenario across them.
+#. **Allow the name.** Scout only accepts option values listed in |html-filepath| ./scout/supporting_data/config_schema.yml |html-fp-end|. Add the name to the ``enum`` list of each option that should accept it, then run ``docs/generate_readable_cfg.py`` to update ``docs/config_readable.yml``.
+#. **Select it.** Set the options to the new name, either on the command line or in a run configuration file:
+
+   .. code-block:: yaml
+
+      ecm_prep:
+        alt_regions: State
+        sub_fed_policy:
+          low_volume_rate: my-scenario
+          state_appl_regs: my-scenario
+          bps: my-scenario
+          codes: my-scenario
+        incentives:
+          incentive_levels: my-scenario
+          incentive_restrictions: null
+
+   Each option is set separately, so a run can mix scenarios, for example ``reference`` codes with ``my-scenario`` incentives. ``--incentive_restrictions`` can further remove incentives from any scenario (see :ref:`policy-incentives`).
+
+Example: BSS scenarios
+~~~~~~~~~~~~~~~~~~~~~~
+
+The input files include three scenarios built for the Building Sector Scenarios (BSS) analysis, following the BSS Reference+ Scenario Input Rules. The ``reference`` case maps to the BSS REF and Sens-3 scenarios. Each of the other three adds to it:
+
+* ``aggressive-fuel-neutral`` (BSS Core-2): strong additional efficiency policies that are fuel neutral, with no electrification policies beyond the reference case.
+* ``aggressive-electric`` (BSS Core-3): strong electrification policies, with no efficiency policies beyond the reference case.
+* ``aggressive`` (BSS Core-4): strong additional policies for both efficiency and electrification.
+
+New policies start in two waves. First-mover states that the reference case does not already cover adopt them in 2030, and the remaining U.S. Climate Alliance states follow in 2035. BPS fossil fuel reduction targets are the exception, as noted below.
+
+.. list-table:: What each BSS scenario adds to the reference case, by input.
+   :header-rows: 1
+   :widths: 16 28 28 28
+
+   * - Input
+     - ``aggressive-fuel-neutral``
+     - ``aggressive-electric``
+     - ``aggressive``
+   * - Appliance regulations
+     - Nothing (no rows)
+     - Emissions limits based on California Air Resources Board (CARB) rules
+     - Same as ``aggressive-electric``
+   * - Codes
+     - Stretch code with 20% energy savings over the latest base code, with no fossil fuel requirement
+     - 100% onsite fossil fuel reduction target, with no efficiency requirement
+     - Both the efficiency and the fossil fuel targets
+   * - BPS
+     - 20% EUI reduction target, with no fossil fuel requirement
+     - Onsite fossil fuel reduction target of 20%, rising to 100%: 2035 to 2045 in first-mover states, 2040 to 2050 in the others. No efficiency requirement.
+     - Both the EUI and the fossil fuel targets
+   * - Incentives
+     - State-wide programs extended to 2050, except those that require fuel switching with no backup. New programs fill gaps from 2035. Federal 25C-type tax credit from 2030.
+     - Extended and new programs require switching from fossil fuels, with no backup, and exclude switching from resistance equipment. 25C-type credit for electric equipment only.
+     - State-wide programs extended to 2050, with HEAR backup requirements made optional. New programs fill gaps from 2035. 25C-type credit from 2030.
+   * - Rates
+     - Nothing (no rows)
+     - 20% winter rate reduction for heat pumps, in the states with appliance regulations
+     - Same as ``aggressive-electric``
+
+:ref:`policy-incentive-scenarios` describes the incentive rows in detail.
+
+The BSS run configuration files in |html-filepath| ./batch/bss-v2/ |html-fp-end| show how these scenarios are combined with the reference case and with other options:
+
+.. list-table:: Policy settings of the BSS run configuration files.
+   :header-rows: 1
+   :widths: 22 26 26 26
+
+   * - File
+     - Rates, appliance regulations, codes, and BPS
+     - ``incentive_levels``
+     - ``incentive_restrictions``
+   * - ``aeo.yml``, ``min_switch.yml``, ``dual_switch.yml``
+     - ``null``
+     - ``aeo``
+     - ``null``
+   * - ``ref.yml``
+     - ``reference``
+     - ``reference``
+     - ``null``
+   * - ``high_switch.yml``
+     - ``reference`` rates; others ``null``
+     - ``reference``
+     - ``null``
+   * - ``fossil.yml``
+     - ``null``
+     - ``reference``
+     - ``no federal electric``
+   * - ``state.yml``
+     - ``aggressive``
+     - ``aggressive state``
+     - ``no federal``
+   * - ``accel.yml``, ``brk.yml``
+     - ``aggressive``
+     - ``aggressive``
+     - ``null``
+
+``state.yml`` uses ``aggressive state``, which has no rows in ``incentives.csv``. Its incentives are therefore the ``reference`` incentives, with federal incentives removed.
 
 .. _policy-incentives:
 
@@ -15,33 +166,7 @@ Scout's baseline includes the equipment incentives represented in the EIA Annual
 Selecting incentives
 ~~~~~~~~~~~~~~~~~~~~
 
-``--incentive_levels`` selects which rows of the file to use, based on the ``scenario`` column.
-
-.. note::
-   Scout reads the file only when ``--alt_regions`` is ``State``. For other regions, ``--incentive_levels`` has no effect and only the AEO incentives are used.
-
-.. list-table:: Valid options for ``--incentive_levels``.
-   :header-rows: 1
-   :widths: 30 70
-
-   * - Option
-     - Incentives used
-   * - aeo (default)
-     - AEO incentives only, with no modifications.
-   * - reference
-     - Rows with the ``reference`` scenario: state, local, and utility programs, including IRA-funded home electrification rebates. These rows include no federal tax credits.
-   * - aggressive-fuel-neutral
-     - ``reference`` rows, plus ``aggressive-fuel-neutral`` rows layered on them.
-   * - aggressive-electric
-     - ``reference`` rows, plus ``aggressive-electric`` rows layered on them.
-   * - aggressive
-     - ``reference`` rows, plus ``aggressive`` rows layered on them.
-   * - aggressive state
-     - ``reference`` rows, plus any rows for this scenario. The file currently has no such rows, so this option gives the same result as ``reference``.
-
-:ref:`policy-incentive-scenarios` describes what the non-reference scenarios add.
-
-When scenario rows are layered on ``reference`` rows, a scenario row is dropped for any years in which a ``reference`` row from the same program already provides at least the same incentive, for the same applicable fraction and performance requirements. Rows from different programs, or for different fractions of one program, are kept.
+``--incentive_levels`` selects a scenario from the file, as described in :ref:`policy-scenarios`. The default, ``aeo``, uses the AEO incentives only. ``reference`` uses state, local, and utility programs, including IRA-funded home electrification rebates, but no federal tax credits. For other regions than ``State``, ``--incentive_levels`` has no effect and only the AEO incentives are used.
 
 ``--incentive_restrictions`` removes selected incentives from the analysis, including those in the AEO baseline. Valid options are:
 
@@ -172,10 +297,10 @@ The current file follows these conventions:
 
 .. _policy-incentive-scenarios:
 
-Non-reference scenarios
+BSS incentive scenarios
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``aggressive-fuel-neutral``, ``aggressive-electric``, and ``aggressive`` rows are built from the BSS Reference+ Scenario Input Rules, which each of these rows links to in its ``description``. Each scenario adds three kinds of rows to the ``reference`` rows.
+The incentive rows of the BSS scenarios (see :ref:`policy-scenarios`) are an example of how a scenario can build on the reference case. The ``aggressive-fuel-neutral``, ``aggressive-electric``, and ``aggressive`` rows are built from the BSS Reference+ Scenario Input Rules, which each of these rows links to in its ``description``. Each scenario adds three kinds of rows to the ``reference`` rows.
 
 **Extended programs.** State-level programs continue to 2050, starting the year after the ``reference`` row ends and using the same ``program id``. State-level programs are all HEAR programs and a set of statewide programs, such as Mass Save, Efficiency Maine, and Energy Trust of Oregon. Utility programs are not extended, so they end when their ``reference`` rows end.
 
