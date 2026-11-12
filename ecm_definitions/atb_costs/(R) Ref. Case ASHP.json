@@ -5,7 +5,7 @@
   "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
-  "ref_case_flag": "yes",
+  "ref_case_flag": true,
   "climate_zone": "all",
   "bldg_type": "all residential",
   "structure_type": "all",
@@ -25,8 +25,17 @@
   },
   "energy_efficiency_units": "COP",
   "energy_efficiency_source": {
-    "notes": "Typical value for performance, converted to Scout units where necessary.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical value for performance, converted to Scout units where necessary.",
+      "BTB typical performance value (2023 Reference scenario), converted to Scout units where necessary (ASHP)"
+    ],
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "installed_cost": {
     "new": 13163.0,
@@ -34,20 +43,26 @@
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Buildings Technology Baseline using Typical performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
-  "product_lifetime": 15.0,
+  "product_lifetime": 15.3,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average of the typical range",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
-      "author": "U.S. Energy Information Admnistration",
-      "year": 2023,
-      "pages": 39,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": null,
@@ -59,6 +74,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-07-27 15:34:29"
+    "timestamp": "2026-11-03 13:10:39"
   }
 }

@@ -51,12 +51,12 @@
   },
   "installed_cost": {
     "oil_boiler": {
-      "new": 22.6,
+      "new": 22.0,
       "existing": 22.6
     },
     "scroll_chiller": {
       "new": 74.34,
-      "existing": 81.28
+      "existing": 81.29
     },
     "reciprocating_chiller": {
       "new": 69.9,
@@ -71,16 +71,28 @@
       "existing": 78.65
     },
     "rooftop_AC": {
-      "new": 112.0,
-      "existing": 113.0
+      "new": 97.18,
+      "existing": 98.02
     },
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "Typical efficiency costs for switched to elec boiler in 2023, normalized by capacity",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "Typical efficiency costs for switched to elec boiler in 2023, normalized by capacity",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 563 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 90 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 1080 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at typical performance, divided by 1140 kBtu/h (oil_boiler, reciprocating_chiller, rooftop_AC, scroll_chiller)"
+    ],
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": true,
@@ -122,6 +134,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

@@ -44,7 +44,7 @@
       "Ref. case cost (no additional cost)",
       "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
     ],
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "source_data": null
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 19.0,
@@ -78,6 +78,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-11-03 13:10:39"
   }
 }

@@ -4,7 +4,7 @@
   "measure_type": "full service",
   "market_entry_year": 2026,
   "market_exit_year": null,
-  "min_eff_elec_flag": "yes",
+  "min_eff_elec_flag": true,
   "ref_case_flag": null,
   "climate_zone": "all",
   "bldg_type": "all residential",
@@ -38,23 +38,29 @@
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Buildings Technology Baseline using Min. performance value to calculate cost. https://docs.google.com/spreadsheets/d/1ysu2kIZFN7CjvWRmEKRgoEc2bL0KuN2w53YBy9ijKKA/edit?gid=0#gid=0",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost (mid estimate, 2023$) at the performance already in the measure",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": false,
     "240V circuit": true
   },
-  "product_lifetime": 15.0,
+  "product_lifetime": 15.1,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average lifetime for typical unit in 2022, rounded down from 15.1 years",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix A",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 65,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": null,
@@ -66,6 +72,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-07-27 15:34:29"
+    "timestamp": "2026-11-03 13:10:39"
   }
 }

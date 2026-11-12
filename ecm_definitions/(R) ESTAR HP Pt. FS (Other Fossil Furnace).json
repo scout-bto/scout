@@ -81,31 +81,38 @@
     ]
   },
   "installed_cost": {
-    "new": 19213.0,
-    "existing": 15277.0
+    "new": 19215.0,
+    "existing": 14249.0
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
     "notes": [
-      "Retail (new) and total installed (existing) cost for ENERGY STAR ASHPs in 2023",
-      "For new buildings, also add retail cost of typical oil furnace. For existing buildings, additional tank removal costs of 800 2014$ (1030 2023$) are applied for distillate and propane based on the 2015 EIA report, updating the cost from April 2014 to April 2022."
+      "BTB installed cost (mid estimate, 2023$) at the performance already in the measure",
+      "new construction includes the BTB typical oil furnace ($5158)",
+      "existing keeps the existing backup"
     ],
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": false,
     "240V circuit": true
   },
-  "product_lifetime": 15.0,
+  "product_lifetime": 15.3,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average of the ENERGY STAR range",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 39,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": {
@@ -164,6 +171,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }
