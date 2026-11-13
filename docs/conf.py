@@ -378,12 +378,12 @@ rst_prolog = """
 
    </span>
 
-.. _uniform: https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.uniform.html#numpy.random.uniform
-.. _normal: https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.normal.html#numpy.random.normal
-.. _lognormal: https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.lognormal.html#numpy.random.lognormal
-.. _triangular: https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.triangular.html#numpy.random.triangular
-.. _weibull: https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.weibull.html#numpy.random.weibull
-.. _gamma: https://docs.scipy.org/doc/numpy/reference/generated/numpy.random.gamma.html#numpy.random.gamma
+.. _uniform: https://numpy.org/doc/stable/reference/random/generated/numpy.random.uniform.html
+.. _normal: https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html
+.. _lognormal: https://numpy.org/doc/stable/reference/random/generated/numpy.random.lognormal.html
+.. _triangular: https://numpy.org/doc/stable/reference/random/generated/numpy.random.triangular.html
+.. _weibull: https://numpy.org/doc/stable/reference/random/generated/numpy.random.weibull.html
+.. _gamma: https://numpy.org/doc/stable/reference/random/generated/numpy.random.gamma.html
 
 .. _Social Cost of Carbon: https://www.whitehouse.gov/sites/default/files/omb/inforeg/scc_tsd_final_clean_8_26_16.pdf
 """
