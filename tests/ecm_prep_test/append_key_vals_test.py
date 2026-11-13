@@ -116,7 +116,6 @@ def test_data():
         "boiler (NG)",
         "boiler (distillate)",
         "furnace (distillate)",
-        "furnace (kerosene)",
         "stove (wood)",
         "furnace (LPG)",
         "secondary heater (wood)",

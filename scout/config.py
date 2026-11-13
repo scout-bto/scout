@@ -131,6 +131,9 @@ class AEOInputRegistry:
         "cdm_dgen": "CDM_DGENOUT.txt",
         "kprem": "kprem.txt",
         "com_ktekx_xlsx": "ktekx.xlsx",
+        "cdm_db_hdc": "CDM_DBOUT_hdc.txt",
+        "cdm_sd_hdc": "CDM_SDOUT_hdc.txt",
+        "cdm_dgen_hdc": "CDM_DGENOUT_hdc.txt"
     }
 
     PROCESSED_GENERATED = {
@@ -138,7 +141,7 @@ class AEOInputRegistry:
         "rsmeqp": "rsmeqp.txt",
         "rsclass": "rsclass.txt",
         "rsmlgt": "rsmlgt.txt",
-        "ktek": "ktek.csv",
+        "ktek": "ktek.csv"
     }
 
     PROCESSED_RAW_LOOKUPS = {
@@ -146,6 +149,9 @@ class AEOInputRegistry:
         "cdm_db": "CDM_DBOUT.txt",
         "cdm_sd": "CDM_SDOUT.txt",
         "cdm_dgen": "CDM_DGENOUT.txt",
+        "cdm_db_hdc": "CDM_DBOUT_hdc.txt",
+        "cdm_sd_hdc": "CDM_SDOUT_hdc.txt",
+        "cdm_dgen_hdc": "CDM_DGENOUT_hdc.txt",
         "kprem": "kprem.txt",
     }
 
