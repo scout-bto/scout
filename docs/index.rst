@@ -24,6 +24,7 @@ Documentation Contents
    tutorials_web
    tutorials
    analysis_approach
+   policy_inputs
    thermal_load_components
    ecm_reference
    eia_update
