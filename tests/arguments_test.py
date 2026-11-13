@@ -115,7 +115,8 @@ class TestConfig(unittest.TestCase, Utils):
             "bps": None,
             "codes": None,
             "report_stk": None,
-            "comstock_gap": False
+            "comstock_gap": False,
+            "high_data_ctr": False
         },
         "run": {
             "results_directory": None,
@@ -299,6 +300,24 @@ class TestConfig(unittest.TestCase, Utils):
         expected_err = "'description' is a required property"
         self._check_schema_err(expected_err, drop_key="description")
 
+    def test_high_data_ctr(self):
+        # Test CLI argument parsing for --high_data_ctr
+        args = self._get_cfg_args("ecm_prep", cli_args=["--high_data_ctr"])
+        self.assertTrue(args.high_data_ctr)
+
+        # Test YAML config parsing for high_data_ctr: true
+        parser = ArgumentParser()
+        c = Config(parser, "ecm_prep", ["--yaml", self.valid_yml_pth])
+        c.config_args["ecm_prep"]["high_data_ctr"] = True
+        c._validate(c.config_args)
+        args = c.parse_args()
+        self.assertTrue(args.high_data_ctr)
+
+        # Test schema validation error for invalid non-boolean type
+        args_update = {"ecm_prep": {"high_data_ctr": "invalid"}}
+        expected_err = "'invalid' is not of type 'boolean'"
+        self._check_schema_err(expected_err, args_update)
+
     def _get_cfg_args_err_message(self, key: str, cli_args: []) -> str:
         """Runs _get_cfg_args() for scenarios with expected error messages, returns the error
 
@@ -398,7 +417,8 @@ class TestECMPrepArgsTranslate(unittest.TestCase, Utils):
         "tsv_metrics": False,
         "retro_set": ["1", None, None],
         "exog_hp_rates": False,
-        "grid_decarb": False
+        "grid_decarb": False,
+        "high_data_ctr": False,
     }
 
     # Expected values translated from ecm_prep_args valid config file; aligns with
@@ -446,6 +466,7 @@ class TestECMPrepArgsTranslate(unittest.TestCase, Utils):
         "exog_hp_rates": ["gh-aggressive", "2"],
         "grid_decarb": True,
         "tsv_metrics": ["1", "1", "1", "2", "1", "2"],
+        "high_data_ctr": False,
     }
 
     def tearDown(self):
@@ -532,6 +553,11 @@ class TestECMPrepArgsTranslate(unittest.TestCase, Utils):
         expected_args = copy.deepcopy(self.valid_yml_translated)
         expected_args.update(update_dict)
         self._assert_arg_vals(args, expected_args)
+
+    def test_translate_high_data_ctr(self):
+        # Ensure --high_data_ctr is correctly passed through translation
+        args = ecm_args(["--high_data_ctr"])
+        self.assertTrue(args.high_data_ctr)
 
 
 if __name__ == "__main__":

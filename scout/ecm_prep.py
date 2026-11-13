@@ -1867,10 +1867,7 @@ class Measure(object):
             # Set fuel type string for selection of baseline and measure
             # carbon intensities and fuel prices to handle special
             # technology cases
-            if mskeys[6] == 'furnace (kerosene)':
-                ftkey = 'distillate'
-            else:
-                ftkey = mskeys[3]
+            ftkey = mskeys[3]
 
             # Set baseline and measure carbon intensities, accounting for any
             # fuel switching from baseline technology to measure technology
