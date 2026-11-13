@@ -12,6 +12,7 @@ import copy
 import itertools
 import numpy_financial as npf
 import pytest
+from unittest import mock
 from pathlib import Path
 from collections import OrderedDict
 
@@ -340,7 +341,8 @@ class CommonMethods(object):
 class UserOptions(object):
     """Generate sample user-specified execution options."""
     def __init__(self, warnings, mkt_fracs, trim_results, report_stk,
-                 report_cfs, no_comp, high_res_comp, write_elec_conv_fracs):
+                 report_cfs, no_comp, high_res_comp, write_elec_conv_fracs,
+                 first_cost_choice=False):
         self.verbose = warnings
         self.mkt_fracs = mkt_fracs
         self.trim_results = trim_results
@@ -349,6 +351,7 @@ class UserOptions(object):
         self.no_comp = no_comp
         self.high_res_comp = high_res_comp
         self.write_elec_conv_fracs = write_elec_conv_fracs
+        self.first_cost_choice = first_cost_choice
 
 
 class NullOpts(object):
@@ -27773,6 +27776,283 @@ class ComCompeteTest(unittest.TestCase, CommonMethods, Constants):
                 self.measures_mseg_out_break_dist[ind],
                 self.a_run_dist.measures[ind].markets[self.test_adopt_scheme][
                     "competed"]["mseg_out_break"]["energy"])
+
+
+class FirstCostChoiceTest(unittest.TestCase, CommonMethods, Constants):
+    """Test the 'first_cost_choice' option in 'compete_res_primary' and 'compete_com_primary'.
+
+    Verify that, when the option is set, all market share in a competed set goes to the
+    measure(s) with the lowest first cost (split evenly in the case of a tie, and considering only
+    measures on the market in a given year), and that market shares are still split across
+    measures based on the usual consumer choice calculations when the option is not set.
+
+    Attributes:
+        res (object): Sample residential competition fixtures, borrowed from 'ResCompeteTest'.
+        com (object): Sample commercial competition fixtures, borrowed from 'ComCompeteTest'.
+        years (list): Years in the sample modeling time horizon.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Define objects/variables for use across all class functions."""
+        # Reuse the sample measures and engines from the standard competition tests
+        cls.res, cls.com = (type(name, (), {}) for name in ["ResFixtures", "ComFixtures"])
+        ResCompeteTest.setUpClass.__func__(cls.res)
+        ComCompeteTest.setUpClass.__func__(cls.com)
+        cls.years = ["2009", "2010"]
+
+    def compete(self, fixtures, engine, compete_fn, measures, mseg_key, **opt_updates):
+        """Run a competition and capture the market share each measure ends up with by year.
+
+        Args:
+            fixtures (object): Sample competition fixtures (provides opts/adoption scheme).
+            engine (object): Engine object to run the competition with.
+            compete_fn (string): Name of the competition function to run.
+            measures (list): Competing measures (copied, such that calls are independent).
+            mseg_key (string): Competed microsegment key.
+            **opt_updates: User option values to set for the competition.
+
+        Returns:
+            Tuple with the competed measures and a list of dicts (one per measure) of market
+            shares by year.
+        """
+        opts = copy.deepcopy(fixtures.opts)
+        for key, val in opt_updates.items():
+            setattr(opts, key, val)
+        measures = copy.deepcopy(measures)
+        names = [m.name for m in measures]
+        self.assertEqual(len(set(names)), len(names))
+        shares = {name: {} for name in names}
+        compete_adj_orig = run.Engine.compete_adj
+
+        # Record the final share used to adjust each measure, in each year
+        def compete_adj_spy(eng, adj_fracs, added_sbmkt_fracs, *args, **kwargs):
+            yr, measure = args[7], args[9]
+            shares[measure.name][yr] = numpy.asarray(adj_fracs[yr] + added_sbmkt_fracs[yr])
+            return compete_adj_orig(eng, adj_fracs, added_sbmkt_fracs, *args, **kwargs)
+
+        with mock.patch.object(run.Engine, "compete_adj", compete_adj_spy):
+            getattr(engine, compete_fn)(measures, mseg_key, fixtures.test_adopt_scheme, opts)
+        return measures, [shares[name] for name in names]
+
+    def check_shares(self, shares, expected):
+        """Check market shares by measure/year against expected values (scalars or arrays)."""
+        for ind, exp_meas in enumerate(expected):
+            for yr in self.years:
+                numpy.testing.assert_allclose(
+                    shares[ind][yr], exp_meas[yr], atol=1e-9,
+                    err_msg="Measure " + str(ind) + ", year " + yr)
+
+    def test_compete_res_first_cost(self):
+        """Test residential competition w/ and w/o the option, for point value inputs."""
+        # Sample supply-side measures have unit first costs of 95, 120, and 100 (measure 1 is
+        # lowest), and demand-side measures have unit first costs of 95 and 120 (measure 1 lowest)
+        for measures, key in [(self.res.measures_supply, self.res.adjust_key2),
+                              (self.res.measures_demand, self.res.adjust_key1)]:
+            n_meas = len(measures)
+            # Without the option, every measure gets a partial share (incl. lowest first cost)
+            _, shares = self.compete(
+                self.res, self.res.a_run, "compete_res_primary", measures, key)
+            for yr in self.years:
+                self.assertAlmostEqual(sum(float(s[yr]) for s in shares), 1)
+                self.assertTrue(all(0 < float(s[yr]) < 1 for s in shares))
+            # With the option, the lowest first cost measure gets everything
+            comp_meas, shares = self.compete(
+                self.res, self.res.a_run, "compete_res_primary", measures, key,
+                first_cost_choice=True)
+            self.check_shares(shares, [
+                {yr: 1 if ind == 0 else 0 for yr in self.years} for ind in range(n_meas)])
+            # Competed stock of the lowest first cost measure is untouched by competition,
+            # while the other measures lose all of their competed stock in this microsegment
+            for ind, (m_orig, m_comp) in enumerate(zip(measures, comp_meas)):
+                uc_stk = m_orig.markets[self.res.test_adopt_scheme]["uncompeted"][
+                    "mseg_adjust"]["contributing mseg keys and values"][key][
+                    "stock"]["competed"]["measure"]
+                for yr in self.years:
+                    stk_orig, stk_comp = [x.markets[self.res.test_adopt_scheme][
+                        "competed"]["master_mseg"]["stock"]["competed"]["measure"][yr]
+                        for x in [m_orig, m_comp]]
+                    self.assertAlmostEqual(
+                        stk_comp, stk_orig - (0 if ind == 0 else uc_stk[yr]))
+
+    def test_compete_res_first_cost_tie(self):
+        """Test that tied lowest first cost residential measures split the market evenly."""
+        measures = copy.deepcopy(self.res.measures_supply)
+        # Give measure 3 the same first cost as measure 1 (95)
+        measures[2].financial_metrics["unit cost"]["stock cost"]["residential"] = {
+            yr: 95 for yr in self.years}
+        _, shares = self.compete(
+            self.res, self.res.a_run, "compete_res_primary", measures, self.res.adjust_key2,
+            first_cost_choice=True)
+        self.check_shares(shares, [
+            {yr: 0.5 for yr in self.years}, {yr: 0 for yr in self.years},
+            {yr: 0.5 for yr in self.years}])
+
+    def test_compete_res_first_cost_dist(self):
+        """Test residential first cost choice for array inputs (choice is made by sample)."""
+        # Supply-side measure 1 has first costs [95, 100, 90], measure 2 has 120, and measure 3
+        # has 100; thus, measure 1 is lowest in samples 1 and 3, and measures 1 and 3 tie in
+        # sample 2
+        _, shares = self.compete(
+            self.res, self.res.a_run_dist, "compete_res_primary",
+            self.res.measures_supply_dist, self.res.adjust_key2, first_cost_choice=True)
+        self.check_shares(shares, [
+            {yr: [1, 0.5, 1] for yr in self.years}, {yr: [0, 0, 0] for yr in self.years},
+            {yr: [0, 0.5, 0] for yr in self.years}])
+
+    def test_compete_com_first_cost(self):
+        """Test commercial competition w/ and w/o the option, for point value inputs."""
+        measures, key = self.com.measures_all, self.com.overlap_key
+        # Sample measure 1 has the highest first cost, measure 2 has a middle first cost but is
+        # only on the market in 2010, and measure 3 has the lowest first cost
+        self.assertEqual([m.yrs_on_mkt for m in measures],
+                         [self.years, ["2010"], self.years])
+        # Without the option, shares are split across the competing measures based on hurdle rate
+        # distributions, such that the lowest first cost measure does not get everything
+        _, shares = self.compete(
+            self.com, self.com.a_run, "compete_com_primary", measures, key)
+        for yr in self.years:
+            self.assertAlmostEqual(sum(float(s[yr]) for s in shares), 1)
+        self.assertTrue(all(float(shares[2][yr]) < 1 for yr in self.years))
+        # With the option, the lowest first cost measure gets everything
+        comp_meas, shares = self.compete(
+            self.com, self.com.a_run, "compete_com_primary", measures, key,
+            first_cost_choice=True)
+        self.check_shares(shares, [
+            {yr: 0 for yr in self.years}, {yr: 0 for yr in self.years},
+            {yr: 1 for yr in self.years}])
+        # Measure 3 is left with all of its competed stock; measure 1 loses all of its own
+        stk_orig, stk_comp = [[m.markets[self.com.test_adopt_scheme]["competed"][
+            "master_mseg"]["stock"]["competed"]["measure"]["2010"] for m in x]
+            for x in [measures, comp_meas]]
+        self.assertAlmostEqual(stk_comp[2], stk_orig[2])
+        self.assertLess(stk_comp[0], stk_orig[0])
+
+    def test_compete_com_first_cost_not_on_market(self):
+        """Test that commercial measures not on the market in a year cannot win the market."""
+        measures = copy.deepcopy(self.com.measures_all)
+        # Remove the lowest first cost measure (3) from the market in 2009; measure 1 is then the
+        # lowest first cost measure available in 2009 (measure 2 is not yet on the market)
+        measures[2].yrs_on_mkt = ["2010"]
+        _, shares = self.compete(
+            self.com, self.com.a_run, "compete_com_primary", measures, self.com.overlap_key,
+            first_cost_choice=True)
+        self.check_shares(shares, [
+            {"2009": 1, "2010": 0}, {"2009": 0, "2010": 0}, {"2009": 0, "2010": 1}])
+
+    def test_compete_com_first_cost_tie(self):
+        """Test that tied lowest first cost commercial measures split the market evenly."""
+        measures = copy.deepcopy(self.com.measures_all)
+        # Give measure 1 the same first cost as measure 3
+        measures[0].financial_metrics["unit cost"]["stock cost"]["commercial"] = copy.deepcopy(
+            measures[2].financial_metrics["unit cost"]["stock cost"]["commercial"])
+        _, shares = self.compete(
+            self.com, self.com.a_run, "compete_com_primary", measures, self.com.overlap_key,
+            first_cost_choice=True)
+        self.check_shares(shares, [
+            {yr: 0.5 for yr in self.years}, {yr: 0 for yr in self.years},
+            {yr: 0.5 for yr in self.years}])
+
+    def test_compete_com_first_cost_dist(self):
+        """Test commercial first cost choice for array inputs (choice is made by sample)."""
+        _, shares = self.compete(
+            self.com, self.com.a_run_dist, "compete_com_primary",
+            self.com.measures_all_dist, self.com.overlap_key, first_cost_choice=True)
+        # Measure 3 is the lowest first cost measure in every sample
+        self.check_shares(shares, [
+            {yr: 0 for yr in self.years}, {yr: 0 for yr in self.years},
+            {yr: 1 for yr in self.years}])
+
+    def test_compete_com_first_cost_high_res(self):
+        """Test commercial first cost choice under high-resolution competition mode."""
+        measures = copy.deepcopy(self.com.measures_all)
+        key = self.com.overlap_key
+        # Ensure capacity factor is defined for high-resolution microsegments
+        for m in measures:
+            m.markets["Technical potential"]["uncompeted"]["mseg_adjust"]["capacity factor"] = {
+                key: 1.0}
+
+        # Set unannualized microsegment upfront capital costs such that measure 3 has the lowest
+        # cost (50.0), measure 2 has 80.0, and measure 1 has 100.0
+        for ind, cost_val in enumerate([100.0, 80.0, 50.0]):
+            mseg_data = measures[ind].markets["Technical potential"]["uncompeted"][
+                "mseg_adjust"]["contributing mseg keys and values"][key]
+            mseg_data["cost"]["stock"]["competed"]["efficient"] = {
+                yr: cost_val for yr in self.years}
+            mseg_data["stock"]["competed"]["measure"] = {
+                yr: 1.0 for yr in self.years}
+
+        # In financial_metrics (used by low-res rate 1), set measure 1's cost lowest (10.0)
+        # to confirm high-res strictly uses unit_cost_s_in_unadj (where measure 3 is lowest)
+        measures[0].financial_metrics["unit cost"]["stock cost"]["commercial"] = {
+            yr: {"rate 1": 10.0} for yr in self.years}
+
+        # Under high_res_comp=True, measure 3 wins based on unit_cost_s_in_unadj
+        _, shares_high_res = self.compete(
+            self.com, self.com.a_run, "compete_com_primary", measures, key,
+            first_cost_choice=True, high_res_comp=True)
+        self.check_shares(shares_high_res, [
+            {yr: 0 for yr in self.years}, {yr: 0 for yr in self.years},
+            {yr: 1 for yr in self.years}])
+
+        # Contrast with high_res_comp=False, where measure 1 wins based on rate 1
+        _, shares_low_res = self.compete(
+            self.com, self.com.a_run, "compete_com_primary", measures, key,
+            first_cost_choice=True, high_res_comp=False)
+        self.check_shares(shares_low_res, [
+            {yr: 1 for yr in self.years}, {yr: 0 for yr in self.years},
+            {yr: 0 for yr in self.years}])
+
+    def test_compete_first_cost_missing_costs_fallback(self):
+        """Test equal split across active measures when all costs in a year are invalid/missing."""
+        measures = copy.deepcopy(self.res.measures_supply)
+        # Measure 1 and 3 are on the market in 2009 and 2010; restrict measure 2 to 2010
+        measures[1].yrs_on_mkt = ["2010"]
+
+        # In 2009, set costs to None and NaN for all measures (no valid cost data)
+        measures[0].financial_metrics["unit cost"]["stock cost"]["residential"]["2009"] = None
+        measures[1].financial_metrics["unit cost"]["stock cost"]["residential"][
+            "2009"] = float("nan")
+        measures[2].financial_metrics["unit cost"]["stock cost"]["residential"]["2009"] = None
+
+        # In 2010, normal valid costs apply (measure 1 has the lowest first cost at 95)
+        # For 2009, the 2 active measures on the market (1 and 3) split the market (0.5 each),
+        # while measure 2 is not on the market (0.0).
+        # For 2010, measure 1 has the lowest cost and captures the entire market (1.0).
+        _, shares = self.compete(
+            self.res, self.res.a_run, "compete_res_primary", measures, self.res.adjust_key2,
+            first_cost_choice=True)
+        self.check_shares(shares, [
+            {"2009": 0.5, "2010": 1.0},
+            {"2009": 0.0, "2010": 0.0},
+            {"2009": 0.5, "2010": 0.0}])
+
+    def test_compete_com_first_cost_dist_variation(self):
+        """Test commercial first cost choice with array inputs where winners vary by sample."""
+        measures = copy.deepcopy(self.com.measures_all_dist)
+        # Set varied per-sample hurdle rate 1 first costs across 3 samples:
+        # In 2009, measures 1 and 3 are on the market (measure 2 enters in 2010):
+        # Measure 1: [80, 100, 120] -> lowest in sample 1, ties sample 2
+        # Measure 3: [100, 100, 90] -> lowest in sample 3, ties sample 2
+        # In 2010, measure 2 enters with [110, 100, 130]:
+        # Measure 1 wins sample 1 (80 < 100, 110)
+        # Measures 1, 2, and 3 tie in sample 2 (100 == 100 == 100) -> 1/3 each
+        # Measure 3 wins sample 3 (90 < 120, 130)
+        measures[0].financial_metrics["unit cost"]["stock cost"]["commercial"] = {
+            yr: numpy.array([{"rate 1": r} for r in [80, 100, 120]]) for yr in self.years}
+        measures[1].financial_metrics["unit cost"]["stock cost"]["commercial"] = {
+            "2009": None,
+            "2010": numpy.array([{"rate 1": r} for r in [110, 100, 130]])}
+        measures[2].financial_metrics["unit cost"]["stock cost"]["commercial"] = {
+            yr: numpy.array([{"rate 1": r} for r in [100, 100, 90]]) for yr in self.years}
+
+        _, shares = self.compete(
+            self.com, self.com.a_run_dist, "compete_com_primary",
+            measures, self.com.overlap_key, first_cost_choice=True)
+        self.check_shares(shares, [
+            {"2009": [1.0, 0.5, 0.0], "2010": [1.0, 1.0 / 3.0, 0.0]},
+            {"2009": [0.0, 0.0, 0.0], "2010": [0.0, 1.0 / 3.0, 0.0]},
+            {"2009": [0.0, 0.5, 1.0], "2010": [0.0, 1.0 / 3.0, 1.0]}])
 
 
 class NumpyConversionTest(unittest.TestCase, CommonMethods, Constants):
