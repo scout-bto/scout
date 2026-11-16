@@ -176,6 +176,13 @@ def test_validate_update_year_and_converter_inputs():
     assert state_baseline_data_updater.validate_update_year('2025') == '2025'
     assert converter.validate_year('2025') == '2025'
     assert converter.validate_scenario('ref2025', '2025') == 'ref2025'
+    assert converter.validate_scenario('higheldmd', '2026') == 'higheldmd'
+
+    eq = converter.EIAQueries('2026', 'higheldmd')
+    assert any('facets[scenario][]=higheldmd' in q for q in eq.query)
+
+    with pytest.raises(ValueError):
+        converter.validate_scenario('higheldamd', '2026')
 
     with pytest.raises(ValueError):
         state_baseline_data_updater.validate_update_year('1999')

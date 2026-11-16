@@ -223,7 +223,7 @@ Technology names appear verbatim. For residential building types, the lighting t
    * electricity: |tooltip| ASHP |chunk-b| air-source heat pump |close|, |tooltip| GSHP |chunk-b| ground-source heat pump |close|, resistance heat
    * natural gas: |tooltip| NGHP |chunk-b| air-source natural gas heat pump |close|, boiler (NG), furnace (NG)
    * distillate: boiler (distillate), furnace (distillate)
-   * other fuel: furnace (LPG), furnace (kerosene), stove (wood)
+   * other fuel: furnace (LPG), stove (wood)
 
 * secondary heating
 

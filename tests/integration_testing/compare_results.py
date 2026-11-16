@@ -149,8 +149,10 @@ class ScoutCompare():
             list: list of individual keys
         """
         keys = re.findall(r"\['(.*?)'\]", path)
-        if len(keys) == 5:
-            keys[4:4] = [None, None, None]
+        # Pad breakout levels (climate zone, building class, end use, and fuel type when
+        # split by fuel) between results scenario and year so year aligns across paths
+        if len(keys) >= 5:
+            keys[4:-1] = keys[4:-1] + [None] * (4 - len(keys[4:-1]))
         return keys
 
     def write_dict_key_report(self, diff_report: pd.DataFrame, output_path: Path):
@@ -181,6 +183,7 @@ class ScoutCompare():
             "Climate Zone",
             "Building Class",
             "End Use",
+            "Fuel Type",
             "Year"
         ]
         df = pd.DataFrame(columns=["Results path"], data=list(diff_report.keys()))
@@ -188,6 +191,7 @@ class ScoutCompare():
             logger.info(f"No changes above the threshold found, {output_path} not written")
             return
         split_df = df["Results path"].apply(self.split_json_key_path).apply(pd.Series)
+        split_df = split_df.reindex(columns=range(len(col_headers)))
 
         # Remove on-site generation diffs as it does not fit the results format
         split_df = split_df[split_df[0] != "On-site Generation"]

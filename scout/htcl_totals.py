@@ -62,22 +62,23 @@ class UsefulInputFiles(object):
         metadata (dict): Baseline metadata including min/max for year range.
     """
 
-    def __init__(self):
-        self.msegs_in = fp.STOCK_ENERGY / "mseg_res_com_cz.json"
-        self.msegs_in_emm = fp.STOCK_ENERGY / "mseg_res_com_emm.gz"
-        self.msegs_in_state = fp.STOCK_ENERGY / "mseg_res_com_state.gz"
-        self.htcl_totals = fp.STOCK_ENERGY / "htcl_totals.json"
-        self.htcl_totals_decarb = fp.STOCK_ENERGY / "htcl_totals_decarb.json"
-        self.htcl_totals_ce = fp.STOCK_ENERGY / "htcl_totals-ce.json"
-        self.htcl_totals_site = fp.STOCK_ENERGY / "htcl_totals-site.json"
-        self.htcl_totals_emm = fp.STOCK_ENERGY / "htcl_totals_emm.json"
-        self.htcl_totals_emm_decarb = fp.STOCK_ENERGY / "htcl_totals_emm_decarb.json"
-        self.htcl_totals_ce_emm = fp.STOCK_ENERGY / "htcl_totals-ce_emm.json"
-        self.htcl_totals_site_emm = fp.STOCK_ENERGY / "htcl_totals-site_emm.json"
-        self.htcl_totals_state = fp.STOCK_ENERGY / "htcl_totals_state.json"
-        self.htcl_totals_ce_state = fp.STOCK_ENERGY / "htcl_totals-ce_state.json"
-        self.htcl_totals_site_state = fp.STOCK_ENERGY / "htcl_totals-site_state.json"
-        self.ss_fp = fp.CONVERT_DATA / "site_source_co2_conversions.json"
+    def __init__(self, high_data_ctr=False):
+        sfx = "_hdc" if high_data_ctr else ""
+        self.msegs_in = fp.STOCK_ENERGY / f"mseg_res_com_cz{sfx}.json"
+        self.msegs_in_emm = fp.STOCK_ENERGY / f"mseg_res_com_emm{sfx}.gz"
+        self.msegs_in_state = fp.STOCK_ENERGY / f"mseg_res_com_state{sfx}.gz"
+        self.htcl_totals = fp.STOCK_ENERGY / f"htcl_totals{sfx}.json"
+        self.htcl_totals_decarb = fp.STOCK_ENERGY / f"htcl_totals_decarb{sfx}.json"
+        self.htcl_totals_ce = fp.STOCK_ENERGY / f"htcl_totals-ce{sfx}.json"
+        self.htcl_totals_site = fp.STOCK_ENERGY / f"htcl_totals-site{sfx}.json"
+        self.htcl_totals_emm = fp.STOCK_ENERGY / f"htcl_totals_emm{sfx}.json"
+        self.htcl_totals_emm_decarb = fp.STOCK_ENERGY / f"htcl_totals_emm_decarb{sfx}.json"
+        self.htcl_totals_ce_emm = fp.STOCK_ENERGY / f"htcl_totals-ce_emm{sfx}.json"
+        self.htcl_totals_site_emm = fp.STOCK_ENERGY / f"htcl_totals-site_emm{sfx}.json"
+        self.htcl_totals_state = fp.STOCK_ENERGY / f"htcl_totals_state{sfx}.json"
+        self.htcl_totals_ce_state = fp.STOCK_ENERGY / f"htcl_totals-ce_state{sfx}.json"
+        self.htcl_totals_site_state = fp.STOCK_ENERGY / f"htcl_totals-site_state{sfx}.json"
+        self.ss_fp = fp.CONVERT_DATA / f"site_source_co2_conversions{sfx}.json"
         self.ss_fp_decarb = fp.CONVERT_DATA / "site_source_co2_conversions-100by2035.json"
         self.ss_fp_ce = fp.CONVERT_DATA / "site_source_co2_conversions-ce.json"
         self.metadata = fp.METADATA_PATH
@@ -312,121 +313,123 @@ def sum_htcl_energy(msegs, aeo_years, ss_conv):
 def main():
     """ Import JSON energy data and sum by climate, building, and structure."""
 
-    # Instantiate useful input files object
-    handyfiles = UsefulInputFiles()
-    # Instantiate useful variables
-    handyvars = UsefulVars(handyfiles)
+    # Generate totals for both reference and high data center load growth cases
+    for high_data_ctr in [False, True]:
+        # Instantiate useful input files object
+        handyfiles = UsefulInputFiles(high_data_ctr=high_data_ctr)
+        # Instantiate useful variables
+        handyvars = UsefulVars(handyfiles)
 
-    # Generate data for both the default AIA climate region baseline data
-    # breakout and EMM region and state baseline data breakout
-    for f in ["AIA", "EMM", "State"]:
-        # Determine input/output file names based on whether default AIA
-        # climates, EMM regions, or states are used to breakout baseline data
-        if f == "AIA":
-            mseg_fi = handyfiles.msegs_in
-            fo = handyfiles.htcl_totals
-            fo_decarb = handyfiles.htcl_totals_decarb
-            fo_site = handyfiles.htcl_totals_site
-            fo_capt = handyfiles.htcl_totals_ce
+        # Generate data for both the default AIA climate region baseline data
+        # breakout and EMM region and state baseline data breakout
+        for f in ["AIA", "EMM", "State"]:
+            # Determine input/output file names based on whether default AIA
+            # climates, EMM regions, or states are used to breakout baseline data
+            if f == "AIA":
+                mseg_fi = handyfiles.msegs_in
+                fo = handyfiles.htcl_totals
+                fo_decarb = handyfiles.htcl_totals_decarb
+                fo_site = handyfiles.htcl_totals_site
+                fo_capt = handyfiles.htcl_totals_ce
 
-        elif f == "EMM":
-            mseg_fi = handyfiles.msegs_in_emm
-            fo = handyfiles.htcl_totals_emm
-            fo_decarb = handyfiles.htcl_totals_emm_decarb
-            fo_site = handyfiles.htcl_totals_site_emm
-            fo_capt = handyfiles.htcl_totals_ce_emm
+            elif f == "EMM":
+                mseg_fi = handyfiles.msegs_in_emm
+                fo = handyfiles.htcl_totals_emm
+                fo_decarb = handyfiles.htcl_totals_emm_decarb
+                fo_site = handyfiles.htcl_totals_site_emm
+                fo_capt = handyfiles.htcl_totals_ce_emm
 
-        else:
-            mseg_fi = handyfiles.msegs_in_state
-            fo = handyfiles.htcl_totals_state
-            fo_decarb = None
-            fo_site = handyfiles.htcl_totals_site_state
-            fo_capt = handyfiles.htcl_totals_ce_state
+            else:
+                mseg_fi = handyfiles.msegs_in_state
+                fo = handyfiles.htcl_totals_state
+                fo_decarb = None
+                fo_site = handyfiles.htcl_totals_site_state
+                fo_capt = handyfiles.htcl_totals_ce_state
 
-        # Import baseline microsegment stock and energy data; special
-        # handling needed for state and EMM data, which are in zip format
-        if f in ["State", "EMM"]:
-            bjszip = mseg_fi
-            with gzip.GzipFile(bjszip, 'r') as zip_ref:
-                msegs = json.loads(zip_ref.read().decode('utf-8'))
-        else:
-            with open(mseg_fi, 'r') as msi:
-                try:
-                    msegs = json.load(msi)
-                except ValueError as e:
-                    raise ValueError(
-                        f"Error reading in '{handyfiles.msegs_in}': {str(e)}") from None
+            # Import baseline microsegment stock and energy data; special
+            # handling needed for state and EMM data, which are in zip format
+            if f in ["State", "EMM"]:
+                bjszip = mseg_fi
+                with gzip.GzipFile(bjszip, 'r') as zip_ref:
+                    msegs = json.loads(zip_ref.read().decode('utf-8'))
+            else:
+                with open(mseg_fi, 'r') as msi:
+                    try:
+                        msegs = json.load(msi)
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Error reading in '{mseg_fi}': {str(e)}") from None
 
-        # Find total heating and cooling *source* energy use for each region,
-        # building type, and structure type combination (fossil fuel site-
-        # source conversion method)
-        htcl_totals = sum_htcl_energy(
-            msegs, handyvars.aeo_years, handyvars.ss_conv)
-
-        # Add site-source conversion type to file
-        htcl_totals = OrderedDict(htcl_totals)
-        htcl_totals[handyvars.ss_conv_str] = "fossil fuel equivalence"
-        htcl_totals.move_to_end(handyvars.ss_conv_str, last=False)
-
-        # Write out summed heating/cooling fossil equivalent energy data
-        output_file = fo
-        with open(output_file, 'w') as jso:
-            json.dump(htcl_totals, jso, indent=2)
-
-        # Update high grid decarbonization case results if applicable
-        if fo_decarb is not None:
-            # Find total heating and cooling *source* energy use for each
-            # region, building type, and structure type combination (fossil
-            # fuel site-source conversion method) under high grid
-            # decarbonization case
-            htcl_totals_decarb = sum_htcl_energy(
-                msegs, handyvars.aeo_years, handyvars.ss_conv_decarb)
-
-            # Add site-source conversion type to file under high grid
-            # decarbonization case
-            htcl_totals_decarb = OrderedDict(htcl_totals_decarb)
-            htcl_totals_decarb[handyvars.ss_conv_str] = \
-                "fossil fuel equivalence"
-            htcl_totals_decarb.move_to_end(handyvars.ss_conv_str, last=False)
-
-            # Write out summed heating/cooling fossil equivalent energy data
-            # under high grid decarbonization case
-            output_file_decarb = fo_decarb
-            with open(output_file_decarb, 'w') as jso:
-                json.dump(htcl_totals_decarb, jso, indent=2)
-
-        # Find total heating and cooling *site* energy use for each region,
-        # building type, and structure type combination
-        htcl_totals_site = sum_htcl_energy(
-            msegs, handyvars.aeo_years, handyvars.ss_conv_site)
-
-        # Add site-source conversion type to file
-        htcl_totals_site = OrderedDict(htcl_totals_site)
-        htcl_totals_site[handyvars.ss_conv_str] = \
-            "site energy (no site-source conversion)"
-        htcl_totals_site.move_to_end(handyvars.ss_conv_str, last=False)
-
-        # Write out summed heating/cooling site energy data
-        output_file = fo_site
-        with open(output_file, 'w') as jso:
-            json.dump(htcl_totals_site, jso, indent=2)
-
-        # If the captured energy file is found, also generate the
-        # heating and cooling *source* energy totals file based on the captured
-        # energy method for calculating site-source conversion factors
-        if handyvars.ss_conv_ce:
-            htcl_totals_ce = sum_htcl_energy(
-                msegs, handyvars.aeo_years, handyvars.ss_conv_ce)
+            # Find total heating and cooling *source* energy use for each region,
+            # building type, and structure type combination (fossil fuel site-
+            # source conversion method)
+            htcl_totals = sum_htcl_energy(
+                msegs, handyvars.aeo_years, handyvars.ss_conv)
 
             # Add site-source conversion type to file
-            htcl_totals_ce = OrderedDict(htcl_totals_ce)
-            htcl_totals_ce[handyvars.ss_conv_str] = "captured energy"
-            htcl_totals_ce.move_to_end(handyvars.ss_conv_str, last=False)
+            htcl_totals = OrderedDict(htcl_totals)
+            htcl_totals[handyvars.ss_conv_str] = "fossil fuel equivalence"
+            htcl_totals.move_to_end(handyvars.ss_conv_str, last=False)
 
-            # Write out heating/cooling combined captured energy data
-            output_file = fo_capt
+            # Write out summed heating/cooling fossil equivalent energy data
+            output_file = fo
             with open(output_file, 'w') as jso:
-                json.dump(htcl_totals_ce, jso, indent=2)
+                json.dump(htcl_totals, jso, indent=2)
+
+            # Update high grid decarbonization case results if applicable
+            if fo_decarb is not None:
+                # Find total heating and cooling *source* energy use for each
+                # region, building type, and structure type combination (fossil
+                # fuel site-source conversion method) under high grid
+                # decarbonization case
+                htcl_totals_decarb = sum_htcl_energy(
+                    msegs, handyvars.aeo_years, handyvars.ss_conv_decarb)
+
+                # Add site-source conversion type to file under high grid
+                # decarbonization case
+                htcl_totals_decarb = OrderedDict(htcl_totals_decarb)
+                htcl_totals_decarb[handyvars.ss_conv_str] = \
+                    "fossil fuel equivalence"
+                htcl_totals_decarb.move_to_end(handyvars.ss_conv_str, last=False)
+
+                # Write out summed heating/cooling fossil equivalent energy data
+                # under high grid decarbonization case
+                output_file_decarb = fo_decarb
+                with open(output_file_decarb, 'w') as jso:
+                    json.dump(htcl_totals_decarb, jso, indent=2)
+
+            # Find total heating and cooling *site* energy use for each region,
+            # building type, and structure type combination
+            htcl_totals_site = sum_htcl_energy(
+                msegs, handyvars.aeo_years, handyvars.ss_conv_site)
+
+            # Add site-source conversion type to file
+            htcl_totals_site = OrderedDict(htcl_totals_site)
+            htcl_totals_site[handyvars.ss_conv_str] = \
+                "site energy (no site-source conversion)"
+            htcl_totals_site.move_to_end(handyvars.ss_conv_str, last=False)
+
+            # Write out summed heating/cooling site energy data
+            output_file = fo_site
+            with open(output_file, 'w') as jso:
+                json.dump(htcl_totals_site, jso, indent=2)
+
+            # If the captured energy file is found, also generate the
+            # heating and cooling *source* energy totals file based on the captured
+            # energy method for calculating site-source conversion factors
+            if handyvars.ss_conv_ce:
+                htcl_totals_ce = sum_htcl_energy(
+                    msegs, handyvars.aeo_years, handyvars.ss_conv_ce)
+
+                # Add site-source conversion type to file
+                htcl_totals_ce = OrderedDict(htcl_totals_ce)
+                htcl_totals_ce[handyvars.ss_conv_str] = "captured energy"
+                htcl_totals_ce.move_to_end(handyvars.ss_conv_str, last=False)
+
+                # Write out heating/cooling combined captured energy data
+                output_file = fo_capt
+                with open(output_file, 'w') as jso:
+                    json.dump(htcl_totals_ce, jso, indent=2)
 
 
 if __name__ == '__main__':

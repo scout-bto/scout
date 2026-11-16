@@ -8,7 +8,7 @@
   "end_use": ["cooling", "heating"],
   "fuel_type": "all",
   "technology": ["central AC", "boiler (NG)", "furnace (NG)", "boiler (distillate)",
-                 "furnace (distillate)", "furnace (kerosene)", "furnace (LPG)", "NGHP"],
+                 "furnace (distillate)", "furnace (LPG)", "NGHP"],
   "market_entry_year": 2023,
   "market_entry_year_source": {
     "notes": "Standard and corresponding ENERGY STAR spec goes into effect in 2023",

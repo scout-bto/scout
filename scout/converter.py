@@ -298,7 +298,8 @@ class ValidQueries(object):
             '2023': ['ref2023', 'lowogs', 'lowZTC', 'highogs', 'highZTC',
                      'lowmaclowZTC', 'highmachighZTC'],
             '2025': ['ref2025', 'lowogs', 'lowZTC', 'highogs', 'highZTC'],
-            '2026': ['cb2026', 'lowogs', 'lowZTC', 'highogs', 'highZTC']}
+            '2026': ['cb2026', 'lowogs', 'lowZTC', 'highogs', 'highZTC',
+                     'higheldmd']}
         self.regions_dict = OrderedDict({'WECCB': 'BASN',
                                          'WECCCAN': 'CANO',
                                          'WECCCAS': 'CASO',
@@ -759,7 +760,7 @@ def updater(conv, api_key, aeo_yr, scen_elec, scen_gas, web):
 
     # Get data via EIA API. Account for cases where user has specified two separate
     # scenarios to use in representing fossil vs. electric projections.
-    dq_foss, dq_elec = [EIAQueries(aeo_yr, x) for x in [scen_elec, scen_gas]]
+    dq_foss, dq_elec = [EIAQueries(aeo_yr, x) for x in [scen_gas, scen_elec]]
 
     z_foss, yrs_foss = \
         data_getter(api_key, dq_foss.data_names, dq_foss.query, dq_foss.data_table_ids)

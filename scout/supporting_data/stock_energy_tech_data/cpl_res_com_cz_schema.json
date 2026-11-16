@@ -306,7 +306,7 @@
                                     "type": ["object", "null"],
                                     "patternProperties": {
                                         "^furnace \\(LPG\\)$":       { "$ref": "#/definitions/cplObject" },
-                                        "^furnace \\(kerosene\\)$":  { "$ref": "#/definitions/cplObject" },
+                                        "^furnace \\(kerosene\\)$":  { "type": "number", "const": 0 },
                                         "^resistance$":              { "type": "number", "const": 0 },
                                         "^stove \\(wood\\)$":        { "$ref": "#/definitions/cplObject" }
                                     },
@@ -460,7 +460,7 @@
                             },
                             "additionalProperties": false
                         },
-                        "data center": {"$ref": "#/definitions/cplObject"},
+                        "data center": { "type": "number", "const": 0 },
                         "PCs": {"$ref": "#/definitions/cplObject"},
                         "office equipment": { "type": "number", "const": 0 },
                         "non-PC office equipment": { "type": "number", "const": 0 },
