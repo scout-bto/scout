@@ -380,6 +380,72 @@
     }
   },
   {
+    "name": "(R) Brk. HP Pt. FS (Oth. Fs. Frn.) & Env.++",
+    "contributing_ECMs": [
+      "(R) Brk. HP Pt. FS (Other Fossil Furnace)",
+      "(R) BTO RDO Walls",
+      "(R) BTO RDO Air Sealing",
+      "(R) BTO RDO Windows",
+      "(R) BTO RDO Foundations"
+    ],
+    "benefits": {
+      "energy savings increase": null,
+      "cost reduction": null
+    },
+    "energy_savings_source": {
+      "notes": null,
+      "source_data": null
+    },
+    "cost_reduction_source": {
+      "notes": null,
+      "source_data": null
+    }
+  },
+  {
+    "name": "(R) Brk. HP Pt. FS (NG Frn.) & Env.++",
+    "contributing_ECMs": [
+      "(R) Brk. HP Pt. FS (NG Furnace)",
+      "(R) BTO RDO Walls",
+      "(R) BTO RDO Air Sealing",
+      "(R) BTO RDO Windows",
+      "(R) BTO RDO Foundations"
+    ],
+    "benefits": {
+      "energy savings increase": null,
+      "cost reduction": null
+    },
+    "energy_savings_source": {
+      "notes": null,
+      "source_data": null
+    },
+    "cost_reduction_source": {
+      "notes": null,
+      "source_data": null
+    }
+  },
+  {
+    "name": "(R) Brk. HP Pt. FS (NG Boiler) & Env.++",
+    "contributing_ECMs": [
+      "(R) Brk. HP Pt. FS (NG Boiler)",
+      "(R) BTO RDO Walls",
+      "(R) BTO RDO Air Sealing",
+      "(R) BTO RDO Windows",
+      "(R) BTO RDO Foundations"
+    ],
+    "benefits": {
+      "energy savings increase": null,
+      "cost reduction": null
+    },
+    "energy_savings_source": {
+      "notes": null,
+      "source_data": null
+    },
+    "cost_reduction_source": {
+      "notes": null,
+      "source_data": null
+    }
+  },
+  {
     "name": "(R) Brk. HP FS (Oth. Fs. Frn.) & Env.++",
     "contributing_ECMs": [
       "(R) Brk. HP FS (Other Fossil Furnace)",

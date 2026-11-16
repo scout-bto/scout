@@ -1615,6 +1615,8 @@ class Measure(object):
                             mskeys_swtch_tech = "ASHP"
                         elif "GSHP" in self.tech_switch_to:
                             mskeys_swtch_tech = "GSHP"
+                        elif "NGHP" in self.tech_switch_to:
+                            mskeys_swtch_tech = "NGHP"
                         else:
                             # Set to original cooling tech./fuel if not switching to HP
                             if "cooling" in mskeys:
@@ -2712,7 +2714,7 @@ class Measure(object):
                         comp_tag_exog = "fossil_switch_exog"
                     # Exogenous rates for only measure technology switching
                     # (e.g., electric resistance-based to HP)
-                    elif self.tech_switch_to not in [None, "NA"]:
+                    elif self.tech_switch_to not in [None, "NA", "same", "NGHP"]:
                         comp_tag_exog = "elec_switch_exog"
                     # Exogenous rates for like-for-like baseline technology
                     # replacement measure
@@ -3221,7 +3223,8 @@ class Measure(object):
                                 # ('yes') or required ('required'), but NOT where backup is
                                 # prohibited ('no').
                                 incent_mod_swtch = [x for x in incent_mod if ((
-                                    ((self.fuel_switch_to is None) or  # no fuel switch
+                                    ((self.fuel_switch_to is None or
+                                      mskeys_swtch[3] == mskeys[3]) or  # no fuel switch
                                      ((self.backup_fuel_fraction is None and x[7] in [
                                         "no", "yes"]) or
                                       (self.backup_fuel_fraction is not None and x[7] in [
@@ -4441,7 +4444,7 @@ class Measure(object):
                     # Handle case where measure is switching away from
                     # a baseline case with methane leakage to a non-gas tech.
                     # without such leakage
-                    if self.fuel_switch_to is not None:
+                    if self.fuel_switch_to not in [None, "natural gas"]:
                         # lkg_rate is a float; no copy needed (immutable)
                         lkg_fmeth_base = lkg_rate
                         lkg_fmeth_meas = 0
@@ -4459,7 +4462,7 @@ class Measure(object):
                     # Handle case where measure is switching away from
                     # a baseline case with methane leakage to a non-gas tech.
                     # without such leakage
-                    if self.fuel_switch_to is not None:
+                    if self.fuel_switch_to not in [None, "natural gas"]:
                         # lkg_rate is a float; no copy needed (immutable)
                         lkg_fmeth_base = lkg_rate
                         lkg_fmeth_meas = 0
@@ -7527,7 +7530,7 @@ class Measure(object):
                 # be assumed
                 if hp_rate is not None and (
                     self.fuel_switch_to == "electricity" or (
-                        self.tech_switch_to not in [None, "NA"])):
+                        self.tech_switch_to not in [None, "NA", "same", "NGHP"])):
                     null_val = 0
                 else:
                     null_val = 1
@@ -8189,7 +8192,7 @@ class Measure(object):
                 # by the HP conversion (e.g., electric ASHP or HPWH measure
                 # that switches from fossil- or resistance-based equipment)
                 if (self.fuel_switch_to == "electricity" or (
-                        self.tech_switch_to not in [None, "NA"])):
+                        self.tech_switch_to not in [None, "NA", "same", "NGHP"])):
                     # Cumulative fraction converted to HPs
                     diffuse_frac = stock_total_hp_convert_frac
                     # Fraction of total converted stock that was
@@ -8227,7 +8230,7 @@ class Measure(object):
                     x in hp_rate.keys() for x in ["total", "competed"]]):
                 # Case where measure is switching away from baseline; use conversion rate directly
                 if (self.fuel_switch_to == "electricity" or (
-                        self.tech_switch_to not in [None, "NA"])):
+                        self.tech_switch_to not in [None, "NA", "same", "NGHP"])):
                     diffuse_frac = hp_rate["total"][yr]
                 # Case where measure stays with baseline tech.; use inverse of conversion rate
                 else:

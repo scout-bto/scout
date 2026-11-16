@@ -3026,8 +3026,9 @@ class Engine(object):
             # to a new fuel while retaining existing fuel as backup (assume restrictions do not
             # preclude such cases)
             meas_switch_avoids_reg = [
-                (m.fuel_switch_to is not None and m.backup_fuel_fraction is None) or
-                (m.fuel_switch_to is not None and "existing" in
+                (m.fuel_switch_to not in [None, mseg_separate[3]] and
+                 m.backup_fuel_fraction is None) or
+                (m.fuel_switch_to not in [None, mseg_separate[3]] and "existing" in
                  mseg_separate) for m in measures_adj]
             # When there is a restriction, keep measure on market only in years where: a) measure
             # fuel switches away from restricted segment, b) the restriction is not active, or c)
@@ -4417,7 +4418,7 @@ class Engine(object):
                 if detail:
                     out_fuel_gain = ""
                     for f in self.handyvars.out_break_fuels.items():
-                        if self.fuel_switch_to in f[1] and \
+                        if m.fuel_switch_to in f[1] and \
                                 key_list[3] == "other fuel":
                             if f[0] == "Distillate/Other" and (
                                 key_list[-2] is not None and any([
@@ -4433,7 +4434,7 @@ class Engine(object):
                                 out_fuel_gain = f[0]
                             elif f[0] == "Propane":
                                 out_fuel_gain = f[0]
-                        elif self.fuel_switch_to in f[1]:
+                        elif m.fuel_switch_to in f[1]:
                             out_fuel_gain = f[0]
                 else:
                     out_fuel_gain = "Non-Electric"
@@ -5405,8 +5406,8 @@ class Engine(object):
             # and/or otherwise changes tech type (e.g., electric resistance to HPs). Note:
             # technically this would register switch away from electric fuel as well, were that
             # specified
-            conversion = (measure.fuel_switch_to is not None or (
-                measure.tech_switch_to not in [None, "NA", "same"]))
+            conversion = (measure.fuel_switch_to == "electricity" or (
+                measure.tech_switch_to not in [None, "NA", "same", "NGHP"]))
             # Find and set region, fuel, end use, and vintage for current mseg
             key_list = list(_literal_eval_cached(mseg_key))
             reg, base_fuel, eu, vint = [key_list[1], key_list[3], key_list[4], key_list[-1]]

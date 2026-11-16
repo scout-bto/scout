@@ -23,7 +23,6 @@
   "backup_fuel_fraction": "furnace_other_fossil.csv",
   "technology": [
     "furnace (distillate)",
-    "furnace (kerosene)",
     "furnace (LPG)",
     "central AC",
     "room AC",

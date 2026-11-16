@@ -825,7 +825,7 @@
         {
           "type": "string",
           "enum": [
-            "ASHP", "GSHP", "HPWH","resistance heat", "Electric cooking", "induction", "Electric drying", 
+            "ASHP", "GSHP", "NGHP", "HPWH","resistance heat", "Electric cooking", "induction", "Electric drying", 
             "HP dryer", "elec_water_heater", "elec_range-combined", "elec_boiler",
             "LED", "electric WH", "electric range", "electric dryer", "electric other", "same"
             ]

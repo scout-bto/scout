@@ -23,7 +23,6 @@
   "backup_fuel_fraction": null,
   "technology": [
     "furnace (distillate)",
-    "furnace (kerosene)",
     "furnace (LPG)",
     "central AC",
     "room AC",
@@ -35,7 +34,6 @@
   "tech_switch_to": null,
   "energy_efficiency": {
     "furnace (distillate)": 0.85,
-    "furnace (kerosene)": 0.85,
     "furnace (LPG)": 0.85,
     "central AC": 4.28,
     "room AC": 3.52,
@@ -46,7 +44,6 @@
   },
   "energy_efficiency_units": {
     "furnace (distillate)": "AFUE",
-    "furnace (kerosene)": "AFUE",
     "furnace (LPG)": "AFUE",
     "central AC": "COP",
     "room AC": "COP",
@@ -70,10 +67,6 @@
   },
   "installed_cost": {
     "furnace (distillate)": {
-      "new": 5158.0,
-      "existing": 5350.0
-    },
-    "furnace (kerosene)": {
       "new": 5158.0,
       "existing": 5350.0
     },
@@ -123,7 +116,6 @@
   "add_elec_infr_cost": null,
   "product_lifetime": {
     "furnace (distillate)": 27.0,
-    "furnace (kerosene)": 27.0,
     "furnace (LPG)": 27.0,
     "central AC": 18.0,
     "room AC": 10.0,
