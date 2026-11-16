@@ -66,8 +66,9 @@ ecm_prep:
       May be drawn from legacy Guidehouse ('gh-') conversion scenarios
       or scenario(s) that were produced via endogenously running
       measure competition and pulling out conversion rates from
-      results. Allowed values are {bss-brk, gh-aggressive, gh-conservative,
-      gh-most aggressive, gh-optimistic, null}. Default null
+      results. Allowed values are {bss-agg_elec, bss-brk, gh-aggressive,
+      gh-conservative, gh-most aggressive, gh-optimistic, null}.
+      Default null
     switch_all_retrofit_hp: (boolean) Only relevant to Guidehouse
       scenarios. If true, assume all retrofits convert to heat
       pumps/electric alternative, otherwise, retrofits are subject

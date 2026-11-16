@@ -1,4 +1,4 @@
-description: AEO 2025 Reference case.
+description: AEO 2026 Reference case. Projects forward buildings sector trends as of late 2025. Note that reference measures for BSS use BTB inputs where possible, which differ from AEO Reference inputs.
 ecm_prep:
   ecm_directory: ../../ecm_definitions/atb_costs
   ecm_files: [

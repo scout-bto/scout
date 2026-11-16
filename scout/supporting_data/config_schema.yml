@@ -130,7 +130,7 @@ properties:
         properties:
           exog_hp_rate_scenario:
             type: ["string", "null"]
-            enum: [gh-conservative, gh-optimistic, gh-aggressive, gh-most aggressive, bss-brk, null]
+            enum: [gh-conservative, gh-optimistic, gh-aggressive, gh-most aggressive, bss-brk, bss-agg_elec, null]
             description: Conversion scenario to use for exogenous rates of conversion to HPs/electric equipment. May be drawn from legacy Guidehouse ('gh-') conversion scenarios or scenario(s) that were produced via endogenously running measure competition and pulling out conversion rates from results.
           switch_all_retrofit_hp:
             type: boolean

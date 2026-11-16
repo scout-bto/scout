@@ -1,4 +1,4 @@
-description: AEO Reference case with additional consideration of state-level drivers.
+description: Incorporates recent policy provisions not already in AEO 2026, particularly those observed at the state and local levels.
 ecm_prep:
   ecm_directory: ../../ecm_definitions/atb_costs
   ecm_files: [

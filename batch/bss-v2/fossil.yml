@@ -1,4 +1,4 @@
-description: AEO Reference case with additional drivers to raise demand for fossil fuels and early retrofitting.
+description: Broad adoption of fossil-fired equipment with limited additional penetration of electric heating and water heating technology.
 ecm_prep:
   ecm_directory: ../../ecm_definitions/atb_costs
   ecm_files: [
@@ -184,14 +184,18 @@ ecm_prep:
   sub_fed_policy:
     low_volume_rate: null
     state_appl_regs: null
-    bps: null
-    codes: null
+    bps: fossil
+    codes: fossil
+    bps_comply_res: 0.7
+    bps_comply_com: 0.8
+    code_comply_res: 0.7
+    code_comply_com: 0.8
   incentives:
-    incentive_levels: reference
-    incentive_restrictions: no federal electric
+    incentive_levels: fossil
+    incentive_restrictions: null
   price_sensitivity: highelec_lowfossil
   split_fuel: true 
-  detail_brkout: [regions, fuel types]
+  detail_brkout: [regions, codes/bps, fuel types]
   comstock_gap: true
   report_stk:
     num_units: true
