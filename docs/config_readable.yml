@@ -112,8 +112,8 @@ ecm_prep:
       incentives (e.g., tax credits, rebates) for measure adoption.
       The aeo option reverts to incentive levels in the AEO reference
       case forecast. Allowed values are {aeo, aggressive, aggressive
-      state, aggressive-electric, aggressive-fuel-neutral, reference}.
-      Default aeo
+      state, aggressive-electric, aggressive-fuel-neutral, fossil,
+      reference}. Default aeo
     incentive_restrictions: (string) Restrictions to apply to
       evaluation of incentives. Setting to all removes all incentives,
       including those in the reference case, while null imposes
@@ -184,7 +184,7 @@ ecm_prep:
       (BPS) including energy use index targets and/or onsite emissions
       reduction requirements, which apply to existing buildings.
       Null removes this driver entirely. Allowed values are {aggressive,
-      aggressive-electric, aggressive-fuel-neutral, reference,
+      aggressive-electric, aggressive-fuel-neutral, fossil, reference,
       null}. Default null
     bps_comply_com: (number) Commercial compliance fraction to
       assume for BPS scenario implementation. Default 1
@@ -198,7 +198,8 @@ ecm_prep:
       energy index improvements over model code and/or onsite
       emissions reduction requirements/incentives. Null removes
       this driver entirely. Allowed values are {aggressive, aggressive-electric,
-      aggressive-fuel-neutral, reference, null}. Default null
+      aggressive-fuel-neutral, fossil, reference, null}. Default
+      null
     low_volume_rate: (string) Reduce volumetric electric rates,
       possibly with concurrent increase in fixed charges. Reference
       case will represent currently-enacted rates of this type.

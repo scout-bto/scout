@@ -2186,7 +2186,7 @@ class UsefulVars(object):
                     state_dat_init = unpack_econ_rows(state_econ_dat)
                     if k == "low_volume_rate":
                         validate_rate_fractions(state_dat_init, [], "reference")
-                elif scn_name in ["reference", "aeo"]:
+                elif scn_name in ["reference", "aeo", "fossil"]:
                     state_dat_init = unpack_econ_rows(
                         state_econ_dat[state_econ_dat["scenario"] == scn_name])
                     if k == "low_volume_rate":

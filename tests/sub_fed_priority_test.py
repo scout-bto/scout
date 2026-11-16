@@ -486,15 +486,23 @@ def test_real_hear_rows_follow_doe_base_fuel_and_backup_rules():
         assert any(r[4] == "ASHP" and r[7] == "yes" for r in rows) == (scn == "aggressive")
 
 
-def test_real_fuel_neutral_has_no_non_heating_equipment_incentives():
-    # Water heating, cooking and drying equipment cannot retain a fossil backup, so the
-    # fuel-neutral case adds no rows for them (only the reference rows apply to them)
+def test_real_fuel_neutral_screens_only_no_backup_heating_switching():
+    # The fuel-neutral case screens out only heating rows that require full fuel switching with no
+    # backup; non-heating equipment incentives (water heating, cooking, drying), for the same
+    # fuel or for switching, extend like any other state-wide incentive
     import csv
+    fossil = {"natural gas", "distillate", "other fuel", "all fossil", "all"}
     with open(fp.SUB_FED / "incentives.csv", encoding="utf-8-sig", newline="") as f:
-        rows = [r for r in csv.DictReader(f) if r["scenario"] == "aggressive-fuel-neutral"]
+        rows = [r for r in csv.DictReader(f) if r["scenario"] == "aggressive-fuel-neutral"
+                and r["scope"] != "federal"]
     assert rows
-    assert not [r for r in rows if r["scope"] != "federal" and
-                r["end use(s)"].strip() in ("water heating", "cooking", "drying")]
+    for r in rows:
+        base = {x.strip() for x in r["base fuel"].split(",")}
+        if r["end use(s)"].strip() == "heating" and r["fuel type(s)"] == "electricity":
+            assert not (r["base fuel backup"].strip() == "no" and base & fossil), r
+    nonheat = [r for r in rows if r["end use(s)"].strip() in ("water heating", "cooking", "drying")]
+    assert {r["fuel type(s)"] for r in nonheat} >= {"electricity", "natural gas"}
+    assert {r["end use(s)"] for r in nonheat} == {"water heating", "cooking", "drying"}
 
 
 def test_rates_better_level_on_fully_covered_population_kept():
@@ -877,3 +885,245 @@ def test_real_appl_regs_gross_targets_and_local_programs_are_typed():
     chs = d["jurisdiction"] == "CO Clean Heat Standard"
     assert (d.loc[chs, "type"] == "state").all()
     assert (d.loc[(d["scenario"] == "reference") & ~chs, "type"] == "local").all()
+
+
+def test_real_fossil_subfed_replaces_reference_and_follows_rules():
+    from collections import OrderedDict
+    from pathlib import Path
+    from scout import run
+    from scout.ecm_prep_args import ecm_args
+
+    # Excluded sub-federal files must not contain 'fossil' rows
+    for excluded in ("appl_regs.csv", "rates.csv"):
+        df_excl = pd.read_csv(fp.SUB_FED / excluded)
+        assert "fossil" not in set(df_excl["scenario"].dropna()), excluded
+
+    # Schema accepts 'fossil' for codes, bps, and incentive_levels
+    test_ecms = Path(__file__).parent / "test_files" / "ecm_definitions"
+    opts = ecm_args(["--ecm_directory", str(test_ecms), "--bps", "fossil",
+                     "--codes", "fossil", "--incentive_levels", "fossil",
+                     "--detail_brkout", "regions", "codes/bps", "fuel types", "--split_fuel"])
+    assert (opts.bps, opts.codes, opts.incentive_levels) == ("fossil", "fossil", "fossil")
+
+    # ecm_prep incentives: 'fossil' replaces reference without layering post-2029 electric rows
+    ref_inc = _import("reference")["incentives"]
+    fos_inc = _import("fossil")["incentives"]
+    assert fos_inc
+    assert any(r[5] == "electricity" and r[END] > 2029 for r in ref_inc)
+    fossil_fuels = ("natural gas", "distillate", "other fuel")
+    envelope_techs = ("wall", "roof", "windows conduction")
+    for r in fos_inc:
+        if r[10] == "all-bss-25c-res":
+            # 25C-type credits restored for fossil-fired equipment and central ACs only (no heat
+            # pumps, heat pump water heaters, or envelope)
+            assert (r[START], r[END]) == (2030, 2040), r
+            assert r[4] == "central AC" or r[5] in fossil_fuels, r
+            assert r[4] not in ("ASHP", "GSHP", "electric WH") + envelope_techs, r
+        elif r[5] in fossil_fuels and r[4] not in envelope_techs:
+            # All retained primary fossil equipment incentives (state-wide and utility-specific)
+            # are extended beyond their reference end year, through 2050
+            assert (r[START], r[END]) == (2026, 2050), r
+        else:
+            assert r[END] <= 2029, r
+    assert any(r[10] == "all-bss-25c-res" and r[4] == "central AC" for r in fos_inc)
+    for tech in ("furnace (NG)", "boiler (NG)", "gas_boiler", "gas_furnace"):
+        assert any(r[4] == tech and r[END] == 2050 for r in fos_inc), tech
+    assert any(r[3] == "water heating" and r[5] == "natural gas" and r[4] not in envelope_techs
+               and r[10] != "all-bss-25c-res" and r[END] == 2050 for r in fos_inc)
+
+    # Cross-scenario extension invariants for audited fossil and AC incentives
+    ref_set = {repr(r) for r in ref_inc}
+    ae_ext = [r for r in _import("aggressive-electric")["incentives"] if repr(r) not in ref_set]
+    assert all(r[5] not in fossil_fuels
+               and r[4] not in ("central AC", "rooftop_AC") + envelope_techs
+               for r in ae_ext)
+    afn_ext = [r for r in _import("aggressive-fuel-neutral")["incentives"]
+               if repr(r) not in ref_set]
+    assert any(r[5] in fossil_fuels and r[3] == "heating" and r[10] != "all-bss-25c-res"
+               and r[END] == 2050 for r in afn_ext)
+    # Non-heating equipment incentives (water heating, cooking, drying) extend in fuel-neutral too;
+    # only heating rows that require fossil switching with no backup are screened out
+    assert any(r[5] in fossil_fuels and r[3] == "water heating" and r[10] != "all-bss-25c-res"
+               and r[END] == 2050 for r in afn_ext)
+    assert any(r[5] == "electricity" and r[3] == "cooking" and r[END] == 2050 for r in afn_ext)
+    agg_ext = [r for r in _import("aggressive")["incentives"] if repr(r) not in ref_set]
+    assert any(r[5] in fossil_fuels and r[3] == "water heating" and r[10] != "all-bss-25c-res"
+               and r[END] == 2050 for r in agg_ext)
+
+    # run codes and bps: 'fossil' replaces reference without reference overlap checks
+    hv = types.SimpleNamespace(
+        aeo_years=[str(y) for y in range(2024, 2051)],
+        out_break_czones={s: [s] for s in STATES},
+        out_break_bldgtypes=OrderedDict([
+            ("Single Family/Manufactured Homes (New)", ["new", "single family home",
+                                                        "mobile home"]),
+            ("Single Family/Manufactured Homes (Existing)", ["existing", "single family home",
+                                                             "mobile home"]),
+            ("Multi Family Homes (New)", ["new", "multi family home"]),
+            ("Multi Family Homes (Existing)", ["existing", "multi family home"]),
+            ("Commercial (New)", ["new", "assembly", "education", "food sales", "food service",
+                                  "health care", "mercantile/service", "lodging", "large office",
+                                  "small office", "warehouse", "other"]),
+            ("Commercial (Existing)", ["existing", "assembly", "education", "food sales",
+                                       "food service", "health care", "mercantile/service",
+                                       "lodging", "large office", "small office", "warehouse",
+                                       "other"]),
+        ]),
+        validate_state_fractions=run.UsefulVars.validate_state_fractions,
+    )
+    hf = types.SimpleNamespace(
+        state_appl_regs=fp.SUB_FED / "appl_regs.csv",
+        codes=fp.SUB_FED / "codes.csv",
+        codes_lag=fp.SUB_FED / "codes_lag.csv",
+        bps=fp.SUB_FED / "bps.csv",
+    )
+    run.UsefulVars.import_state_data(hv, hf, ["state_appl_regs", "codes", "bps"],
+                                     [None, "fossil", "fossil"])
+    assert hv.state_appl_regs is None
+    assert hv.codes and hv.bps
+    # All onsite BPS rows from reference were ended/removed
+    assert all(r["onsite_reduce"] == 0 for r in hv.bps)
+    # Every onsite code row ends in 2029; non-onsite code rows stay open-ended
+    for r in hv.codes:
+        if r["onsite_reduce"] != 0:
+            assert r["end_yr"] == 2029, r
+        else:
+            assert r["end_yr"] is None, r
+    # CO and WA split rows preserve post-2029 base code adoption without onsite fossil limits
+    for st in ("CO", "WA"):
+        pre_rows = [r for r in hv.codes if r["reg"] == st and r["onsite_reduce"] == 100.0
+                    and r["regu_type"] == "state"]
+        post_rows = [r for r in hv.codes if r["reg"] == st and r["start_yr"] == 2030]
+        assert post_rows and [r["bldg"] for r in post_rows] == [r["bldg"] for r in pre_rows]
+        assert all(r["onsite_reduce"] == 0 and r["end_yr"] is None and r["apply_frac"] == 0.8
+                   for r in post_rows)
+
+
+def test_process_codes_end_year_cohort_persistence_and_bps_ramp_to_start_year():
+    import copy
+    from scout import run
+
+    years = ["2025", "2026", "2027", "2028", "2029", "2030", "2031"]
+    hv = types.SimpleNamespace(
+        aeo_years=years,
+        adopt_schemes=["Max adoption potential"],
+        brk_vars=["stock", "energy"],
+        brk_mast_map={"stock": "stock", "energy": "energy"},
+        cost_convert={"stock": 1, "energy": 1, "carbon": 1},
+        out_break_czones={"CO": ["CO"]},
+        out_break_bldgtypes={
+            "Commercial (New)": ["new", "large office"],
+            "Commercial (Existing)": ["existing", "large office"]},
+        out_break_enduses={"Heating (Equip.)": ["heating"]},
+        out_break_eus_w_fsplits=["Heating (Equip.)"],
+        out_break_fuels={"Electric": ["electricity"], "Non-Electric": ["natural gas"]},
+        conversion_fracs=None,
+        conversion_eus=[],
+        codes=[
+            {"reg": "CO", "bldg": "Commercial (New)", "onsite_reduce": 100.0,
+             "lag_reduce": 0.2, "stretch_reduce": 0, "start_yr": 2026, "end_yr": 2029,
+             "apply_frac": 0.8, "regu_type": "state", "jurisdiction": "CO"},
+            {"reg": "CO", "bldg": "Commercial (New)", "onsite_reduce": 0,
+             "lag_reduce": 0.2, "stretch_reduce": 0, "start_yr": 2030, "end_yr": None,
+             "apply_frac": 0.8, "regu_type": "state", "jurisdiction": "CO"},
+        ],
+        bps=[
+            {"reg": "CO", "bldg": "Commercial (Existing)", "onsite_reduce": 50.0,
+             "eui_pct_reduce": 0, "eui_bench_yr": 2025, "start_yr": 2029,
+             "apply_frac": 1.0, "regu_type": "state", "jurisdiction": "CO"},
+        ],
+    )
+
+    def _mk_meas(name, fuel_primary, fuel_switch_to, min_flag, new_fos, new_el, ex_fos, ex_el):
+        def _tree(nf, ne, ef, ee):
+            return {"CO": {
+                "Commercial (New)": {"Heating (Equip.)": {
+                    "Electric": dict(ne), "Non-Electric": dict(nf)}},
+                "Commercial (Existing)": {"Heating (Equip.)": {
+                    "Electric": dict(ee), "Non-Electric": dict(ef)}}}}
+
+        z = {y: 0.0 for y in years}
+        brk = {
+            "stock": {"baseline": _tree(new_fos, new_el, ex_fos, ex_el),
+                      "efficient": _tree(new_fos, new_el, ex_fos, ex_el)},
+            "energy": {"baseline": _tree(new_fos, new_el, ex_fos, ex_el),
+                       "efficient": _tree(new_fos, new_el, ex_fos, ex_el),
+                       "savings": _tree(z, z, z, z)},
+        }
+        tot = {y: new_fos[y] + new_el[y] + ex_fos[y] + ex_el[y] for y in years}
+        mast = {
+            "stock": {"total": {"all": dict(tot), "measure": dict(tot)}},
+            "energy": {"total": {"baseline": dict(tot), "efficient": dict(tot)}},
+        }
+        uncomp_brk = copy.deepcopy(brk)
+        if min_flag:
+            # 1:0.5 relative electric efficiency on uncompeted min-efficiency FS measure
+            uncomp_fos = {y: 100.0 for y in years}
+            uncomp_el = {y: 50.0 for y in years}
+            uncomp_stk = {y: 10.0 for y in years}
+            uncomp_brk["stock"]["baseline"] = _tree(uncomp_stk, z, uncomp_stk, z)
+            uncomp_brk["stock"]["efficient"] = _tree(z, uncomp_stk, z, uncomp_stk)
+            uncomp_brk["energy"]["baseline"] = _tree(uncomp_fos, z, uncomp_fos, z)
+            uncomp_brk["energy"]["efficient"] = _tree(z, uncomp_el, z, uncomp_el)
+        return types.SimpleNamespace(
+            name=name,
+            climate_zone=["CO"],
+            bldg_type=["large office"],
+            structure_type=["new", "existing"],
+            fuel_type={"primary": fuel_primary},
+            end_use={"primary": ["heating"]},
+            fuel_switch_to=fuel_switch_to,
+            min_eff_elec_flag=min_flag,
+            markets={"Max adoption potential": {
+                "uncompeted": {"mseg_out_break": uncomp_brk},
+                "competed": {"mseg_out_break": brk, "master_mseg": mast}}},
+            savings={"Max adoption potential": {
+                "competed": {"energy": {"savings": dict(z)}}}},
+        )
+
+    # Cumulative new fossil heating grows by +10 each year: 10 in 2025, 20 in 2026, ..., 70 in 2031
+    new_fos = {str(2025 + i): float(10 * (i + 1)) for i in range(len(years))}
+    z = {y: 0.0 for y in years}
+    ex_fos = {y: 100.0 for y in years}
+    meas_fos = _mk_meas("Gas Boiler", "natural gas", None, None, new_fos, z, ex_fos, z)
+    meas_hp = _mk_meas("Min. Eff HP FS", "natural gas", "electricity", True, z, z, z, z)
+
+    eng = run.Engine.__new__(run.Engine)
+    eng.handyvars = hv
+    eng.measures = [meas_fos, meas_hp]
+
+    opts = types.SimpleNamespace(verbose=False)
+    eng.process_codes_bps(opts, "Max adoption potential", {}, hv, False,
+                          1.0, 1.0, 1.0, 1.0, True, False)
+
+    fos_new_stk = (meas_fos.markets["Max adoption potential"]["competed"]["mseg_out_break"]
+                   ["stock"]["efficient"]["CO"]["Commercial (New)"]["Heating (Equip.)"]
+                   ["Non-Electric"])
+    # 2025 (pre-code): 10 untouched
+    assert round(fos_new_stk["2025"], 6) == 10.0
+    # 2026..2029: 80% of [2026, yr] new construction (10, 20, 30, 40) is converted -> 8, 16, 24, 32
+    assert round(fos_new_stk["2026"], 6) == 20.0 - 8.0
+    assert round(fos_new_stk["2029"], 6) == 50.0 - 32.0
+    # 2030 & 2031: the 32 units converted in 2026-2029 stay converted, while the +10/yr built in
+    # 2030 and 2031 are NOT converted to electric (onsite ended in 2029)
+    assert round(fos_new_stk["2030"], 6) == 60.0 - 32.0
+    assert round(fos_new_stk["2031"], 6) == 70.0 - 32.0
+
+    # Meanwhile, the 2030+ energy-only code (lag_reduce=0.2, apply_frac=0.8 -> 0.16) reduces
+    # 2030+ new construction energy by 1.6 in 2030 (10 * 0.16) and 3.2 in 2031 (20 * 0.16)
+    fos_new_eng = (meas_fos.markets["Max adoption potential"]["competed"]["mseg_out_break"]
+                   ["energy"]["efficient"]["CO"]["Commercial (New)"]["Heating (Equip.)"]
+                   ["Non-Electric"])
+    assert round(fos_new_eng["2029"], 6) == 50.0 - 32.0
+    assert round(fos_new_eng["2030"], 6) == 60.0 - 32.0 - 1.6
+    assert round(fos_new_eng["2031"], 6) == 70.0 - 32.0 - 3.2
+
+    # BPS ramps linearly from its benchmark year (2025) to its start year (2029) on existing stock
+    # and then holds the target (BPS have no end year)
+    fos_ex_stk = (meas_fos.markets["Max adoption potential"]["competed"]["mseg_out_break"]
+                  ["stock"]["efficient"]["CO"]["Commercial (Existing)"]["Heating (Equip.)"]
+                  ["Non-Electric"])
+    assert round(fos_ex_stk["2027"], 6) == 75.0
+    assert round(fos_ex_stk["2029"], 6) == 50.0
+    assert round(fos_ex_stk["2030"], 6) == 50.0
+    assert round(fos_ex_stk["2031"], 6) == 50.0

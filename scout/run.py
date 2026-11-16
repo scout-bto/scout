@@ -398,7 +398,8 @@ class UsefulVars(object):
         # Appl. regs: jurisdiction and type are the optional trailing elements after origin; they
         # are not part of the segment key and are read by check_fraction_sums to decide which rows
         # count toward the sum.
-        entries = [(tuple(r[x] for x in seg_keys), r["start_yr"], None, r["apply_frac"], o) + (
+        entries = [(tuple(r[x] for x in seg_keys), r["start_yr"], r.get("end_yr"),
+                    r["apply_frac"], o) + (
                    (r["jurisdiction"], r["regu_type"]) if "appl_regs" in k else ())
                    for r, o in zip(rows, origins)]
         # Check the reference rows alone first so that their problems are not blamed on a scenario
@@ -434,11 +435,10 @@ class UsefulVars(object):
                 # Drop trailing unnamed columns that may have been created by spreadsheet exports
                 state_regs_dat = state_regs_dat[
                     [c for c in state_regs_dat.columns if not c.startswith("Unnamed")]]
-                # Filter by scenario: anchor on ref. case and add incremental rows for other scns.
-                if scn_name == "reference":
-                    state_regs_dat = state_regs_dat[state_regs_dat["scenario"] == "reference"]
-                elif scn_name == "aeo":
-                    state_regs_dat = state_regs_dat[state_regs_dat["scenario"] == "aeo"]
+                # Filter by scenario: anchor on ref. case and add incremental rows for other scns.,
+                # except standalone scenarios ('reference', 'aeo', 'fossil')
+                if scn_name in ["reference", "aeo", "fossil"]:
+                    state_regs_dat = state_regs_dat[state_regs_dat["scenario"] == scn_name]
                 else:
                     state_regs_dat = pd.concat([
                         state_regs_dat[state_regs_dat["scenario"] == "reference"],
@@ -483,6 +483,8 @@ class UsefulVars(object):
                         regu_type = [regu_type]
                     else:
                         start_yr = [row["start year"]]
+                        end_yr_val = row["end year"] if "end year" in row else None
+                        end_yr = [None if pd.isna(end_yr_val) else int(end_yr_val)]
                         apply_frac = [row["applicable fraction"]]
                         regu_type = [row["type"]]
                         jurisdiction_val = row["jurisdiction"] if "jurisdiction" in row else None
@@ -612,10 +614,10 @@ class UsefulVars(object):
                                 strtch_pct_reduce = [0]
                             params = [
                                 state, bldg_fin, onsite_reduce, lag_pct_reduce, strtch_pct_reduce,
-                                start_yr, apply_frac, regu_type, jurisdiction]
+                                start_yr, end_yr, apply_frac, regu_type, jurisdiction]
                             fields = [
                                 "reg", "bldg", "onsite_reduce", "lag_reduce", "stretch_reduce",
-                                "start_yr", "apply_frac", "regu_type", "jurisdiction"]
+                                "start_yr", "end_yr", "apply_frac", "regu_type", "jurisdiction"]
                         elif "bps" in k:
                             # Find EUI reduction targets and year to benchmark those targets
                             # against
@@ -626,6 +628,11 @@ class UsefulVars(object):
                                 eui_pct_reduce = [0]
                             if pd.isna(eui_bnch_yr[0]):
                                 eui_bnch_yr = [None]
+                            # BPS do not support end years (a BPS that is repealed is omitted from
+                            # the input file instead)
+                            if "end year" in row and not pd.isna(row["end year"]):
+                                raise ValueError(
+                                    "End years are not supported in bps.csv: omit the row instead")
                             params = [
                                 state, bldg_fin, onsite_reduce, eui_pct_reduce, eui_bnch_yr,
                                 start_yr, apply_frac, regu_type, jurisdiction]
@@ -6646,6 +6653,10 @@ class Engine(object):
                 code_std[x] for x in [
                     "reg", "bldg", "onsite_reduce", "start_yr", "apply_frac", "regu_type",
                     "jurisdiction"]]
+            end_yr = code_std.get("end_yr")
+            if end_yr is not None and (
+                    end_yr < start_yr or end_yr < int(self.handyvars.aeo_years[0])):
+                continue
             # Flag for whether current policy applies to residential buildings (or not)
             res_focus = any(
                 [x in self.handyvars.out_break_bldgtypes[bldg] for x in [
@@ -6668,8 +6679,16 @@ class Engine(object):
                     m_cdbps = codes_com_measure
                     # Further apply any assumed commercial compliance fraction
                     apply_frac *= code_comply_com
-                # Determine the year range for which the current code onsite reduction applies
+                # Years in which the code is actively enforced on newly constructed buildings; when
+                # an end year is set, buildings constructed during [start_yr, end_yr] retain their
+                # code impacts in subsequent years while post-end_yr new construction is unaffected
+                active_yrs = [
+                    yr for yr in self.handyvars.aeo_years
+                    if int(yr) >= start_yr and (end_yr is None or int(yr) <= end_yr)]
+                if not active_yrs:
+                    continue
                 apply_yrs = [yr for yr in self.handyvars.aeo_years if int(yr) >= start_yr]
+                end_yr_cap = active_yrs[-1] if end_yr is not None else None
                 # For codes, set applicable building vintage to new (assume codes only apply to new
                 # buildings)
                 vint = "new"
@@ -6700,7 +6719,7 @@ class Engine(object):
                 else:
                     impact_thres_tyr = lag_reduce
                 # Breakout energy index impact by year, for further application below
-                impact_thres = {yr: impact_thres_tyr if yr in apply_yrs else 0
+                impact_thres = {yr: impact_thres_tyr if yr in active_yrs else 0
                                 for yr in self.handyvars.aeo_years}
             else:
                 # Set codes/BPS measure to update to BPS measure – res or com based on the
@@ -6720,7 +6739,12 @@ class Engine(object):
                 if bench_yr is None:
                     bench_yr = start_yr - 5
                 # Determine the year range for which the current BPS onsite reduction applies
-                apply_yrs = [yr for yr in self.handyvars.aeo_years if int(yr) >= bench_yr]
+                active_yrs = [
+                    yr for yr in self.handyvars.aeo_years if int(yr) >= bench_yr]
+                if not active_yrs:
+                    continue
+                apply_yrs = active_yrs
+                end_yr_cap = None
                 # BPS applies to existing buildings only
                 vint = "existing"
                 # New building applicability constraint (see above for codes) not relevant for BPS
@@ -6741,7 +6765,9 @@ class Engine(object):
                 for yr in self.handyvars.aeo_years:
                     # For BPS, assume compliance/progress towards reduction begins in
                     # the benchmark year and proceeds linearly towards the target reduction
-                    if int(yr) >= bench_yr and int(yr) < start_yr:
+                    if yr not in active_yrs:
+                        impact_thres[yr] = 0
+                    elif int(yr) >= bench_yr and int(yr) < start_yr:
                         frac_yr = (int(yr) - bench_yr) / (start_yr - bench_yr)
                         impact_thres[yr] = impact_thres_tyr * frac_yr
                     elif int(yr) >= start_yr:
@@ -6757,7 +6783,9 @@ class Engine(object):
                 # Breakout onsite reduction requirements by year
                 onsite_reduce_frac = {}
                 for yr in self.handyvars.aeo_years:
-                    if code_std_flag == "bps" and not (bench_yr is None) and \
+                    if yr not in active_yrs:
+                        onsite_reduce_frac[yr] = 0
+                    elif code_std_flag == "bps" and not (bench_yr is None) and \
                             int(yr) >= bench_yr and int(yr) < start_yr:
                         # For BPS, assume compliance/progress towards reduction begins in
                         # the benchmark year and proceeds linearly towards the target reduction
@@ -6806,12 +6834,16 @@ class Engine(object):
                 # Adjust onsite reduction frac. times apply frac. to account for overlaps
                 onsite_frac_already_in_place, onsite_times_apply_fracs = self.stack_impacts(
                     code_std_flag, reg, bldg, regu_type, onsite_frac_already_in_place,
-                    onsite_reduce_frac, apply_frac, apply_yrs, jurisdiction)
+                    onsite_reduce_frac, apply_frac, active_yrs, jurisdiction)
+                if end_yr_cap is not None:
+                    for yr in apply_yrs:
+                        if yr not in onsite_times_apply_fracs:
+                            onsite_times_apply_fracs[yr] = onsite_times_apply_fracs[end_yr_cap]
                 # Apply the effects of the onsite reduction
                 self.apply_code_bps_impacts(
                     reg, bldg, vint, adopt_scheme, apply_yrs, onsite_times_apply_fracs,
                     add_energy_times_apply_fracs, rel_elec_eff, prior_yr_rmv, m_cdbps, focus_yrs,
-                    res_focus)
+                    res_focus, end_yr_cap=end_yr_cap)
                 # Reset onsite reduction levels to null after processing above to ensure they
                 # aren't applied twice when energy reductions are subsequently processed by the
                 # same function below
@@ -6870,13 +6902,13 @@ class Engine(object):
                     energy_reduce_frac = {
                         yr: 1 - (energy_sums_sf["efficient"][yr] /
                                  energy_sums_sf["baseline"][bench_yr_fin]) if
-                        (yr in apply_yrs and energy_sums_sf["baseline"][bench_yr_fin] != 0) else 0
+                        (yr in active_yrs and energy_sums_sf["baseline"][bench_yr_fin] != 0) else 0
                         for yr in self.handyvars.aeo_years}
                 else:
                     energy_reduce_frac = {
                         yr: 1 - (energy_capcost_sums["energy"]["efficient"][yr] /
                                  energy_capcost_sums["energy"]["baseline"][yr])
-                        if (yr in apply_yrs and energy_capcost_sums["energy"][
+                        if (yr in active_yrs and energy_capcost_sums["energy"][
                             "baseline"][yr] != 0) else 0
                         for yr in self.handyvars.aeo_years}
 
@@ -6898,14 +6930,19 @@ class Engine(object):
                     add_energy_frac_already_in_place, add_energy_times_apply_fracs = \
                         self.stack_impacts(code_std_flag, reg, bldg, regu_type,
                                            add_energy_frac_already_in_place,
-                                           added_energy_reduce_frac, apply_frac, apply_yrs,
+                                           added_energy_reduce_frac, apply_frac, active_yrs,
                                            jurisdiction)
+                    if end_yr_cap is not None:
+                        for yr in apply_yrs:
+                            if yr not in add_energy_times_apply_fracs:
+                                add_energy_times_apply_fracs[yr] = \
+                                    add_energy_times_apply_fracs[end_yr_cap]
                     # Apply additional energy reduction requirements to the efficient case data for
                     # a given region/bldg/vintage
                     self.apply_code_bps_impacts(
                         reg, bldg, vint, adopt_scheme, apply_yrs, onsite_times_apply_fracs,
                         add_energy_times_apply_fracs, rel_elec_eff, prior_yr_rmv, m_cdbps,
-                        focus_yrs, res_focus, inc_capcost)
+                        focus_yrs, res_focus, inc_capcost, end_yr_cap=end_yr_cap)
 
         # Ensure that no blank codes or BPS measures are returned and written out
         fin_code_bps_meas = [m for m in [
@@ -6995,7 +7032,7 @@ class Engine(object):
     def apply_code_bps_impacts(
             self, reg, bldg, vint, adopt_scheme, apply_yrs, onsite_times_apply_fracs,
             add_energy_times_apply_fracs, rel_elec_eff, prior_yr_rmv, m_cdbps,
-            focus_yrs, res_focus, inc_capcost=False):
+            focus_yrs, res_focus, inc_capcost=False, end_yr_cap=None):
         """Apply both onsite emissions and energy reduction impacts of code/BPS.
 
         Args:
@@ -7015,6 +7052,8 @@ class Engine(object):
             m_cdbps (object): Code or BPS measure data to modify to reflect specific policy impacts.
             focus_yrs (str): Years to report the output data for (can be full AEO range or trimmed).
             res_focus (str): Flag for whether current building type is residential (or not).
+            inc_capcost (boolean): Flag for incremental efficiency cost counting.
+            end_yr_cap (int or NoneType): Flag for end year cap on new building codes.
         """
 
         # Set shorthands for applicable code/BPS measure region, building type/vintage, and end use
@@ -7137,7 +7176,8 @@ class Engine(object):
                         mast_dat_cdbps_base, mast_dat_cdbps_save, reg, bldg, apply_yrs,
                         onsite_times_apply_fracs, rel_elec_eff[brk_var], prior_yr_rmv, brk_var,
                         cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, reg, bldg, vint, meas_fuel,
-                        meas_eus, res_focus, meas_gap_fracs, cdbps_gap_fracs, adopt_scheme)
+                        meas_eus, res_focus, meas_gap_fracs, cdbps_gap_fracs, adopt_scheme,
+                        end_yr_cap=end_yr_cap)
                 # Apply any additional energy reduction requirements, leveraging data shorthands
                 # above. Note that stock and stock cost totals are currently unadjusted for energy
                 # code reductions, such that per unit energy/carb/energy cost will be reduced and
@@ -7169,7 +7209,7 @@ class Engine(object):
                         cdbps_eus, focus_yrs, brk_dat_cdbps_capcost_base, brk_dat_cdbps_capcost_eff,
                         brk_dat_cdbps_capcost_save, mast_dat_cdbps_capcost_base,
                         mast_dat_cdbps_capcost_eff, mast_dat_cdbps_capcost_save, inc_capcost,
-                        meas_gap_fracs, cdbps_gap_fracs)
+                        meas_gap_fracs, cdbps_gap_fracs, end_yr_cap=end_yr_cap)
 
         return
 
@@ -7179,7 +7219,8 @@ class Engine(object):
             brk_dat_cdbps_save, mast_dat_cdbps_eff, mast_dat_cdbps_base, mast_dat_cdbps_save,
             reg, bldg, apply_yrs, onsite_times_apply_fracs, rel_elec_eff,
             prior_yr_rmv, var, cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, reg_in, bldg_in,
-            vint_in, meas_fuel, meas_eus, res_focus, meas_gap_fracs, cdbps_gap_fracs, adopt_scheme):
+            vint_in, meas_fuel, meas_eus, res_focus, meas_gap_fracs, cdbps_gap_fracs, adopt_scheme,
+            end_yr_cap=None):
         """Apply onsite emissions reductions required via code/BPS.
 
         Args:
@@ -7220,6 +7261,7 @@ class Engine(object):
             meas_gap_fracs (dict or None): Measure ComStock gap shape weight.
             cdbps_gap_frac (dict): Code/BPS measure ComStock gap shape weight.
             adopt_scheme (string): Assumed consumer adoption scenario.
+            end_yr_cap (int or NoneType): Flag for end year cap on new building codes.
         """
 
         # Loop through all applicable end uses for the given region/building type/vintage breakout
@@ -7253,11 +7295,16 @@ class Engine(object):
                             na_eff = brk_dat_eff[reg][bldg][eu][fossil_fuel][prior_yr_rmv]
                         else:
                             na_eff = 0
-                        # Set portion of segment that the policy applies to
-                        elig_convert = {
-                            yr: (brk_dat_eff[reg][bldg][eu][fossil_fuel][yr] - na_eff) if (
-                                na_eff < brk_dat_eff[reg][bldg][eu][fossil_fuel][yr])
-                            else 0 for yr in apply_yrs}
+                        # Set portion of segment that the policy applies to; when end_yr_cap is set
+                        # on a new-building code, post-cutoff years retain the [start_yr, end_yr]
+                        # cohort without converting additional new construction after end_yr
+                        eff_by_yr = brk_dat_eff[reg][bldg][eu][fossil_fuel]
+                        elig_convert = {}
+                        for yr in apply_yrs:
+                            cap_yr = (end_yr_cap if (end_yr_cap and int(yr) > int(end_yr_cap))
+                                      else yr)
+                            ref_eff = min(eff_by_yr[yr], eff_by_yr[cap_yr])
+                            elig_convert[yr] = (ref_eff - na_eff) if na_eff < ref_eff else 0
                         # Pull number of converted fossil units (units that would have otherwise
                         # remained with the fossil fuel in the efficient case) and converted energy/
                         # carbon/cost totals for all applicable years of code/BPS. Note that
@@ -7459,7 +7506,7 @@ class Engine(object):
             cdbps_regs, cdbps_bldgs, cdbps_eus, focus_yrs, brk_dat_cdbps_capcost_base,
             brk_dat_cdbps_capcost_eff, brk_dat_cdbps_capcost_save, mast_dat_cdbps_capcost_base,
             mast_dat_cdbps_capcost_eff, mast_dat_cdbps_capcost_save, inc_capcost,
-            meas_gap_fracs, cdbps_gap_fracs):
+            meas_gap_fracs, cdbps_gap_fracs, end_yr_cap=None):
         """Apply additional energy reduction impacts needed to meet code/BPS.
 
         Args:
@@ -7491,6 +7538,7 @@ class Engine(object):
             focus_yrs (str): Years to report the output data for (can be full AEO range or trimmed).
             meas_gap_fracs (dict or None): Measure ComStock gap shape weight.
             cdbps_gap_frac (dict): Code/BPS measure ComStock gap shape weight.
+            end_yr_cap (int or NoneType): Flag for end year cap on new building codes.
         """
 
         # Loop through all end uses for the given region and building type/vintage breakout
@@ -7540,7 +7588,8 @@ class Engine(object):
                     brk_dat_cdbps_capcost_eff_reg_bldg_eu,
                     brk_dat_cdbps_capcost_save_reg_bldg_eu,
                     mast_dat_cdbps_capcost_base, mast_dat_cdbps_capcost_eff,
-                    mast_dat_cdbps_capcost_save, inc_capcost, meas_gap_fracs, cdbps_gap_fracs)
+                    mast_dat_cdbps_capcost_save, inc_capcost, meas_gap_fracs, cdbps_gap_fracs,
+                    end_yr_cap=end_yr_cap)
             else:
                 # Loop through fuel types under end use breakout
                 for fuel in brk_dat_base[reg][bldg][eu].keys():
@@ -7593,7 +7642,7 @@ class Engine(object):
                             brk_dat_cdbps_capcost_save_reg_bldg_eu_fuel,
                             mast_dat_cdbps_capcost_base, mast_dat_cdbps_capcost_eff,
                             mast_dat_cdbps_capcost_save, inc_capcost,
-                            meas_gap_fracs, cdbps_gap_fracs)
+                            meas_gap_fracs, cdbps_gap_fracs, end_yr_cap=end_yr_cap)
 
     def adjust_data(self, brk_dat_eff, brk_dat_eff_capt, brk_dat_eff_capt_env, brk_dat_base,
                     brk_dat_save, mast_dat_eff, mast_dat_base, mast_dat_save, brk_dat_cdbps_eff,
@@ -7603,7 +7652,8 @@ class Engine(object):
                     cdbps_bldgs, cdbps_eus, focus_yrs, brk_dat_cdbps_capcost_base,
                     brk_dat_cdbps_capcost_eff, brk_dat_cdbps_capcost_save,
                     mast_dat_cdbps_capcost_base, mast_dat_cdbps_capcost_eff,
-                    mast_dat_cdbps_capcost_save, inc_capcost, meas_gap_fracs, cdbps_gap_fracs):
+                    mast_dat_cdbps_capcost_save, inc_capcost, meas_gap_fracs, cdbps_gap_fracs,
+                    end_yr_cap=None):
         """Make the actual adjustments to reflect additional energy reductions to meet code/BPS.
 
         brk_dat_eff (dict): Efficient stock/energy/carbon/ecost breakouts for indiv. measure.
@@ -7635,6 +7685,7 @@ class Engine(object):
         focus_yrs (str): Years to report the output data for (can be full AEO range or trimmed).
         meas_gap_fracs (dict or None): Measure ComStock gap shape weight.
         cdbps_gap_frac (dict): Code/BPS measure ComStock gap shape weight.
+        end_yr_cap (int or NoneType): Flag for end year cap on new building codes.
         """
 
         # Determine energy/carbon/cost data that should be removed from the additional energy
@@ -7645,11 +7696,18 @@ class Engine(object):
         else:
             na_base = 0
         # Determine absolute energy/carbon/ecost reductions that result from the additional
-        # energy reductions required in the code/BPS
-        reduce_base_to_meet_thres = {
-            yr: (brk_dat_base[yr] - na_base) * add_energy_times_apply_fracs[yr]
-            if (yr in apply_yrs and na_base < brk_dat_base[yr]) else 0
-            for yr in self.handyvars.aeo_years}
+        # energy reductions required in the code/BPS; when end_yr_cap is set on a new-building
+        # code, post-cutoff years retain the [start_yr, end_yr] cohort reduction
+        reduce_base_to_meet_thres = {}
+        for yr in self.handyvars.aeo_years:
+            if yr in apply_yrs:
+                cap_yr = end_yr_cap if (end_yr_cap and int(yr) > int(end_yr_cap)) else yr
+                ref_base = min(brk_dat_base[yr], brk_dat_base[cap_yr])
+                reduce_base_to_meet_thres[yr] = (
+                    (ref_base - na_base) * add_energy_times_apply_fracs[yr]
+                    if na_base < ref_base else 0)
+            else:
+                reduce_base_to_meet_thres[yr] = 0
 
         # Initialize incremental capital costs to add to meet additional reduction in energy use;
         # these are filled in below from the baseline reduction that is actually applied
