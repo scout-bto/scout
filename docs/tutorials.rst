@@ -1804,7 +1804,7 @@ Several :ref:`ECM preparation options <tuts-3-cmd-opts>` change the units and ax
    No figures are generated when |html-filepath| run.py |html-fp-end| is run with the ``trim_vars`` or ``report_custom_yrs`` options, as some of the data needed for the figures are not reported in those cases.
 
 .. tip::
-   The structure of the figures is described in the JSON schema |html-filepath| ./results/plots/results_schema.json |html-fp-end|, which lists the expected files, panels, titles, and axis labels for any run configuration.
+   The structure of the figures is described in the JSON schema :repo_file:`docs/results_schema.json <docs/results_schema.json>`, which lists the expected files, panels, titles, and axis labels for any run configuration.
 
 .. _results-by-ecm:
 
