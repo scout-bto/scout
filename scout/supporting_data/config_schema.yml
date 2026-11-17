@@ -278,7 +278,7 @@ properties:
             description: Level of federal and state incentives (e.g., tax credits, rebates) for measure adoption. The aeo option reverts to incentive levels in the AEO reference case forecast.
           incentive_restrictions:
             type: ["string", "null"]
-            enum: [all, no ira, no electric, no fossil, no federal, no sub-federal, no federal electric, no federal fossil, no sub-federal electric, no sub-fed fossil, null]
+            enum: [all, no ira, no electric, no fossil, no federal, no sub-federal, no federal electric, no federal fossil, no sub-federal electric, no sub-federal fossil, no sub-fed fossil, null]
             default: null
             description: Restrictions to apply to evaluation of incentives. Setting to all removes all incentives, including those in the reference case, while null imposes no additional restrictions.
 
