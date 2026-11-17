@@ -28,6 +28,10 @@ WITH meta_combined AS (
 		WHERE (meta.upgrade = 0 AND ts.upgrade = '0')
 		    AND meta."in.comstock_building_type" IN (
 		        'MediumOffice', 'LargeOffice', 'LargeHotel', 'RetailStandalone', 'Warehouse')
+		    -- AK/HI are outside NEMS's EMM regions, so Scout's EMM-resolved
+		    -- baseline energy excludes them; keep their buildings out of the
+		    -- EMM load shapes too (they stay in comstock_data_state.sql)
+		    AND ts."state" NOT IN ('AK', 'HI')
 ),
 
 geomap_combined AS (

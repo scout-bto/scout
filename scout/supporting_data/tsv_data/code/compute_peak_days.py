@@ -85,7 +85,12 @@ def _region_tz_shift_hours(geo_map_path):
         pop_by_offset = grp.groupby('tz_offset')['population'].sum()
         return int(pop_by_offset.idxmax() - EST_OFFSET)
 
-    emm_shift = geo.groupby('emm2020_county').apply(dominant_shift).to_dict()
+    # AK/HI rows in geo_map.csv only matter for their own state shifts;
+    # their buildings are excluded from the *_emm.sql queries, so their
+    # population shouldn't vote on any EMM region's shift either
+    emm_geo = geo[~geo['state_abbr'].isin(['AK', 'HI'])]
+    emm_shift = emm_geo.groupby('emm2020_county').apply(
+        dominant_shift).to_dict()
     state_shift = geo.groupby('state_abbr').apply(dominant_shift).to_dict()
     return emm_shift, state_shift
 
