@@ -35,6 +35,8 @@ For some keys, there are shorthand summary values that can be used when all or a
 Climate zone
 ~~~~~~~~~~~~
 
+For how baseline data are derived for EMM regions and states, see :ref:`data-disagg`.
+
 .. _emm-reg:
 
 EIA Electricity Market Module (EMM) regions
