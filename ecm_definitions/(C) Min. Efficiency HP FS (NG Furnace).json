@@ -66,16 +66,19 @@
     ]
   },
   "installed_cost": {
-    "new": 366.0,
-    "existing": 370.0
+    "new": 365.94,
+    "existing": 371.28
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": [
-      "Uses residential system costs and normalizes by typical capacity of residential systems (36 kBtu/h)",
-      "Retail (new) and total installed (existing) cost for min. efficiency ASHPs in 2023."
-    ],
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost of the residential system (mid estimate, 2023$) at the performance already in the measure, divided by 36 kBtu/h",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": {
     "panel": true,
@@ -117,6 +120,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

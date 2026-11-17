@@ -36,7 +36,7 @@
   "energy_efficiency": {
     "gas_boiler": 0.99,
     "gas_chiller": 1.7,
-    "rooftop_AC": 3.75,
+    "rooftop_AC": 6.83,
     "scroll_chiller": 5.2,
     "reciprocating_chiller": 4.5,
     "centrifugal_chiller": 11.7,
@@ -50,27 +50,39 @@
     "ventilation": "relative savings (constant)"
   },
   "energy_efficiency_source": {
-    "notes": "High efficiency performance in 2022 or 2023.",
-    "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": [
-        119,
-        133,
-        135,
-        131,
-        129,
-        127,
-        125
-      ],
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-    }
+    "notes": [
+      "High efficiency performance in 2022 or 2023.",
+      "BTB high performance value (2023 Reference scenario), converted to Scout units where necessary (rooftop_AC)"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": [
+          119,
+          133,
+          135,
+          131,
+          129,
+          127,
+          125
+        ],
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "installed_cost": {
     "gas_boiler": {
-      "new": 139.0,
-      "existing": 139.0
+      "new": 135.33,
+      "existing": 135.33
     },
     "gas_chiller": {
       "new": 78.33,
@@ -78,7 +90,7 @@
     },
     "scroll_chiller": {
       "new": 74.34,
-      "existing": 81.28
+      "existing": 81.29
     },
     "reciprocating_chiller": {
       "new": 69.9,
@@ -93,30 +105,45 @@
       "existing": 78.65
     },
     "rooftop_AC": {
-      "new": 112.0,
-      "existing": 113.0
+      "new": 97.18,
+      "existing": 98.02
     },
     "CAV_Vent": 0.0,
     "VAV_Vent": 0.0
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "High efficiency costs in 2022 or 2023 normalized by capacity",
-    "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": [
-        119,
-        133,
-        135,
-        131,
-        129,
-        127,
-        125
-      ],
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-    }
+    "notes": [
+      "High efficiency costs in 2022 or 2023 normalized by capacity",
+      "BTB installed cost (mid estimate, 2023$) at high performance, divided by 800 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at high performance, divided by 90 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at high performance, divided by 1080 kBtu/h",
+      "BTB installed cost (mid estimate, 2023$) at high performance, divided by 1140 kBtu/h (gas_boiler, reciprocating_chiller, rooftop_AC, scroll_chiller)"
+    ],
+    "source_data": [
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": [
+          119,
+          133,
+          135,
+          131,
+          129,
+          127,
+          125
+        ],
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      },
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      }
+    ]
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 25.0,
@@ -156,6 +183,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

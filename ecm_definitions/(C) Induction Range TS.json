@@ -35,19 +35,31 @@
     }
   },
   "installed_cost": {
-    "new": 4353.0,
-    "existing": 4423.0
+    "new": 4664.12,
+    "existing": 4664.6
   },
-  "cost_units": "2022$/kBtu/h cooking",
+  "cost_units": "2023$/kBtu/h cooking",
   "installed_cost_source": {
-    "notes": "2022 High retail (new) and installed (existing) cost value for electric range with griddle and oven, normalized by kBtu/h cooking capacity (EIA assumes ~2.6 kBtu/h capacity)",
-    "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 168,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
-    }
+    "notes": [
+      "BTB installed cost of the commercial electric range with griddle and oven (mid estimate, 2023$) at typical performance, divided by 2.6 kBtu/h, times EIA's ratio of High to Typical retail (new) and installed (existing) cost for that range (4353/4319 and 4423/4388)",
+      "BTB has no commercial induction range"
+    ],
+    "source_data": [
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      },
+      {
+        "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
+        "author": "U.S. Energy Information Administration",
+        "year": 2023,
+        "pages": 168,
+        "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      }
+    ]
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 12.0,
@@ -71,6 +83,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-11-04 14:06:58"
   }
 }
