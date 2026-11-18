@@ -66,6 +66,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          # Pin to a version supported by numpy < 2.0 (see pyproject.toml);
+          # '3.x' resolves to the newest Python, which may lack numpy 1.x wheels
           python-version: '3.12'
       - name: Install scout package
         run: |
