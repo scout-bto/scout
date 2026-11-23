@@ -127,8 +127,10 @@ measures have their BTB costs, each Brk. cost is set to half its Best
 counterpart's (the Name with "Brk." replaced by "Best", or
 `BREAKTHROUGH_BASIS`; `(R) Brk. HP LFL` uses `(R) Best HP TS (Resist.)`).
 An oil equipment removal in the Best cost is a fixed cost and is not
-halved. The
-cost is cited to BTB.
+halved. Neither is the backup furnace in a dual-fuel ("Pt.") Best measure's
+new-construction cost (see "Composite costs"): only the heat pump portion is
+halved, and existing construction, which keeps the existing furnace, is
+halved whole. The cost is cited to BTB.
 
 **Source citations on unchanged values.** Values hand-copied from BTB
 before it was published often equal the published values. Where a BTB value
@@ -232,6 +234,15 @@ Notes:
   and flagged as a potential BTB issue).
 - `lifetime_value` uses a given lifetime instead of BTB's (used for
   induction ranges: 11 years like the electric range, instead of BTB's 17).
+- `perf_by_end_use` takes each end use's performance from a named BTB bound
+  instead of the tier's bound, e.g. `heating: Upper Bound; cooling: Lower
+  Bound`. Used for the gas-fired heat pump (`NGHP`, residential ID 95), whose
+  single COP metric holds the cooling COP (0.7) as its Lower Bound and the
+  heating COP (1.3) as its Upper Bound; its Typical and High (1.0) are only
+  their average (per BTB's Notes). BTB has one gas heat pump product, so the
+  Ref. Case and Best NGHP measures get the same COPs, matching the Scout
+  baseline NGHP (heating 1.3, cooling 0.7). It applies to the `heating:` and
+  `cooling:` keys of rows where NGHP is the technology or the one switched to.
 
 **Commercial heat pump rows.** Commercial rows whose cost notes say "Uses
 residential system costs and normalizes by typical capacity of residential
@@ -342,6 +353,7 @@ Flagged in review (decision taken):
 | Clothes Dryer Heat Pump (residential ID 17) | The CEF cost coefficient is negative (-4.67), so cost falls as efficiency rises: Typical (CEF 5.45) is $1,595 but BTB's High (CEF 11) would be $1,569 | Use the Typical cost for every tier (`cost_at = Typical`) |
 | Beverage Merchandisers - Standard (commercial ID 30) | Lifetime 31 years; EIA's Appendix C gives 10 | Not used: refrigeration measures use EIA entirely |
 | Commercial Ice Machine Standard (commercial ID 18) | Lifetime 21 years; EIA's Appendix C gives 8.5 | Not used: refrigeration measures use EIA entirely |
+| Heat Pump Gas-fired (residential ID 95) | One COP metric for heating and cooling: Lower Bound 0.7 is the cooling COP, Upper Bound 1.3 the heating COP, and Typical and High (1.0) are their average (BTB's Notes) | Heating from the Upper Bound, cooling from the Lower Bound (`perf_by_end_use`) |
 | Cooking Range Electric / Gas / Induction (residential IDs 27 / 28 / 29) | Lifetimes 11 / 15 / 17 years. Gas matches EIA (15) but electric differs from EIA (17), and induction lasting longer than an electric resistance range is not credible | Use 11 for electric (BTB's value) and for induction (`lifetime_value = 11`) |
 
 Observed while building the pipeline, not yet reviewed:

@@ -504,6 +504,11 @@ _VOLTAGE_IN_DESCRIPTION = re.compile(r"120V\s?HP")
 
 # Scout furnace token whose BTB cost is added for a dual-fuel backup.
 BACKUP_FURNACE_TECH = {"gas": "furnace (NG)", "oil": "furnace (distillate)"}
+# The note composite_adjustment writes when it adds that furnace's cost to
+# the new-construction cost (read back by derive_breakthrough_costs).
+_BACKUP_FURNACE_NOTE = re.compile(
+    r"new construction includes the BTB typical (gas|oil) furnace "
+    r"\(\$(\d+)\)")
 
 
 def capacity_kbtuh(btb_row):
@@ -605,6 +610,33 @@ def entry_value(entry, column):
 
     value = entry.get(column)
     return value if isinstance(value, str) and value else None
+
+
+# BTB regression bound columns a perf_by_end_use entry may name.
+END_USE_BOUNDS = ("Lower Bound", "Typical", "High", "Upper Bound")
+
+
+def perf_by_end_use(entry):
+    """{end use: BTB bound column} from a crosswalk entry's perf_by_end_use
+    column (e.g. "heating: Upper Bound; cooling: Lower Bound"), or None.
+
+    Used where one BTB metric holds the values of several end uses in
+    different bounds: BTB's gas-fired heat pump (residential ID 95) gives its
+    heating COP as the Upper Bound and its cooling COP as the Lower Bound,
+    and its Typical and High are only their average (see its Notes)."""
+
+    value = entry_value(entry, "perf_by_end_use")
+    if value is None:
+        return None
+    out = {}
+    for part in value.split(";"):
+        end_use, _, bound = part.partition(":")
+        if bound.strip() not in END_USE_BOUNDS:
+            raise ValueError(
+                f"perf_by_end_use bound {bound.strip()!r} is not one of "
+                f"{END_USE_BOUNDS}")
+        out[end_use.strip()] = bound.strip()
+    return out
 
 
 def sector_for_name(name):
@@ -972,7 +1004,7 @@ def cites_prerelease_btb(row, category):
 
 
 def update_sources(row, category, updates, cell, ws, excel_row, col_index,
-                   diff_rows):
+                   diff_rows, end_use_keys=()):
     """Cite BTB in a row's "<category> Source Notes" and "... Details".
 
     Args:
@@ -981,6 +1013,8 @@ def update_sources(row, category, updates, cell, ws, excel_row, col_index,
             values were written from BTB in this row.
         cell: the row's cell for this category before any edits, to judge
             whether every entry in it came from BTB.
+        end_use_keys: end-use keys ("heating", "cooling") of the cell whose
+            values were taken from BTB (see perf_by_end_use).
 
     If every entry in the cell was updated the old source no longer applies
     and is replaced; otherwise BTB is added to the existing source, so the
@@ -997,6 +1031,11 @@ def update_sources(row, category, updates, cell, ws, excel_row, col_index,
             re.escape(t) + r"\s*:", cell, re.IGNORECASE)]
         all_keys = [t for t in techs_in_cell(row, cell)]
         full = bool(all_keys) and set(all_keys) <= set(keys)
+        if not all_keys and end_use_keys:
+            # A cell keyed by end use: full if BTB gave every end use in it.
+            cell_keys = {k.strip().lower() for k in re.findall(
+                r"([^;:]+):", cell)}
+            full = cell_keys <= {k.lower() for k in end_use_keys}
     # Technologies' descriptions often share phrases (e.g. a boiler's adds
     # its removal cost to the paired AC's), so each phrase is kept once.
     description = "; ".join(dict.fromkeys(
@@ -1114,7 +1153,9 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
     """Set each breakthrough measure's installed cost to half that of its
     Best counterpart (BREAKTHROUGH_BASIS, or the Name with "Brk." replaced
     by "Best"), after the Best measures have taken their BTB costs. An
-    oil-tank removal in the Best cost is a fixed cost, so it is not halved.
+    oil-tank removal in the Best cost is a fixed cost, so it is not halved;
+    nor is the backup furnace in a dual-fuel Best measure's new-construction
+    cost.
     Only bare "new: X; existing: Y" costs in the same Cost Units as a Best
     cost that cites BTB are derived; anything else is logged as skipped.
 
@@ -1180,21 +1221,36 @@ def derive_breakthrough_costs(ws, col_index, name_rows, diff_rows):
         # divided by the same capacity.
         fixed = tank / RESIDENTIAL_SYSTEM_CAPACITY_KBTUH if per_capacity \
             else tank
-        half = {"new": _round_half_up(values["new"] / 2, digits),
+        # The backup furnace a dual-fuel Best measure's new-construction cost
+        # includes is conventional equipment, not the breakthrough heat
+        # pump, so it is not halved either.
+        backup = _BACKUP_FURNACE_NOTE.search(best_notes)
+        furnace = int(backup.group(2)) if backup else 0
+        fixed_new = furnace / RESIDENTIAL_SYSTEM_CAPACITY_KBTUH \
+            if per_capacity else furnace
+        half = {"new": _round_half_up(
+                    (values["new"] - fixed_new) / 2 + fixed_new, digits),
                 "existing": _round_half_up(
                     (values["existing"] - fixed) / 2 + fixed, digits)}
         new_cost = f"new: {half['new']}; existing: {half['existing']}"
         basis = f"half the BTB-based installed cost of {best}" + (
             f" (its ${tank} oil equipment removal is not halved)"
             if tank else "")
+        if furnace:
+            basis = (
+                f"existing cost is {basis}; new construction halves the "
+                "ASHP portion while retaining the full BTB typical "
+                f"{backup.group(1)} furnace (${furnace})" + (
+                    " divided by 36 kBtu/h" if per_capacity else ""))
         old_numbers = [float(v) for v in re.findall(
             r"-?\d+\.?\d*", old_cost)]
         if old_numbers != [float(half["new"]), float(half["existing"])]:
             put(name, excel_row, "Installed Cost", old_cost, new_cost,
-                f"breakthrough cost is {basis}")
+                f"breakthrough cost: {basis}")
         notes = get(excel_row, "Cost Source Notes")
         put(name, excel_row, "Cost Source Notes", notes,
-            append_note(notes.rstrip(". "), f"cost is {basis}"),
+            append_note(notes.rstrip(". "),
+                        basis if furnace else f"cost is {basis}"),
             "breakthrough cost derived from BTB")
         put(name, excel_row, "Cost Source Details",
             get(excel_row, "Cost Source Details"),
@@ -1337,6 +1393,7 @@ def main():
         stale_cost_phrase = None
         row_relabeled = False
         src_updates = {"Performance": {}, "Cost": {}, "Lifetime": {}}
+        src_end_use_keys = {"Performance": set()}
         src_cells = {"Performance": cell_state["Energy Performance"],
                      "Cost": cell_state["Installed Cost"],
                      "Lifetime": cell_state["Lifetime"]}
@@ -1427,53 +1484,89 @@ def main():
                     f"Regression metric {metric_idx} - "
                     f"{REGRESSION_BOUND_COL[entry['bound']]}")
                 cost_perf = parse_currency(raw_val)
-                converted = convert(
-                    entry["btb_metric_name"], target_unit, raw_val) \
-                    if target_unit and pd.notna(raw_val) else None
-                if metric_conflict and perf_key:
-                    diff_rows.append({
-                        "Name": row.get("Name"), "technology": tech,
-                        "column": "Energy Performance",
-                        "old_value": old_val, "new_value": "(skipped)",
-                        "btb_technology_id": entry["btb_technology_id"],
-                        "btb_display_name": entry["btb_display_name"],
-                        "projection_scenario": entry["projection_scenario"],
-                        "projection_year": entry["projection_year"],
-                        "notes": f"BTB metric {entry['btb_metric_name']!r} "
-                                 "is for the other end use than this token; "
-                                 "performance left as-is",
-                    })
-                elif converted is not None and perf_key:
-                    new_val_str = f"{converted:.3g}"
-                    if old_val == new_val_str and \
-                            cites_prerelease_btb(row, "Performance"):
-                        # Already the published BTB value; cite it.
-                        src_updates["Performance"][tech] = (
-                            f"BTB {entry['bound'].lower()} performance "
-                            "value (2023 Reference scenario), converted to "
-                            "Scout units where necessary")
-                    elif old_val != new_val_str:
-                        cell_state["Energy Performance"] = \
-                            replace_value_for_key(
-                                perf_cell, perf_key, new_val_str)
-                        ws.cell(
-                            row=excel_row,
-                            column=col_index["Energy Performance"]).value \
-                            = cell_state["Energy Performance"]
-                        src_updates["Performance"][tech] = (
-                            f"BTB {entry['bound'].lower()} performance "
-                            "value (2023 Reference scenario), converted to "
-                            "Scout units where necessary")
+                perf_note = (
+                    f"BTB {entry['bound'].lower()} performance value (2023 "
+                    "Reference scenario), converted to Scout units where "
+                    "necessary")
+                # (perf_key, BTB value, unit) for each value to write: the
+                # tier's bound, or one bound per end use (perf_by_end_use).
+                targets = [(perf_key, raw_val, target_unit)]
+                by_end_use = perf_by_end_use(entry)
+                if by_end_use:
+                    targets = []
+                    if not (holds_switched or cost_only) and (
+                            tech == owner or tech in row_switched):
+                        for end_use, bound in by_end_use.items():
+                            if re.search(re.escape(end_use) + r"\s*:",
+                                         str(perf_cell), re.IGNORECASE):
+                                targets.append((
+                                    end_use,
+                                    btb_row.get(f"Regression metric "
+                                                f"{metric_idx} - {bound}"),
+                                    find_value_for_key(units_cell, end_use)
+                                    or unit_for_tech(units_cell, tech)))
+                    perf_note = (
+                        "BTB " + " and ".join(
+                            f"{bound.lower()} ({end_use})"
+                            for end_use, bound in by_end_use.items()) +
+                        " performance values (2023 Reference scenario), per "
+                        "BTB's notes on which bound holds each end use's "
+                        "value")
+                for perf_key, raw_val, target_unit in targets:
+                    perf_cell = cell_state["Energy Performance"]
+                    old_val = find_value_for_key(perf_cell, perf_key) \
+                        if perf_key else None
+                    converted = convert(
+                        entry["btb_metric_name"], target_unit, raw_val) \
+                        if target_unit and pd.notna(raw_val) else None
+                    if metric_conflict and perf_key:
                         diff_rows.append({
                             "Name": row.get("Name"), "technology": tech,
                             "column": "Energy Performance",
-                            "old_value": old_val, "new_value": new_val_str,
+                            "old_value": old_val, "new_value": "(skipped)",
                             "btb_technology_id": entry["btb_technology_id"],
                             "btb_display_name": entry["btb_display_name"],
                             "projection_scenario":
                                 entry["projection_scenario"],
                             "projection_year": entry["projection_year"],
+                            "notes": "BTB metric "
+                                     f"{entry['btb_metric_name']!r} is for "
+                                     "the other end use than this token; "
+                                     "performance left as-is",
                         })
+                    elif converted is not None and perf_key:
+                        new_val_str = f"{converted:.3g}"
+                        if by_end_use:
+                            # Written below, or already BTB's value.
+                            src_end_use_keys["Performance"].add(perf_key)
+                        if old_val == new_val_str and \
+                                cites_prerelease_btb(row, "Performance"):
+                            # Already the published BTB value; cite it.
+                            src_updates["Performance"][tech] = perf_note
+                        elif old_val != new_val_str:
+                            cell_state["Energy Performance"] = \
+                                replace_value_for_key(
+                                    perf_cell, perf_key, new_val_str)
+                            ws.cell(
+                                row=excel_row,
+                                column=col_index["Energy Performance"]
+                            ).value = cell_state["Energy Performance"]
+                            src_updates["Performance"][tech] = perf_note
+                            diff_rows.append({
+                                "Name": row.get("Name"), "technology": tech,
+                                "column": "Energy Performance",
+                                "old_value": old_val,
+                                "new_value": new_val_str,
+                                "btb_technology_id":
+                                    entry["btb_technology_id"],
+                                "btb_display_name":
+                                    entry["btb_display_name"],
+                                "projection_scenario":
+                                    entry["projection_scenario"],
+                                "projection_year": entry["projection_year"],
+                                "notes": entry_value(entry, "notes")
+                                if by_end_use else None,
+                            })
             elif metric_idx and keep_existing and cost_only and \
                     tier in res_hp_cooling:
                 cost_perf = to_btb_metric(
@@ -1778,7 +1871,8 @@ def main():
 
         for category, updates in src_updates.items():
             update_sources(row, category, updates, src_cells[category], ws,
-                           excel_row, col_index, diff_rows)
+                           excel_row, col_index, diff_rows,
+                           src_end_use_keys.get(category, ()))
         if demolition_cited and src_updates["Cost"]:
             add_source_details(ws, excel_row, col_index, row.get("Name"),
                                EIA_FUEL_SWITCHING_SOURCE, diff_rows)

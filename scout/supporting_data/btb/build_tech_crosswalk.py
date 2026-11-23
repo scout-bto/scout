@@ -76,12 +76,15 @@ TIER_DEFAULTS = {
 # - measure_type: the Measure Type ("full service") to set on the measure
 #   when its BTB cost is written, for reference-case measures that were
 #   entered as zero-cost add-ons.
+# - perf_by_end_use: the BTB bound to take each end use's performance from
+#   (e.g. "heating: Upper Bound; cooling: Lower Bound"), in place of the
+#   tier's bound, where BTB puts several end uses' values in one metric.
 CROSSWALK_COLUMNS = [
     "scout_technology", "sector", "tier", "btb_technology_id",
     "btb_display_name", "btb_mapping_name", "btb_metric_name",
     "projection_scenario", "projection_year", "bound", "match_confidence",
     "needs_review", "notes", "cost_at", "measure_type", "keep_lifetime",
-    "lifetime_value",
+    "lifetime_value", "perf_by_end_use",
 ]
 
 # scout_technology -> value of the keep_lifetime column for its rows.
@@ -103,6 +106,10 @@ LIFETIME_VALUE = {
 # decision to depart from BTB. Also shown in populate_meas_in_from_btb.py's
 # BTB Diff sheet where the override applies.
 TECH_NOTES = {
+    "NGHP": (
+        "BTB's COP Lower Bound (0.7) is the cooling COP and Upper Bound (1.3) "
+        "the heating COP; Typical and High (1.0) are their average, per BTB's "
+        "Notes"),
     "induction": (
         "Potential BTB issue: BTB lifetimes are electric range 11, gas 15, "
         "induction 17; induction set to 11 like the electric range. BTB's "
@@ -115,6 +122,14 @@ TECH_NOTES = {
         "Potential BTB issue: BTB cost regression has a negative slope on "
         "CEF (Best would cost less than Typical); cost evaluated at BTB "
         "Typical for every tier"),
+}
+
+# scout_technology -> value of the perf_by_end_use column for its rows.
+PERF_BY_END_USE = {
+    # BTB's gas-fired heat pump (residential ID 95) has one COP metric whose
+    # Lower Bound is the cooling COP (0.7) and Upper Bound the heating COP
+    # (1.3); its Typical and High (1.0) are only their average (BTB Notes).
+    "NGHP": "heating: Upper Bound; cooling: Lower Bound",
 }
 
 # scout_technology -> value of the cost_at column for its rows.
@@ -462,6 +477,7 @@ def main(refresh):
             row["cost_at"] = COST_AT.get(scout_tech)
             row["keep_lifetime"] = KEEP_LIFETIME.get(scout_tech)
             row["lifetime_value"] = LIFETIME_VALUE.get(scout_tech)
+            row["perf_by_end_use"] = PERF_BY_END_USE.get(scout_tech)
             if scout_tech in TECH_NOTES:
                 row["notes"] = TECH_NOTES[scout_tech]
             if (row["scout_technology"], row["sector"],
