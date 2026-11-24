@@ -1,7 +1,7 @@
 {
   "name": "(C) Ref. Case Refrigeration",
   "_description": "Counterfactual commercial refrigeration measure, no savings vs. reference case",
-  "measure_type": "add-on",
+  "measure_type": "full service",
   "market_entry_year": 2026,
   "market_exit_year": null,
   "min_eff_elec_flag": null,
@@ -34,14 +34,59 @@
     ],
     "source_data": null
   },
-  "installed_cost": 0.0,
+  "installed_cost": {
+    "Commercial Reach-In Freezers": {
+      "new": 732.0,
+      "existing": 950.0
+    },
+    "Commercial Reach-In Refrigerators": {
+      "new": 1183.0,
+      "existing": 1551.0
+    },
+    "Commercial Supermarket Display Cases": {
+      "new": 802.0,
+      "existing": 970.0
+    },
+    "Commercial Walk-In Freezers": {
+      "new": 972.0,
+      "existing": 1057.0
+    },
+    "Commercial Walk-In Refrigerators": {
+      "new": 484.0,
+      "existing": 583.0
+    },
+    "Commercial Beverage Merchandisers": {
+      "new": 588.0,
+      "existing": 588.0
+    },
+    "Commercial Ice Machines": {
+      "new": 659.0,
+      "existing": 732.0
+    },
+    "Commercial Refrigerated Vending Machines": {
+      "new": 1808.0,
+      "existing": 1928.0
+    }
+  },
   "cost_units": "2022$/kBtu/h refrigeration",
   "installed_cost_source": {
-    "notes": [
-      "Ref. case cost (no additional cost)",
-      "see https://www.eia.gov/analysis/studies/buildings/equipcosts/ for details."
-    ],
-    "source_data": null
+    "notes": "Retail (new) and total installed (existing) cost for typical efficiency refrigeration units in 2022, normalized by the typical unit's cooling capacity (kBtu/h)",
+    "source_data": {
+      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix C",
+      "author": "U.S. Energy Information Administration",
+      "year": 2023,
+      "pages": [
+        97,
+        94,
+        91,
+        104,
+        100,
+        112,
+        108,
+        115
+      ],
+      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/appendix-c.pdf"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": {
@@ -51,22 +96,25 @@
     "Commercial Walk-In Freezers": 10.0,
     "Commercial Walk-In Refrigerators": 10.0,
     "Commercial Beverage Merchandisers": 10.0,
-    "Commercial Ice Machines": 10.0,
-    "Commercial Refrigerated Vending Machines": 10.0
+    "Commercial Ice Machines": 8.5,
+    "Commercial Refrigerated Vending Machines": 13.5
   },
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average lifetimes for high efficiency refrigeration units in 2022 (use average compressor life where broken out)",
+    "notes": "Average lifetimes for typical efficiency refrigeration units in 2022 (use average compressor life where broken out)",
     "source_data": {
       "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies: Appendix C",
       "author": "U.S. Energy Information Administration",
       "year": 2023,
       "pages": [
-        91,
-        94,
         97,
+        94,
+        91,
+        104,
         100,
-        104
+        112,
+        108,
+        115
       ],
       "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/appendix-c.pdf"
     }
@@ -80,6 +128,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

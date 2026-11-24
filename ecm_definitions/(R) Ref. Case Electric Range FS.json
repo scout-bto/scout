@@ -36,37 +36,34 @@
     }
   },
   "installed_cost": {
-    "new": 630.0,
-    "existing": 770.0
+    "new": 1490.0,
+    "existing": 1626.0
   },
-  "cost_units": "2022$/unit",
+  "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": [
-      "Based on cost of typical electric ranges",
-      "range pricing is used (instead of cooktop) because 89% of households have a range (see second EIA source)."
-    ],
+    "notes": "BTB installed cost (mid estimate, 2023$) at typical performance",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 95,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "add_elec_infr_cost": {
     "panel": false,
     "240V circuit": true
   },
-  "product_lifetime": 17.0,
+  "product_lifetime": 11.0,
   "product_lifetime_units": "years",
   "product_lifetime_source": {
-    "notes": "Average lifetime for electric ranges in 2022",
+    "notes": "BTB expected average equipment lifetime",
     "source_data": {
-      "title": "Updated Buildings Sector Appliance and Equipment Costs and Efficiencies",
-      "author": "U.S. Energy Information Administration",
-      "year": 2023,
-      "pages": 94,
-      "url": "https://www.eia.gov/analysis/studies/buildings/equipcosts/pdf/full.pdf"
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
     }
   },
   "market_scaling_fractions": null,
@@ -78,6 +75,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-26 16:51:39"
   }
 }

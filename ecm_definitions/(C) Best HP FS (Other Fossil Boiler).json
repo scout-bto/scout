@@ -33,7 +33,7 @@
   "htcl_tech_link": "other fossil boiler+rtac or chiller",
   "tech_switch_to": "ASHP",
   "energy_efficiency": {
-    "cooling": 3.8,
+    "cooling": 5.95,
     "heating": 3.7,
     "ventilation": 0.0
   },
@@ -45,7 +45,8 @@
   "energy_efficiency_source": {
     "notes": [
       "High' performance in 2023",
-      "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)"
+      "COP = SEER / 3.412, COP = HSPF / 3.412 (see EIA source)",
+      "cooling COP is the tier's IEER of 20.3 divided by 3.412 (see EIA source)"
     ],
     "source_data": [
       {
@@ -65,13 +66,19 @@
     ]
   },
   "installed_cost": {
-    "new": 212.0,
-    "existing": 220.0
+    "new": 210.87,
+    "existing": 220.03
   },
   "cost_units": "2023$/kBtu/h heating",
   "installed_cost_source": {
-    "notes": "High' costs in 2023 normalized by capacity.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": "BTB installed cost of the commercial rooftop heat pump (mid estimate, 2023$) at IEER 20.3 (EIA 2023 value for the tier), divided by 90 kBtu/h",
+    "source_data": {
+      "title": "2024 Buildings Technology Baseline",
+      "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+      "year": 2024,
+      "pages": null,
+      "url": "https://data.openei.org/submissions/8342"
+    }
   },
   "add_elec_infr_cost": null,
   "product_lifetime": 21.0,
@@ -110,6 +117,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-10-30 16:02:14"
   }
 }

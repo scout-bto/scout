@@ -48,7 +48,7 @@
   "installed_cost": {
     "boiler (distillate)": {
       "new": 12386.0,
-      "existing": 12724.0
+      "existing": 14468.0
     },
     "central AC": {
       "new": 5599.0,
@@ -61,8 +61,26 @@
   },
   "cost_units": "2023$/unit",
   "installed_cost_source": {
-    "notes": "Typical efficiency costs in 2023 for commercial electric boiler unit and paired cooling.",
-    "source_data": "Buildings Annual Technology Baseline. NREL, forthcoming"
+    "notes": [
+      "BTB installed cost (mid estimate, 2023$) at typical performance",
+      "existing includes $1744 for demolition of the oil furnace or boiler with tank removal (EIA national average of $1675 in 2022$, converted to 2023$)"
+    ],
+    "source_data": [
+      {
+        "title": "2024 Buildings Technology Baseline",
+        "author": "Moore, N., Wilson, E., Butrico, M., Langevin, J., & Ciraulo, R.",
+        "year": 2024,
+        "pages": null,
+        "url": "https://data.openei.org/submissions/8342"
+      },
+      {
+        "title": "Residential Technology and Fuel Switching Costs: Space Heating Costs",
+        "author": "U.S. Energy Information Administration",
+        "year": 2026,
+        "pages": null,
+        "url": "https://www.eia.gov/analysis/studies/buildings/res_tech_fuel_switching_costs/xls/res_tech_fuel_switching_costs.xlsx"
+      }
+    ]
   },
   "add_elec_infr_cost": {
     "panel": true,
@@ -128,6 +146,6 @@
     "name": "Jared Langevin",
     "organization": "LBNL",
     "email": "jared.langevin@lbl.gov",
-    "timestamp": "2026-09-21 14:52:10"
+    "timestamp": "2026-11-03 14:41:38"
   }
 }
